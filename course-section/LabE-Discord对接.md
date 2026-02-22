@@ -148,7 +148,34 @@ Discord channel connected
 | 斜杠命令 | 注册 `/ask`、`/help` 等结构化交互 |
 | Embed 消息 | 富文本回复，支持标题、颜色、图片 |
 | 多频道管理 | 不同频道配置不同行为 |
-| 语音频道集成 | 探索 AI 接入语音频道的可能性 |
+| 语音频道集成 | AI 接入语音频道进行实时语音对话 |
+
+### 🆕 Discord 语音频道 & 流媒体（v2026.2.21 新特性）
+
+OpenClaw v2026.2.21 版本新增了 Discord 语音频道流媒体支持，AI 助手可以：
+
+- 加入 Discord 语音频道，进行实时语音交互
+- 支持 Discord 语音消息的接收和处理
+- 自定义 Bot 在线状态（Custom Presence）
+
+### 语音频道配置示例
+
+```json
+{
+  "channels": {
+    "discord": {
+      "enabled": true,
+      "token": "你的Bot Token",
+      "voice": {
+        "enabled": true,
+        "autoJoin": false
+      }
+    }
+  }
+}
+```
+
+> 💡 语音功能需要在 Discord Developer Portal 中额外开启 Voice 相关的 Intent 权限。
 
 ---
 

@@ -375,6 +375,16 @@ OpenClaw 内置了 Agent 间通信工具：
 | `sessions_history` | 查看某个 Agent 的对话历史 |
 | `sessions_send` | 向另一个 Agent 发送消息 |
 
+### 🆕 Thread-Bound Subagent Sessions（v2026.2.21 新特性）
+
+最新版本引入了线程绑定子 Agent 会话，让 Agent 间协作更加结构化：
+
+- **线程隔离**：每个协作任务在独立线程中进行，不会污染主对话
+- **上下文传递**：子 Agent 可以继承父 Agent 的部分上下文信息
+- **自动归档**：协作完成后，线程自动归档，保持对话整洁
+
+这意味着当猫管家需要通知创作助手时，不再是简单的"发一条消息"，而是可以创建一个专属协作线程，双方在线程内完成任务后自动关闭。
+
 ### 实际效果
 
 ```
@@ -904,6 +914,12 @@ openclaw agent --agent code-architect --message "测试消息"
 - 🛠️ 学会了单实例多角色的配置方法（推荐方案）
 - 🐳 了解了多实例部署的 Profile 和 Docker 方式
 - 🏢 完成了个性化 AI 团队的实战搭建（程序员助理、中医顾问、猫管家、内容创作）
+
+### 多 Agent 是 AI 的未来方向
+
+OpenClaw 创始人 Peter Steinberger 于 2026 年 2 月加入 OpenAI，专注于"下一代个人 Agent"和多 Agent 系统的研发。OpenClaw 项目本身转为独立基金会运营，保持开源和独立。
+
+这意味着多 Agent 协作不是一个小众玩法，而是整个 AI 行业的核心方向。你今天学到的多 Agent 架构知识，正是这个趋势的实践基础。
 
 ### Day 12 → Day 13 的完整进化路径
 

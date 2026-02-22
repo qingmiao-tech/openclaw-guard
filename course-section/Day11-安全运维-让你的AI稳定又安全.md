@@ -107,6 +107,49 @@ sudo ufw status                 # 查看状态
 
 ---
 
+## 第 5.5 页 · 🚨 供应链安全：ClawHub 恶意技能危机
+
+### 真实威胁：不是假设，是正在发生的事
+
+2026 年 2 月，安全研究机构发现 ClawHub 市场中存在大规模恶意技能攻击：
+
+- **1,184+ 恶意技能**被上传到 ClawHub，占市场总量约 7-20%
+- **"ClawHavoc" 攻击活动**：335 个技能伪装成正常工具，植入 macOS 信息窃取器（Atomic Stealer）
+- **283 个技能**存在凭证泄露漏洞，会暴露你的 API Key 和 SSH 密钥
+- **CVE-2026-25253**：OpenClaw 被发现存在严重的一键远程代码执行漏洞
+- Gartner 建议企业暂时封锁 OpenClaw，直到安全问题得到解决
+
+### 你需要做的防护措施
+
+| 序号 | 措施 | 操作 |
+|------|------|------|
+| 1 | 保持 OpenClaw 最新版本 | `npm update -g openclaw` |
+| 2 | 安装前用 skill-vetting 审查技能 | 让 AI 执行安全扫描 |
+| 3 | 检查技能权限要求 | 权限与功能不匹配 = 🚩 红旗 |
+| 4 | 定期审查已安装技能 | `openclaw skill list` 并逐一检查 |
+| 5 | 启用 Agent Sandbox | 限制 Agent 的系统访问范围 |
+| 6 | 监控异常网络请求 | 检查是否有未知的外部连接 |
+
+### 版本更新与漏洞修补
+
+```bash
+# 检查当前版本
+openclaw --version
+
+# 更新到最新版本
+npm update -g openclaw
+
+# 更新后重启 Gateway
+pm2 restart openclaw-gw
+
+# 查看更新日志确认安全补丁
+openclaw changelog
+```
+
+> 💡 OpenClaw 团队在 v2026.2.13 和 v2026.2.21 中进行了大规模安全加固（massive security hardening），务必保持更新。
+
+---
+
 ## 第 6 页 · 数据隐私保护
 
 ### 数据流向
@@ -248,6 +291,9 @@ pm2 flush
 - [ ] 完成了 API Key 的环境变量迁移
 - [ ] 配置了防火墙和工具权限限制
 - [ ] 能说出至少 3 个 OpenClaw 安全最佳实践
+- [ ] 已将 OpenClaw 更新到最新版本，确认安全补丁已应用
+- [ ] 了解 ClawHub 供应链安全风险，能说出恶意技能的识别方法
+- [ ] 配置了 Agent 权限边界（tools.deny），遵循最小权限原则
 
 ---
 
@@ -272,3 +318,6 @@ pm2 flush
 
 - [OpenClaw 安全指南](https://openclaw.io/docs/security)
 - [OpenClaw Tools 权限配置](https://openclaw.io/docs/tools)
+- [OpenClaw 安全加固 101（Adversa AI）](https://adversa.ai/blog/openclaw-security-101-vulnerabilities-hardening-2026/) —— CVE-2026-25253 漏洞详解与加固方案
+- [ClawHub 恶意技能分析报告（The Hacker News）](https://thehackernews.com/2026/02/researchers-find-341-malicious-clawhub.html) —— ClawHavoc 攻击活动详细分析
+- [OpenClaw 安全危机深度解读（Conscia）](https://conscia.com/blog/the-openclaw-security-crisis/) —— 企业视角的安全评估

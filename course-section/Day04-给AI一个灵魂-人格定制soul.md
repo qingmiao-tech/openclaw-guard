@@ -354,3 +354,4 @@ Agent 每次写文章前必读这个文件，初稿质量能达到 70-80 分。
 
 - [OpenClaw soul.md 文档](https://openclaw.io/docs/soul)
 - [Prompt Engineering 最佳实践](https://platform.openai.com/docs/guides/prompt-engineering)
+- [ClawMate 角色伴侣](https://github.com/BytePioneer-AI/clawmate) —— 把人格定制从"文字性格"扩展到"视觉形象"，让 AI 伙伴会发自拍

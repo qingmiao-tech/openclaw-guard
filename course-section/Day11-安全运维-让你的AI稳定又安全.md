@@ -23,6 +23,7 @@
 1. ✅ **配置** API Key 安全管理、服务器访问控制和 Agent 权限边界
 2. ✅ **解释** OpenClaw 使用中的主要安全风险和防护措施
 3. ✅ **使用** 系统化的故障排查流程定位和解决常见问题
+4. ✅ **实施** 日常开发机部署 OpenClaw 的全维度安全方案（用户隔离、目录白名单、沙箱、凭证保护）
 
 ---
 
@@ -147,6 +148,153 @@ openclaw changelog
 ```
 
 > 💡 OpenClaw 团队在 v2026.2.13 和 v2026.2.21 中进行了大规模安全加固（massive security hardening），务必保持更新。
+
+---
+
+## 第 5.6 页 · 🖥️ 日常开发机部署安全：既要能干活，又要管得住
+
+### 核心矛盾
+
+网上推荐用闲置电脑或云服务器部署 OpenClaw，但很多开发者希望在**日常开发机**上运行——让 AI 直接帮你写代码、操作文件、执行部署。
+
+这带来一个核心矛盾：**既要给 AI 足够的权限来干活，又不能让它变成不受控的"超级用户"**。
+
+### 第一层：系统用户隔离
+
+不要用你的日常开发账户运行 OpenClaw，创建专用低权限用户：
+
+```bash
+# Linux / macOS
+sudo adduser openclaw-agent
+sudo chown -R openclaw-agent:openclaw-agent /home/openclaw-agent
+
+# Windows（PowerShell 管理员）
+net user openclaw-agent 你的密码 /add
+# 不要加入 Administrators 组，保持标准用户
+```
+
+> 💡 即使 AI 执行了危险命令，影响范围也被限制在这个用户的权限内。
+
+### 第二层：文件系统——白名单式授权
+
+你的开发机上有 SSH 密钥、Git 凭证、`.env` 文件、浏览器 cookie 等敏感数据。OpenClaw 不应该碰这些。
+
+**必须保护的敏感目录：**
+
+| 目录 | 内容 | 风险 |
+|------|------|------|
+| `~/.ssh/` | SSH 密钥 | 可登录你的所有服务器 |
+| `~/.gnupg/` | GPG 密钥 | 可伪造你的签名 |
+| `~/.config/` | 各种应用配置 | 可能包含 token |
+| `~/.git-credentials` | Git 凭证 | 可操作你的所有仓库 |
+| 浏览器 Profile 目录 | Cookie、密码 | 可劫持你的所有登录会话 |
+| 各项目的 `.env` 文件 | API Key、数据库密码 | 可访问你的所有服务 |
+
+**操作方法：**
+
+- 用符号链接把允许 AI 操作的项目目录链接到 `openclaw-agent` 的 home 下
+- 敏感目录确保 `openclaw-agent` 用户无读取权限
+- `.env` 文件设置 `chmod 600`（Linux/macOS），属主为你的开发用户
+
+```bash
+# Linux/macOS：确保 openclaw-agent 无法读取你的 SSH 密钥
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/*
+
+# 只把需要 AI 操作的项目目录链接过去
+sudo -u openclaw-agent ln -s /path/to/your/project /home/openclaw-agent/workspace
+```
+
+### 第三层：命令执行沙箱
+
+`group:runtime` 允许 AI 执行任意 shell 命令——这是最危险的权限。
+
+**三种防护方案（按安全等级递增）：**
+
+| 方案 | 安全等级 | 适用场景 | 操作复杂度 |
+|------|----------|----------|------------|
+| Skill 封装 | ⭐⭐ | 固定操作流程 | 低 |
+| Docker 沙箱 | ⭐⭐⭐ | 通用开发辅助 | 中 |
+| 系统级沙箱 | ⭐⭐⭐⭐ | 高安全要求 | 高 |
+
+**方案 A：用 Skill 封装替代通用命令执行**
+
+禁掉 `group:runtime`，把需要的操作封装成专用 Skill：
+
+```json
+{
+  "tools": {
+    "deny": ["group:runtime"],
+    "allow": ["group:fs:read", "group:fs:write", "group:web"]
+  }
+}
+```
+
+然后编写专用 Skill（如"部署到测试环境"），里面只允许执行特定命令。
+
+**方案 B：Docker 沙箱部署**
+
+```bash
+docker run -d \
+  --name openclaw \
+  -v /path/to/projects:/workspace \
+  -v /path/to/.env:/app/.env:ro \
+  --user 1001:1001 \
+  --network=bridge \
+  openclaw-image
+```
+
+关键点：
+- 只挂载项目目录，不挂载 `~/.ssh`、`~/.config` 等
+- 用 `--user` 指定非 root 用户
+- 用自定义网络限制对本机其他服务的访问
+
+**方案 C：系统级沙箱（Linux）**
+
+```bash
+# 使用 firejail 限制进程
+firejail --private=/home/openclaw-agent \
+         --net=none \
+         --nosound \
+         openclaw gateway start
+```
+
+### 第四层：网络隔离
+
+你的开发机上可能跑着本地数据库、Redis、各种开发服务。恶意 Skill 可能尝试连接这些服务或外传数据。
+
+- Docker 部署：用自定义网络限制 OpenClaw 只能访问外网
+- 裸机部署：用防火墙规则限制 `openclaw-agent` 用户的出站连接
+- 定期检查：`ss -tlnp`（Linux）或 `netstat -an`（Windows）查看异常连接
+
+### 第五层：Git 和代码凭证保护
+
+| 保护对象 | 做法 |
+|----------|------|
+| Git 凭证 | 确保 `openclaw-agent` 无法读取 `~/.git-credentials` 或系统 keychain |
+| 仓库操作 | 给 AI 一个只有特定仓库权限的 deploy key 或 fine-grained PAT |
+| 代码审查 | AI 提交的代码不要自动 push 到 main，走 PR 流程 |
+| npm/pip token | 不要在 openclaw-agent 用户下配置包管理器的发布 token |
+
+### 第六层：按场景分级配置
+
+| 场景 | 推荐配置 | 风险等级 |
+|------|----------|----------|
+| 纯聊天/问答 | `minimal` profile，零权限 | 🟢 无风险 |
+| 代码辅助（只读） | 只开 `group:fs:read` + `group:web` | 🟢 低风险 |
+| 开发辅助（读写） | 开 `group:fs`，限定工作目录 | 🟡 中风险 |
+| 全能助手（含命令执行） | Docker 沙箱 + 白名单目录 + 专用用户 | 🟠 需防护 |
+| 自动化部署 | 专用 Skill + deploy key + CI/CD token | 🟠 需防护 |
+
+### 定期审计清单
+
+- [ ] 检查 OpenClaw 对话日志和命令执行历史
+- [ ] 审查已安装的 Skill 列表，移除不用的
+- [ ] 确认 `openclaw-agent` 用户无法访问敏感目录
+- [ ] 检查是否有异常网络连接
+- [ ] 更新 OpenClaw 到最新版本
+
+> 💡 一句话总结：**用独立用户 + 目录白名单 + 沙箱构建权限边界，用专用 Skill 替代通用命令执行，用专用 token 替代个人凭证**。
 
 ---
 
@@ -294,6 +442,8 @@ pm2 flush
 - [ ] 已将 OpenClaw 更新到最新版本，确认安全补丁已应用
 - [ ] 了解 ClawHub 供应链安全风险，能说出恶意技能的识别方法
 - [ ] 配置了 Agent 权限边界（tools.deny），遵循最小权限原则
+- [ ] 了解日常开发机部署 OpenClaw 的六层安全防护体系
+- [ ] 能根据使用场景选择合适的权限分级配置
 
 ---
 
@@ -305,6 +455,7 @@ pm2 flush
 - 完成了服务器安全加固
 - 配置了 Agent 权限边界
 - 学会了四步排查法
+- 掌握了日常开发机部署的六层安全防护方案
 
 ### 明天预告：Day 12
 

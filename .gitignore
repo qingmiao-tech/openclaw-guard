@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+course-web/node_modules/
+
+# Build output
+course-web/dist/
+course-web/.astro/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.local
+
+# OpenClaw source reference (separate git repo)
+openclaw/

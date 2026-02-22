@@ -1,0 +1,408 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Sidebar from '../components/Sidebar.astro';
+import TableOfContents from '../components/TableOfContents.astro';
+import ChapterNav from '../components/ChapterNav.astro';
+import ThemeToggle from '../components/ThemeToggle.astro';
+import SearchBar from '../components/SearchBar.astro';
+import { CHAPTER_LIST } from '../data/course-structure';
+import { getPrevNext } from '../utils/chapter-nav';
+import { generateToc } from '../utils/toc';
+import { parseChapterMarkdown } from '../utils/render-markdown';
+import { buildSearchEntries } from '../utils/search-index';
+import fs from 'node:fs';
+import path from 'node:path';
+
+export function getStaticPaths() {
+  return CHAPTER_LIST.map((chapter) => ({
+    params: { chapter: chapter.id },
+    props: { chapter },
+  }));
+}
+
+const { chapter } = Astro.props;
+const { prev, next } = getPrevNext(chapter.id);
+
+// Read and parse the markdown file
+const mdPath = path.resolve(process.cwd(), '..', 'course-section', chapter.filename);
+let markdown = '';
+try {
+  markdown = fs.readFileSync(mdPath, 'utf-8');
+} catch {
+  markdown = `# ${chapter.title}\n\n内容加载失败，请检查文件路径。`;
+}
+
+const { slides, checklist, fullHtml } = parseChapterMarkdown(markdown, chapter.id);
+const tocItems = generateToc(slides);
+
+const dayLabel = chapter.id.startsWith('day')
+  ? `Day ${parseInt(chapter.id.slice(3))}`
+  : `Lab ${chapter.id.slice(3).toUpperCase()}`;
+---
+
+<BaseLayout title={`${dayLabel}: ${chapter.title}`}>
+  <Sidebar currentChapterId={chapter.id} />
+
+  <!-- ========== PPT Slide Mode Overlay ========== -->
+  {slides.length > 0 && (
+    <div id="ppt-overlay" class="fixed inset-0 z-50 hidden">
+      <!-- Background -->
+      <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950"></div>
+
+      <!-- Top bar -->
+      <div class="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-6 py-4">
+        <div class="flex items-center gap-3">
+          <span class="text-white/60 text-sm font-mono">{dayLabel}</span>
+          <span class="text-white/40">·</span>
+          <span class="text-white/80 text-sm font-medium">{chapter.title}</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="ppt-counter" class="text-white/50 text-sm font-mono"></span>
+          <button id="ppt-exit-btn" class="text-white/60 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors" title="退出演示 (Esc)">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="absolute top-0 left-0 right-0 h-1 bg-white/10">
+        <div id="ppt-progress" class="h-full bg-indigo-400 transition-all duration-300"></div>
+      </div>
+
+      <!-- Slide content area -->
+      <div class="absolute inset-0 flex items-center justify-center px-8 py-20">
+        <div id="ppt-slide-container" class="w-full max-w-5xl max-h-full overflow-y-auto">
+          {slides.map((slide, i) => (
+            <div class="ppt-slide hidden" data-slide-index={i}>
+              <div class="bg-white/[0.07] backdrop-blur-sm rounded-2xl border border-white/10 shadow-2xl p-8 md:p-12 min-h-[400px]">
+                <div class="flex items-center gap-3 mb-6">
+                  <span class="text-indigo-300/80 text-xs font-mono bg-indigo-500/20 px-3 py-1 rounded-full">第 {slide.pageNumber} 页</span>
+                </div>
+                <h2 class="text-2xl md:text-3xl font-bold text-white mb-8">{slide.title}</h2>
+                <div class="ppt-prose text-white/90" set:html={slide.content} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Navigation arrows -->
+      <button id="ppt-prev" class="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all disabled:opacity-20 disabled:cursor-not-allowed">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <button id="ppt-next" class="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all disabled:opacity-20 disabled:cursor-not-allowed">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
+
+      <!-- Bottom slide dots -->
+      <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+        {slides.map((_s, i) => (
+          <button class="ppt-dot w-2 h-2 rounded-full bg-white/30 hover:bg-white/60 transition-colors" data-dot-index={i}></button>
+        ))}
+      </div>
+    </div>
+  )}
+
+  <div id="reading-view" class="md:ml-72 xl:mr-64">
+    <header class="sticky top-0 z-20 bg-surface/80 dark:bg-surface-dark/80 backdrop-blur-sm border-b border-border dark:border-border-dark">
+      <div class="flex items-center justify-between px-4 py-3">
+        <button class="md:hidden p-2 rounded-lg hover:bg-surface-alt dark:hover:bg-surface-dark-alt" onclick="toggleSidebar()" aria-label="menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div class="flex items-center gap-4">
+          <div class="flex-1 max-w-md">
+            <SearchBar />
+          </div>
+          {slides.length > 0 && (
+            <button id="ppt-enter-btn" class="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-primary/10 text-primary dark:text-primary-light hover:bg-primary/20 transition-colors font-medium" title="进入演示模式">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              <span class="hidden sm:inline">演示模式</span>
+            </button>
+          )}
+        </div>
+        <ThemeToggle />
+      </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-4 py-8">
+      <div class="mb-6">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-xs font-mono text-text-muted dark:text-text-dark-muted bg-surface-alt dark:bg-surface-dark-alt px-2 py-1 rounded">{dayLabel}</span>
+          <span class="text-xs text-text-muted dark:text-text-dark-muted">⏱ {chapter.duration}</span>
+          <span class="text-xs text-text-muted dark:text-text-dark-muted px-2 py-0.5 rounded-full bg-primary/10 text-primary dark:text-primary-light">{chapter.tier}</span>
+        </div>
+        <h1 class="text-3xl font-bold">{chapter.title}</h1>
+      </div>
+
+      {slides.length > 0 ? (
+        slides.map((slide) => (
+          <section id={slide.slug} class="slide-section mb-8 scroll-mt-20">
+            <div class="flex items-center gap-2 mb-4">
+              <span class="text-xs font-mono text-text-muted dark:text-text-dark-muted bg-surface-alt dark:bg-surface-dark-alt px-2 py-1 rounded">第 {slide.pageNumber} 页</span>
+              <h2 class="text-xl font-bold">{slide.title}</h2>
+            </div>
+            <div class="prose" set:html={slide.content} />
+          </section>
+        ))
+      ) : (
+        <div class="prose" set:html={fullHtml} />
+      )}
+
+      {checklist.length > 0 && (
+        <section class="checklist-section mt-8 p-6 rounded-lg border-2 border-primary/20 dark:border-primary-light/20 bg-primary/5 dark:bg-primary/10">
+          <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+            <span>📋</span> 验收自检
+          </h3>
+          <div id="checklist" data-chapter-id={chapter.id}>
+            {checklist.map((item) => (
+              <label class="flex items-start gap-3 py-2 cursor-pointer group" data-item-id={item.id}>
+                <input type="checkbox" class="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer" />
+                <span class="text-sm group-hover:text-primary dark:group-hover:text-primary-light transition-colors">{item.text}</span>
+              </label>
+            ))}
+          </div>
+          <div id="checklist-complete" class="hidden mt-4 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg text-center">
+            <span class="text-2xl">🎉</span>
+            <p class="text-sm font-medium text-green-700 dark:text-green-400 mt-1">恭喜！本章验收全部通过！</p>
+          </div>
+        </section>
+      )}
+
+      <ChapterNav prev={prev} next={next} />
+    </main>
+  </div>
+
+  <TableOfContents items={tocItems} />
+
+  <script is:inline>
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      sidebar?.classList.toggle('-translate-x-full');
+      overlay?.classList.toggle('hidden');
+    }
+
+    // Copy code functionality
+    function copyCode(btn) {
+      const codeBlock = btn.closest('.code-block-wrapper');
+      const code = codeBlock?.querySelector('code')?.textContent || '';
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = '已复制';
+        setTimeout(() => { btn.textContent = '复制'; }, 2000);
+      });
+    }
+
+    // Checklist persistence
+    (function() {
+      const checklistEl = document.getElementById('checklist');
+      if (!checklistEl) return;
+      const chapterId = checklistEl.dataset.chapterId;
+      const STORAGE_KEY = 'openclaw-course-progress';
+
+      function getData() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : { chapters: {}, lastVisited: '', darkMode: false };
+        } catch { return { chapters: {}, lastVisited: '', darkMode: false }; }
+      }
+
+      function saveData(data) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+      }
+
+      // Restore state
+      const data = getData();
+      const chapterData = data.chapters[chapterId] || { completed: false, checklist: {}, lastAccessed: '' };
+      const labels = checklistEl.querySelectorAll('label');
+      let totalItems = labels.length;
+
+      labels.forEach(label => {
+        const itemId = label.dataset.itemId;
+        const checkbox = label.querySelector('input[type="checkbox"]');
+        if (chapterData.checklist[itemId]) {
+          checkbox.checked = true;
+        }
+      });
+
+      checkCompletionState();
+
+      // Listen for changes
+      checklistEl.addEventListener('change', (e) => {
+        if (e.target.type !== 'checkbox') return;
+        const label = e.target.closest('label');
+        const itemId = label?.dataset.itemId;
+        if (!itemId) return;
+
+        const data = getData();
+        if (!data.chapters[chapterId]) {
+          data.chapters[chapterId] = { completed: false, checklist: {}, lastAccessed: '' };
+        }
+        data.chapters[chapterId].checklist[itemId] = e.target.checked;
+        data.chapters[chapterId].lastAccessed = new Date().toISOString();
+
+        // Auto-complete check
+        const allChecked = Array.from(checklistEl.querySelectorAll('input[type="checkbox"]')).every(cb => cb.checked);
+        if (allChecked && totalItems > 0) {
+          data.chapters[chapterId].completed = true;
+        }
+
+        saveData(data);
+        checkCompletionState();
+      });
+
+      function checkCompletionState() {
+        const allChecked = Array.from(checklistEl.querySelectorAll('input[type="checkbox"]')).every(cb => cb.checked);
+        const completeEl = document.getElementById('checklist-complete');
+        if (allChecked && totalItems > 0) {
+          completeEl?.classList.remove('hidden');
+        } else {
+          completeEl?.classList.add('hidden');
+        }
+      }
+
+      // Track last visited
+      data.lastVisited = chapterId;
+      saveData(data);
+    })();
+
+    // Mermaid rendering
+    (async function() {
+      const mermaidBlocks = document.querySelectorAll('code.language-mermaid');
+      if (mermaidBlocks.length === 0) return;
+      try {
+        const mermaid = (await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs')).default;
+        mermaid.initialize({ startOnLoad: false, theme: document.documentElement.classList.contains('dark') ? 'dark' : 'default' });
+        for (const block of mermaidBlocks) {
+          const wrapper = block.closest('.code-block-wrapper');
+          if (!wrapper) continue;
+          const code = block.textContent;
+          const id = 'mermaid-' + Math.random().toString(36).slice(2);
+          const { svg } = await mermaid.render(id, code);
+          const div = document.createElement('div');
+          div.className = 'mermaid-diagram my-4 flex justify-center overflow-x-auto';
+          div.innerHTML = svg;
+          wrapper.replaceWith(div);
+        }
+      } catch(e) {
+        console.warn('Mermaid rendering failed:', e);
+      }
+    })();
+
+    // Collapsible sections - details/summary already handled by HTML
+    document.querySelectorAll('details.collapsible-section').forEach(details => {
+      details.querySelector('summary')?.addEventListener('click', () => {
+        const chevron = details.querySelector('.chevron');
+        if (chevron) {
+          chevron.style.transform = details.open ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+      });
+    });
+
+    // ========== PPT Slide Mode ==========
+    (function() {
+      const overlay = document.getElementById('ppt-overlay');
+      if (!overlay) return;
+
+      const allSlides = overlay.querySelectorAll('.ppt-slide');
+      const totalSlides = allSlides.length;
+      if (totalSlides === 0) return;
+
+      const counter = document.getElementById('ppt-counter');
+      const progress = document.getElementById('ppt-progress');
+      const prevBtn = document.getElementById('ppt-prev');
+      const nextBtn = document.getElementById('ppt-next');
+      const enterBtn = document.getElementById('ppt-enter-btn');
+      const exitBtn = document.getElementById('ppt-exit-btn');
+      const dots = overlay.querySelectorAll('.ppt-dot');
+      let currentSlide = 0;
+
+      function showSlide(index) {
+        currentSlide = Math.max(0, Math.min(index, totalSlides - 1));
+        allSlides.forEach((s, i) => {
+          if (i === currentSlide) {
+            s.classList.remove('hidden');
+            s.style.animation = 'slideIn 0.3s ease-out';
+          } else {
+            s.classList.add('hidden');
+          }
+        });
+        counter.textContent = (currentSlide + 1) + ' / ' + totalSlides;
+        progress.style.width = ((currentSlide + 1) / totalSlides * 100) + '%';
+        prevBtn.disabled = currentSlide === 0;
+        nextBtn.disabled = currentSlide === totalSlides - 1;
+        dots.forEach((d, i) => {
+          d.classList.toggle('bg-indigo-400', i === currentSlide);
+          d.classList.toggle('bg-white/30', i !== currentSlide);
+          d.classList.toggle('w-6', i === currentSlide);
+          d.classList.toggle('w-2', i !== currentSlide);
+        });
+        // Re-render mermaid in visible slide
+        renderMermaidInSlide(allSlides[currentSlide]);
+      }
+
+      async function renderMermaidInSlide(slideEl) {
+        const mermaidBlocks = slideEl.querySelectorAll('code.language-mermaid');
+        if (mermaidBlocks.length === 0) return;
+        try {
+          const mermaid = (await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs')).default;
+          mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+          for (const block of mermaidBlocks) {
+            const wrapper = block.closest('.code-block-wrapper');
+            if (!wrapper || wrapper.dataset.rendered) continue;
+            const code = block.textContent;
+            const id = 'ppt-mermaid-' + Math.random().toString(36).slice(2);
+            const { svg } = await mermaid.render(id, code);
+            const div = document.createElement('div');
+            div.className = 'mermaid-diagram my-4 flex justify-center overflow-x-auto';
+            div.innerHTML = svg;
+            wrapper.replaceWith(div);
+          }
+        } catch(e) {}
+      }
+
+      function enterPPT() {
+        overlay.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        showSlide(0);
+      }
+
+      function exitPPT() {
+        overlay.classList.add('hidden');
+        document.body.style.overflow = '';
+      }
+
+      enterBtn?.addEventListener('click', enterPPT);
+      exitBtn?.addEventListener('click', exitPPT);
+      prevBtn?.addEventListener('click', () => showSlide(currentSlide - 1));
+      nextBtn?.addEventListener('click', () => showSlide(currentSlide + 1));
+      dots.forEach(dot => {
+        dot.addEventListener('click', () => showSlide(parseInt(dot.dataset.dotIndex)));
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (overlay.classList.contains('hidden')) return;
+        if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+          e.preventDefault();
+          showSlide(currentSlide + 1);
+        } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+          e.preventDefault();
+          showSlide(currentSlide - 1);
+        } else if (e.key === 'Escape') {
+          exitPPT();
+        } else if (e.key === 'Home') {
+          e.preventDefault();
+          showSlide(0);
+        } else if (e.key === 'End') {
+          e.preventDefault();
+          showSlide(totalSlides - 1);
+        }
+      });
+
+      // Copy code in PPT mode
+      overlay.addEventListener('click', (e) => {
+        const btn = e.target.closest('.copy-btn');
+        if (btn) copyCode(btn);
+      });
+    })();
+  </script>
+</BaseLayout>

@@ -1,0 +1,58 @@
+---
+import { COURSE_TIERS, CHAPTER_LIST } from '../data/course-structure';
+
+interface Props {
+  currentChapterId?: string;
+}
+
+const { currentChapterId } = Astro.props;
+---
+
+<aside id="sidebar" class="sidebar fixed left-0 top-0 h-full w-72 bg-surface dark:bg-surface-dark border-r border-border dark:border-border-dark overflow-y-auto z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+  <div class="p-4">
+    <a href="/" class="flex items-center gap-2 mb-6 text-xl font-bold text-primary dark:text-primary-light hover:opacity-80">
+      <span>🐾</span>
+      <span>OpenClaw 训练营</span>
+    </a>
+
+    <nav>
+      {COURSE_TIERS.map((tier) => (
+        <div class="mb-4">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-text-muted dark:text-text-dark-muted mb-2 flex items-center gap-1">
+            <span>{tier.icon}</span>
+            <span>{tier.name}</span>
+          </h3>
+          <ul class="space-y-0.5">
+            {tier.chapters.map((chId) => {
+              const chapter = CHAPTER_LIST.find(c => c.id === chId);
+              if (!chapter) return null;
+              const isActive = chapter.id === currentChapterId;
+              const dayLabel = chapter.id.startsWith('day')
+                ? `Day ${parseInt(chapter.id.slice(3))}`
+                : `Lab ${chapter.id.slice(3).toUpperCase()}`;
+              return (
+                <li>
+                  <a
+                    href={`/${chapter.id}`}
+                    class:list={[
+                      'block px-3 py-1.5 rounded-md text-sm transition-colors',
+                      isActive
+                        ? 'bg-primary/10 text-primary dark:text-primary-light font-medium'
+                        : 'text-text dark:text-text-dark hover:bg-surface-alt dark:hover:bg-surface-dark-alt',
+                    ]}
+                  >
+                    <span class="text-text-muted dark:text-text-dark-muted text-xs mr-1">{dayLabel}</span>
+                    {chapter.title}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </nav>
+  </div>
+</aside>
+
+<!-- Mobile overlay -->
+<div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden" onclick="toggleSidebar()"></div>

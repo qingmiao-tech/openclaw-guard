@@ -1,0 +1,32 @@
+---
+import type { ChapterMeta } from '../types';
+
+interface Props {
+  prev: ChapterMeta | null;
+  next: ChapterMeta | null;
+}
+
+const { prev, next } = Astro.props;
+---
+
+<nav class="chapter-nav flex items-center justify-between mt-12 pt-6 border-t border-border dark:border-border-dark">
+  {prev ? (
+    <a href={`/${prev.id}`} class="flex items-center gap-2 text-primary dark:text-primary-light hover:opacity-80 transition-opacity">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      <div class="text-right">
+        <div class="text-xs text-text-muted dark:text-text-dark-muted">上一章</div>
+        <div class="text-sm font-medium">{prev.title}</div>
+      </div>
+    </a>
+  ) : <div />}
+
+  {next ? (
+    <a href={`/${next.id}`} class="flex items-center gap-2 text-primary dark:text-primary-light hover:opacity-80 transition-opacity text-right">
+      <div>
+        <div class="text-xs text-text-muted dark:text-text-dark-muted">下一章</div>
+        <div class="text-sm font-medium">{next.title}</div>
+      </div>
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    </a>
+  ) : <div />}
+</nav>

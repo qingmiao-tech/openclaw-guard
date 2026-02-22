@@ -1,0 +1,116 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Sidebar from '../components/Sidebar.astro';
+import ThemeToggle from '../components/ThemeToggle.astro';
+import SearchBar from '../components/SearchBar.astro';
+import { COURSE_TIERS, CHAPTER_LIST } from '../data/course-structure';
+---
+
+<BaseLayout title="课程首页">
+  <Sidebar />
+
+  <div class="md:ml-72">
+    <!-- Top bar -->
+    <header class="sticky top-0 z-20 bg-surface/80 dark:bg-surface-dark/80 backdrop-blur-sm border-b border-border dark:border-border-dark">
+      <div class="flex items-center justify-between px-4 py-3 max-w-4xl mx-auto">
+        <button id="menu-btn" class="md:hidden p-2 rounded-lg hover:bg-surface-alt dark:hover:bg-surface-dark-alt" onclick="toggleSidebar()" aria-label="菜单">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div class="flex-1 mx-4 max-w-md">
+          <SearchBar />
+        </div>
+        <ThemeToggle />
+      </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="max-w-4xl mx-auto px-4 py-8">
+      <!-- Hero -->
+      <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold mb-4">🐾 OpenClaw 实战训练营</h1>
+        <p class="text-lg text-text-muted dark:text-text-dark-muted mb-6">7天打造你的智能私人助理 · 交互式网页版</p>
+
+        <!-- Overall progress -->
+        <div id="overall-progress" class="max-w-md mx-auto">
+          <div class="flex items-center justify-between text-sm mb-1">
+            <span class="text-text-muted dark:text-text-dark-muted">总体进度</span>
+            <span id="progress-pct" class="font-medium">0%</span>
+          </div>
+          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+            <div id="progress-bar" class="bg-primary h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Course tiers -->
+      {COURSE_TIERS.map((tier) => (
+        <section class="mb-10">
+          <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+            <span>{tier.icon}</span>
+            <span>{tier.name}</span>
+          </h2>
+          <div class="grid gap-3">
+            {tier.chapters.map((chId) => {
+              const chapter = CHAPTER_LIST.find(c => c.id === chId);
+              if (!chapter) return null;
+              const dayLabel = chapter.id.startsWith('day')
+                ? `Day ${parseInt(chapter.id.slice(3))}`
+                : `Lab ${chapter.id.slice(3).toUpperCase()}`;
+              return (
+                <a href={`/${chapter.id}`} class="chapter-card group block p-4 rounded-lg border border-border dark:border-border-dark hover:border-primary/50 dark:hover:border-primary-light/50 hover:shadow-md transition-all bg-surface dark:bg-surface-dark" data-chapter-id={chapter.id}>
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                      <span class="text-xs font-mono text-text-muted dark:text-text-dark-muted bg-surface-alt dark:bg-surface-dark-alt px-2 py-1 rounded">{dayLabel}</span>
+                      <div>
+                        <h3 class="font-medium group-hover:text-primary dark:group-hover:text-primary-light transition-colors">{chapter.title}</h3>
+                        <span class="text-xs text-text-muted dark:text-text-dark-muted">⏱ {chapter.duration}</span>
+                      </div>
+                    </div>
+                    <div class="chapter-status flex items-center gap-2">
+                      <span class="chapter-pct text-xs text-text-muted dark:text-text-dark-muted"></span>
+                      <svg class="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-primary dark:group-hover:text-primary-light transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </div>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+    </main>
+  </div>
+
+  <script is:inline>
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      sidebar?.classList.toggle('-translate-x-full');
+      overlay?.classList.toggle('hidden');
+    }
+
+    // Load progress
+    try {
+      const raw = localStorage.getItem('openclaw-course-progress');
+      if (raw) {
+        const data = JSON.parse(raw);
+        const chapters = data.chapters || {};
+        const total = 18;
+        let completed = 0;
+        for (const ch of Object.values(chapters)) {
+          if (ch.completed) completed++;
+        }
+        const pct = Math.round((completed / total) * 100);
+        document.getElementById('progress-pct').textContent = pct + '%';
+        document.getElementById('progress-bar').style.width = pct + '%';
+
+        // Update chapter cards
+        document.querySelectorAll('.chapter-card').forEach(card => {
+          const id = card.dataset.chapterId;
+          if (chapters[id]?.completed) {
+            card.querySelector('.chapter-pct').textContent = '✅';
+          }
+        });
+      }
+    } catch(e) {}
+  </script>
+</BaseLayout>

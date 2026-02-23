@@ -20,3 +20,5 @@ Thumbs.db
 
 # OpenClaw source reference (separate git repo)
 openclaw/
+
+openclaw-feishu/

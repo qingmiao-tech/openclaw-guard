@@ -49,13 +49,28 @@ export function loadConfig(): Record<string, any> {
   }
 }
 
-/** 保存 openclaw.json */
-export function saveConfig(config: Record<string, any>): void {
+/** 保存 openclaw.json（深度合并 + 备份） */
+export function saveConfig(config: Record<string, any>): { success: boolean; error?: string } {
   const p = getConfigPath();
   const dir = path.dirname(p);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(p, JSON.stringify(config, null, 2), 'utf-8');
+
+  // 创建备份
+  createBackup();
+
+  // 深度合并
+  const existing = loadConfig();
+  const merged = deepMerge(existing, config);
+
+  try {
+    fs.writeFileSync(p, JSON.stringify(merged, null, 2), 'utf-8');
+    return { success: true };
+  } catch (err: any) {
+    // I/O 错误时保留原文件不变，返回错误结果
+    return { success: false, error: err.message || String(err) };
+  }
 }
+
 
 /** 深度设置嵌套属性，如 setNested(obj, ['a','b','c'], val) => obj.a.b.c = val */
 export function setNested(obj: Record<string, any>, keys: string[], value: any): void {
@@ -93,6 +108,44 @@ export function deleteNested(obj: Record<string, any>, keys: string[]): boolean 
     return true;
   }
   return false;
+}
+
+/** 深度合并两个对象，递归合并嵌套对象，数组和原始值直接覆盖 */
+export function deepMerge(target: Record<string, any>, source: Record<string, any>): Record<string, any> {
+  const result = { ...target };
+  for (const key of Object.keys(source)) {
+    if (
+      source[key] && typeof source[key] === 'object' && !Array.isArray(source[key]) &&
+      result[key] && typeof result[key] === 'object' && !Array.isArray(result[key])
+    ) {
+      result[key] = deepMerge(result[key], source[key]);
+    } else {
+      result[key] = source[key];
+    }
+  }
+  return result;
+}
+
+/** 创建配置文件备份，保留最近 5 个备份 */
+export function createBackup(): void {
+  const configPath = getConfigPath();
+  if (!fs.existsSync(configPath)) return;
+
+  const timestamp = Date.now();
+  const backupPath = `${configPath}.bak.${timestamp}`;
+  fs.copyFileSync(configPath, backupPath);
+
+  // 清理旧备份，保留最近 5 个
+  const dir = path.dirname(configPath);
+  const baseName = path.basename(configPath);
+  const backups = fs.readdirSync(dir)
+    .filter(f => f.startsWith(`${baseName}.bak.`))
+    .sort()
+    .reverse();
+
+  for (const old of backups.slice(5)) {
+    fs.unlinkSync(path.join(dir, old));
+  }
 }
 
 // ========== 环境变量 (.env) 管理 ==========

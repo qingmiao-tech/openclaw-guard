@@ -22,3 +22,6 @@ Thumbs.db
 openclaw/
 
 openclaw-feishu/
+
+# User profile (OpenClaw local config)
+%USERPROFILE%/

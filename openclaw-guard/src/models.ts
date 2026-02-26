@@ -138,10 +138,11 @@ export function saveProvider(params: {
   name: string;
   baseUrl: string;
   apiKey?: string;
-  apiType: string;
+  apiType?: string;
   models: Array<{ id: string; name: string; api?: string; contextWindow?: number; maxTokens?: number }>;
 }): { success: boolean; message: string } {
   const config = loadConfig();
+  const effectiveApiType = params.apiType || 'openai-completions';
 
   // 确保路径存在
   setNested(config, ['models', 'providers', params.name], {});
@@ -152,13 +153,14 @@ export function saveProvider(params: {
   // 构建 Provider 配置
   const providerConfig: Record<string, any> = {
     baseUrl: params.baseUrl,
+    apiType: effectiveApiType,
     models: params.models.map(m => ({
       id: m.id,
       name: m.name,
-      api: m.api || params.apiType,
+      api: m.api || effectiveApiType,
       input: ['text'],
-      contextWindow: m.contextWindow || 200000,
-      maxTokens: m.maxTokens || 8192,
+      contextWindow: m.contextWindow !== undefined ? m.contextWindow : 200000,
+      maxTokens: m.maxTokens !== undefined ? m.maxTokens : 8192,
       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
     })),
   };
@@ -190,6 +192,7 @@ export function saveProvider(params: {
     return { success: false, message: `保存失败: ${err}` };
   }
 }
+
 
 /** 删除 Provider */
 export function deleteProvider(name: string): { success: boolean; message: string } {

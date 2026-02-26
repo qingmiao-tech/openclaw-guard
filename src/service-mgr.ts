@@ -4,8 +4,14 @@
  */
 import { execSync, spawn } from 'node:child_process';
 import { detectPlatform } from './platform.js';
+import { loadConfig, getNested } from './config.js';
 
-const SERVICE_PORT = 18789;
+/** 从配置文件读取 Gateway 端口，未配置时默认 18789 */
+export function getGatewayPort(): number {
+  const config = loadConfig();
+  const port = getNested(config, ['gateway', 'port']);
+  return typeof port === 'number' && port > 0 ? port : 18789;
+}
 
 export interface ServiceStatus {
   running: boolean;
@@ -61,8 +67,9 @@ function runOpenClaw(args: string[]): { success: boolean; output: string } {
 
 /** 获取服务状态 */
 export function getServiceStatus(): ServiceStatus {
-  const pid = checkPortListening(SERVICE_PORT);
-  return { running: pid !== null, pid, port: SERVICE_PORT };
+  const port = getGatewayPort();
+  const pid = checkPortListening(port);
+  return { running: pid !== null, pid, port };
 }
 
 /** 启动服务 */
@@ -92,7 +99,7 @@ export function startService(): { success: boolean; message: string } {
   // 等待端口就绪（最多 15 秒）
   for (let i = 0; i < 15; i++) {
     execSync('ping -n 1 127.0.0.1 >nul 2>&1 || sleep 1', { stdio: 'ignore', shell: true, timeout: 2000 }).toString();
-    const pid = checkPortListening(SERVICE_PORT);
+    const pid = checkPortListening(getGatewayPort());
     if (pid) {
       return { success: true, message: `服务已启动 (PID: ${pid})` };
     }

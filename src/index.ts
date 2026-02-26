@@ -322,7 +322,7 @@ envCmd.command('set <key> <value>').description('设置环境变量').action((ke
 
 // ========== web 命令 ==========
 program.command('web').description('启动 Web 管理界面')
-  .option('-p, --port <port>', '指定端口号', '3000')
+  .option('-p, --port <port>', '指定端口号', '8088')
   .action((opts) => { startServer(parseInt(opts.port, 10)); });
 
 program.parse();

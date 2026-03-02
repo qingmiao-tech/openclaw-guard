@@ -46,6 +46,38 @@
 
 ## 交付记录
 
+## [2026-03-02 21:12] 按功能批次完成代码与文档 Git 提交 [TASK-20260302-010]
+
+- 任务来源: 用户要求“把改动的文档、代码按会话或功能批次进行 git 提交”。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-02 21:08
+- 开始时间: 2026-03-02 21:09
+- 提交时间: 2026-03-02 21:12
+- 任务目标:
+  1) 将当前已完成功能按批次提交，避免把临时文件混入提交。
+  2) 输出可追溯的提交记录（按功能拆分）。
+- 执行过程:
+  1) 检查工作区改动，区分“代码功能批次”和“文档批次”，排除构建产物与临时数据。
+  2) 第 1 批提交 `openclaw-guard` 代码与测试：mission 集成、fallback 配置、Web 交互状态与相关测试。
+  3) 第 2 批提交 `worklogs` 与 `wxarticle` 文档：方案、补丁文档、复盘文章、V2 实操教程。
+  4) 保留未纳入提交项：`openclaw-guard/dist/`、`worklogs/tmp-sessions-raw.json`、`wxarticle/other/images/`、`course-web/start.bat`。
+- 交付成果:
+  1) 功能代码批次提交：`408c046`。
+  2) 文档批次提交：`d36bc30`。
+  3) 当前提交链条按功能可追溯，便于后续单独回滚/Cherry-pick。
+- 变更清单:
+  - commit `408c046`: `openclaw-guard/README.md`、`openclaw-guard/src/index.ts`、`openclaw-guard/src/models.ts`、`openclaw-guard/src/server.ts`、`openclaw-guard/src/service-mgr.ts`、`openclaw-guard/src/web-ui.ts`、`openclaw-guard/src/mission-control.ts`、`openclaw-guard/src/__tests__/models.test.ts`、`openclaw-guard/src/__tests__/server.test.ts`
+  - commit `d36bc30`: `worklogs/*.md`、`worklogs/scripts/collect-recent-14.ps1`、`wxarticle/other/如何在OpenClaw 中配置多个不同的模型模型并且自动切换？.md`、`wxarticle/南柯/OpenClaw多模型自动切换实战复盘与官方补丁-20260302.md`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`d36bc30`; ahead/behind=`ahead 3, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`708fe4a`; ahead/behind=`ahead 1, behind 0`
+- 验证结果:
+  1) 两批提交已成功创建，`git log --oneline -n 3` 可见 `d36bc30` 与 `408c046`。
+  2) 代码批次提交前执行定向测试：`npx vitest run src/__tests__/models.test.ts src/__tests__/server.test.ts` 通过（17/17）。
+- 后续建议:
+  1) 视需要继续提交“未纳入项”（如图片资源）时，建议再单独做 assets 批次提交。
+  2) 推送前可先执行一次 `git push --dry-run` 校验远端权限与分支策略。
+
 ## [2026-03-02 20:40] 输出多模型自动切换教程 V2，并将 fallbacks 配置接入 openclaw-guard [TASK-20260302-009]
 
 - 任务来源: 用户要求将 `wxarticle/other/如何在OpenClaw 中配置多个不同的模型模型并且自动切换？.md` 升级为更细节的 V2（含明确文件路径与可复制示例），并把 `fallbacks` 配置加入 `openclaw-guard`。

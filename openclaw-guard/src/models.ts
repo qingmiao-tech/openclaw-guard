@@ -92,11 +92,12 @@ export interface ConfiguredProvider {
   baseUrl: string;
   hasApiKey: boolean;
   apiKeyMasked?: string;
-  models: Array<{ fullId: string; id: string; name: string; isPrimary: boolean }>;
+  models: Array<{ fullId: string; id: string; name: string; isPrimary: boolean; isFallback: boolean }>;
 }
 
 export interface AIConfigOverview {
   primaryModel: string | null;
+  fallbackModels: string[];
   providers: ConfiguredProvider[];
   availableModels: string[];
 }
@@ -105,6 +106,11 @@ export interface AIConfigOverview {
 export function getAIConfig(): AIConfigOverview {
   const config = loadConfig();
   const primaryModel = getNested(config, ['agents', 'defaults', 'model', 'primary']) || null;
+  const fallbackModelsRaw = getNested(config, ['agents', 'defaults', 'model', 'fallbacks']);
+  const fallbackModels = Array.isArray(fallbackModelsRaw)
+    ? fallbackModelsRaw.filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+    : [];
+  const fallbackSet = new Set(fallbackModels);
   const availableModels = Object.keys(getNested(config, ['agents', 'defaults', 'models']) || {});
   const providersObj = getNested(config, ['models', 'providers']) || {};
 
@@ -124,13 +130,14 @@ export function getAIConfig(): AIConfigOverview {
         id: m.id,
         name: m.name || m.id,
         isPrimary: primaryModel === fullId,
+        isFallback: fallbackSet.has(fullId),
       };
     });
 
     providers.push({ name, baseUrl, hasApiKey, apiKeyMasked, models });
   }
 
-  return { primaryModel, providers, availableModels };
+  return { primaryModel, fallbackModels, providers, availableModels };
 }
 
 /** 保存 Provider 配置 */
@@ -216,6 +223,15 @@ export function deleteProvider(name: string): { success: boolean; message: strin
     setNested(config, ['agents', 'defaults', 'model', 'primary'], null);
   }
 
+  // 娓呯悊 fallbacks 涓 Provider 鐨勬ā鍨?
+  const fallbackModels = getNested(config, ['agents', 'defaults', 'model', 'fallbacks']);
+  if (Array.isArray(fallbackModels)) {
+    const nextFallbacks = fallbackModels.filter(
+      (modelId: unknown) => typeof modelId !== 'string' || !modelId.startsWith(`${name}/`),
+    );
+    setNested(config, ['agents', 'defaults', 'model', 'fallbacks'], nextFallbacks);
+  }
+
   try {
     saveConfig(config);
     return { success: true, message: `Provider ${name} 已删除` };
@@ -233,5 +249,53 @@ export function setPrimaryModel(modelId: string): { success: boolean; message: s
     return { success: true, message: `主模型已设置为 ${modelId}` };
   } catch (err) {
     return { success: false, message: `设置失败: ${err}` };
+  }
+}
+
+/** Set fallback models list */
+export function setFallbackModels(modelIds: string[]): { success: boolean; message: string } {
+  const config = loadConfig();
+
+  const normalized = Array.from(
+    new Set(
+      (Array.isArray(modelIds) ? modelIds : [])
+        .map((id) => String(id || '').trim())
+        .filter(Boolean),
+    ),
+  );
+
+  // Ensure agents.defaults.model is an object shape.
+  const modelNode = getNested(config, ['agents', 'defaults', 'model']);
+  if (!modelNode || typeof modelNode !== 'object' || Array.isArray(modelNode)) {
+    const existingPrimary =
+      typeof modelNode === 'string'
+        ? modelNode
+        : getNested(config, ['agents', 'defaults', 'model', 'primary']) || null;
+    setNested(config, ['agents', 'defaults', 'model'], {
+      primary: existingPrimary,
+      fallbacks: normalized,
+    });
+  } else {
+    setNested(config, ['agents', 'defaults', 'model', 'fallbacks'], normalized);
+  }
+
+  // Keep allowlist in sync so configured fallback IDs are visible/selectable.
+  if (!getNested(config, ['agents', 'defaults', 'models'])) {
+    setNested(config, ['agents', 'defaults', 'models'], {});
+  }
+  for (const id of normalized) {
+    setNested(config, ['agents', 'defaults', 'models', id], {});
+  }
+
+  setNested(config, ['meta', 'lastTouchedAt'], new Date().toISOString());
+
+  try {
+    saveConfig(config);
+    if (normalized.length > 0) {
+      return { success: true, message: `Fallback models updated: ${normalized.join(', ')}` };
+    }
+    return { success: true, message: 'Fallback models cleared.' };
+  } catch (err) {
+    return { success: false, message: `Failed to set fallback models: ${err}` };
   }
 }

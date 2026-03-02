@@ -1,7 +1,7 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 /**
- * OpenClaw Guard - 权限管理、安全审计、服务管理 CLI
- * 跨平台支持 Windows / macOS / Linux
+ * OpenClaw Guard - 閺夊啴妾虹粻锛勬倞閵嗕礁鐣ㄩ崗銊ヮ吀鐠伮扳偓浣规箛閸旓紕顓搁悶?CLI
+ * 鐠恒劌閽╅崣鐗堟暜閹?Windows / macOS / Linux
  */
 import { Command } from 'commander';
 import chalk from 'chalk';
@@ -12,8 +12,21 @@ import { detectPlatform, getCurrentUser, getOpenClawDir } from './platform.js';
 import { detectOpenClaw } from './openclaw.js';
 import { getConfigPath, getEnvPath, loadConfig, readAllEnv, readEnvValue, writeEnvValue, getDashboardUrl } from './config.js';
 import { getChannels, getFeishuConfig, saveFeishuConfig, checkFeishuPlugin, type FeishuConfig } from './channels.js';
-import { getAIConfig, saveProvider, deleteProvider, setPrimaryModel, PROVIDERS as AI_PROVIDERS } from './models.js';
+import { getAIConfig, saveProvider, deleteProvider, setPrimaryModel, setFallbackModels, PROVIDERS as AI_PROVIDERS } from './models.js';
 import { getServiceStatus, startService, stopService, restartService, getLogs } from './service-mgr.js';
+import {
+  getMissionStatus,
+  installMissionControl,
+  syncMissionControl,
+  bootstrapMissionControl,
+  getMissionCredentials,
+  resetMissionPassword,
+  startMissionControl,
+  stopMissionControl,
+  restartMissionControl,
+  getMissionLogs,
+  getMissionHealth,
+} from './mission-control.js';
 import fs from 'node:fs';
 import { startServer } from './server.js';
 
@@ -21,21 +34,21 @@ const program = new Command();
 
 program
   .name('openclaw-guard')
-  .description('OpenClaw 管理工具 - 安全审计、服务管理、渠道配置')
+  .description('OpenClaw management tool - security audit, service management, channel configuration')
   .version('2.0.0');
 
-// ========== audit 命令 ==========
+// ========== audit 閸涙垝鎶?==========
 program
   .command('audit')
-  .description('执行安全审计，检查当前系统的安全状态')
-  .option('--json', '以 JSON 格式输出')
+  .description('Run security audit and check current system safety status')
+  .option('--json', 'Output as JSON')
   .action((opts) => {
     const results = runFullAudit();
     if (opts.json) { console.log(JSON.stringify(results, null, 2)); return; }
 
-    console.log(chalk.bold('\n🔍 OpenClaw Guard 安全审计报告\n'));
-    console.log(`平台: ${detectPlatform()} | 用户: ${getCurrentUser()}`);
-    console.log(`时间: ${new Date().toLocaleString()}\n`);
+    console.log(chalk.bold('\n棣冩敵 OpenClaw Guard 鐎瑰鍙忕€孤ゎ吀閹躲儱鎲n'));
+    console.log(`楠炲啿褰? ${detectPlatform()} | 閻劍鍩? ${getCurrentUser()}`);
+    console.log(`閺冨爼妫? ${new Date().toLocaleString()}\n`);
 
     const grouped = new Map<string, AuditResult[]>();
     for (const r of results) {
@@ -46,12 +59,12 @@ program
 
     let passCount = 0, warnCount = 0, failCount = 0;
     for (const [category, items] of grouped) {
-      console.log(chalk.bold.underline(`📂 ${category}`));
+      console.log(chalk.bold.underline(`棣冩惃 ${category}`));
       for (const item of items) {
-        const icon = item.status === 'pass' ? chalk.green('✅') : item.status === 'warn' ? chalk.yellow('⚠️') : chalk.red('❌');
+        const icon = item.status === 'pass' ? chalk.green('PASS') : item.status === 'warn' ? chalk.yellow('WARN') : chalk.red('FAIL');
         console.log(`  ${icon} ${item.item}`);
         console.log(`     ${item.message}`);
-        if (item.fix) console.log(chalk.dim(`     修复: ${item.fix}`));
+        if (item.fix) console.log(chalk.dim(`     娣囶喖顦? ${item.fix}`));
         if (item.status === 'pass') passCount++;
         else if (item.status === 'warn') warnCount++;
         else failCount++;
@@ -59,56 +72,56 @@ program
       console.log();
     }
 
-    console.log(chalk.bold('📊 审计摘要'));
-    console.log(`  ${chalk.green(`✅ 通过: ${passCount}`)}  ${chalk.yellow(`⚠️ 警告: ${warnCount}`)}  ${chalk.red(`❌ 失败: ${failCount}`)}`);
-    if (failCount > 0) console.log(chalk.red('\n⚠️ 存在安全问题，请尽快修复！'));
-    else if (warnCount > 0) console.log(chalk.yellow('\n💡 存在可优化项，建议处理。'));
-    else console.log(chalk.green('\n🎉 安全状态良好！'));
+    console.log(chalk.bold('Audit Summary'));
+    console.log(`  ${chalk.green(`PASS: ${passCount}`)}  ${chalk.yellow(`WARN: ${warnCount}`)}  ${chalk.red(`FAIL: ${failCount}`)}`);
+    if (failCount > 0) console.log(chalk.red('\nSecurity issues detected. Please fix them soon.'));
+    else if (warnCount > 0) console.log(chalk.yellow('\nWarnings found. Review recommended.'));
+    else console.log(chalk.green('\nAll checks passed.'));
   });
 
-// ========== profile 命令 ==========
-const profileCmd = program.command('profile').description('管理安全配置 Profile');
+// ========== profile 閸涙垝鎶?==========
+const profileCmd = program.command('profile').description('缁狅紕鎮婄€瑰鍙忛柊宥囩枂 Profile');
 
-profileCmd.command('list').description('列出所有可用的安全 Profile').action(() => {
-  console.log(chalk.bold('\n📋 可用安全 Profile\n'));
+profileCmd.command('list').description('閸掓鍤幍鈧張澶婂讲閻劎娈戠€瑰鍙?Profile').action(() => {
+  console.log(chalk.bold('\n棣冩惖 閸欘垳鏁ょ€瑰鍙?Profile\n'));
   for (const [key, p] of Object.entries(PROFILES)) {
     console.log(`  ${chalk.bold(key)} - ${p.name} ${p.riskLevel}`);
     console.log(`    ${chalk.dim(p.description)}`);
-    for (const r of p.recommendations) console.log(`    ${chalk.dim('•')} ${chalk.dim(r)}`);
+    for (const r of p.recommendations) console.log(`    ${chalk.dim('-')} ${chalk.dim(r)}`);
     console.log();
   }
 });
 
-profileCmd.command('apply <name>').description('应用指定的安全 Profile').option('-c, --config <path>', '指定配置路径').action((name, opts) => {
+profileCmd.command('apply <name>').description('鎼存梻鏁ら幐鍥х暰閻ㄥ嫬鐣ㄩ崗?Profile').option('-c, --config <path>', '閹稿洤鐣鹃柊宥囩枂鐠侯垰绶?).action((name, opts) => {
   const profile = getProfile(name);
-  if (!profile) { console.log(chalk.red(`\n❌ 未知的 Profile: ${name}`)); return; }
-  console.log(chalk.bold(`\n🔧 应用 Profile: ${profile.name} ${profile.riskLevel}\n`));
+  if (!profile) { console.log(chalk.red(`\n閴?閺堫亞鐓￠惃?Profile: ${name}`)); return; }
+  console.log(chalk.bold(`\n棣冩暋 鎼存梻鏁?Profile: ${profile.name} ${profile.riskLevel}\n`));
   const result = applyProfile(name, opts.config);
-  console.log(result.success ? chalk.green(`✅ ${result.message}`) : chalk.red(`❌ ${result.message}`));
+  console.log(result.success ? chalk.green(`閴?${result.message}`) : chalk.red(`閴?${result.message}`));
 });
 
-profileCmd.command('show <name>').description('查看 Profile 详细配置').action((name) => {
+profileCmd.command('show <name>').description('閺屻儳婀?Profile 鐠囷妇绮忛柊宥囩枂').action((name) => {
   const profile = getProfile(name);
-  if (!profile) { console.log(chalk.red(`\n❌ 未知的 Profile: ${name}`)); return; }
-  console.log(chalk.bold(`\n📋 Profile: ${profile.name}\n`));
-  console.log(`风险等级: ${profile.riskLevel}\n描述: ${profile.description}\n`);
-  console.log(chalk.bold('工具配置:'));
+  if (!profile) { console.log(chalk.red(`\n閴?閺堫亞鐓￠惃?Profile: ${name}`)); return; }
+  console.log(chalk.bold(`\n棣冩惖 Profile: ${profile.name}\n`));
+  console.log(`妞嬪酣娅撶粵澶岄獓: ${profile.riskLevel}\n閹诲繗鍫? ${profile.description}\n`);
+  console.log(chalk.bold('瀹搞儱鍙块柊宥囩枂:'));
   console.log(JSON.stringify(profile.tools, null, 2));
 });
 
 
-// ========== harden 命令 ==========
-program.command('harden').description('生成系统安全加固脚本')
-  .option('-p, --platform <platform>', '指定平台')
-  .option('-o, --output <file>', '输出到文件')
-  .option('--steps', '仅显示加固步骤')
+// ========== harden 閸涙垝鎶?==========
+program.command('harden').description('閻㈢喐鍨氱化鑽ょ埠鐎瑰鍙忛崝鐘叉祼閼存碍婀?)
+  .option('-p, --platform <platform>', '閹稿洤鐣鹃獮鍐插酱')
+  .option('-o, --output <file>', 'Output script to file')
+  .option('--steps', 'Show hardening steps only')
   .action((opts) => {
     const platform = opts.platform || detectPlatform();
     if (opts.steps) {
       const steps = getAllHardenSteps();
-      console.log(chalk.bold(`\n🛡️ 系统安全加固步骤 (${platform})\n`));
+      console.log(chalk.bold(`\n棣冩礉閿?缁崵绮虹€瑰鍙忛崝鐘叉祼濮濄儵顎?(${platform})\n`));
       steps.forEach((step, i) => {
-        console.log(`  ${i + 1}. ${chalk.bold(step.title)}${step.optional ? chalk.dim(' （可选）') : ''}`);
+        console.log(`  ${i + 1}. ${chalk.bold(step.title)}${step.optional ? chalk.dim(' 閿涘牆褰查柅澶涚礆') : ''}`);
         console.log(`     ${chalk.dim(step.description)}`);
         for (const cmd of step.commands[platform as keyof typeof step.commands]) console.log(`       ${chalk.cyan(cmd)}`);
         console.log();
@@ -118,88 +131,88 @@ program.command('harden').description('生成系统安全加固脚本')
     const script = generateHardenScript(platform as 'windows' | 'macos' | 'linux');
     if (opts.output) {
       fs.writeFileSync(opts.output, script, 'utf-8');
-      console.log(chalk.green(`\n✅ 加固脚本已保存到: ${opts.output}`));
+      console.log(chalk.green(`\n閴?閸旂姴娴愰懘姘拱瀹歌弓绻氱€涙ê鍩? ${opts.output}`));
     } else { console.log(script); }
   });
 
-// ========== info 命令 ==========
-program.command('info').description('显示当前系统环境信息').action(() => {
+// ========== info 閸涙垝鎶?==========
+program.command('info').description('閺勫墽銇氳ぐ鎾冲缁崵绮洪悳顖氼暔娣団剝浼?).action(() => {
   const oc = detectOpenClaw();
-  console.log(chalk.bold('\n📊 系统环境信息\n'));
-  console.log(`  平台:       ${detectPlatform()}`);
-  console.log(`  用户:       ${getCurrentUser()}`);
+  console.log(chalk.bold('\n棣冩惓 缁崵绮洪悳顖氼暔娣団剝浼匼n'));
+  console.log(`  楠炲啿褰?       ${detectPlatform()}`);
+  console.log(`  閻劍鍩?       ${getCurrentUser()}`);
   console.log(`  Home:       ${process.env.HOME || process.env.USERPROFILE}`);
   console.log(`  OpenClaw:   ${getOpenClawDir()}`);
-  console.log(`  配置文件:   ${getConfigPath()}`);
-  console.log(`  环境文件:   ${getEnvPath()}`);
+  console.log(`  闁板秶鐤嗛弬鍥︽:   ${getConfigPath()}`);
+  console.log(`  閻滎垰顣ㄩ弬鍥︽:   ${getEnvPath()}`);
   console.log(`  Node.js:    ${process.version}`);
-  console.log(`  架构:       ${process.arch}`);
+  console.log(`  閺嬭埖鐎?       ${process.arch}`);
   console.log();
-  console.log(chalk.bold('  OpenClaw 状态'));
-  console.log(`  已安装:     ${oc.installed ? chalk.green('✅ ' + oc.version) : chalk.red('❌ 未安装')}`);
-  if (oc.updateAvailable) console.log(`  可更新:     ${chalk.yellow(oc.latestVersion)}`);
-  if (oc.binPath) console.log(`  路径:       ${oc.binPath}`);
+  console.log(chalk.bold('  OpenClaw Status'));
+  console.log(`  Installed:   ${oc.installed ? chalk.green('YES ' + oc.version) : chalk.red('NO')}`);
+  if (oc.updateAvailable) console.log(`  閸欘垱娲块弬?     ${chalk.yellow(oc.latestVersion)}`);
+  if (oc.binPath) console.log(`  鐠侯垰绶?       ${oc.binPath}`);
 });
 
-// ========== service 命令 ==========
-const serviceCmd = program.command('service').description('管理 OpenClaw Gateway 服务');
+// ========== service 閸涙垝鎶?==========
+const serviceCmd = program.command('service').description('缁狅紕鎮?OpenClaw Gateway 閺堝秴濮?);
 
-serviceCmd.command('status').description('查看服务状态').action(() => {
+serviceCmd.command('status').description('Show gateway service status').action(() => {
   const s = getServiceStatus();
-  console.log(chalk.bold('\n⚡ Gateway 服务状态\n'));
-  console.log(`  状态:  ${s.running ? chalk.green('🟢 运行中') : chalk.red('🔴 已停止')}`);
-  console.log(`  端口:  ${s.port}`);
+  console.log(chalk.bold('\n閳?Gateway 閺堝秴濮熼悩鑸碘偓涔梟'));
+  console.log(`  Status: ${s.running ? chalk.green('running') : chalk.red('stopped')}`);
+  console.log(`  缁旑垰褰?  ${s.port}`);
   if (s.pid) console.log(`  PID:   ${s.pid}`);
   if (s.running) {
-    try { console.log(`  面板:  ${getDashboardUrl()}`); } catch {}
+    try { console.log(`  闂堛垺婢?  ${getDashboardUrl()}`); } catch {}
   }
 });
 
-serviceCmd.command('start').description('启动服务').action(() => {
-  console.log(chalk.dim('正在启动 Gateway...'));
+serviceCmd.command('start').description('閸氼垰濮╅張宥呭').action(() => {
+  console.log(chalk.dim('濮濓絽婀崥顖氬З Gateway...'));
   const r = startService();
-  console.log(r.success ? chalk.green(`✅ ${r.message}`) : chalk.red(`❌ ${r.message}`));
+  console.log(r.success ? chalk.green(`閴?${r.message}`) : chalk.red(`閴?${r.message}`));
 });
 
-serviceCmd.command('stop').description('停止服务').action(() => {
-  console.log(chalk.dim('正在停止 Gateway...'));
+serviceCmd.command('stop').description('閸嬫粍顒涢張宥呭').action(() => {
+  console.log(chalk.dim('濮濓絽婀崑婊勵剾 Gateway...'));
   const r = stopService();
-  console.log(r.success ? chalk.green(`✅ ${r.message}`) : chalk.red(`❌ ${r.message}`));
+  console.log(r.success ? chalk.green(`閴?${r.message}`) : chalk.red(`閴?${r.message}`));
 });
 
-serviceCmd.command('restart').description('重启服务').action(() => {
-  console.log(chalk.dim('正在重启 Gateway...'));
+serviceCmd.command('restart').description('闁插秴鎯庨張宥呭').action(() => {
+  console.log(chalk.dim('濮濓絽婀柌宥呮儙 Gateway...'));
   const r = restartService();
-  console.log(r.success ? chalk.green(`✅ ${r.message}`) : chalk.red(`❌ ${r.message}`));
+  console.log(r.success ? chalk.green(`閴?${r.message}`) : chalk.red(`閴?${r.message}`));
 });
 
-serviceCmd.command('logs').description('查看日志').option('-n, --lines <n>', '行数', '50').action((opts) => {
+serviceCmd.command('logs').description('閺屻儳婀呴弮銉ョ箶').option('-n, --lines <n>', '鐞涘本鏆?, '50').action((opts) => {
   const logs = getLogs(parseInt(opts.lines, 10));
   for (const line of logs) console.log(line);
 });
 
 
-// ========== channel 命令 ==========
-const channelCmd = program.command('channel').description('管理消息渠道配置');
+// ========== channel 閸涙垝鎶?==========
+const channelCmd = program.command('channel').description('缁狅紕鎮婂☉鍫熶紖濞撶娀浜鹃柊宥囩枂');
 
-channelCmd.command('list').description('列出所有渠道').action(() => {
+channelCmd.command('list').description('List all channels').action(() => {
   const channels = getChannels();
-  console.log(chalk.bold('\n📱 消息渠道\n'));
+  console.log(chalk.bold('\n棣冩懌 濞戝牊浼呭〒鐘讳壕\n'));
   for (const ch of channels) {
-    const status = ch.enabled ? chalk.green('✅ 已启用') : ch.configured ? chalk.yellow('⚙️ 已配置') : chalk.dim('未配置');
+    const status = ch.enabled ? chalk.green('enabled') : ch.configured ? chalk.yellow('configured') : chalk.dim('not configured');
     console.log(`  ${ch.icon} ${chalk.bold(ch.name.padEnd(16))} ${status}`);
   }
   console.log();
 });
 
-channelCmd.command('show <id>').description('查看渠道配置').action((id) => {
+channelCmd.command('show <id>').description('閺屻儳婀呭〒鐘讳壕闁板秶鐤?).action((id) => {
   const channels = getChannels();
   const ch = channels.find(c => c.id === id);
-  if (!ch) { console.log(chalk.red(`\n❌ 未知渠道: ${id}`)); return; }
+  if (!ch) { console.log(chalk.red(`\n閴?閺堫亞鐓″〒鐘讳壕: ${id}`)); return; }
   console.log(chalk.bold(`\n${ch.icon} ${ch.name}\n`));
-  console.log(`  状态: ${ch.enabled ? chalk.green('已启用') : chalk.dim('未启用')}`);
+  console.log(`  鐘舵€? ${ch.enabled ? chalk.green('enabled') : chalk.dim('disabled')}`);
   if (Object.keys(ch.config).length > 0) {
-    console.log(chalk.bold('\n  配置:'));
+    console.log(chalk.bold('\n  闁板秶鐤?'));
     for (const [k, v] of Object.entries(ch.config)) {
       const display = (k.includes('Secret') || k.includes('Token') || k.includes('Key')) && typeof v === 'string' && v.length > 8
         ? `${v.slice(0, 4)}...${v.slice(-4)}` : String(v);
@@ -208,34 +221,34 @@ channelCmd.command('show <id>').description('查看渠道配置').action((id) =>
   }
 });
 
-// ========== feishu 命令 ==========
-const feishuCmd = program.command('feishu').description('飞书插件配置');
+// ========== feishu 閸涙垝鎶?==========
+const feishuCmd = program.command('feishu').description('妞嬬偘鍔熼幓鎺嶆闁板秶鐤?);
 
-feishuCmd.command('status').description('查看飞书配置状态').action(() => {
+feishuCmd.command('status').description('Show Feishu plugin status').action(() => {
   const cfg = getFeishuConfig();
   const plugin = checkFeishuPlugin();
-  console.log(chalk.bold('\n🐦 飞书插件状态\n'));
-  console.log(`  插件: ${plugin.installed ? chalk.green('✅ 已安装') : chalk.red('❌ 未安装')}`);
-  console.log(`  启用: ${cfg.enabled ? chalk.green('是') : chalk.dim('否')}`);
+  console.log(chalk.bold('\n棣冩儊 妞嬬偘鍔熼幓鎺嶆閻樿埖鈧箺n'));
+  console.log(`  鎻掍欢: ${plugin.installed ? chalk.green('installed') : chalk.red('not installed')}`);
+  console.log(`  鍚敤: ${cfg.enabled ? chalk.green('yes') : chalk.dim('no')}`);
   if (cfg.appId) console.log(`  App ID: ${cfg.appId}`);
   if (cfg.appSecret) console.log(`  App Secret: ${cfg.appSecret.slice(0, 4)}...${cfg.appSecret.slice(-4)}`);
-  if (cfg.domain) console.log(`  域名: ${cfg.domain}`);
-  if (cfg.connectionMode) console.log(`  连接模式: ${cfg.connectionMode}`);
-  if (cfg.streaming !== undefined) console.log(`  流式卡片: ${cfg.streaming}`);
-  if (cfg.renderMode) console.log(`  渲染模式: ${cfg.renderMode}`);
-  if (cfg.whisperModel) console.log(`  Whisper 模型: ${cfg.whisperModel}`);
+  if (cfg.domain) console.log(`  閸╃喎鎮? ${cfg.domain}`);
+  if (cfg.connectionMode) console.log(`  鏉╃偞甯村Ο鈥崇础: ${cfg.connectionMode}`);
+  if (cfg.streaming !== undefined) console.log(`  濞翠礁绱￠崡锛勫: ${cfg.streaming}`);
+  if (cfg.renderMode) console.log(`  濞撳弶鐓嬪Ο鈥崇础: ${cfg.renderMode}`);
+  if (cfg.whisperModel) console.log(`  Whisper 濡€崇€? ${cfg.whisperModel}`);
 });
 
-feishuCmd.command('setup').description('配置飞书插件密钥')
+feishuCmd.command('setup').description('闁板秶鐤嗘鐐板姛閹绘帊娆㈢€靛棝鎸?)
   .option('--app-id <id>', 'App ID')
   .option('--app-secret <secret>', 'App Secret')
   .option('--encrypt-key <key>', 'Encrypt Key')
   .option('--verification-token <token>', 'Verification Token')
-  .option('--domain <domain>', '域名 (feishu/lark)', 'feishu')
-  .option('--mode <mode>', '连接模式 (websocket/webhook)', 'websocket')
-  .option('--streaming', '启用流式卡片')
-  .option('--no-streaming', '禁用流式卡片')
-  .option('--whisper-model <model>', 'Whisper 模型大小')
+  .option('--domain <domain>', '閸╃喎鎮?(feishu/lark)', 'feishu')
+  .option('--mode <mode>', '鏉╃偞甯村Ο鈥崇础 (websocket/webhook)', 'websocket')
+  .option('--streaming', '閸氼垳鏁ゅù浣哥础閸楋紕澧?)
+  .option('--no-streaming', '缁備胶鏁ゅù浣哥础閸楋紕澧?)
+  .option('--whisper-model <model>', 'Whisper 濡€崇€锋径褍鐨?)
   .action((opts) => {
     const cfg: FeishuConfig = {};
     if (opts.appId) cfg.appId = opts.appId;
@@ -248,60 +261,78 @@ feishuCmd.command('setup').description('配置飞书插件密钥')
     if (opts.whisperModel) cfg.whisperModel = opts.whisperModel;
 
     if (Object.keys(cfg).length === 0) {
-      console.log(chalk.yellow('\n请提供至少一个配置项，例如:'));
+      console.log(chalk.yellow('\n鐠囬攱褰佹笟娑滃殾鐏忔垳绔存稉顏堝帳缂冾噣銆嶉敍灞肩伐婵?'));
       console.log(chalk.dim('  openclaw-guard feishu setup --app-id cli_xxx --app-secret xxx'));
       return;
     }
 
     const result = saveFeishuConfig(cfg);
-    console.log(result.success ? chalk.green(`\n✅ ${result.message}`) : chalk.red(`\n❌ ${result.message}`));
+    console.log(result.success ? chalk.green(`\n閴?${result.message}`) : chalk.red(`\n閴?${result.message}`));
   });
 
-// ========== ai 命令 ==========
-const aiCmd = program.command('ai').description('AI 模型配置');
+// ========== ai 閸涙垝鎶?==========
+const aiCmd = program.command('ai').description('AI 濡€崇€烽柊宥囩枂');
 
-aiCmd.command('status').description('查看 AI 配置').action(() => {
+aiCmd.command('status').description('閺屻儳婀?AI 闁板秶鐤?).action(() => {
   const ai = getAIConfig();
-  console.log(chalk.bold('\n🤖 AI 配置概览\n'));
-  console.log(`  主模型: ${ai.primaryModel ? chalk.green(ai.primaryModel) : chalk.dim('未设置')}`);
-  console.log(`  可用模型: ${ai.availableModels.length} 个`);
-  console.log(`  Provider: ${ai.providers.length} 个\n`);
+  console.log(chalk.bold('\n棣冾樆 AI 闁板秶鐤嗗鍌濐潔\n'));
+  console.log(`  Primary model: ${ai.primaryModel ? chalk.green(ai.primaryModel) : chalk.dim('not set')}`);
+  console.log(`  Fallbacks: ${ai.fallbackModels.length > 0 ? chalk.cyan(ai.fallbackModels.join(', ')) : chalk.dim('(none)')}`);
+  console.log(`  Available models: ${ai.availableModels.length}`);
+  console.log(`  Providers: ${ai.providers.length}\n`);
   for (const p of ai.providers) {
     console.log(`  ${chalk.bold(p.name)} (${p.baseUrl})`);
-    console.log(`    API Key: ${p.hasApiKey ? chalk.green(p.apiKeyMasked || '已设置') : chalk.dim('未设置')}`);
+    console.log(`    API Key: ${p.hasApiKey ? chalk.green(p.apiKeyMasked || 'set') : chalk.dim('not set')}`);
     for (const m of p.models) {
-      const primary = m.isPrimary ? chalk.green(' ★ 主模型') : '';
-      console.log(`    - ${m.name} (${m.id})${primary}`);
+      const primary = m.isPrimary ? chalk.green(' *primary') : '';
+      const fallback = m.isFallback ? chalk.cyan(' *fallback') : '';
+      console.log(`    - ${m.name} (${m.id})${primary}${fallback}`);
     }
   }
 });
 
-aiCmd.command('providers').description('列出预设 Provider').action(() => {
-  console.log(chalk.bold('\n🤖 预设 AI Provider\n'));
+aiCmd.command('providers').description('閸掓鍤０鍕啎 Provider').action(() => {
+  console.log(chalk.bold('\n棣冾樆 妫板嫯顔?AI Provider\n'));
   for (const p of AI_PROVIDERS) {
     console.log(`  ${p.icon} ${chalk.bold(p.name)} (${p.id})`);
     console.log(`    API: ${p.defaultBaseUrl}`);
-    console.log(`    类型: ${p.apiType} | 需要 Key: ${p.requiresApiKey ? '是' : '否'}`);
+    console.log(`    Type: ${p.apiType} | Need Key: ${p.requiresApiKey ? 'yes' : 'no'}`);
     for (const m of p.suggestedModels) {
-      const rec = m.recommended ? chalk.green(' ★') : '';
+      const rec = m.recommended ? chalk.green(' *recommended') : '';
       console.log(`    - ${m.name} (${m.id})${rec}`);
     }
     console.log();
   }
 });
 
-aiCmd.command('set-primary <modelId>').description('设置主模型').action((modelId) => {
+aiCmd.command('set-primary <modelId>').description('Set primary model').action((modelId) => {
   const r = setPrimaryModel(modelId);
-  console.log(r.success ? chalk.green(`\n✅ ${r.message}`) : chalk.red(`\n❌ ${r.message}`));
+  console.log(r.success ? chalk.green(`\n閴?${r.message}`) : chalk.red(`\n閴?${r.message}`));
 });
 
-// ========== env 命令 ==========
-const envCmd = program.command('env').description('环境变量管理');
 
-envCmd.command('list').description('列出所有环境变量').action(() => {
+aiCmd.command('set-fallbacks <modelIds>')
+  .description('Set fallback models (comma-separated provider/model IDs)')
+  .action((modelIds) => {
+    const ids = String(modelIds)
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean);
+    const r = setFallbackModels(ids);
+    console.log(r.success ? chalk.green(`\n閴?${r.message}`) : chalk.red(`\n閴?${r.message}`));
+  });
+
+aiCmd.command('clear-fallbacks').description('Clear fallback models').action(() => {
+  const r = setFallbackModels([]);
+  console.log(r.success ? chalk.green(`\n閴?${r.message}`) : chalk.red(`\n閴?${r.message}`));
+});
+// ========== env 閸涙垝鎶?==========
+const envCmd = program.command('env').description('閻滎垰顣ㄩ崣姗€鍣虹粻锛勬倞');
+
+envCmd.command('list').description('List all env vars').action(() => {
   const env = readAllEnv();
-  console.log(chalk.bold('\n🔑 环境变量\n'));
-  if (Object.keys(env).length === 0) { console.log(chalk.dim('  (空)')); return; }
+  console.log(chalk.bold('\n棣冩斀 閻滎垰顣ㄩ崣姗€鍣篭n'));
+  if (Object.keys(env).length === 0) { console.log(chalk.dim('  (empty)')); return; }
   for (const [k, v] of Object.entries(env)) {
     const masked = (k.includes('KEY') || k.includes('SECRET') || k.includes('TOKEN')) && v.length > 8
       ? `${v.slice(0, 4)}...${v.slice(-4)}` : v;
@@ -309,20 +340,116 @@ envCmd.command('list').description('列出所有环境变量').action(() => {
   }
 });
 
-envCmd.command('get <key>').description('获取环境变量').action((key) => {
+envCmd.command('get <key>').description('閼惧嘲褰囬悳顖氼暔閸欐﹢鍣?).action((key) => {
   const v = readEnvValue(key);
   if (v !== undefined) console.log(v);
-  else console.log(chalk.dim('(未设置)'));
+  else console.log(chalk.dim('(not set)'));
 });
 
-envCmd.command('set <key> <value>').description('设置环境变量').action((key, value) => {
+envCmd.command('set <key> <value>').description('鐠佸墽鐤嗛悳顖氼暔閸欐﹢鍣?).action((key, value) => {
   writeEnvValue(key, value);
-  console.log(chalk.green(`✅ ${key} 已保存`));
+  console.log(chalk.green(`Saved ${key}`));
 });
 
-// ========== web 命令 ==========
-program.command('web').description('启动 Web 管理界面')
-  .option('-p, --port <port>', '指定端口号', '8088')
+// ========== mission 鍛戒护 ==========
+const missionCmd = program.command('mission').description('绠＄悊 tenacitOS Mission Control');
+
+missionCmd.command('status').description('鏌ョ湅 Mission Control 鐘舵€?).action(() => {
+  const s = getMissionStatus();
+  console.log(chalk.bold('\n馃 Mission Control 鐘舵€乗n'));
+  console.log(`  瀹夎: ${s.installed ? chalk.green('鉁?宸插畨瑁?) : chalk.red('鉂?鏈畨瑁?)}`);
+  console.log(`  杩愯: ${s.running ? chalk.green(`馃煝 杩愯涓?(PID: ${s.pid})`) : chalk.red('馃敹 鏈繍琛?)}`);
+  console.log(`  妯″紡: ${s.runMode || '-'}`);
+  console.log(`  鍚姩鏃堕棿: ${s.startedAt || '-'}`);
+  console.log(`  绔彛: ${s.port}`);
+  console.log(`  URL:  ${s.url}`);
+  console.log(`  鐩綍: ${s.missionDir}`);
+  console.log(`  鍒嗘敮: ${s.branch || '-'}`);
+  console.log(`  HEAD: ${s.head || '-'}`);
+  console.log(`  鐜: ${s.envReady ? chalk.green('宸插氨缁?) : chalk.yellow('鏈氨缁?)}`);
+  console.log(`  鏁版嵁: ${s.dataReady ? chalk.green('宸插氨缁?) : chalk.yellow('鏈氨缁?)}`);
+  console.log(`  鏃ュ織: ${s.logFile}`);
+});
+
+missionCmd.command('install').description('瀹夎鎴栨洿鏂?tenacitOS锛屽苟鍒濆鍖栫幆澧?).action(() => {
+  const r = installMissionControl();
+  console.log(r.success ? chalk.green(`\n鉁?${r.message}`) : chalk.red(`\n鉂?${r.message}`));
+  if (r.output) console.log(chalk.dim(`\n${r.output}`));
+});
+
+missionCmd.command('sync').description('鍚屾 tenacitOS 鏈€鏂颁唬鐮佸苟瀹夎渚濊禆').action(() => {
+  const r = syncMissionControl();
+  console.log(r.success ? chalk.green(`\n鉁?${r.message}`) : chalk.red(`\n鉂?${r.message}`));
+  if (r.output) console.log(chalk.dim(`\n${r.output}`));
+});
+
+missionCmd.command('bootstrap').description('浠呭垵濮嬪寲 .env.local 涓?data/*.json').action(() => {
+  const r = bootstrapMissionControl();
+  console.log(r.success ? chalk.green(`\n鉁?${r.message}`) : chalk.red(`\n鉂?${r.message}`));
+});
+
+missionCmd.command('credentials').description('璇诲彇 Mission Control 鐧诲綍瀵嗙爜').action(() => {
+  const r = getMissionCredentials();
+  console.log(r.success ? chalk.green(`\n鉁?${r.message}`) : chalk.red(`\n鉂?${r.message}`));
+  console.log(`  .env.local: ${r.envLocalFile}`);
+  if (r.adminPassword) console.log(`  ADMIN_PASSWORD: ${r.adminPassword}`);
+});
+
+missionCmd.command('reset-password').description('閲嶇疆 Mission Control 鐧诲綍瀵嗙爜').action(() => {
+  const r = resetMissionPassword();
+  console.log(r.success ? chalk.green(`\n鉁?${r.message}`) : chalk.red(`\n鉂?${r.message}`));
+  console.log(`  .env.local: ${r.envLocalFile}`);
+  if (r.adminPassword) console.log(`  ADMIN_PASSWORD: ${r.adminPassword}`);
+});
+
+missionCmd.command('start').description('鍚姩 Mission Control')
+  .option('-p, --port <port>', '绔彛鍙?)
+  .option('--prod', '鐢熶骇妯″紡鍚姩锛堣嚜鍔?build + start锛?)
+  .action((opts) => {
+    const port = opts.port ? parseInt(opts.port, 10) : undefined;
+    const r = startMissionControl({ port, prod: !!opts.prod });
+    console.log(r.success ? chalk.green(`\n鉁?${r.message}`) : chalk.red(`\n鉂?${r.message}`));
+  });
+
+missionCmd.command('stop').description('鍋滄 Mission Control').action(() => {
+  const r = stopMissionControl();
+  console.log(r.success ? chalk.green(`\n鉁?${r.message}`) : chalk.red(`\n鉂?${r.message}`));
+});
+
+missionCmd.command('restart').description('閲嶅惎 Mission Control')
+  .option('-p, --port <port>', '绔彛鍙?)
+  .option('--prod', '鐢熶骇妯″紡閲嶅惎锛堣嚜鍔?build + start锛?)
+  .action((opts) => {
+    const port = opts.port ? parseInt(opts.port, 10) : undefined;
+    const r = restartMissionControl({ port, prod: !!opts.prod });
+    console.log(r.success ? chalk.green(`\n鉁?${r.message}`) : chalk.red(`\n鉂?${r.message}`));
+  });
+
+missionCmd.command('logs').description('鏌ョ湅 Mission Control 鏃ュ織')
+  .option('-n, --lines <n>', '鏃ュ織琛屾暟', '200')
+  .action((opts) => {
+    const logs = getMissionLogs(parseInt(opts.lines, 10));
+    for (const line of logs) console.log(line);
+  });
+
+missionCmd.command('health').description('妫€鏌?Mission Control /api/health')
+  .action(async () => {
+    const h = await getMissionHealth();
+    if (h.success) {
+      console.log(chalk.green(`\n鉁?health reachable (status: ${h.statusCode})`));
+      if (h.body) console.log(JSON.stringify(h.body, null, 2));
+    } else {
+      console.log(chalk.red(`\n鉂?health check failed: ${h.error || 'unknown error'}`));
+    }
+  });
+
+// ========== web 鍛戒护 ==========
+program.command('web').description('Start web management UI')
+  .option('-p, --port <port>', 'Specify port', '8088')
   .action((opts) => { startServer(parseInt(opts.port, 10)); });
 
 program.parse();
+
+
+
+

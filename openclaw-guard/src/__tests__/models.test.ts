@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { saveProvider, getAIConfig } from '../models.js';
+import { saveProvider, getAIConfig, setFallbackModels, deleteProvider } from '../models.js';
 
 describe('saveProvider', () => {
   let tmpDir: string;
@@ -209,3 +209,67 @@ describe('saveProvider', () => {
   });
 });
 
+
+describe('fallback models', () => {
+  let tmpDir: string;
+  let configPath: string;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'openclaw-fallbacks-test-'));
+    configPath = path.join(tmpDir, 'openclaw.json');
+    vi.stubEnv('OPENCLAW_CONFIG_PATH', configPath);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('setFallbackModels saves normalized list and exposes it in getAIConfig', () => {
+    const result = setFallbackModels([
+      ' wenwen/claude-opus-4-6 ',
+      'custom-127-0-0-1-11434/qwen3:8b',
+      'wenwen/claude-opus-4-6',
+      '',
+    ]);
+
+    expect(result.success).toBe(true);
+
+    const overview = getAIConfig();
+    expect(overview.fallbackModels).toEqual([
+      'wenwen/claude-opus-4-6',
+      'custom-127-0-0-1-11434/qwen3:8b',
+    ]);
+
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    expect(config.agents.defaults.model.fallbacks).toEqual([
+      'wenwen/claude-opus-4-6',
+      'custom-127-0-0-1-11434/qwen3:8b',
+    ]);
+    expect(config.agents.defaults.models['wenwen/claude-opus-4-6']).toBeDefined();
+    expect(config.agents.defaults.models['custom-127-0-0-1-11434/qwen3:8b']).toBeDefined();
+  });
+
+  it('deleteProvider removes provider models from fallbacks', () => {
+    saveProvider({
+      name: 'wenwen',
+      baseUrl: 'https://breakout.wenwen-ai.com',
+      apiKey: 'sk-wenwen',
+      models: [{ id: 'claude-opus-4-6', name: 'Claude Opus 4.6' }],
+    });
+    saveProvider({
+      name: 'openai-codex',
+      baseUrl: 'https://api.openai.com/v1',
+      apiKey: 'sk-openai',
+      models: [{ id: 'gpt-5.3-codex', name: 'GPT-5.3 Codex' }],
+    });
+
+    setFallbackModels(['wenwen/claude-opus-4-6', 'openai-codex/gpt-5.3-codex']);
+
+    const deleted = deleteProvider('wenwen');
+    expect(deleted.success).toBe(true);
+
+    const overview = getAIConfig();
+    expect(overview.fallbackModels).toEqual(['openai-codex/gpt-5.3-codex']);
+  });
+});

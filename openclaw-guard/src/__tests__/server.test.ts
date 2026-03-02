@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 describe('startServer - 进程级错误处理', () => {
-  let processOnSpy: ReturnType<typeof vi.spyOn>;
+  let processOnSpy: any;
 
   beforeEach(() => {
     processOnSpy = vi.spyOn(process, 'on');
@@ -20,7 +20,7 @@ describe('startServer - 进程级错误处理', () => {
     server?.close();
 
     const uncaughtCalls = processOnSpy.mock.calls.filter(
-      ([event]) => event === 'uncaughtException'
+      ([event]: any[]) => event === 'uncaughtException'
     );
     expect(uncaughtCalls.length).toBeGreaterThanOrEqual(1);
     expect(typeof uncaughtCalls[0][1]).toBe('function');
@@ -33,7 +33,7 @@ describe('startServer - 进程级错误处理', () => {
     server?.close();
 
     const rejectionCalls = processOnSpy.mock.calls.filter(
-      ([event]) => event === 'unhandledRejection'
+      ([event]: any[]) => event === 'unhandledRejection'
     );
     expect(rejectionCalls.length).toBeGreaterThanOrEqual(1);
     expect(typeof rejectionCalls[0][1]).toBe('function');
@@ -48,7 +48,7 @@ describe('startServer - 进程级错误处理', () => {
 
     // Find the registered handler
     const uncaughtCall = processOnSpy.mock.calls.find(
-      ([event]) => event === 'uncaughtException'
+      ([event]: any[]) => event === 'uncaughtException'
     );
     const handler = uncaughtCall![1] as (err: Error) => void;
 
@@ -73,7 +73,7 @@ describe('startServer - 进程级错误处理', () => {
 
     // Find the registered handler
     const rejectionCall = processOnSpy.mock.calls.find(
-      ([event]) => event === 'unhandledRejection'
+      ([event]: any[]) => event === 'unhandledRejection'
     );
     const handler = rejectionCall![1] as (reason: unknown) => void;
 
@@ -96,7 +96,7 @@ describe('startServer - 进程级错误处理', () => {
     server?.close();
 
     const uncaughtCall = processOnSpy.mock.calls.find(
-      ([event]) => event === 'uncaughtException'
+      ([event]: any[]) => event === 'uncaughtException'
     );
     const handler = uncaughtCall![1] as (err: Error) => void;
 

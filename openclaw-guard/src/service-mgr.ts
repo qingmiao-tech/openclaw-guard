@@ -6,6 +6,10 @@ import { execSync, spawn } from 'node:child_process';
 import { detectPlatform } from './platform.js';
 import { loadConfig, getNested } from './config.js';
 
+function sleepMs(ms: number) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
 /** 从配置文件读取 Gateway 端口，未配置时默认 18789 */
 export function getGatewayPort(): number {
   const config = loadConfig();
@@ -98,7 +102,7 @@ export function startService(): { success: boolean; message: string } {
 
   // 等待端口就绪（最多 15 秒）
   for (let i = 0; i < 15; i++) {
-    execSync('ping -n 1 127.0.0.1 >nul 2>&1 || sleep 1', { stdio: 'ignore', shell: true, timeout: 2000 }).toString();
+    sleepMs(1000);
     const pid = checkPortListening(getGatewayPort());
     if (pid) {
       return { success: true, message: `服务已启动 (PID: ${pid})` };
@@ -129,7 +133,7 @@ export function restartService(): { success: boolean; message: string } {
   const result = runOpenClaw(['gateway', 'restart']);
 
   // 等待 2 秒后检查
-  try { execSync('ping -n 2 127.0.0.1 >nul 2>&1 || sleep 2', { stdio: 'ignore', shell: true, timeout: 3000 }); } catch {}
+  sleepMs(2000);
 
   const status = getServiceStatus();
   if (status.running) {
@@ -138,7 +142,7 @@ export function restartService(): { success: boolean; message: string } {
 
   // 手动停止再启动
   stopService();
-  try { execSync('ping -n 1 127.0.0.1 >nul 2>&1 || sleep 1', { stdio: 'ignore', shell: true, timeout: 2000 }); } catch {}
+  sleepMs(1000);
   return startService();
 }
 

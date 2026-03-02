@@ -1,0 +1,39 @@
+﻿{
+  "path": "C:\\Users\\Administrator\\.openclaw\\agents\\main\\sessions\\sessions.json",
+  "count": 2,
+  "activeMinutes": null,
+  "sessions": [
+    {
+      "key": "agent:main:feishu:direct:ou_8fb2edf0dc19bdeffce0d8a9501afdff",
+      "updatedAt": 1772446225761,
+      "ageMs": 356696,
+      "sessionId": "d642bdf2-8d32-492d-9ac0-2bf24ac9e87b",
+      "systemSent": true,
+      "abortedLastRun": false,
+      "inputTokens": 15460,
+      "outputTokens": 149,
+      "totalTokens": 16996,
+      "totalTokensFresh": true,
+      "model": "gpt-5.3-codex",
+      "modelProvider": "openai-codex",
+      "contextTokens": 272000,
+      "agentId": "main",
+      "kind": "direct"
+    },
+    {
+      "key": "agent:main:main",
+      "updatedAt": 1772445960889,
+      "ageMs": 621568,
+      "sessionId": "0feb22b2-62ac-4741-8499-afd147453f0e",
+      "systemSent": true,
+      "abortedLastRun": false,
+      "totalTokens": null,
+      "totalTokensFresh": false,
+      "model": "claude-opus-4-6",
+      "modelProvider": "custom-localhost-8000",
+      "contextTokens": 200000,
+      "agentId": "main",
+      "kind": "direct"
+    }
+  ]
+}

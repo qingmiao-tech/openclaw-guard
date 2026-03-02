@@ -46,6 +46,38 @@
 
 ## 交付记录
 
+## [2026-03-02 21:32] 忽略 openclaw-guard/dist 并一次性提交其余未跟踪内容 [TASK-20260302-011]
+
+- 任务来源: 用户要求将 `openclaw-guard/dist/` 目录加入忽略，并把其他改动一次性提交。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-02 21:30
+- 开始时间: 2026-03-02 21:31
+- 提交时间: 2026-03-02 21:32
+- 任务目标:
+  1) 将 `openclaw-guard/dist/` 纳入 Git 忽略规则。
+  2) 将其余未跟踪内容打包为单次提交。
+- 执行过程:
+  1) 检查当前未跟踪文件与现有 `.gitignore` 规则。
+  2) 在根目录 `.gitignore` 新增 `openclaw-guard/dist/` 忽略项。
+  3) 保留 `dist/` 不入库，并对其他未跟踪内容进行一次性提交。
+  4) 同步补充本条任务日志，保持记录规范完整。
+- 交付成果:
+  1) `openclaw-guard/dist/` 已进入忽略规则，不再出现在未跟踪列表中。
+  2) 其余未跟踪改动已按要求进行单批次提交。
+- 变更清单:
+  - `.gitignore`
+  - `course-web/start.bat`
+  - `worklogs/tmp-sessions-raw.json`
+  - `wxarticle/other/images/*`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`4e58239`; ahead/behind=`ahead 4, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`708fe4a`; ahead/behind=`ahead 1, behind 0`
+- 验证结果:
+  1) `git status --short` 中 `openclaw-guard/dist/` 已不再作为未跟踪项出现。
+  2) 剩余目标文件可被正常纳入同一批次提交。
+- 后续建议:
+  1) 如 `worklogs/tmp-sessions-raw.json` 包含敏感会话信息，建议后续评估是否继续留库或改为脱敏版本。
+
 ## [2026-03-02 21:12] 按功能批次完成代码与文档 Git 提交 [TASK-20260302-010]
 
 - 任务来源: 用户要求“把改动的文档、代码按会话或功能批次进行 git 提交”。

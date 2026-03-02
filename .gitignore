@@ -5,6 +5,7 @@ course-web/node_modules/
 # Build output
 course-web/dist/
 course-web/.astro/
+openclaw-guard/dist/
 
 # OS files
 .DS_Store

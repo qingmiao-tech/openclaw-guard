@@ -46,6 +46,35 @@
 
 ## 交付记录
 
+## [2026-03-03 20:42] 补充公众号文档中的环境变量配置（临时生效 + 持久化） [TASK-20260303-001]
+
+- 任务来源: 用户要求将 env 配置方式补充到其文档中，明确“临时生效”和“持久化”两种配置方式。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-03 20:41
+- 开始时间: 2026-03-03 20:41
+- 提交时间: 2026-03-03 20:42
+- 任务目标:
+  1) 在 `20260303` 公众号文档中补全环境变量操作指引。
+  2) 明确 Windows 场景下临时与持久化配置差异，并补充生效与重启说明。
+- 执行过程:
+  1) 定位文章中 API Key 配置段落，确认原有描述尚未形成“临时/持久化”分步手册。
+  2) 在“`Q：我不知道自己的 API Key 怎么办？`”区块补充占位符映射示例（`${WENWEN_API_KEY}`）。
+  3) 重写环境变量配置说明为分平台分场景步骤：macOS/Linux 与 Windows，且 Windows 单独拆分“当前会话临时生效”和“用户级持久化生效”。
+  4) 增加验证命令与注意事项（`setx` 不回写当前终端、OpenClaw/Gateway 需重启进程读取新变量）。
+- 交付成果:
+  1) 文档已补齐 env 方式说明，覆盖临时生效与持久化配置两条路径。
+  2) Windows 操作指令已可直接复制执行，并附带验证与生效边界说明。
+- 变更清单:
+  - `wxarticle/南柯/OpenClaw多模型自动切换实战复盘与官方补丁-20260303.md`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`754bdb3`; ahead/behind=`ahead 5, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`708fe4a`; ahead/behind=`ahead 1, behind 0`
+- 验证结果:
+  1) 已在文档中看到新增的 Windows 临时配置（`$env:*`）和持久化配置（`setx`）分段说明。
+  2) 已补充 `~/.openclaw/openclaw.json` 占位符映射示例与“修改后需重启相关进程”提示。
+- 后续建议:
+  1) 如你还希望覆盖 CMD 临时变量写法（`set KEY=value`）和“系统级环境变量（Machine）”配置，可在同区块追加“进阶补充”小节。
+
 ## [2026-03-02 21:32] 忽略 openclaw-guard/dist 并一次性提交其余未跟踪内容 [TASK-20260302-011]
 
 - 任务来源: 用户要求将 `openclaw-guard/dist/` 目录加入忽略，并把其他改动一次性提交。

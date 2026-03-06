@@ -18,6 +18,14 @@
 - `finance-manager`：财务主管
 - `copy-editor`：文案编辑
 
+## 2.1 `SOUL.md` / `USER.md` / `AGENTS.md` 的区别（建议都配置）
+
+- `SOUL.md`：定义“这个 Agent 是谁”，即人格、边界、语气和角色职责。
+- `USER.md`：定义“这个 Agent 服务的是谁”，即客户画像、业务背景、沟通偏好。
+- `AGENTS.md`：定义“这个 Agent 怎么工作”，即工作协议、输出标准、协作规则。
+
+OpenClaw 会把这些文件作为 bootstrap 上下文注入。若缺少 `USER.md`，会丢失用户画像层信息；若缺少 `AGENTS.md`，会丢失流程和规则层信息。为稳定交付，建议三者都保留并持续维护。
+
 ## 3. macOS 安装步骤
 
 ### 步骤 A：拷贝目录到客户电脑

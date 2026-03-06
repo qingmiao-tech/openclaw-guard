@@ -46,6 +46,55 @@
 
 ## 交付记录
 
+## [2026-03-06 19:01] 完成客户包提交并补齐 USER.md/AGENTS.md 引导文件 [TASK-20260306-003]
+
+- 任务来源: 用户要求“先进行代码提交”，随后继续优化并确认 `USER.md` 与 `SOUL.md` 的区别及是否需要配置。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-06 18:14
+- 开始时间: 2026-03-06 18:14
+- 提交时间: 2026-03-06 19:01
+- 任务目标:
+  1) 将上一轮已产出的客户多 Agent 套件先完成一次 Git 提交。
+  2) 基于 OpenClaw 源码确认 `USER.md` 与 `SOUL.md` 的加载逻辑差异。
+  3) 在客户包中补齐必要引导文件，避免上线后缺失上下文。
+- 执行过程:
+  1) 先执行首笔提交：`feat(customer): add mac-ready OpenClaw multi-agent customer package`（提交哈希 `45d44d1`）。
+  2) 检索 OpenClaw 源码与文档，确认 `USER.md` 为标准 workspace bootstrap 文件，和 `SOUL.md` 同属每轮上下文注入范畴（另有 `AGENTS.md` 负责执行协议）。
+  3) 在 `customer/openclaw-biz-team/workspaces/*` 全量新增 `USER.md` 与 `AGENTS.md`（7 个角色全覆盖）。
+  4) 更新客户文档说明三者职责分层（身份层、用户层、执行层）及“建议都配置”的实践建议。
+  5) 修复中途 `README-mac.md` 编码误写问题，回滚到已提交版本后重新安全写入优化内容，确保文档可读。
+- 交付成果:
+  1) 已完成“先提交”动作，客户包基础版本已入库（`45d44d1`）。
+  2) 客户包已补齐 `USER.md + AGENTS.md`，每个角色具备完整 bootstrap 上下文文件集合（`SOUL.md/USER.md/AGENTS.md`）。
+  3) 客户文档新增三类文件差异说明，便于交付后快速维护。
+- 变更清单:
+  - `customer/openclaw-biz-team/README-mac.md`
+  - `customer/openclaw-biz-team/workspaces/README.md`
+  - `customer/openclaw-biz-team/workspaces/task-hub/AGENTS.md`
+  - `customer/openclaw-biz-team/workspaces/task-hub/USER.md`
+  - `customer/openclaw-biz-team/workspaces/market-research/AGENTS.md`
+  - `customer/openclaw-biz-team/workspaces/market-research/USER.md`
+  - `customer/openclaw-biz-team/workspaces/data-analysis/AGENTS.md`
+  - `customer/openclaw-biz-team/workspaces/data-analysis/USER.md`
+  - `customer/openclaw-biz-team/workspaces/ad-ops/AGENTS.md`
+  - `customer/openclaw-biz-team/workspaces/ad-ops/USER.md`
+  - `customer/openclaw-biz-team/workspaces/logistics-customs/AGENTS.md`
+  - `customer/openclaw-biz-team/workspaces/logistics-customs/USER.md`
+  - `customer/openclaw-biz-team/workspaces/finance-manager/AGENTS.md`
+  - `customer/openclaw-biz-team/workspaces/finance-manager/USER.md`
+  - `customer/openclaw-biz-team/workspaces/copy-editor/AGENTS.md`
+  - `customer/openclaw-biz-team/workspaces/copy-editor/USER.md`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`45d44d1`; ahead/behind=`ahead 10, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`ad464c3`; ahead/behind=`ahead 2, behind 0`
+- 验证结果:
+  1) 源码验证：`openclaw/src/agents/workspace.ts` 明确声明 `DEFAULT_USER_FILENAME = "USER.md"` 并纳入 bootstrap 文件列表。
+  2) 文档验证：`openclaw/docs/concepts/agent-workspace.md` 与 `openclaw/docs/concepts/agent.md` 均将 `USER.md` 归类为每会话注入文件。
+  3) 文件验证：客户包 7 个角色目录已生成 `USER.md` 和 `AGENTS.md`，路径完整。
+- 后续建议:
+  1) 客户上线前补全每个 `USER.md` 的业务背景和约束字段，能显著提升输出稳定性。
+  2) 如客户存在多条业务线，可在同一结构下复制多套 `workspaces` 并用 `bindings` 做渠道/账号级路由。
+
 ## [2026-03-06 09:06] 交付客户版 OpenClaw 多 Agent 套件（macOS 可拷贝部署） [TASK-20260306-002]
 
 - 任务来源: 用户要求按“任务分发记忆中枢、市场调研、数据分析、广告运营、物流报关、财务主管、文案编辑”七角色，基于 OpenClaw 通过配置文件 + 工作目录方式生成客户可直接落地的多 Agent 套件，并输出 macOS 操作教程。

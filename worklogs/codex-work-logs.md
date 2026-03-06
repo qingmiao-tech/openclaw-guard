@@ -46,6 +46,49 @@
 
 ## 交付记录
 
+## [2026-03-06 09:06] 交付客户版 OpenClaw 多 Agent 套件（macOS 可拷贝部署） [TASK-20260306-002]
+
+- 任务来源: 用户要求按“任务分发记忆中枢、市场调研、数据分析、广告运营、物流报关、财务主管、文案编辑”七角色，基于 OpenClaw 通过配置文件 + 工作目录方式生成客户可直接落地的多 Agent 套件，并输出 macOS 操作教程。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-06 09:02
+- 开始时间: 2026-03-06 09:02
+- 提交时间: 2026-03-06 09:06
+- 任务目标:
+  1) 在 `customer/` 下创建可直接交付客户的多 Agent 工程包。
+  2) 完成 OpenClaw 多 Agent 配置（agents.list、agentToAgent、fallback）。
+  3) 提供客户 macOS 部署、API Key 配置与验证教程。
+- 执行过程:
+  1) 校验 OpenClaw 本地配置规范，确认使用 `agents.list`、`tools.agentToAgent`、`agents.defaults.model.fallbacks` 为官方支持字段。
+  2) 创建 `customer/openclaw-biz-team/` 套件目录，生成 `openclaw.json`、7 个 Agent 工作空间及角色 `SOUL.md`。
+  3) 增加 `scripts/install-mac.sh`，实现安装时自动备份 `~/.openclaw/openclaw.json` 并同步工作目录。
+  4) 编写 `README-mac.md`，覆盖 macOS 临时/持久化环境变量、网关重启、命令验证、常见故障排查。
+  5) 发现 `openclaw.json` 初次写入存在 UTF-8 BOM，已转为 UTF-8 无 BOM 并做 JSON 解析校验。
+- 交付成果:
+  1) 已在 `customer/openclaw-biz-team/` 生成完整客户包，可直接复制到客户电脑使用。
+  2) 客户只需配置 `OPENAI_API_KEY` 与 `DASHSCOPE_API_KEY` 并重启网关即可上线 7 角色协作。
+  3) 提供默认总控 `task-hub` 调度模式与可选渠道绑定示例，便于后续扩展。
+- 变更清单:
+  - `customer/openclaw-biz-team/openclaw.json`
+  - `customer/openclaw-biz-team/README-mac.md`
+  - `customer/openclaw-biz-team/scripts/install-mac.sh`
+  - `customer/openclaw-biz-team/workspaces/README.md`
+  - `customer/openclaw-biz-team/workspaces/task-hub/SOUL.md`
+  - `customer/openclaw-biz-team/workspaces/market-research/SOUL.md`
+  - `customer/openclaw-biz-team/workspaces/data-analysis/SOUL.md`
+  - `customer/openclaw-biz-team/workspaces/ad-ops/SOUL.md`
+  - `customer/openclaw-biz-team/workspaces/logistics-customs/SOUL.md`
+  - `customer/openclaw-biz-team/workspaces/finance-manager/SOUL.md`
+  - `customer/openclaw-biz-team/workspaces/copy-editor/SOUL.md`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`f507484`; ahead/behind=`ahead 9, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`ad464c3`; ahead/behind=`ahead 2, behind 0`
+- 验证结果:
+  1) `customer/openclaw-biz-team/openclaw.json` 已通过 `node` 的 `JSON.parse` 校验。
+  2) 客户包文件已生成：配置、安装脚本、教程和 7 个角色工作目录均齐全。
+- 后续建议:
+  1) 交付前可在一台 macOS 测试机按 `README-mac.md` 走完整安装流程，确认客户环境命令可用性。
+  2) 若客户后续接入 Slack/Discord/Feishu，可按文档追加 `bindings` 做渠道级路由。
+
 ## [2026-03-06 08:00] 按要求提交当前全部代码改动（含 openclaw-feishu） [TASK-20260306-001]
 
 - 任务来源: 用户要求“提交所有代码变更”。

@@ -9,10 +9,11 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsx src/index.ts",
+    "dev": "tsx src/index.ts web --port 18088",
+    "dev:cli": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest run",
-    "web": "tsx src/index.ts web"
+    "web": "tsx src/index.ts web --port 18088"
   },
   "keywords": [
     "openclaw",

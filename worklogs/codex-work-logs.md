@@ -46,6 +46,173 @@
 
 ## 交付记录
 
+## [2026-03-06 08:00] 按要求提交当前全部代码改动（含 openclaw-feishu） [TASK-20260306-001]
+
+- 任务来源: 用户要求“提交所有代码变更”。
+- 仓库范围: both
+- 指派时间: 2026-03-06 08:00
+- 开始时间: 2026-03-06 08:00
+- 提交时间: 2026-03-06 08:00
+- 任务目标:
+  1) 提交 `openclaw-course` 仓库当前所有待提交改动。
+  2) 提交 `openclaw-feishu` 仓库当前所有待提交改动。
+- 执行过程:
+  1) 扫描两仓 `git status`，确认当前所有修改与未跟踪文件清单。
+  2) 在 `openclaw-course` 执行全量暂存并提交。
+  3) 在 `openclaw-feishu` 执行全量暂存并提交。
+  4) 输出两仓提交哈希并复核工作区清洁状态。
+- 交付成果:
+  1) 两仓待提交改动已完成入库。
+  2) 保留本次任务的日志记录，便于后续回溯。
+- 变更清单:
+  - `openclaw-course`：当前工作区全部已改动文件（含 `openclaw-guard`、`worklogs`、`wxarticle` 相关文件）
+  - `openclaw-feishu`：当前工作区全部已改动文件（含 `src/*`、`README*`、`scripts/*`、部署与迁移文档）
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`a3fa5c2`; ahead/behind=`ahead 8, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`708fe4a`; ahead/behind=`ahead 1, behind 0`
+- 验证结果:
+  1) 提交后将以 `git status --short` 与提交哈希校验。
+  2) 若有未纳入文件，将在提交后立即补齐并复核。
+- 后续建议:
+  1) 如需区分“代码提交”和“文档提交”，下一轮可改为按功能批次拆分提交。
+
+## [2026-03-04 11:15] openclaw-guard 增加中英文国际化切换（右上角语言按钮） [TASK-20260304-004]
+
+- 任务来源: 用户要求“增加国际化多语言功能，右上角可以进行中英文切换”。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-04 10:58
+- 开始时间: 2026-03-04 10:59
+- 提交时间: 2026-03-04 11:15
+- 任务目标:
+  1) 在 openclaw-guard 页面右上角提供 `中文/EN` 切换入口。
+  2) 支持中英文切换并持久化（刷新后保持上次语言）。
+  3) 在不改动后端接口的前提下，实现前端主要 UI 文案国际化。
+- 执行过程:
+  1) 在 `openclaw-guard/src/web-ui.ts` 增加右上角语言切换按钮与样式（`lang-switch`、`lang-btn`）。
+  2) 新增前端 i18n 运行时：语言检测（`localStorage + navigator.language`）、语言持久化、标签栏静态文案映射、页面标题切换。
+  3) 新增中文翻译词典与全页面翻译器（文本节点 + placeholder/title 属性），并通过 `MutationObserver` 处理异步渲染内容（各 tab 拉取后自动本地化）。
+  4) 增加翻译保护：跳过 `script/style/pre/code/textarea/log-viewer/log-box`，避免破坏脚本与日志内容。
+  5) 实测中英文按钮切换会触发刷新并保持语言状态，验证 Dashboard/AI 等页面可读性。
+- 交付成果:
+  1) 页面右上角新增 `中文` / `EN` 按钮，可一键切换语言。
+  2) 语言偏好持久化到本地（键：`openclaw.guard.lang`），刷新后维持所选语言。
+  3) 导航、标题及主要操作区文案支持中文显示（含 Feishu、Channels、AI、Mission 等核心区域的常见文案）。
+- 变更清单:
+  - `openclaw-guard/src/web-ui.ts`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`a3fa5c2`; ahead/behind=`ahead 8, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`708fe4a`; ahead/behind=`ahead 1, behind 0`
+- 验证结果:
+  1) `npx tsc --noEmit` 通过。
+  2) Playwright 验证通过：点击 `EN` 后页面标题切换为 `OpenClaw Guard - Security Dashboard`，导航为英文；点击 `中文` 后标题切换为 `OpenClaw Guard - 安全控制台`，导航为中文。
+  3) Playwright 控制台错误级消息为 `0`。
+- 后续建议:
+  1) 当前以“词典替换 + 观察器”方案快速落地，后续可逐步升级为 key-based i18n（按 `t("key")` 方式）以获得更细粒度控制。
+  2) 若要对外发布，建议把翻译词典拆分为独立文件（`i18n/en.ts`、`i18n/zh.ts`）并加入文案校对流程。
+
+## [2026-03-04 09:33] 修复 openclaw-guard 页面中文乱码（Mojibake）并完成可视化验证 [TASK-20260304-003]
+
+- 任务来源: 用户反馈页面出现中文乱码，要求直接修复。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-04 09:21
+- 开始时间: 2026-03-04 09:22
+- 提交时间: 2026-03-04 09:33
+- 任务目标:
+  1) 定位 openclaw-guard 页面乱码根因并修复。
+  2) 保证页面可正常加载且关键标签/按钮文案可读。
+  3) 完成接口与浏览器双重验证，确认无空白页和无控制台错误。
+- 执行过程:
+  1) 排查 `openclaw-guard/src/web-ui.ts`，确认问题并非仅编码头，而是多处 UI 文案被损坏为 `?`/空文本（含标题、按钮、提示语）。
+  2) 对损坏文案做集中修复：OpenClaw、Audit、Profiles、Harden、Feishu、Channels、AI Providers、Mission 相关提示统一替换为稳定可读文本（以英文为主，避免再次乱码）。
+  3) 清理残留异常文案（如 `Save Save config`、`OK?`、空 `h3`、`Loading?..`），并补齐缺失按钮文案与分组标题。
+  4) 发现 `18088` 上运行的是旧进程输出旧页面，执行进程重启后再次抓取 HTML 确认新内容已生效。
+  5) 通过 Playwright 分页验证 OpenClaw/Feishu/Channels/AI 标签页，确认展示文本正常且控制台无报错。
+- 交付成果:
+  1) 页面乱码已修复，不再出现“棣/鐎/閸”等 Mojibake 字符。
+  2) 关键交互区（Feishu/AI/Channels/OpenClaw）文案恢复可读，按钮状态与提示文案完整。
+  3) 服务继续使用 `18088`，页面与 API 均可访问。
+- 变更清单:
+  - `openclaw-guard/src/web-ui.ts`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`a3fa5c2`; ahead/behind=`ahead 8, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`708fe4a`; ahead/behind=`ahead 1, behind 0`
+- 验证结果:
+  1) `npx tsc --noEmit` 通过。
+  2) `GET http://127.0.0.1:18088/` 返回 `200`，页面标题为 `OpenClaw Guard - Security Dashboard`。
+  3) Playwright 快照验证：Dashboard/System/OpenClaw/Feishu/Channels/AI/Mission/Audit/Profiles/Harden/Logs 标签均可见，Feishu 与 AI 页关键字段文本正常。
+  4) 浏览器控制台错误级消息为 `0`。
+- 后续建议:
+  1) 如需中文界面，可后续做一次“统一 UTF-8 中文文案回填”，并增加文案常量集中管理，避免再次局部损坏。
+  2) 可在启动脚本中增加“检测旧进程并提示重启”逻辑，避免改完代码后仍看到旧页面缓存/旧进程输出。
+
+## [2026-03-04 08:15] 处理 Web 空白页并将 openclaw-guard Web 端口切换到 18088 [TASK-20260304-002]
+
+- 任务来源: 用户反馈 `localhost:8088` 页面空白，要求先检查 `8080` 端口占用并将 Web 端口改为 `18088` 后复测。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-04 08:06
+- 开始时间: 2026-03-04 08:06
+- 提交时间: 2026-03-04 08:15
+- 任务目标:
+  1) 排查 `8080` 端口是否存在冲突占用。
+  2) 将 openclaw-guard Web 默认端口统一调整为 `18088`。
+  3) 复测空白页问题并确认服务/API可达。
+- 执行过程:
+  1) 端口排查：检查 `8080/8088/18088` 监听状态，确认 `8080` 无占用，`8088` 被 `node ... tsx src/index.ts web` 进程占用。
+  2) 端口改造：将 `openclaw-guard/src/index.ts` 的 `web` 命令默认端口由 `8088` 改为 `18088`；将 `openclaw-guard/package.json` 的 `dev/web` 脚本改为显式 `--port 18088`；同步更新 `start-web.bat` 提示端口。
+  3) 空白页根因补修：发现首页返回 HTML 中存在破损闭合标签（如 `?/title>`、`?/div>`），导致页面结构异常；在 `openclaw-guard/src/web-ui.ts` 修复这类闭合标签为标准 `</...>`。
+  4) 重启验证：停止旧 `8088` Web 进程后重启，确认 `18088` 正常监听，`/` 与 `/api/info` 返回 200。
+- 交付成果:
+  1) `8080` 端口冲突排除完成（无监听）。
+  2) openclaw-guard Web 入口默认端口已切换到 `18088`。
+  3) 页面空白问题已缓解，Playwright 快照可见页面头部与标签栏正常渲染。
+- 变更清单:
+  - `openclaw-guard/src/index.ts`
+  - `openclaw-guard/package.json`
+  - `openclaw-guard/start-web.bat`
+  - `openclaw-guard/src/web-ui.ts`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`02097a0`; ahead/behind=`ahead 7, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`708fe4a`; ahead/behind=`ahead 1, behind 0`
+- 验证结果:
+  1) 端口监听：`PORT 8080: no listener`，`PORT 18088: LISTEN`。
+  2) HTTP 验证：`GET http://127.0.0.1:18088/` 返回 `200`，`GET /api/info` 返回 `200`。
+  3) 浏览器自动化快照：页面标题/导航可见，控制台仅 `favicon.ico 404`（非阻断）。
+- 后续建议:
+  1) 后续可单独做一次“中文文案编码统一清理”（当前主要修复结构与可用性）。
+  2) 如需彻底避免端口冲突，可在启动脚本增加端口占用检测与自动递增策略。
+
+## [2026-03-04 07:54] 修复 openclaw-guard `npm run dev` 启动异常（esbuild TransformError） [TASK-20260304-001]
+
+- 任务来源: 用户反馈 `E:\openclaw-course\openclaw-guard` 执行 `npm run dev` 报错，堆栈指向 `esbuild`，无法正常启动。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-04 07:49
+- 开始时间: 2026-03-04 07:50
+- 提交时间: 2026-03-04 07:54
+- 任务目标:
+  1) 定位并修复 `openclaw-guard` 启动报错根因。
+  2) 验证 `npm run dev` 可进入可用服务态。
+- 执行过程:
+  1) 复现问题并抓取真实编译错误，确认 `openclaw-guard/src/index.ts` 存在多处破损字符串（未闭合引号/描述文本损坏），导致 `tsx/esbuild` 解析失败。
+  2) 对 `src/index.ts` 进行最小修复：补齐损坏命令描述与选项字符串、修复 Mission 状态输出模板字符串。
+  3) 处理文件头部 BOM 导致的 shebang 解析异常（`index.ts:1:4 Syntax error "!"`），移除 UTF-8 BOM。
+  4) 调整 `openclaw-guard/package.json` 脚本，将 `dev` 改为直接启动 Web 子命令，并保留 `dev:cli` 用于 CLI 调试。
+  5) 进行回归验证：`npx tsc --noEmit` 通过；`tsx src/index.ts --help` 正常；后台拉起 `npm run dev` 后确认 `8088` 端口处于 `Listen`。
+- 交付成果:
+  1) 已修复 `npm run dev` 抛出 `TransformError` 的问题。
+  2) `npm run dev` 现在直接进入 Web 服务启动路径，避免无参 CLI 帮助页退出造成“看似失败”。
+  3) 已保留 `npm run dev:cli` 供命令行能力调试。
+- 变更清单:
+  - `openclaw-guard/src/index.ts`
+  - `openclaw-guard/package.json`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`02097a0`; ahead/behind=`ahead 7, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`708fe4a`; ahead/behind=`ahead 1, behind 0`
+- 验证结果:
+  1) `npx tsc --noEmit` 返回成功。
+  2) `npx tsx src/index.ts --help` 返回 CLI 帮助，未再出现 `esbuild TransformError`。
+  3) 启动 `npm run dev` 后检测到 `8088` 端口监听（`LISTEN`），并完成进程清理。
+- 后续建议:
+  1) 后续可单独安排一次“CLI 文案乱码清理”（当前仅修复语法与启动链路，未整体清洗历史乱码文本）。
+
 ## [2026-03-03 21:03] 补充“首模型故障注入验证”可复制示例 [TASK-20260303-002]
 
 - 任务来源: 用户要求将“首模型故障注入后自动尝试下一候选”的描述改为更具体示例，包含备份配置、改错首模型、重启网关、命令和会话双验证。

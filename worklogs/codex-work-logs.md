@@ -46,6 +46,112 @@
 
 ## 交付记录
 
+## [2026-03-06 20:13] 提交飞书多 Bot 脚本更新并排除客户压缩包文件 [TASK-20260306-006]
+
+- 任务来源: 用户要求“继续提交，忽略 `customer/openclaw-biz-team.zip` 文件”。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-06 20:13
+- 开始时间: 2026-03-06 20:13
+- 提交时间: 2026-03-06 20:13
+- 任务目标:
+  1) 提交本轮飞书多 Bot 自动化脚本与文档变更。
+  2) 明确排除 `customer/openclaw-biz-team.zip`，避免将打包产物入库。
+- 执行过程:
+  1) 复核工作区待提交文件，确认 zip 为未跟踪打包文件。
+  2) 采用“显式文件清单”方式暂存，仅加入脚本、文档与日志改动。
+  3) 保持 zip 文件不暂存不提交，完成常规 commit。
+- 交付成果:
+  1) 飞书 per-agent 自动化配置能力（含交互脚本）已提交入库。
+  2) `customer/openclaw-biz-team.zip` 已按要求忽略，未纳入本次提交。
+- 变更清单:
+  - `customer/openclaw-biz-team/README-mac.md`
+  - `customer/openclaw-biz-team/FEISHU-PER-AGENT.md`
+  - `customer/openclaw-biz-team/scripts/setup-feishu-per-agent.sh`
+  - `customer/openclaw-biz-team/scripts/setup-feishu-per-agent.mjs`
+  - `customer/openclaw-biz-team/scripts/setup-feishu-per-agent-interactive.sh`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`d834b15`; ahead/behind=`ahead 11, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`ad464c3`; ahead/behind=`ahead 2, behind 0`
+- 验证结果:
+  1) 仅目标文件进入暂存区，zip 打包文件保持未跟踪状态。
+  2) 提交后通过 `git status --short` 复核工作区状态。
+- 后续建议:
+  1) 若该 zip 会长期存在，建议后续加入 `.gitignore`（例如 `customer/*.zip`）避免重复提示。
+
+## [2026-03-06 20:00] 增加交互式飞书多 Bot 一键脚本（输入即写入 zshrc） [TASK-20260306-005]
+
+- 任务来源: 用户确认“需要”交互式版本，要求一次输入完成 7 个 Agent 的飞书凭据配置。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-06 19:58
+- 开始时间: 2026-03-06 19:58
+- 提交时间: 2026-03-06 20:00
+- 任务目标:
+  1) 提供交互式脚本，逐个录入 7 组 `App ID/App Secret`。
+  2) 自动生成可 source 的环境变量文件并可选持久化到 `~/.zshrc`。
+  3) 保持与既有“accounts + bindings”一键配置脚本兼容。
+- 执行过程:
+  1) 新增 `setup-feishu-per-agent-interactive.sh`，在脚本内先调用基础脚本完成 `accounts + bindings` 写入。
+  2) 增加 7 个账号交互输入流程（`task-hub` 到 `copy-editor`），对空值做必填校验。
+  3) 自动生成 `~/.openclaw/openclaw-feishu-agent-env.sh`，并将权限设为 `600`。
+  4) 增加 `~/.zshrc` 管理块（可幂等覆盖），默认自动写入 `source`；支持 `--no-persist-zshrc` 关闭。
+  5) 更新客户文档 `FEISHU-PER-AGENT.md` 与 `README-mac.md`，新增交互脚本用法。
+  6) 验证方面：本地完成 Node 脚本逻辑验证；由于当前环境缺少可执行 Unix bash 运行时，未执行 bash 语法实跑（仅静态核对脚本结构）。
+- 交付成果:
+  1) 客户可通过单条命令进入交互录入，减少手工编辑 env 文件成本。
+  2) 交互脚本可直接用于 macOS 客户机，完成“输入 -> 落盘 -> 持久化 -> 重启验证”闭环。
+  3) 与现有非交互脚本并存，兼容不同交付场景。
+- 变更清单:
+  - `customer/openclaw-biz-team/scripts/setup-feishu-per-agent-interactive.sh`
+  - `customer/openclaw-biz-team/FEISHU-PER-AGENT.md`
+  - `customer/openclaw-biz-team/README-mac.md`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`d834b15`; ahead/behind=`ahead 11, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`ad464c3`; ahead/behind=`ahead 2, behind 0`
+- 验证结果:
+  1) Node 配置脚本验证通过：可生成 7 个 account 与 7 条 routing bindings。
+  2) 交互脚本已完成参数、输入、写入和幂等 zshrc 注入逻辑。
+  3) 当前 Windows 环境无 Unix bash 可执行器，bash 实跑验证待在客户 macOS 机上完成。
+- 后续建议:
+  1) 客户首次执行建议用 `--channel feishu-enhanced`，如走官方插件再改 `--channel feishu`。
+  2) 交付时可附一份“7 个 Bot 对应群聊列表”，避免 accountId 配置正确但群权限不匹配。
+
+## [2026-03-06 19:32] 新增“每个 Agent 绑定一个飞书 Bot”一键配置脚本 [TASK-20260306-004]
+
+- 任务来源: 用户询问“每一个 agent 配置一个飞书机器人如何操作，是否有一键脚本”。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-06 19:22
+- 开始时间: 2026-03-06 19:22
+- 提交时间: 2026-03-06 19:32
+- 任务目标:
+  1) 提供 7 个 Agent 与 7 个飞书账号的一对一路由方案。
+  2) 提供可在 macOS 执行的一键脚本，自动写入 `accounts + bindings`。
+  3) 产出客户可直接照做的操作文档。
+- 执行过程:
+  1) 核对 `openclaw-feishu` 源码，确认 `channels.feishu-enhanced.accounts` 支持多账号，且 `bindings.match.accountId` 可用于路由到指定 Agent。
+  2) 新增 `setup-feishu-per-agent.sh`（入口脚本）：自动备份 `~/.openclaw/openclaw.json` 并调用 Node 配置脚本。
+  3) 新增 `setup-feishu-per-agent.mjs`（核心逻辑）：自动写入 7 个账号配置、7 条 channel+accountId 路由绑定，并生成环境变量模板文件。
+  4) 新增独立文档 `FEISHU-PER-AGENT.md`，覆盖飞书侧准备、一键命令、变量生效和验证步骤。
+  5) 更新 `README-mac.md`，增加“每个 Agent 对应一个飞书机器人”快速入口说明。
+  6) 用临时配置文件做回归验证：脚本可正确生成 7 个账号与 7 条绑定规则。
+- 交付成果:
+  1) 一键脚本已具备：可自动完成多 Bot 账号位点与路由写入。
+  2) 客户只需填 7 组 `APP_ID/APP_SECRET` 环境变量，即可实现“每个 Bot 命中对应 Agent”。
+  3) 文档已给出 `feishu-enhanced` 与官方 `feishu` 两种 channel 参数用法。
+- 变更清单:
+  - `customer/openclaw-biz-team/scripts/setup-feishu-per-agent.sh`
+  - `customer/openclaw-biz-team/scripts/setup-feishu-per-agent.mjs`
+  - `customer/openclaw-biz-team/FEISHU-PER-AGENT.md`
+  - `customer/openclaw-biz-team/README-mac.md`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`d834b15`; ahead/behind=`ahead 11, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`ad464c3`; ahead/behind=`ahead 2, behind 0`
+- 验证结果:
+  1) 临时配置验证通过：脚本执行后 `accounts=7`、`bindings(feishu-enhanced)=7`。
+  2) 生成环境变量模板文件：`openclaw-feishu-agent-env.template.sh`。
+- 后续建议:
+  1) 客户上线前按业务群实际归属补全 7 个 Bot 的飞书权限范围，避免跨群误触发。
+  2) 如需更严格隔离，可进一步在 `bindings` 增加 `peer/guildId/teamId` 粒度约束。
+
 ## [2026-03-06 19:01] 完成客户包提交并补齐 USER.md/AGENTS.md 引导文件 [TASK-20260306-003]
 
 - 任务来源: 用户要求“先进行代码提交”，随后继续优化并确认 `USER.md` 与 `SOUL.md` 的区别及是否需要配置。

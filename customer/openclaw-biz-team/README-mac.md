@@ -68,6 +68,52 @@ openclaw agents list --bindings
 
 > 如果 `openclaw agents list --bindings` 在客户版本不存在，可以用聊天内 `/agents` 查看 Agent 清单。
 
+## 3.1 每个 Agent 对应一个飞书机器人（一键脚本）
+
+本包已提供一键脚本，自动完成：
+
+1. 在 `channels.feishu-enhanced.accounts` 写入 7 个飞书账号位点（每个 Agent 一个 `accountId`）。
+2. 在 `bindings` 写入路由规则：`match.channel + match.accountId -> agentId`。
+3. 生成环境变量模板文件，方便你批量填入 7 组 `appId/appSecret`。
+
+执行命令：
+
+```bash
+cd customer/openclaw-biz-team
+chmod +x scripts/setup-feishu-per-agent.sh
+bash scripts/setup-feishu-per-agent.sh --channel feishu-enhanced
+```
+
+如果客户使用的是官方插件（不是增强版），把 `--channel` 改成 `feishu`：
+
+```bash
+bash scripts/setup-feishu-per-agent.sh --channel feishu
+```
+
+如果你希望“输入一次就完成 7 组凭据 + 自动写入 `~/.zshrc`”，使用交互式脚本：
+
+```bash
+chmod +x scripts/setup-feishu-per-agent-interactive.sh
+bash scripts/setup-feishu-per-agent-interactive.sh --channel feishu-enhanced
+```
+
+脚本执行后会生成模板：
+
+```bash
+~/.openclaw/openclaw-feishu-agent-env.template.sh
+```
+
+把模板里的占位符替换成真实值，再加载到当前终端：
+
+```bash
+source ~/.openclaw/openclaw-feishu-agent-env.template.sh
+openclaw gateway restart
+```
+
+详细说明见：
+
+- [`FEISHU-PER-AGENT.md`](./FEISHU-PER-AGENT.md)
+
 ## 4. 首次使用建议（默认总控模式）
 
 新会话输入 `/new` 后，直接对默认 Agent 提需求，例如：

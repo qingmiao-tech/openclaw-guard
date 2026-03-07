@@ -46,6 +46,104 @@
 
 ## 交付记录
 
+## [2026-03-07 23:03] 同步课程总纲：纳入 Day14 多 Agent + 飞书多机器人模块 [TASK-20260307-002]
+
+- 任务来源: 用户在新增 Day14 课程后确认“可以”，继续执行后续收口（总纲同步）。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-07 23:00
+- 开始时间: 2026-03-07 23:00
+- 提交时间: 2026-03-07 23:03
+- 任务目标:
+  1) 将 `course-design.md` 与新增 Day14 课程保持一致，修正总时长、路径、模块表与依赖关系。
+  2) 在课程设计中补齐 Day14 的进阶模块定位和验收口径，避免目录与正文脱节。
+  3) 保持改动聚焦文档层，不涉及业务代码或运行配置。
+- 执行过程:
+  1) 扫描 `course-design.md` 中与 Day13、进阶选修、总时长、依赖图相关的所有引用位置。
+  2) 更新课程概述与学习路径口径：进阶模块从 1 个改为 2 个，总时长从 30.5 小时更新为 33 小时。
+  3) 在模块总览表与 Mermaid 依赖图中新增 Day14，并补充 Lab C 到 Day14 的推荐依赖路径。
+  4) 在“必修与选修分类”中新增“进阶选修模块（Day13-14）”分节，明确 Day13/Day14 各自定位。
+  5) 在“进阶实战层”新增 Day14 小节（目标、任务、验收、课件映射），并修正 Day12 对进阶学习的跳转描述。
+- 交付成果:
+  1) 课程总纲已完整纳入 Day14，课程结构、时长、依赖路径与章节文件一致。
+  2) Day14 在总纲中具备独立教学定义，可直接用于讲师授课与交付验收。
+  3) 文档读者可从 `course-design.md` 一步跳转到 Day14 正文与客户交付模板目录。
+- 变更清单:
+  - `course-design.md`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`87229fc`; ahead/behind=`ahead 12, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`ad464c3`; ahead/behind=`ahead 2, behind 0`
+- 验证结果:
+  1) 关键口径校验通过：`course-design.md` 中已出现 `Day 14`、`33 小时`、`Day 13-14`、`飞书多机器人` 等核心字段。
+  2) 进阶实战层已从 Day13 扩展为 Day13-14，且新增 Day14 的模块概述、实操任务和验收标准。
+- 后续建议:
+  1) 若准备对外发布课程包，建议下一步把 `course-design.md` 的目录导航（TOC）同步加入 Day14 快速链接。
+  2) 如需授课演示材料，可基于 Day14 继续拆分一版逐页 PPT 大纲（讲师脚本 + 学员操作页）。
+
+## [2026-03-07 15:14] 新增 Day14 课程：多 Agent 搭建与飞书多机器人集成 [TASK-20260307-001]
+
+- 任务来源: 用户要求“把当前一整套多agent搭建、飞书对接形成一节完整课程，目录 course-section”。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-07 15:14
+- 开始时间: 2026-03-07 15:14
+- 提交时间: 2026-03-07 15:14
+- 任务目标:
+  1) 在 `course-section/` 中新增一节完整课程文档。
+  2) 课程需覆盖多 Agent 架构、飞书多 Bot 映射、一键脚本、故障排查与验收流程。
+  3) 直接复用当前客户包（`customer/openclaw-biz-team`）的可落地实践。
+- 执行过程:
+  1) 读取课程目录结构，确认现有 Day01-Day13 与 Lab 系列命名风格。
+  2) 结合当前项目中已沉淀的多 Agent 与飞书自动化脚本实践，设计 Day14 课程结构。
+  3) 输出完整课程稿，包含目标、交付物、实操步骤、高频故障复盘、安全建议、课堂演示脚本与课后作业。
+  4) 在工作日志新增本次记录，保证任务链路可追踪。
+- 交付成果:
+  1) 已新增 Day14 课程文件，可直接纳入课程体系讲授。
+  2) 课程内容已覆盖客户真实部署链路（配置、脚本、验证、排障）。
+  3) 课程强调“可复制交付”与“生产可运维”，可直接用于对外教学。
+- 变更清单:
+  - `course-section/Day14-项目实战④-多Agent团队搭建与飞书多机器人集成.md`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`87229fc`; ahead/behind=`ahead 12, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`ad464c3`; ahead/behind=`ahead 2, behind 0`
+- 验证结果:
+  1) 课程文件已写入 `course-section/` 目录，命名与现有 Day 系列一致。
+  2) 文档中包含完整步骤命令和排障场景，可独立阅读执行。
+- 后续建议:
+  1) 可在 `course-design.md` 补一条 Day14 索引，保持总目录与章节对齐。
+  2) 若要配套课件，可基于该文档继续拆分成“每页一节”的 PPT 版稿件。
+
+## [2026-03-06 20:58] 合并客户现有配置到客户包 openclaw.json（保留原有系统项） [TASK-20260306-007]
+
+- 任务来源: 用户提供客户 Mac 端现有 `openclaw.json`，要求“尽量保留客户配置，原方案里模型相关可移除，并合并到 `customer/openclaw-biz-team/openclaw.json`”。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-06 20:45
+- 开始时间: 2026-03-06 20:45
+- 提交时间: 2026-03-06 20:58
+- 任务目标:
+  1) 将客户配置中的 `wizard/models/agents.defaults/tools/messages/commands/session/hooks/gateway/meta` 合并到客户包配置。
+  2) 移除原客户包中旧模型提供商（openai-codex/qwen-portal）并切换到客户 custom provider。
+  3) 保留客户包的 7-Agent 结构与协作策略（`agents.list` + `tools.agentToAgent`）。
+- 执行过程:
+  1) 读取当前客户包配置并对照用户提供的客户配置内容。
+  2) 按“客户系统项优先 + 多 Agent 列表保留”原则重写 `customer/openclaw-biz-team/openclaw.json`。
+  3) 将模型段改为 `custom-api-aigocode/claude-opus-4-6`，保留客户原始字段（含 `api`、`cost`、`contextWindow`、`maxTokens`）。
+  4) 保留 `agents.list` 的 7 个角色工作目录，并把角色名回填为正常中文显示。
+  5) 用 Node 执行 JSON 解析校验，确认文件语法和关键字段可读。
+- 交付成果:
+  1) 客户包配置已完成客户实配融合，开箱即具备客户当前网关行为参数。
+  2) 原方案中多模型示例提供商已移除，改为客户指定 custom provider。
+  3) 多 Agent 结构与 agent-to-agent 协作能力仍保持可用。
+- 变更清单:
+  - `customer/openclaw-biz-team/openclaw.json`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`87229fc`; ahead/behind=`ahead 12, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`ad464c3`; ahead/behind=`ahead 2, behind 0`
+- 验证结果:
+  1) `node` JSON 校验通过：`json-ok https://api.aigocode.com 7 custom-api-aigocode/claude-opus-4-6`。
+  2) 配置包含客户要求字段且保留 7 个 Agent 条目。
+- 后续建议:
+  1) 当前 `apiKey` 与 `gateway.auth.token` 为明文示例，交付前建议替换为环境变量或现场注入，避免落盘凭据风险。
+  2) 客户机器实际用户名不是 `a1` 时，建议把 `agents.defaults.workspace` 改为 `~/.openclaw/workspace` 以提升可移植性。
+
 ## [2026-03-06 20:13] 提交飞书多 Bot 脚本更新并排除客户压缩包文件 [TASK-20260306-006]
 
 - 任务来源: 用户要求“继续提交，忽略 `customer/openclaw-biz-team.zip` 文件”。

@@ -120,8 +120,8 @@ function diffSessions(previous: SessionRecord[], current: SessionRecord[], captu
       events.push(createActivityEvent({
         type: 'session-started',
         createdAt: capturedAt,
-        title: `会话已开始: ${session.id}`,
-        description: `${session.agentId} 开始使用 ${session.modelId}`,
+        title: `Session started ${session.id}`,
+        description: `${session.agentId} started using ${session.modelId}`,
         sessionId: session.id,
         agentId: session.agentId,
         modelId: session.modelId,
@@ -134,7 +134,7 @@ function diffSessions(previous: SessionRecord[], current: SessionRecord[], captu
       events.push(createActivityEvent({
         type: 'session-updated',
         createdAt: capturedAt,
-        title: `会话状态变化: ${session.id}`,
+        title: `Session state changed ${session.id}`,
         description: `${existing.status} -> ${session.status}`,
         sessionId: session.id,
         agentId: session.agentId,
@@ -149,8 +149,8 @@ function diffSessions(previous: SessionRecord[], current: SessionRecord[], captu
     events.push(createActivityEvent({
       type: 'session-ended',
       createdAt: capturedAt,
-      title: `会话已结束: ${session.id}`,
-      description: `${session.agentId} 的会话已从运行态移除`,
+      title: `Session ended ${session.id}`,
+      description: `${session.agentId} session disappeared from runtime snapshot`,
       sessionId: session.id,
       agentId: session.agentId,
       modelId: session.modelId,
@@ -162,7 +162,7 @@ function diffSessions(previous: SessionRecord[], current: SessionRecord[], captu
     events.push(createActivityEvent({
       type: 'runtime-warning',
       createdAt: capturedAt,
-      title: '运行态告警',
+      title: 'Runtime warning',
       description: warning,
     }));
   }

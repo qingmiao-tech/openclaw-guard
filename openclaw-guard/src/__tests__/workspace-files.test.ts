@@ -66,7 +66,7 @@ describe('workspace-files', () => {
   });
 
   it('prevents reading outside managed roots and supports search', () => {
-    expect(() => readManagedFile(path.join(tempRoot, 'outside.md'))).toThrow(/允许的工作区范围/);
+    expect(() => readManagedFile(path.join(tempRoot, 'outside.md'))).toThrow(/outside Guard managed roots/);
 
     const results = searchManagedFiles('failover');
     expect(results.length).toBeGreaterThan(0);

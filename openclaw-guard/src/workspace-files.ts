@@ -97,7 +97,7 @@ export function getAgentCatalog(): AgentSummary[] {
       const isDefault = item.default === true;
       return {
         id: String(item.id || ''),
-        name: String(item.name || item.id || '未命名 Agent'),
+        name: String(item.name || item.id || 'Unnamed Agent'),
         isDefault,
         modelId: typeof item.model === 'string' ? item.model : defaultModel,
         workspace: String(item.workspace || defaultWorkspace),
@@ -111,7 +111,7 @@ export function getAgentCatalog(): AgentSummary[] {
     const resolvedWorkspace = resolveUserPath(defaultWorkspace);
     return [{
       id: 'default',
-      name: '默认 Agent',
+      name: 'Default Agent',
       isDefault: true,
       modelId: defaultModel,
       workspace: defaultWorkspace,
@@ -150,7 +150,7 @@ export function getManagedRoots(): ManagedRoot[] {
 
   const roots: ManagedRoot[] = [{
     id: makeRootId('default', 'workspace'),
-    label: '默认工作区',
+    label: 'Default Workspace',
     path: resolvedDefault,
     type: 'default-workspace',
   }];
@@ -181,7 +181,7 @@ function ensureManagedPath(targetPath: string): string {
   const resolved = resolveUserPath(targetPath);
   const matched = getManagedRootForPath(resolved);
   if (!matched) {
-    throw new Error('目标路径不在 Guard 允许的工作区范围内');
+    throw new Error('Target path is outside Guard managed roots');
   }
   return resolved;
 }
@@ -193,7 +193,7 @@ function ensureManagedDirectory(targetPath: string): string {
   }
   const stats = fs.statSync(resolved);
   if (!stats.isDirectory()) {
-    throw new Error('目标目录无效');
+    throw new Error('Target directory is invalid');
   }
   return resolved;
 }
@@ -208,10 +208,10 @@ function relativeToManagedRoot(targetPath: string): string {
 function validateNewEntryName(name: string): string {
   const trimmed = name.trim();
   if (!trimmed) {
-    throw new Error('新建名称不能为空');
+    throw new Error('Entry name cannot be empty');
   }
   if (trimmed.includes('/') || trimmed.includes('\\') || trimmed === '.' || trimmed === '..') {
-    throw new Error('新建名称不能包含路径分隔符');
+    throw new Error('Entry name cannot contain path separators');
   }
   return trimmed;
 }
@@ -243,7 +243,7 @@ export function readManagedFile(targetPath: string, maxBytes = 64 * 1024): Manag
   const resolved = ensureManagedPath(targetPath);
   const extension = path.extname(resolved).toLowerCase();
   if (!PREVIEWABLE_EXTENSIONS.has(extension) && !MEMORY_FILE_NAMES.has(path.basename(resolved))) {
-    throw new Error('该文件类型暂不支持在线预览');
+    throw new Error('This file type is not previewable in Guard');
   }
   const buffer = fs.readFileSync(resolved);
   const truncated = buffer.byteLength > maxBytes;
@@ -261,12 +261,12 @@ export function writeManagedFile(targetPath: string, content: string): { success
   const resolved = ensureManagedPath(targetPath);
   const extension = path.extname(resolved).toLowerCase();
   if (!EDITABLE_EXTENSIONS.has(extension) && !MEMORY_FILE_NAMES.has(path.basename(resolved))) {
-    return { success: false, message: '该文件类型不允许通过 Guard 在线修改' };
+    return { success: false, message: 'This file type cannot be edited in Guard' };
   }
 
   fs.mkdirSync(path.dirname(resolved), { recursive: true });
   fs.writeFileSync(resolved, content, 'utf-8');
-  return { success: true, message: `已保存 ${resolved}` };
+  return { success: true, message: `Saved ${resolved}` };
 }
 
 export function createManagedEntry(parentPath: string, name: string, kind: 'file' | 'directory' = 'file'): CreateManagedEntryResult {
@@ -275,7 +275,7 @@ export function createManagedEntry(parentPath: string, name: string, kind: 'file
     const safeName = validateNewEntryName(name);
     const targetPath = ensureManagedPath(path.join(resolvedParent, safeName));
     if (fs.existsSync(targetPath)) {
-      return { success: false, message: '同名文件或目录已存在' };
+      return { success: false, message: 'A file or directory with the same name already exists' };
     }
 
     if (kind === 'directory') {
@@ -288,7 +288,7 @@ export function createManagedEntry(parentPath: string, name: string, kind: 'file
     return {
       success: true,
       path: targetPath,
-      message: kind === 'directory' ? `已创建目录 ${targetPath}` : `已创建文件 ${targetPath}`,
+      message: kind === 'directory' ? `Created directory ${targetPath}` : `Created file ${targetPath}`,
     };
   } catch (error) {
     return {

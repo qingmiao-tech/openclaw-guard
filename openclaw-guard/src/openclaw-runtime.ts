@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+﻿import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
@@ -121,6 +121,72 @@ export interface CronSnapshot {
   jobs: CronJobRecord[];
   status?: CronStatusSummary;
   raw: unknown;
+}
+function extractJsonPayload(text: string): unknown | null {
+  const input = text.trim();
+  if (!input) return null;
+
+  try {
+    return JSON.parse(input);
+  } catch {
+    // Continue scanning for a JSON payload embedded in noisy output.
+  }
+
+  for (let start = 0; start < input.length; start += 1) {
+    const first = input[start];
+    if (first !== '{' && first !== '[') continue;
+
+    let inString = false;
+    let escaped = false;
+    const stack: string[] = [];
+
+    for (let index = start; index < input.length; index += 1) {
+      const char = input[index];
+
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+          continue;
+        }
+        if (char === '\\') {
+          escaped = true;
+          continue;
+        }
+        if (char === '"') {
+          inString = false;
+        }
+        continue;
+      }
+
+      if (char === '"') {
+        inString = true;
+        continue;
+      }
+
+      if (char === '{') {
+        stack.push('}');
+        continue;
+      }
+      if (char === '[') {
+        stack.push(']');
+        continue;
+      }
+      if ((char === '}' || char === ']') && stack.length > 0) {
+        const expected = stack.pop();
+        if (expected !== char) break;
+        if (stack.length === 0) {
+          const candidate = input.slice(start, index + 1);
+          try {
+            return JSON.parse(candidate);
+          } catch {
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 function toObject(value: unknown): Record<string, unknown> | null {
@@ -391,21 +457,22 @@ export function runOpenClawJson(args: string[], mockEnvKey?: string): { ok: bool
     };
   }
 
-  try {
+  const parsed = extractJsonPayload([result.stdout, result.stderr].filter(Boolean).join('\n'));
+  if (parsed !== null) {
     return {
       ok: true,
-      data: JSON.parse(result.stdout),
+      data: parsed,
       source: `openclaw ${args.join(' ')} --json`,
       warnings: [],
     };
-  } catch {
-    return {
-      ok: false,
-      data: null,
-      source: `openclaw ${args.join(' ')} --json`,
-      warnings: ['命令返回不是合法 JSON'],
-    };
   }
+
+  return {
+    ok: false,
+    data: null,
+    source: `openclaw ${args.join(' ')} --json`,
+    warnings: ['命令返回的内容不是合法 JSON'],
+  };
 }
 
 function extractRuntimeAlerts(root: Record<string, unknown>): RuntimeAlert[] {
@@ -433,7 +500,7 @@ function extractRuntimeAlerts(root: Record<string, unknown>): RuntimeAlert[] {
     alerts.push({
       level: 'warning',
       code: 'security-audit-warn',
-      message: `安全审计存在 ${warn} 条 warning 提示，可继续收敛配置。`,
+      message: `安全审计存在 ${warn} 条 warning 提示，建议继续收敛配置。`,
     });
   }
 
@@ -548,5 +615,7 @@ export function getCronSnapshot(): CronSnapshot {
     raw,
   };
 }
+
+
 
 

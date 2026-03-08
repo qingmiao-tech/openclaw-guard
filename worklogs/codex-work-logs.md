@@ -1403,3 +1403,53 @@
   1) 当前不建议下线 mission。
   2) 原因不是底座不够，而是第二期虽然已覆盖核心浏览、状态和同步能力，但 mission 仍可作为旧流程与历史入口的兼容层，适合在下一轮完成通知闭环、Git 授权细节和 Web 操作体验后再正式移除。
   3) 结论: 先保留 mission 为兼容入口，待第三阶段再评估下线窗口。
+
+## [2026-03-08 12:38] openclaw-guard 工作台第三阶段收口 [TASK-20260308-003]
+
+- 任务来源: 用户续作（继续处理第三阶段建议项）。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-08 12:38
+- 开始时间: 2026-03-08 12:38
+- 提交时间: 2026-03-08 14:31
+- 任务目标:
+  1) 给新工作台增加中英文切换，并保持根路由的新入口体验完整。
+  2) 继续补强通知中心、Git OAuth、文件编辑、Cron 操作在 Web 中的顺手度。
+  3) 产出 mission 兼容层下线评估清单，明确何时可以移除兼容入口。
+- 执行计划:
+  1) 重构 `workbench-ui.ts` 的前端状态与文案组织方式，引入轻量 i18n 字典与本地存储记忆。
+  2) 扩展 `notifications.ts / server.ts`，补充批量已读、清理等通知中心操作。
+  3) 扩展 `git-sync.ts / server.ts`，补充 OAuth 发起、回调成功/失败后的状态字段与 Web 展示。
+  4) 整理 `mission` 兼容层下线清单，并完成构建测试与提交收口。
+- 实际完成:
+  1) 新工作台已加入中英文切换，语言选择写入本地存储；根路由 `/`、`/index.html`、`/workbench` 继续统一指向原生工作台，旧版页面保留在 `/compat` 与 `/legacy`。
+  2) 通知中心已补齐 Web 操作体验：支持筛选、逐条已读、全部已读、清空全部、清空已读，并在总览区展示未读摘要。
+  3) Git Sync 已补齐 OAuth 状态链路：增加授权中/成功/失败状态、状态轮询与 Web 展示，同时保留 Token 认证路径。
+  4) 文件工作台已支持受控编辑、脏状态提示、保存反馈与快捷键保存；Cron 工作台已支持启用、禁用、手动触发、删除等动作的直达操作。
+  5) `openclaw-runtime.ts` 继续保留“从混杂日志中抽取 JSON 主体”的能力，确保真实 `openclaw status --json` 输出前后混入插件日志时，Guard 仍能正确解析。
+  6) 新增 `worklogs/openclaw-guard-mission-compat-retirement-checklist-20260308.md`，系统梳理 mission 兼容层覆盖边界、下线前条件、分阶段下线顺序与回滚方案。
+- 交付清单:
+  - `openclaw-guard/src/workbench-ui.ts`
+  - `openclaw-guard/src/server.ts`
+  - `openclaw-guard/src/openclaw-runtime.ts`
+  - `openclaw-guard/src/git-sync.ts`
+  - `openclaw-guard/src/notifications.ts`
+  - `openclaw-guard/src/workspace-files.ts`
+  - `openclaw-guard/src/cron-ui.ts`
+  - `openclaw-guard/src/dashboard.ts`
+  - `openclaw-guard/src/__tests__/server.test.ts`
+  - `openclaw-guard/src/__tests__/workspace-files.test.ts`
+  - `worklogs/openclaw-guard-mission-compat-retirement-checklist-20260308.md`
+- 样本验证:
+  1) 已再次执行真实命令 `cmd /c openclaw status --json`，确认运行态输出中存在插件日志 + JSON 主体混合输出，当前解析器可正常抽取并兼容 `heartbeat`、`channelSummary`、`sessions.recent`、`agents`、`securityAudit.summary`、`gateway.error` 等字段。
+  2) 已再次执行真实命令 `cmd /c openclaw cron list --json`，当前机器返回的是网关连接失败而非空 JSON；这验证了 Guard 不能把 Cron 错误态误判成“没有任务”，当前实现已按 warning/status 保留失败信息。
+  3) 已执行 `cmd /c openclaw gateway status --json`，观察到 `runtime.detail = Error: spawn EPERM`、`rpc.ok = false`、`port.status = busy` 等真实异常字段，进一步印证保留兼容层与弹性解析的必要性。
+- 验证结果:
+  - 已验证: `cmd /c npm run build` 通过。
+  - 已验证: `cmd /c npm run test` 通过，当前 9 个测试文件、50 个测试全部通过。
+  - 已验证: 根路由仍指向新工作台，兼容页入口仍可保留作为回退路径。
+  - 已验证: 第三阶段的通知、Git OAuth、文件编辑、Cron 操作增强均已接入 Web 页面与 API。
+- mission 兼容层结论:
+  1) 当前建议继续保留 `mission`，但明确降级为兼容层，不再作为默认主入口。
+  2) 新工作台已经覆盖大多数高频浏览和运维动作，但 `mission` 仍承担旧流程入口、历史使用习惯和回滚保险丝的作用。
+  3) 后续只有在三端手工回归、GitHub/Gitee OAuth 端到端验证、文档入口迁移和一个版本周期的弃用提示都完成后，才建议正式启动下线。
+

@@ -72,7 +72,7 @@ import {
   syncGitSync,
   startOAuthLogin,
 } from './git-sync.js';
-import { listNotifications, markNotificationRead } from './notifications.js';
+import { listNotifications, markNotificationRead, markAllNotifications, clearNotifications, clearReadNotifications, getNotificationSummary } from './notifications.js';
 
 function jsonResponse(res: http.ServerResponse, data: unknown, status = 200) {
   res.writeHead(status, {
@@ -162,11 +162,11 @@ export function startServer(port: number) {
   const maxRetries = 10;
 
   process.on('uncaughtException', (err) => {
-    console.error('[Guard] 未捕获异常:', err.stack || err.message);
+    console.error('[Guard] Uncaught exception:', err.stack || err.message);
   });
 
   process.on('unhandledRejection', (reason) => {
-    console.error('[Guard] 未处理的 Promise rejection:', reason);
+    console.error('[Guard] Unhandled Promise rejection:', reason);
   });
 
   let currentPort = port;
@@ -423,7 +423,7 @@ export function startServer(port: number) {
         if (pathname === '/api/env' && req.method === 'POST') {
           const body = await readJsonBody(req);
           if (typeof body.key !== 'string' || typeof body.value !== 'string') {
-            jsonResponse(res, { success: false, message: '请求格式错误' }, 400);
+            jsonResponse(res, { success: false, message: 'Invalid request payload' }, 400);
             return;
           }
           writeEnvValue(body.key, body.value);
@@ -492,7 +492,7 @@ export function startServer(port: number) {
         if (pathname === '/api/files/content' && req.method === 'POST') {
           const body = await readJsonBody(req);
           if (typeof body.path !== 'string' || typeof body.content !== 'string') {
-            jsonResponse(res, { success: false, message: '请求格式错误' }, 400);
+            jsonResponse(res, { success: false, message: 'Invalid request payload' }, 400);
             return;
           }
           jsonResponse(res, writeManagedFile(body.path, body.content));
@@ -501,7 +501,7 @@ export function startServer(port: number) {
         if (pathname === '/api/files/create' && req.method === 'POST') {
           const body = await readJsonBody(req);
           if (typeof body.parentPath !== 'string' || typeof body.name !== 'string') {
-            jsonResponse(res, { success: false, message: 'parentPath / name 必填' }, 400);
+            jsonResponse(res, { success: false, message: 'parentPath / name is required' }, 400);
             return;
           }
           jsonResponse(res, createManagedEntry(
@@ -579,7 +579,7 @@ export function startServer(port: number) {
         if (pathname === '/api/git-sync/auth/oauth' && req.method === 'POST') {
           const body = await readJsonBody(req);
           if ((body.provider !== 'github' && body.provider !== 'gitee') || typeof body.clientId !== 'string' || typeof body.clientSecret !== 'string') {
-            jsonResponse(res, { success: false, message: 'provider / clientId / clientSecret 必填' }, 400);
+            jsonResponse(res, { success: false, message: 'provider / clientId / clientSecret are required' }, 400);
             return;
           }
           jsonResponse(res, await startOAuthLogin({
@@ -613,18 +613,45 @@ export function startServer(port: number) {
 
         if (pathname === '/api/notifications' && req.method === 'GET') {
           const limit = Number(url.searchParams.get('limit') || '100');
-          jsonResponse(res, { items: listNotifications(limit) });
+          jsonResponse(res, getNotificationSummary(limit));
           return;
         }
         if (pathname === '/api/notifications/read' && req.method === 'POST') {
           const body = await readJsonBody(req);
-          jsonResponse(res, { success: markNotificationRead(typeof body.id === 'string' ? body.id : '', body.read !== false) });
+          jsonResponse(res, { success: markNotificationRead(typeof body.id === 'string' ? body.id : '', body.read !== false), summary: getNotificationSummary(200) });
           return;
         }
 
+        if (pathname === '/api/notifications/bulk' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          const action = typeof body.action === 'string' ? body.action : '';
+          let changed = 0;
+          let success = true;
+          let message = 'No notification action was applied.';
+          if (action === 'read-all') {
+            changed = markAllNotifications(true);
+            message = `Marked ${changed} notifications as read.`;
+          } else if (action === 'unread-all') {
+            changed = markAllNotifications(false);
+            message = `Marked ${changed} notifications as unread.`;
+          } else if (action === 'clear-read') {
+            changed = clearReadNotifications();
+            message = `Removed ${changed} read notifications.`;
+          } else if (action === 'clear-all') {
+            const total = getNotificationSummary(0).total;
+            clearNotifications();
+            changed = total;
+            message = `Removed ${changed} notifications.`;
+          } else {
+            success = false;
+            message = 'Unsupported notification action.';
+          }
+          jsonResponse(res, { success, changed, message, summary: getNotificationSummary(200) }, success ? 200 : 400);
+          return;
+        }
         jsonResponse(res, { error: 'Not Found' }, 404);
       } catch (error) {
-        console.error('[Guard] 路由处理异常:', error);
+        console.error('[Guard] Route handler error:', error);
         jsonResponse(res, { error: 'Internal server error', message: error instanceof Error ? error.message : String(error) }, 500);
       }
     });

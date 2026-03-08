@@ -1,4 +1,4 @@
-﻿import fs from 'node:fs';
+import fs from 'node:fs';
 import http from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
@@ -11,6 +11,18 @@ import { runCommand } from './openclaw-runtime.js';
 
 export type GitProvider = 'github' | 'gitee';
 export type GitAuthMode = 'none' | 'token' | 'oauth';
+export type GitOAuthPhase = 'idle' | 'authorizing' | 'success' | 'error';
+
+export interface GitOAuthState {
+  phase: GitOAuthPhase;
+  provider: GitProvider | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  authorizeUrl: string | null;
+  redirectUrl: string | null;
+  message: string | null;
+  error: string | null;
+}
 
 export interface GitSyncState {
   provider: GitProvider | null;
@@ -25,6 +37,7 @@ export interface GitSyncState {
   lastSyncAt: string | null;
   lastCommitAt: string | null;
   lastError: string | null;
+  oauth: GitOAuthState;
 }
 
 export interface GitSyncSecret {
@@ -56,6 +69,7 @@ export interface GitSyncStatus {
   canSync: boolean;
   reasons: string[];
   state: GitSyncState;
+  oauth: GitOAuthState;
 }
 
 export interface GitSyncActionResult {
@@ -80,6 +94,17 @@ interface ProviderRepoInfo {
   repo: string;
 }
 
+const DEFAULT_OAUTH_STATE: GitOAuthState = {
+  phase: 'idle',
+  provider: null,
+  startedAt: null,
+  completedAt: null,
+  authorizeUrl: null,
+  redirectUrl: null,
+  message: null,
+  error: null,
+};
+
 const DEFAULT_STATE: GitSyncState = {
   provider: null,
   remoteName: 'origin',
@@ -93,6 +118,7 @@ const DEFAULT_STATE: GitSyncState = {
   lastSyncAt: null,
   lastCommitAt: null,
   lastError: null,
+  oauth: { ...DEFAULT_OAUTH_STATE },
 };
 
 function getStateFile(): string {
@@ -103,8 +129,23 @@ function getSecretFile(): string {
   return path.join(ensureGuardLayout().secretsDir, 'git-sync.json');
 }
 
+function normalizeOAuthState(oauth?: Partial<GitOAuthState> | null): GitOAuthState {
+  return {
+    ...DEFAULT_OAUTH_STATE,
+    ...(oauth || {}),
+  };
+}
+
+function normalizeState(input?: Partial<GitSyncState> | null): GitSyncState {
+  return {
+    ...DEFAULT_STATE,
+    ...(input || {}),
+    oauth: normalizeOAuthState(input?.oauth),
+  };
+}
+
 function saveState(nextState: GitSyncState): void {
-  writeJsonFile(getStateFile(), nextState);
+  writeJsonFile(getStateFile(), normalizeState(nextState));
 }
 
 function saveSecret(secret: GitSyncSecret | null): void {
@@ -121,8 +162,11 @@ function loadSecret(): GitSyncSecret | null {
 }
 
 export function loadGitSyncState(): GitSyncState {
-  return readJsonFile<GitSyncState>(getStateFile(), DEFAULT_STATE);
+  return normalizeState(readJsonFile<GitSyncState>(getStateFile(), DEFAULT_STATE));
 }
+
+let activeOAuthServer: http.Server | null = null;
+let activeOAuthTimeout: NodeJS.Timeout | null = null;
 
 function runGit(args: string[], extraEnv?: NodeJS.ProcessEnv) {
   return runCommand('git', args, 60000);
@@ -286,19 +330,19 @@ function ensureGitIgnore(): string {
 }
 
 function buildStatus(stateOverride?: Partial<GitSyncState>): GitSyncStatus {
-  const state = { ...loadGitSyncState(), ...stateOverride };
+  const state = normalizeState({ ...loadGitSyncState(), ...stateOverride });
   const remoteUrl = state.remoteUrl || getRemoteUrl(state.remoteName) || null;
   const remote = remoteUrl ? parseGitRemote(remoteUrl) : null;
   const secret = loadSecret();
   const changedFiles = getChangedFiles();
   const reasons: string[] = [];
 
-  if (!ensureGitAvailable()) reasons.push('未检测到 git 可执行文件');
-  if (!isRepoInitialized()) reasons.push('当前 .openclaw 目录还不是 Git 仓库');
-  if (!remoteUrl) reasons.push('尚未绑定远程仓库');
-  if (remoteUrl && !remote) reasons.push('当前远程仓库不是 GitHub/Gitee 的标准地址');
-  if (!secret?.token) reasons.push('尚未配置 Git 认证');
-  if (state.repoPrivate !== true) reasons.push('远程仓库尚未确认是 private，已阻止同步');
+  if (!ensureGitAvailable()) reasons.push('Git executable was not detected');
+  if (!isRepoInitialized()) reasons.push('The current .openclaw directory is not a Git repository yet');
+  if (!remoteUrl) reasons.push('No remote repository is connected yet');
+  if (remoteUrl && !remote) reasons.push('The remote repository is not a standard GitHub/Gitee URL');
+  if (!secret?.token) reasons.push('Git authentication is not configured yet');
+  if (state.repoPrivate !== true) reasons.push('The remote repository is not confirmed as private, sync is blocked');
 
   const status: GitSyncStatus = {
     repoPath: repoPath(),
@@ -321,21 +365,51 @@ function buildStatus(stateOverride?: Partial<GitSyncState>): GitSyncStatus {
       remoteUrl,
       repoOwner: remote?.owner || state.repoOwner,
       repoName: remote?.repo || state.repoName,
+      oauth: normalizeOAuthState(state.oauth),
     },
+    oauth: normalizeOAuthState(state.oauth),
   };
 
   if (status.hasChanges) {
     addNotification({
       type: 'git-sync',
       source: 'git-sync',
-      title: '检测到 .openclaw 有未同步变更',
-      message: `共有 ${status.changedFiles.length} 个文件发生变化，可执行一键提交并推送。`,
+      title: 'Detected unsynced .openclaw changes',
+      message: `There are ${status.changedFiles.length} changed files ready for commit and push.`,
       severity: 'info',
       meta: { changedFiles: status.changedFiles.slice(0, 20) },
     });
   }
 
   return status;
+}
+
+function updateOAuthState(patch: Partial<GitOAuthState>): GitSyncState {
+  const current = loadGitSyncState();
+  const next = normalizeState({
+    ...current,
+    oauth: {
+      ...current.oauth,
+      ...patch,
+    },
+  });
+  saveState(next);
+  return next;
+}
+
+function clearActiveOAuthFlow(): void {
+  if (activeOAuthTimeout) {
+    clearTimeout(activeOAuthTimeout);
+    activeOAuthTimeout = null;
+  }
+  if (activeOAuthServer) {
+    try {
+      activeOAuthServer.close();
+    } catch {
+      // ignore close errors
+    }
+    activeOAuthServer = null;
+  }
 }
 
 export function getGitSyncStatus(): GitSyncStatus {
@@ -346,7 +420,7 @@ export function initGitSync(): GitSyncActionResult {
   if (!ensureGitAvailable()) {
     return {
       success: false,
-      message: '未检测到 git，可先安装 Git 再继续。',
+      message: 'Git was not detected. Install Git before continuing.',
       status: buildStatus(),
     };
   }
@@ -356,7 +430,7 @@ export function initGitSync(): GitSyncActionResult {
     if (!initResult.success) {
       return {
         success: false,
-        message: `初始化 Git 仓库失败: ${initResult.error || initResult.stderr || initResult.stdout}`,
+        message: `Failed to initialize Git repository: ${initResult.error || initResult.stderr || initResult.stdout}`,
         status: buildStatus(),
         output: initResult.stderr || initResult.stdout,
       };
@@ -367,13 +441,13 @@ export function initGitSync(): GitSyncActionResult {
   addNotification({
     type: 'git-sync',
     source: 'git-sync',
-    title: 'Git 同步仓库已初始化',
-    message: `已准备 Git 仓库，并更新 ${gitignorePath}`,
+    title: 'Git sync repository initialized',
+    message: `Prepared the Git repository and updated ${gitignorePath}`,
     severity: 'success',
   });
   return {
     success: true,
-    message: 'Git 同步仓库已初始化。',
+    message: 'Git sync repository initialized.',
     status: buildStatus(),
     output: gitignorePath,
   };
@@ -384,7 +458,7 @@ export function connectGitRemote(input: { provider?: GitProvider; remoteUrl: str
   if (!remote) {
     return {
       success: false,
-      message: '仅支持 GitHub/Gitee 的 HTTPS 或 SSH 仓库地址。',
+      message: 'Only GitHub/Gitee HTTPS or SSH repository URLs are supported.',
       status: buildStatus(),
     };
   }
@@ -392,7 +466,7 @@ export function connectGitRemote(input: { provider?: GitProvider; remoteUrl: str
   if (input.provider && input.provider !== remote.provider) {
     return {
       success: false,
-      message: '提供的 provider 与仓库地址不匹配。',
+      message: 'The provided provider does not match the remote URL.',
       status: buildStatus(),
     };
   }
@@ -409,7 +483,7 @@ export function connectGitRemote(input: { provider?: GitProvider; remoteUrl: str
   if (!result.success) {
     return {
       success: false,
-      message: `绑定远程仓库失败: ${result.error || result.stderr || result.stdout}`,
+        message: `Failed to bind remote repository: ${result.error || result.stderr || result.stdout}`,
       status: buildStatus(),
       output: result.stderr || result.stdout,
     };
@@ -428,13 +502,13 @@ export function connectGitRemote(input: { provider?: GitProvider; remoteUrl: str
   addNotification({
     type: 'git-sync',
     source: 'git-sync',
-    title: '远程仓库绑定成功',
+    title: 'Remote repository connected',
     message: remote.normalizedRemoteUrl,
     severity: 'success',
   });
   return {
     success: true,
-    message: `已绑定远程仓库 ${remote.normalizedRemoteUrl}`,
+    message: `Connected remote repository ${remote.normalizedRemoteUrl}`,
     status: buildStatus(state),
   };
 }
@@ -444,7 +518,7 @@ export function saveGitTokenAuth(input: { provider?: GitProvider; token: string;
   if (!token) {
     return {
       success: false,
-      message: 'Token 不能为空。',
+      message: 'Token cannot be empty.',
       status: buildStatus(),
     };
   }
@@ -456,18 +530,26 @@ export function saveGitTokenAuth(input: { provider?: GitProvider; token: string;
     username: input.username || current.username,
     authMode: input.authMode || 'token',
     lastError: null,
+    oauth: {
+      ...current.oauth,
+      phase: input.authMode === 'oauth' ? 'success' : current.oauth.phase === 'authorizing' ? 'idle' : current.oauth.phase,
+      provider: input.provider || current.provider || current.oauth.provider,
+      completedAt: input.authMode === 'oauth' ? new Date().toISOString() : current.oauth.completedAt,
+      message: input.authMode === 'oauth' ? 'OAuth finished successfully. Continue with private-check or sync.' : current.oauth.message,
+      error: null,
+    },
   };
   saveState(next);
   addNotification({
     type: 'git-sync',
     source: 'git-sync',
-    title: 'Git 认证已保存',
-    message: '已保存 Git 凭据，可继续执行 private 校验和同步。',
+    title: 'Git authentication saved',
+    message: 'Git credentials were saved. You can continue with private-check or sync.',
     severity: 'success',
   });
   return {
     success: true,
-    message: 'Git 认证已保存。',
+    message: 'Git authentication saved.',
     status: buildStatus(next),
   };
 }
@@ -481,7 +563,7 @@ export async function checkGitRemotePrivate(): Promise<GitSyncActionResult> {
   if (!remote || !secret?.token) {
     return {
       success: false,
-      message: '请先完成远程仓库绑定和认证后再校验 private。',
+      message: 'Connect a remote repository and configure authentication before checking private status.',
       status: buildStatus(),
     };
   }
@@ -496,16 +578,16 @@ export async function checkGitRemotePrivate(): Promise<GitSyncActionResult> {
       repoName: repoInfo.repo,
       repoPrivate: repoInfo.private,
       lastCheckedAt: new Date().toISOString(),
-      lastError: repoInfo.private ? null : '远程仓库不是 private',
+      lastError: repoInfo.private ? null : 'Remote repository is not private',
     };
     saveState(next);
     const message = repoInfo.private
-      ? '远程仓库已确认是 private，可执行同步。'
-      : '远程仓库不是 private，Guard 已拒绝同步。';
+      ? 'The remote repository is confirmed as private and ready to sync.'
+      : 'The remote repository is not private, Guard has blocked sync.';
     addNotification({
       type: 'git-sync',
       source: 'git-sync',
-      title: repoInfo.private ? '私有仓校验通过' : '私有仓校验失败',
+      title: repoInfo.private ? 'Private repository check passed' : 'Private repository check failed',
       message,
       severity: repoInfo.private ? 'success' : 'warning',
     });
@@ -524,13 +606,13 @@ export async function checkGitRemotePrivate(): Promise<GitSyncActionResult> {
     addNotification({
       type: 'git-sync',
       source: 'git-sync',
-      title: '私有仓校验失败',
-      message: next.lastError || '未知错误',
+      title: 'Private repository check failed',
+      message: next.lastError || 'Unknown error',
       severity: 'error',
     });
     return {
       success: false,
-      message: `私有仓校验失败: ${next.lastError}`,
+      message: `Private repository check failed: ${next.lastError}`,
       status: buildStatus(next),
     };
   }
@@ -543,7 +625,7 @@ function generateCommitMessage(): string {
   const dd = `${now.getDate()}`.padStart(2, '0');
   const hh = `${now.getHours()}`.padStart(2, '0');
   const mi = `${now.getMinutes()}`.padStart(2, '0');
-  return `同步 OpenClaw 配置 ${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+  return `Sync OpenClaw config ${yyyy}-${mm}-${dd} ${hh}:${mi}`;
 }
 
 function getReadyStatus(): GitSyncStatus {
@@ -556,14 +638,14 @@ export function commitGitSync(message?: string): GitSyncActionResult {
   if (!status.canSync) {
     return {
       success: false,
-      message: `同步前检查未通过: ${status.reasons.join('；')}`,
+      message: `Sync pre-check failed: ${status.reasons.join('; ')}`,
       status,
     };
   }
   if (!status.hasChanges) {
     return {
       success: false,
-      message: '当前没有可提交的变更。',
+      message: 'There are no changes to commit.',
       status,
     };
   }
@@ -572,7 +654,7 @@ export function commitGitSync(message?: string): GitSyncActionResult {
   if (!addResult.success) {
     return {
       success: false,
-      message: `暂存文件失败: ${addResult.error || addResult.stderr || addResult.stdout}`,
+        message: `Failed to stage files: ${addResult.error || addResult.stderr || addResult.stdout}`,
       status,
       output: addResult.stderr || addResult.stdout,
     };
@@ -582,7 +664,7 @@ export function commitGitSync(message?: string): GitSyncActionResult {
   if (!commitResult.success) {
     return {
       success: false,
-      message: `提交失败: ${commitResult.error || commitResult.stderr || commitResult.stdout}`,
+        message: `Commit failed: ${commitResult.error || commitResult.stderr || commitResult.stdout}`,
       status,
       output: commitResult.stderr || commitResult.stdout,
     };
@@ -597,13 +679,13 @@ export function commitGitSync(message?: string): GitSyncActionResult {
   addNotification({
     type: 'git-sync',
     source: 'git-sync',
-    title: '本地提交成功',
-    message: commitResult.stdout.trim() || '已生成新的 Git 提交。',
+    title: 'Local commit succeeded',
+    message: commitResult.stdout.trim() || 'A new Git commit was created.',
     severity: 'success',
   });
   return {
     success: true,
-    message: '本地提交成功。',
+    message: 'Local commit succeeded.',
     status: buildStatus(next),
     output: commitResult.stdout.trim(),
   };
@@ -614,7 +696,7 @@ export function pushGitSync(): GitSyncActionResult {
   if (!status.canSync) {
     return {
       success: false,
-      message: `推送前检查未通过: ${status.reasons.join('；')}`,
+      message: `Push pre-check failed: ${status.reasons.join('; ')}`,
       status,
     };
   }
@@ -624,7 +706,7 @@ export function pushGitSync(): GitSyncActionResult {
   if (!secret?.token || !remote) {
     return {
       success: false,
-      message: '推送前缺少远程仓库或认证信息。',
+      message: 'Remote repository or authentication is missing before push.',
       status,
     };
   }
@@ -641,13 +723,13 @@ export function pushGitSync(): GitSyncActionResult {
     addNotification({
       type: 'git-sync',
       source: 'git-sync',
-      title: '远程推送失败',
-      message: next.lastError || '未知错误',
+      title: 'Remote push failed',
+      message: next.lastError || 'Unknown error',
       severity: 'error',
     });
     return {
       success: false,
-      message: `远程推送失败: ${next.lastError}`,
+      message: `Remote push failed: ${next.lastError}`,
       status: buildStatus(next),
       output: pushResult.stderr || pushResult.stdout,
     };
@@ -662,13 +744,13 @@ export function pushGitSync(): GitSyncActionResult {
   addNotification({
     type: 'git-sync',
     source: 'git-sync',
-    title: '远程推送成功',
-    message: pushResult.stdout.trim() || '已推送到远程 private 仓库。',
+    title: 'Remote push succeeded',
+    message: pushResult.stdout.trim() || 'Changes were pushed to the private remote repository.',
     severity: 'success',
   });
   return {
     success: true,
-    message: '远程推送成功。',
+    message: 'Remote push succeeded.',
     status: buildStatus(next),
     output: pushResult.stdout.trim(),
   };
@@ -727,76 +809,136 @@ export async function startOAuthLogin(options: OAuthLoginOptions): Promise<GitSy
       scope: options.scope || 'projects',
     };
 
+  clearActiveOAuthFlow();
+
   const stateValue = Math.random().toString(16).slice(2) + Date.now().toString(16);
   const callbackServer = http.createServer();
+  const startedAt = new Date().toISOString();
 
-  const authResult = await new Promise<GitSyncActionResult>((resolve) => {
-    const timeout = setTimeout(() => {
-      callbackServer.close();
+  callbackServer.on('request', async (req, res) => {
+    try {
+      const requestUrl = new URL(req.url || '/', 'http://127.0.0.1');
+      const code = requestUrl.searchParams.get('code');
+      const returnedState = requestUrl.searchParams.get('state');
+      if (!code || returnedState !== stateValue) {
+        const next = updateOAuthState({
+          phase: 'error',
+          provider: options.provider,
+          completedAt: new Date().toISOString(),
+          message: 'OAuth callback verification failed. Please restart the flow.',
+          error: 'callback-state-mismatch',
+        });
+        addNotification({
+          type: 'git-sync',
+          source: 'git-sync',
+          title: 'OAuth callback verification failed',
+          message: 'The callback did not include a valid code/state pair. Please start OAuth again.',
+          severity: 'error',
+        });
+        res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end('<html><body><h2>OpenClaw Guard OAuth verification failed</h2><p>Please return to Guard and start the OAuth flow again.</p></body></html>');
+        clearActiveOAuthFlow();
+        buildStatus(next);
+        return;
+      }
+
+      const redirectUri = `http://127.0.0.1:${(callbackServer.address() as { port: number }).port}/callback`;
+      const tokenResponse = await requestJson(providerConfig.tokenUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'openclaw-guard',
+        },
+        body: new URLSearchParams({
+          client_id: options.clientId,
+          client_secret: options.clientSecret,
+          code,
+          redirect_uri: redirectUri,
+          state: stateValue,
+        }).toString(),
+      });
+
+      const token = typeof tokenResponse.access_token === 'string' ? tokenResponse.access_token : '';
+      if (!token) {
+        throw new Error('OAuth did not return an access_token');
+      }
+
+      const user = await fetchOAuthUser(options.provider, token);
+      const saveResult = saveGitTokenAuth({
+        provider: options.provider,
+        token,
+        username: user.username,
+        authMode: 'oauth',
+      });
+      if (saveResult.status.remoteUrl) {
+        await checkGitRemotePrivate();
+      }
+      const next = updateOAuthState({
+        phase: 'success',
+        provider: options.provider,
+        completedAt: new Date().toISOString(),
+        message: 'OAuth finished successfully. Continue with private-check or sync.',
+        error: null,
+      });
+      addNotification({
+        type: 'git-sync',
+        source: 'git-sync',
+        title: 'OAuth completed successfully',
+        message: `${options.provider} account: ${user.username || 'unknown'}`,
+        severity: 'success',
+      });
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end('<html><body><h2>OpenClaw Guard OAuth completed</h2><p>You can close this window and return to Guard.</p></body></html>');
+      clearActiveOAuthFlow();
+      saveResult.status = buildStatus(next);
+      return;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const next = updateOAuthState({
+        phase: 'error',
+        provider: options.provider,
+        completedAt: new Date().toISOString(),
+        message: 'OAuth failed. Check network, Client ID, Client Secret, and callback settings.',
+        error: message,
+      });
+      addNotification({
+        type: 'git-sync',
+        source: 'git-sync',
+        title: 'OAuth failed',
+        message,
+        severity: 'error',
+      });
+      res.writeHead(500, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end('<html><body><h2>OpenClaw Guard OAuth failed</h2><p>Return to Guard for details, then retry.</p></body></html>');
+      clearActiveOAuthFlow();
+      buildStatus(next);
+    }
+  });
+
+  return await new Promise<GitSyncActionResult>((resolve) => {
+    callbackServer.on('error', (error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      const next = updateOAuthState({
+        phase: 'error',
+        provider: options.provider,
+        completedAt: new Date().toISOString(),
+        message: 'OAuth callback server failed to start.',
+        error: message,
+      });
+      addNotification({
+        type: 'git-sync',
+        source: 'git-sync',
+        title: 'OAuth startup failed',
+        message,
+        severity: 'error',
+      });
+      clearActiveOAuthFlow();
       resolve({
         success: false,
-        message: 'OAuth 登录超时，请重试。',
-        status: buildStatus(),
+        message: `OAuth callback server failed to start: ${message}`,
+        status: buildStatus(next),
       });
-    }, 180000);
-
-    callbackServer.on('request', async (req, res) => {
-      try {
-        const requestUrl = new URL(req.url || '/', 'http://127.0.0.1');
-        const code = requestUrl.searchParams.get('code');
-        const returnedState = requestUrl.searchParams.get('state');
-        if (!code || returnedState !== stateValue) {
-          res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
-          res.end('OAuth 回调校验失败，请返回 Guard 重试。');
-          return;
-        }
-
-        const redirectUri = `http://127.0.0.1:${(callbackServer.address() as { port: number }).port}/callback`;
-        const tokenResponse = await requestJson(providerConfig.tokenUrl, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': 'openclaw-guard',
-          },
-          body: new URLSearchParams({
-            client_id: options.clientId,
-            client_secret: options.clientSecret,
-            code,
-            redirect_uri: redirectUri,
-            state: stateValue,
-          }).toString(),
-        });
-
-        const token = typeof tokenResponse.access_token === 'string' ? tokenResponse.access_token : '';
-        if (!token) {
-          throw new Error('OAuth 未返回 access_token');
-        }
-
-        const user = await fetchOAuthUser(options.provider, token);
-        const saveResult = saveGitTokenAuth({
-          provider: options.provider,
-          token,
-          username: user.username,
-          authMode: 'oauth',
-        });
-
-        clearTimeout(timeout);
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end('<html><body><h2>OpenClaw Guard 授权成功</h2><p>可以关闭这个窗口，回到 Guard 继续操作。</p></body></html>');
-        callbackServer.close();
-        resolve(saveResult);
-      } catch (error) {
-        clearTimeout(timeout);
-        res.writeHead(500, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end('<html><body><h2>OpenClaw Guard 授权失败</h2><p>请回到 Guard 查看错误提示。</p></body></html>');
-        callbackServer.close();
-        resolve({
-          success: false,
-          message: error instanceof Error ? error.message : String(error),
-          status: buildStatus(),
-        });
-      }
     });
 
     callbackServer.listen(options.redirectPort || 0, '127.0.0.1', () => {
@@ -809,20 +951,56 @@ export async function startOAuthLogin(options: OAuthLoginOptions): Promise<GitSy
         scope: providerConfig.scope,
         state: stateValue,
       }).toString()}`;
+
+      const next = updateOAuthState({
+        phase: 'authorizing',
+        provider: options.provider,
+        startedAt,
+        completedAt: null,
+        authorizeUrl: authUrl,
+        redirectUrl: redirectUri,
+        message: 'Browser authorization started. Finish login in your browser.',
+        error: null,
+      });
+
+      activeOAuthServer = callbackServer;
+      activeOAuthTimeout = setTimeout(() => {
+        const timeoutState = updateOAuthState({
+          phase: 'error',
+          provider: options.provider,
+          completedAt: new Date().toISOString(),
+          message: 'OAuth timed out. Start the flow again.',
+          error: 'timeout',
+        });
+        addNotification({
+          type: 'git-sync',
+          source: 'git-sync',
+          title: 'OAuth timed out',
+          message: 'The browser authorization was not completed within 180 seconds.',
+          severity: 'warning',
+        });
+        clearActiveOAuthFlow();
+        buildStatus(timeoutState);
+      }, 180000);
+
       if (options.openBrowser !== false) {
         openUrlInBrowser(authUrl);
       }
+
       addNotification({
         type: 'git-sync',
         source: 'git-sync',
-        title: 'OAuth 授权已发起',
-        message: `请在浏览器完成 ${options.provider} 授权。`,
+        title: 'OAuth started',
+        message: `Open ${options.provider} in your browser and finish the login. Callback: ${redirectUri}`,
         severity: 'info',
+      });
+
+      resolve({
+        success: true,
+        message: 'OAuth started. Finish the login in your browser.',
+        status: buildStatus(next),
+        output: authUrl,
       });
     });
   });
-
-  return authResult;
 }
-
-

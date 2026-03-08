@@ -57,7 +57,7 @@ describe('startServer - 进程级错误处理', () => {
     handler(testError);
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
-      '[Guard] 未捕获异常:',
+      '[Guard] Uncaught exception:',
       testError.stack
     );
 
@@ -81,7 +81,7 @@ describe('startServer - 进程级错误处理', () => {
     handler('promise rejection reason');
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
-      '[Guard] 未处理的 Promise rejection:',
+      '[Guard] Unhandled Promise rejection:',
       'promise rejection reason'
     );
 
@@ -106,7 +106,7 @@ describe('startServer - 进程级错误处理', () => {
     handler(testError);
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
-      '[Guard] 未捕获异常:',
+      '[Guard] Uncaught exception:',
       'no stack error'
     );
 

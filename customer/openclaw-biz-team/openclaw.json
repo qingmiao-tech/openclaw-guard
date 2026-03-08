@@ -1,68 +1,56 @@
 {
+  "wizard": {
+    "lastRunAt": "2026-03-06T11:52:22.748Z",
+    "lastRunVersion": "2026.3.2",
+    "lastRunCommand": "onboard",
+    "lastRunMode": "local"
+  },
   "models": {
     "mode": "merge",
     "providers": {
-      "openai-codex": {
-        "baseUrl": "https://api.openai.com/v1",
-        "apiKey": "${OPENAI_API_KEY}",
+      "custom-api-aigocode": {
+        "baseUrl": "https://api.aigocode.com",
+        "apiKey": "sk-c711d56c0abd8d4eb3853616cb903ea3aa251d6dc1f6e8888cd0ff437844816295",
+        "api": "anthropic-messages",
         "models": [
           {
-            "id": "gpt-5.3-codex",
-            "name": "GPT-5.3 Codex",
-            "contextWindow": 128000,
-            "maxTokens": 8192
-          }
-        ]
-      },
-      "qwen-portal": {
-        "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        "apiKey": "${DASHSCOPE_API_KEY}",
-        "models": [
-          {
-            "id": "qwen3.5-plus",
-            "name": "Qwen 3.5 Plus",
-            "contextWindow": 32000,
+            "id": "claude-opus-4-6",
+            "name": "claude-opus-4-6 (Custom Provider)",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 16000,
             "maxTokens": 4096
           }
         ]
       }
     }
   },
-  "tools": {
-    "agentToAgent": {
-      "enabled": true,
-      "allow": [
-        "task-hub",
-        "market-research",
-        "data-analysis",
-        "ad-ops",
-        "logistics-customs",
-        "finance-manager",
-        "copy-editor"
-      ]
-    },
-    "sessions": {
-      "visibility": "all"
-    }
-  },
   "agents": {
     "defaults": {
-      "workspace": "~/.openclaw/customer-biz-team/workspaces/task-hub",
       "model": {
-        "primary": "openai-codex/gpt-5.3-codex",
-        "fallbacks": [
-          "qwen-portal/qwen3.5-plus"
-        ]
+        "primary": "custom-api-aigocode/claude-opus-4-6"
       },
       "models": {
-        "openai-codex/gpt-5.3-codex": {
-          "alias": "primary"
-        },
-        "qwen-portal/qwen3.5-plus": {
-          "alias": "backup-cn"
+        "custom-api-aigocode/claude-opus-4-6": {
+          "alias": "claude-opus-4.6"
         }
       },
-      "timeoutSeconds": 600
+      "workspace": "/Users/a1/.openclaw/workspace",
+      "compaction": {
+        "mode": "safeguard"
+      },
+      "maxConcurrent": 4,
+      "subagents": {
+        "maxConcurrent": 8
+      }
     },
     "list": [
       {
@@ -107,5 +95,79 @@
         "workspace": "~/.openclaw/customer-biz-team/workspaces/copy-editor"
       }
     ]
+  },
+  "tools": {
+    "profile": "messaging",
+    "agentToAgent": {
+      "enabled": true,
+      "allow": [
+        "task-hub",
+        "market-research",
+        "data-analysis",
+        "ad-ops",
+        "logistics-customs",
+        "finance-manager",
+        "copy-editor"
+      ]
+    },
+    "sessions": {
+      "visibility": "all"
+    }
+  },
+  "messages": {
+    "ackReactionScope": "group-mentions"
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "boot-md": {
+          "enabled": true
+        },
+        "bootstrap-extra-files": {
+          "enabled": true
+        },
+        "command-logger": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "loopback",
+    "auth": {
+      "mode": "token",
+      "token": "0d607d64f67319ede88dcd196773b4cdab6d99cb5cb4e066"
+    },
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    },
+    "nodes": {
+      "denyCommands": [
+        "camera.snap",
+        "camera.clip",
+        "screen.record",
+        "contacts.add",
+        "calendar.add",
+        "reminders.add",
+        "sms.send"
+      ]
+    }
+  },
+  "meta": {
+    "lastTouchedVersion": "2026.3.2",
+    "lastTouchedAt": "2026-03-06T11:52:22.762Z"
   }
 }

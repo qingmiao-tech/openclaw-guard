@@ -46,6 +46,39 @@
 
 ## 交付记录
 
+## [2026-03-07 23:28] tenacitOS 深度分析并形成与 openclaw-guard 对比文档 [TASK-20260307-003]
+
+- 任务来源: 用户要求“详细分析 `https://github.com/carlosazaustre/tenacitOS`，并加入与当前 `openclaw-guard` 的对比性文档，保存到 `worklogs`”。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-07 23:12
+- 开始时间: 2026-03-07 23:12
+- 提交时间: 2026-03-07 23:28
+- 任务目标:
+  1) 基于 tenacitOS 一手仓库内容做工程级分析（架构、功能、数据流、安全、运维依赖）。
+  2) 与当前 openclaw-guard 进行同维度对比（定位、能力边界、风险与缺口）。
+  3) 输出可执行的集成建议文档并落盘到 `worklogs/`。
+- 执行过程:
+  1) 读取 tenacitOS README/ROADMAP/COST-TRACKING 与关键源码（middleware、auth、terminal、cron、files、actions、pricing、usage collector）。
+  2) 本地拉取 tenacitOS 做结构统计（src 文件数、API route 数、依赖规模）并核对最新提交快照。
+  3) 扫描 openclaw-guard 当前实现（mission-control、server、index、README），提取 Mission 生命周期管理与最小鉴权逻辑。
+  4) 形成“定位对比 + 风险对比 + 分层集成建议 + P0/P1/P2 演进清单”的文档，并写入 `worklogs/`。
+  5) 清理分析临时目录，避免将临时克隆目录残留为待提交文件。
+- 交付成果:
+  1) 已新增一份完整对比报告，可直接用于后续技术决策与迭代排期。
+  2) 报告明确给出“Guard 作为控制平面 + tenacitOS 作为运营平面”的分层结论。
+  3) 报告附带可执行改造优先级（版本锁定、回滚、鉴权、测试、健康探测增强）。
+- 变更清单:
+  - `worklogs/tenacitos-vs-openclaw-guard-comparative-analysis-20260307.md`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`36b4166`; ahead/behind=`ahead 13, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`ad464c3`; ahead/behind=`ahead 2, behind 0`
+- 验证结果:
+  1) 文档已落盘到 `worklogs/`，包含 tenacitOS 与 openclaw-guard 的可复核版本快照、代码统计、对比矩阵与改造建议。
+  2) 仅新增文档与工作日志，未改动业务逻辑代码。
+- 后续建议:
+  1) 下一步可按报告的 P0 先实现 `mission install/sync --ref` 与 rollback，降低上游变更风险。
+  2) 建议把 Guard Web API 的全局鉴权纳入下一迭代，避免非 mission 接口裸露。
+
 ## [2026-03-07 23:03] 同步课程总纲：纳入 Day14 多 Agent + 飞书多机器人模块 [TASK-20260307-002]
 
 - 任务来源: 用户在新增 Day14 课程后确认“可以”，继续执行后续收口（总纲同步）。

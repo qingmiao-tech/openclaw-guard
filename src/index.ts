@@ -27,7 +27,7 @@ import {
 import { startServer } from './server.js';
 import { getDashboardOverview, captureSessionOverview, getRecentActivity } from './dashboard.js';
 import { getAgentCatalog, getManagedRoots, listManagedFiles, readManagedFile, writeManagedFile, listMemoryFiles, searchManagedFiles } from './workspace-files.js';
-import { getCronOverview, enableCronJob, disableCronJob, runCronJob, removeCronJob } from './cron-ui.js';
+import { getCronOverview, enableCronJob, disableCronJob, runCronJob, removeCronJob, createCronJob, updateCronJob, type CronJobInput } from './cron-ui.js';
 import { getGitSyncStatus, initGitSync, connectGitRemote, saveGitTokenAuth, checkGitRemotePrivate, commitGitSync, pushGitSync, syncGitSync, startOAuthLogin } from './git-sync.js';
 import { summarizeCosts } from './costs.js';
 
@@ -39,6 +39,36 @@ function printJson(data: unknown) {
 
 function printAction(result: { success: boolean; message: string }) {
   console.log(result.success ? chalk.green(result.message) : chalk.red(result.message));
+}
+
+function parseOptionalNumber(value?: string): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function buildCronInputFromCli(opts: Record<string, unknown>, jobId?: string): CronJobInput {
+  return {
+    jobId,
+    name: typeof opts.name === 'string' ? opts.name : undefined,
+    description: typeof opts.description === 'string' ? opts.description : undefined,
+    agentId: typeof opts.agentId === 'string' ? opts.agentId : undefined,
+    prompt: typeof opts.prompt === 'string' ? opts.prompt : undefined,
+    scheduleMode: typeof opts.scheduleMode === 'string' ? opts.scheduleMode as CronJobInput['scheduleMode'] : 'cron',
+    scheduleValue: typeof opts.scheduleValue === 'string' ? opts.scheduleValue : '',
+    enabled: typeof opts.enabled === 'boolean' ? opts.enabled : undefined,
+    timezone: typeof opts.timezone === 'string' ? opts.timezone : undefined,
+    model: typeof opts.model === 'string' ? opts.model : undefined,
+    thinking: typeof opts.thinking === 'string' ? opts.thinking as CronJobInput['thinking'] : undefined,
+    session: typeof opts.session === 'string' ? opts.session as CronJobInput['session'] : undefined,
+    wake: typeof opts.wake === 'string' ? opts.wake as CronJobInput['wake'] : undefined,
+    timeoutMs: parseOptionalNumber(typeof opts.timeoutMs === 'string' ? opts.timeoutMs : undefined),
+    timeoutSeconds: parseOptionalNumber(typeof opts.timeoutSeconds === 'string' ? opts.timeoutSeconds : undefined),
+    stagger: typeof opts.stagger === 'string' ? opts.stagger : undefined,
+    announce: typeof opts.announce === 'boolean' ? opts.announce : undefined,
+    bestEffortDeliver: typeof opts.bestEffortDeliver === 'boolean' ? opts.bestEffortDeliver : undefined,
+    deleteAfterRun: typeof opts.deleteAfterRun === 'boolean' ? opts.deleteAfterRun : undefined,
+  };
 }
 
 function printMissionDeprecation() {
@@ -405,6 +435,62 @@ cronCmd.command('list').description('列出定时任务').option('--json', '输�
     console.log(`  agent=${job.agentId} prompt=${job.prompt}`);
   }
 });
+cronCmd.command('create').description('创建定时任务')
+  .requiredOption('--schedule-mode <mode>', 'cron | every | at')
+  .requiredOption('--schedule-value <value>', 'cron 表达式、every 持续时间或 at 时间')
+  .requiredOption('--prompt <text>', '任务消息')
+  .option('--name <name>', '任务名称')
+  .option('--description <text>', '任务描述')
+  .option('--agent-id <id>', 'Agent ID')
+  .option('--enabled', '创建后启用')
+  .option('--disabled', '创建后保持停用')
+  .option('--timezone <iana>', '时区')
+  .option('--model <model>', '模型覆盖')
+  .option('--thinking <level>', 'off|minimal|low|medium|high')
+  .option('--session <target>', 'main|isolated')
+  .option('--wake <mode>', 'now|next-heartbeat')
+  .option('--timeout-ms <ms>', '超时毫秒')
+  .option('--timeout-seconds <n>', '超时秒数')
+  .option('--stagger <duration>', '抖动窗口，例如 30s/5m；填 0 表示 exact')
+  .option('--announce', '推送摘要到聊天')
+  .option('--best-effort-deliver', '投递失败不阻断任务')
+  .option('--delete-after-run', '一次性任务执行成功后删除')
+  .action((opts: Record<string, unknown>) => {
+    const enabled = opts.disabled ? false : (opts.enabled ? true : undefined);
+    printAction(createCronJob(buildCronInputFromCli({ ...opts, enabled })));
+  });
+cronCmd.command('edit <jobId>').description('编辑定时任务')
+  .requiredOption('--schedule-mode <mode>', 'cron | every | at')
+  .requiredOption('--schedule-value <value>', 'cron 表达式、every 持续时间或 at 时间')
+  .option('--prompt <text>', '任务消息')
+  .option('--name <name>', '任务名称')
+  .option('--description <text>', '任务描述')
+  .option('--agent-id <id>', 'Agent ID；留空会清空绑定')
+  .option('--enable', '启用任务')
+  .option('--disable', '停用任务')
+  .option('--timezone <iana>', '时区')
+  .option('--model <model>', '模型覆盖')
+  .option('--thinking <level>', 'off|minimal|low|medium|high')
+  .option('--session <target>', 'main|isolated')
+  .option('--wake <mode>', 'now|next-heartbeat')
+  .option('--timeout-ms <ms>', '超时毫秒')
+  .option('--timeout-seconds <n>', '超时秒数')
+  .option('--stagger <duration>', '抖动窗口，例如 30s/5m；填 0 表示 exact')
+  .option('--announce', '开启摘要投递')
+  .option('--no-announce', '关闭摘要投递')
+  .option('--best-effort-deliver', '投递失败不阻断任务')
+  .option('--no-best-effort-deliver', '投递失败视为失败')
+  .option('--delete-after-run', '一次性任务执行成功后删除')
+  .option('--keep-after-run', '一次性任务执行成功后保留')
+  .action((jobId: string, opts: Record<string, unknown>) => {
+    const enabled = opts.enable ? true : (opts.disable ? false : undefined);
+    const deleteAfterRun = opts.keepAfterRun ? false : (typeof opts.deleteAfterRun === 'boolean' ? opts.deleteAfterRun : undefined);
+    printAction(updateCronJob(buildCronInputFromCli({
+      ...opts,
+      enabled,
+      deleteAfterRun,
+    }, jobId)));
+  });
 cronCmd.command('enable <jobId>').description('启用定时任务').action((jobId: string) => printAction(enableCronJob(jobId)));
 cronCmd.command('disable <jobId>').description('停用定时任务').action((jobId: string) => printAction(disableCronJob(jobId)));
 cronCmd.command('run <jobId>').description('手动触发定时任务').action((jobId: string) => printAction(runCronJob(jobId)));
@@ -422,9 +508,20 @@ gitSyncCmd.command('status').description('查看同步状态').option('--json', 
   console.log(`已初始化: ${status.repoInitialized ? '是' : '否'}`);
   console.log(`远程仓库: ${status.remoteUrl || '-'}`);
   console.log(`Provider: ${status.provider || '-'}`);
+  console.log(`远程页面: ${status.remoteWebUrl || '-'}`);
+  console.log(`认证账号: ${status.accountUsername || '-'}`);
   console.log(`私有仓: ${status.repoPrivate === true ? '已确认' : status.repoPrivate === false ? '否' : '未校验'}`);
   console.log(`认证: ${status.authConfigured ? `已配置 (${status.authMode})` : '未配置'}`);
   console.log(`本地变更: ${status.changedFiles.length}`);
+  console.log(`可本地提交: ${status.canCommit ? '是' : '否'}`);
+  console.log(`可远程推送: ${status.canPush ? '是' : '否'}`);
+  console.log(`可一键同步: ${status.canSync ? '是' : '否'}`);
+  if (status.commitReasons.length) {
+    console.log(chalk.yellow(`提交阻断: ${status.commitReasons.join('；')}`));
+  }
+  if (status.pushReasons.length) {
+    console.log(chalk.yellow(`推送阻断: ${status.pushReasons.join('；')}`));
+  }
   if (status.reasons.length) {
     console.log(chalk.yellow(`阻断原因: ${status.reasons.join('；')}`));
   }

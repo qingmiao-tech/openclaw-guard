@@ -1,17 +1,37 @@
-﻿/**
- * Web 绠＄悊鐣岄潰 - 杞婚噺 HTTP 鏈嶅姟鍣?
- * 澶嶇敤 CLI 妯″潡锛屾彁渚?JSON API + 鍓嶇椤甸潰
- */
-import http from 'node:http';
+﻿import http from 'node:http';
 import { runFullAudit } from './audit.js';
-import { listProfiles, getProfile, applyProfile, PROFILES } from './profiles.js';
-import { getAllHardenSteps, generateHardenScript } from './harden.js';
-import { detectPlatform, getCurrentUser, getOpenClawDir, getHomeDir } from './platform.js';
+import { applyProfile, PROFILES } from './profiles.js';
+import { generateHardenScript, getAllHardenSteps } from './harden.js';
+import { detectPlatform, getCurrentUser, getHomeDir, getOpenClawDir } from './platform.js';
 import { detectOpenClaw, installOrUpdateSync } from './openclaw.js';
 import { getHtmlPage } from './web-ui.js';
-import { loadConfig, saveConfig, getNested, readAllEnv, readEnvValue, writeEnvValue, getOrCreateGatewayToken, getDashboardUrl } from './config.js';
-import { getChannels, getChannel, saveChannel, clearChannel, getFeishuConfig, saveFeishuConfig, checkFeishuPlugin } from './channels.js';
-import { getAIConfig, saveProvider, deleteProvider, setPrimaryModel, setFallbackModels, PROVIDERS as AI_PROVIDERS } from './models.js';
+import { getWorkbenchPage } from './workbench-ui.js';
+import {
+  loadConfig,
+  saveConfig,
+  getNested,
+  readAllEnv,
+  writeEnvValue,
+  getOrCreateGatewayToken,
+  getDashboardUrl,
+} from './config.js';
+import {
+  getChannels,
+  getChannel,
+  saveChannel,
+  clearChannel,
+  getFeishuConfig,
+  saveFeishuConfig,
+  checkFeishuPlugin,
+} from './channels.js';
+import {
+  getAIConfig,
+  saveProvider,
+  deleteProvider,
+  setPrimaryModel,
+  setFallbackModels,
+  PROVIDERS as AI_PROVIDERS,
+} from './models.js';
 import { getServiceStatus, startService, stopService, restartService, getLogs } from './service-mgr.js';
 import {
   getMissionStatus,
@@ -24,6 +44,33 @@ import {
   getMissionLogs,
   getMissionHealth,
 } from './mission-control.js';
+import {
+  captureSessionOverview,
+  getDashboardOverview,
+  getRecentActivity,
+} from './dashboard.js';
+import {
+  getAgentCatalog,
+  getManagedRoots,
+  listManagedFiles,
+  readManagedFile,
+  writeManagedFile,
+  listMemoryFiles,
+  searchManagedFiles,
+} from './workspace-files.js';
+import { getCronOverview, enableCronJob, disableCronJob, runCronJob, removeCronJob } from './cron-ui.js';
+import {
+  getGitSyncStatus,
+  initGitSync,
+  connectGitRemote,
+  saveGitTokenAuth,
+  checkGitRemotePrivate,
+  commitGitSync,
+  pushGitSync,
+  syncGitSync,
+  startOAuthLogin,
+} from './git-sync.js';
+import { listNotifications, markNotificationRead } from './notifications.js';
 
 function jsonResponse(res: http.ServerResponse, data: unknown, status = 200) {
   res.writeHead(status, {
@@ -40,23 +87,32 @@ function htmlResponse(res: http.ServerResponse, html: string) {
   res.end(html);
 }
 
-function readBody(req: http.IncomingMessage): Promise<string> {
-  return new Promise((resolve) => {
-    let body = '';
-    req.on('data', (chunk) => { body += chunk; });
-    req.on('end', () => resolve(body));
+function textResponse(res: http.ServerResponse, text: string, status = 200, headers: Record<string, string> = {}) {
+  res.writeHead(status, {
+    'Content-Type': 'text/plain; charset=utf-8',
+    ...headers,
   });
+  res.end(text);
+}
+
+async function readJsonBody(req: http.IncomingMessage): Promise<Record<string, unknown>> {
+  const chunks: string[] = [];
+  for await (const chunk of req) {
+    chunks.push(String(chunk));
+  }
+  const body = chunks.join('').trim();
+  return body ? JSON.parse(body) as Record<string, unknown> : {};
+}
+
+function getHeaderValue(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) return value[0]?.trim();
+  return value?.trim();
 }
 
 function isLoopbackAddress(remoteAddress?: string | null): boolean {
   if (!remoteAddress) return false;
   const normalized = remoteAddress.split('%')[0].replace(/^::ffff:/i, '');
   return normalized === '127.0.0.1' || normalized === '::1';
-}
-
-function getHeaderValue(value: string | string[] | undefined): string | undefined {
-  if (Array.isArray(value)) return value[0]?.trim();
-  return value?.trim();
 }
 
 function getMissionToken(req: http.IncomingMessage, url: URL): string | undefined {
@@ -103,7 +159,6 @@ function requireMissionAccess(req: http.IncomingMessage, res: http.ServerRespons
 export function startServer(port: number) {
   const maxRetries = 10;
 
-  // 杩涚▼绾ч敊璇鐞?- 璁板綍閿欒浣嗕笉缁堟杩涚▼
   process.on('uncaughtException', (err) => {
     console.error('[Guard] 未捕获异常:', err.stack || err.message);
   });
@@ -112,13 +167,14 @@ export function startServer(port: number) {
     console.error('[Guard] 未处理的 Promise rejection:', reason);
   });
 
+  let currentPort = port;
+
   function createHttpServer() {
     return http.createServer(async (req, res) => {
       try {
         const url = new URL(req.url || '/', `http://localhost:${currentPort}`);
         const pathname = url.pathname;
 
-        // CORS preflight
         if (req.method === 'OPTIONS') {
           res.writeHead(204, {
             'Access-Control-Allow-Origin': '*',
@@ -129,15 +185,16 @@ export function startServer(port: number) {
           return;
         }
 
-        // 鍓嶇椤甸潰
         if (pathname === '/' || pathname === '/index.html') {
           htmlResponse(res, getHtmlPage());
           return;
         }
+        if (pathname === '/workbench') {
+          htmlResponse(res, getWorkbenchPage());
+          return;
+        }
 
-        // ========== 绯荤粺淇℃伅 ==========
         if (pathname === '/api/info') {
-          const ocStatus = detectOpenClaw();
           jsonResponse(res, {
             platform: detectPlatform(),
             user: getCurrentUser(),
@@ -145,12 +202,11 @@ export function startServer(port: number) {
             openclawDir: getOpenClawDir(),
             nodeVersion: process.version,
             arch: process.arch,
-            openclaw: ocStatus,
+            openclaw: detectOpenClaw(),
           });
           return;
         }
 
-        // ========== OpenClaw 鐘舵€?==========
         if (pathname === '/api/openclaw/status') {
           jsonResponse(res, detectOpenClaw());
           return;
@@ -164,54 +220,46 @@ export function startServer(port: number) {
           return;
         }
 
-        // ========== 瀹夊叏瀹¤ ==========
         if (pathname === '/api/audit') {
           const results = runFullAudit();
-          const pass = results.filter(r => r.status === 'pass').length;
-          const warn = results.filter(r => r.status === 'warn').length;
-          const fail = results.filter(r => r.status === 'fail').length;
+          const pass = results.filter((item) => item.status === 'pass').length;
+          const warn = results.filter((item) => item.status === 'warn').length;
+          const fail = results.filter((item) => item.status === 'fail').length;
           jsonResponse(res, { results, summary: { pass, warn, fail } });
           return;
         }
 
-        // ========== Profile ==========
         if (pathname === '/api/profiles' && req.method === 'GET') {
-          const profiles = Object.entries(PROFILES).map(([key, p]) => ({ key, ...p }));
+          const profiles = Object.entries(PROFILES).map(([key, profile]) => ({ key, ...profile }));
           jsonResponse(res, profiles);
           return;
         }
         if (pathname === '/api/profiles/apply' && req.method === 'POST') {
-          const body = await readBody(req);
-          try {
-            const { profile: profileName, configPath } = JSON.parse(body);
-            jsonResponse(res, applyProfile(profileName, configPath));
-          } catch { jsonResponse(res, { success: false, message: '璇锋眰鏍煎紡閿欒' }, 400); }
+          const body = await readJsonBody(req);
+          const profileName = typeof body.profile === 'string' ? body.profile : '';
+          const configPath = typeof body.configPath === 'string' ? body.configPath : undefined;
+          jsonResponse(res, applyProfile(profileName, configPath));
           return;
         }
 
-        // ========== 鍔犲浐 ==========
         if (pathname === '/api/harden/steps') {
           const platform = url.searchParams.get('platform') || detectPlatform();
-          const steps = getAllHardenSteps();
-          const mapped = steps.map(s => ({
-            ...s,
-            commands: s.commands[platform as keyof typeof s.commands] || s.commands[detectPlatform()],
+          const steps = getAllHardenSteps().map((item) => ({
+            ...item,
+            commands: item.commands[platform as 'windows' | 'macos' | 'linux'] || item.commands[detectPlatform()],
           }));
-          jsonResponse(res, { platform, steps: mapped });
+          jsonResponse(res, { platform, steps });
           return;
         }
         if (pathname === '/api/harden/script') {
           const platform = url.searchParams.get('platform') || detectPlatform();
           const script = generateHardenScript(platform as 'windows' | 'macos' | 'linux');
-          res.writeHead(200, {
-            'Content-Type': 'text/plain; charset=utf-8',
+          textResponse(res, script, 200, {
             'Content-Disposition': `attachment; filename="openclaw-guard-harden.${platform === 'windows' ? 'bat' : 'sh'}"`,
           });
-          res.end(script);
           return;
         }
 
-        // ========== 鏈嶅姟绠＄悊 ==========
         if (pathname === '/api/service/status') {
           jsonResponse(res, getServiceStatus());
           return;
@@ -229,17 +277,14 @@ export function startServer(port: number) {
           return;
         }
         if (pathname === '/api/service/logs') {
-          const lines = parseInt(url.searchParams.get('lines') || '100', 10);
+          const lines = Number(url.searchParams.get('lines') || '100');
           jsonResponse(res, { logs: getLogs(lines) });
           return;
         }
 
-        // Mission APIs: local loopback allowed, remote must provide token.
         if (pathname.startsWith('/api/mission/') && !requireMissionAccess(req, res, url)) {
           return;
         }
-
-        // ========== Mission Control (tenacitOS) ==========
         if (pathname === '/api/mission/status' && req.method === 'GET') {
           jsonResponse(res, getMissionStatus());
           return;
@@ -257,15 +302,12 @@ export function startServer(port: number) {
           return;
         }
         if (pathname === '/api/mission/start' && req.method === 'POST') {
-          const body = await readBody(req);
-          try {
-            const parsed = body ? JSON.parse(body) : {};
-            const port = parsed?.port ? parseInt(String(parsed.port), 10) : undefined;
-            const prod = !!parsed?.prod;
-            jsonResponse(res, startMissionControl({ port, prod }));
-          } catch {
-            jsonResponse(res, { success: false, message: '璇锋眰鏍煎紡閿欒' }, 400);
-          }
+          const body = await readJsonBody(req);
+          const portValue = typeof body.port === 'number' ? body.port : (typeof body.port === 'string' ? Number(body.port) : undefined);
+          jsonResponse(res, startMissionControl({
+            port: Number.isFinite(portValue) ? portValue : undefined,
+            prod: body.prod === true,
+          }));
           return;
         }
         if (pathname === '/api/mission/stop' && req.method === 'POST') {
@@ -273,19 +315,16 @@ export function startServer(port: number) {
           return;
         }
         if (pathname === '/api/mission/restart' && req.method === 'POST') {
-          const body = await readBody(req);
-          try {
-            const parsed = body ? JSON.parse(body) : {};
-            const port = parsed?.port ? parseInt(String(parsed.port), 10) : undefined;
-            const prod = !!parsed?.prod;
-            jsonResponse(res, restartMissionControl({ port, prod }));
-          } catch {
-            jsonResponse(res, { success: false, message: '璇锋眰鏍煎紡閿欒' }, 400);
-          }
+          const body = await readJsonBody(req);
+          const portValue = typeof body.port === 'number' ? body.port : (typeof body.port === 'string' ? Number(body.port) : undefined);
+          jsonResponse(res, restartMissionControl({
+            port: Number.isFinite(portValue) ? portValue : undefined,
+            prod: body.prod === true,
+          }));
           return;
         }
         if (pathname === '/api/mission/logs' && req.method === 'GET') {
-          const lines = parseInt(url.searchParams.get('lines') || '200', 10);
+          const lines = Number(url.searchParams.get('lines') || '200');
           jsonResponse(res, { logs: getMissionLogs(lines) });
           return;
         }
@@ -294,25 +333,19 @@ export function startServer(port: number) {
           return;
         }
 
-        // ========== 娓犻亾閰嶇疆 ==========
         if (pathname === '/api/channels' && req.method === 'GET') {
           jsonResponse(res, getChannels());
           return;
         }
         if (pathname.startsWith('/api/channels/') && req.method === 'GET') {
           const channelId = pathname.split('/')[3];
-          const ch = getChannel(channelId);
-          if (ch) jsonResponse(res, ch);
-          else jsonResponse(res, { error: 'Not Found' }, 404);
+          const channel = getChannel(channelId);
+          jsonResponse(res, channel || { error: 'Not Found' }, channel ? 200 : 404);
           return;
         }
         if (pathname.startsWith('/api/channels/') && req.method === 'POST') {
           const channelId = pathname.split('/')[3];
-          const body = await readBody(req);
-          try {
-            const channelConfig = JSON.parse(body);
-            jsonResponse(res, saveChannel(channelId, channelConfig));
-          } catch { jsonResponse(res, { success: false, message: '璇锋眰鏍煎紡閿欒' }, 400); }
+          jsonResponse(res, saveChannel(channelId, await readJsonBody(req)));
           return;
         }
         if (pathname.startsWith('/api/channels/') && req.method === 'DELETE') {
@@ -321,16 +354,12 @@ export function startServer(port: number) {
           return;
         }
 
-        // ========== 椋炰功涓撶敤 ==========
         if (pathname === '/api/feishu/config' && req.method === 'GET') {
           jsonResponse(res, getFeishuConfig());
           return;
         }
         if (pathname === '/api/feishu/config' && req.method === 'POST') {
-          const body = await readBody(req);
-          try {
-            jsonResponse(res, saveFeishuConfig(JSON.parse(body)));
-          } catch { jsonResponse(res, { success: false, message: '璇锋眰鏍煎紡閿欒' }, 400); }
+          jsonResponse(res, saveFeishuConfig(await readJsonBody(req)));
           return;
         }
         if (pathname === '/api/feishu/plugin') {
@@ -338,7 +367,6 @@ export function startServer(port: number) {
           return;
         }
 
-        // ========== AI 妯″瀷閰嶇疆 ==========
         if (pathname === '/api/ai/config' && req.method === 'GET') {
           jsonResponse(res, getAIConfig());
           return;
@@ -348,15 +376,19 @@ export function startServer(port: number) {
           const customProviders = getNested(config, ['models', 'providers']) || {};
           jsonResponse(res, {
             presets: AI_PROVIDERS,
-            custom: Object.entries(customProviders).map(([name, cfg]: [string, any]) => ({ name, ...cfg })),
+            custom: Object.entries(customProviders as Record<string, unknown>).map(([name, value]) => ({ name, ...(value as Record<string, unknown>) })),
           });
           return;
         }
         if (pathname === '/api/ai/provider' && req.method === 'POST') {
-          const body = await readBody(req);
-          try {
-            jsonResponse(res, saveProvider(JSON.parse(body)));
-          } catch { jsonResponse(res, { success: false, message: '璇锋眰鏍煎紡閿欒' }, 400); }
+          const body = await readJsonBody(req);
+          jsonResponse(res, saveProvider({
+            name: typeof body.name === 'string' ? body.name : '',
+            baseUrl: typeof body.baseUrl === 'string' ? body.baseUrl : '',
+            apiKey: typeof body.apiKey === 'string' ? body.apiKey : undefined,
+            apiType: typeof body.apiType === 'string' ? body.apiType : undefined,
+            models: Array.isArray(body.models) ? body.models as Array<{ id: string; name: string; api?: string; contextWindow?: number; maxTokens?: number }> : [],
+          }));
           return;
         }
         if (pathname.startsWith('/api/ai/provider/') && req.method === 'DELETE') {
@@ -365,49 +397,38 @@ export function startServer(port: number) {
           return;
         }
         if (pathname === '/api/ai/primary' && req.method === 'POST') {
-          const body = await readBody(req);
-          try {
-            const { modelId } = JSON.parse(body);
-            jsonResponse(res, setPrimaryModel(modelId));
-          } catch { jsonResponse(res, { success: false, message: '璇锋眰鏍煎紡閿欒' }, 400); }
+          const body = await readJsonBody(req);
+          jsonResponse(res, setPrimaryModel(typeof body.modelId === 'string' ? body.modelId : ''));
           return;
         }
         if (pathname === '/api/ai/fallbacks' && req.method === 'POST') {
-          const body = await readBody(req);
-          try {
-            const parsed = JSON.parse(body || '{}');
-            const modelIds = Array.isArray(parsed?.modelIds)
-              ? parsed.modelIds
-              : Array.isArray(parsed?.models)
-                ? parsed.models
-                : typeof parsed?.modelIds === 'string'
-                  ? parsed.modelIds.split(',')
-                  : typeof parsed?.models === 'string'
-                    ? parsed.models.split(',')
-                    : [];
-            jsonResponse(res, setFallbackModels(modelIds));
-          } catch {
-            jsonResponse(res, { success: false, message: '璇锋眰鏍煎紡閿欒' }, 400);
-          }
+          const body = await readJsonBody(req);
+          const modelIds = Array.isArray(body.modelIds)
+            ? body.modelIds.map((item) => String(item))
+            : Array.isArray(body.models)
+              ? body.models.map((item) => String(item))
+              : typeof body.modelIds === 'string'
+                ? body.modelIds.split(',').map((item) => item.trim()).filter(Boolean)
+                : [];
+          jsonResponse(res, setFallbackModels(modelIds));
           return;
         }
 
-        // ========== 鐜鍙橀噺 ==========
         if (pathname === '/api/env' && req.method === 'GET') {
           jsonResponse(res, readAllEnv());
           return;
         }
         if (pathname === '/api/env' && req.method === 'POST') {
-          const body = await readBody(req);
-          try {
-            const { key, value } = JSON.parse(body);
-            writeEnvValue(key, value);
-            jsonResponse(res, { success: true, message: `${key} saved.` });
-          } catch { jsonResponse(res, { success: false, message: '璇锋眰鏍煎紡閿欒' }, 400); }
+          const body = await readJsonBody(req);
+          if (typeof body.key !== 'string' || typeof body.value !== 'string') {
+            jsonResponse(res, { success: false, message: '请求格式错误' }, 400);
+            return;
+          }
+          writeEnvValue(body.key, body.value);
+          jsonResponse(res, { success: true, message: `${body.key} saved.` });
           return;
         }
 
-        // ========== Gateway Token ==========
         if (pathname === '/api/gateway/token') {
           jsonResponse(res, { token: getOrCreateGatewayToken() });
           return;
@@ -417,36 +438,180 @@ export function startServer(port: number) {
           return;
         }
 
-        // ========== 閰嶇疆鏂囦欢鐩存帴璇诲啓 ==========
         if (pathname === '/api/config' && req.method === 'GET') {
           jsonResponse(res, loadConfig());
           return;
         }
         if (pathname === '/api/config' && req.method === 'POST') {
-          const body = await readBody(req);
-          try {
-            saveConfig(JSON.parse(body));
-            jsonResponse(res, { success: true, message: 'Configuration saved.' });
-          } catch { jsonResponse(res, { success: false, message: '璇锋眰鏍煎紡閿欒' }, 400); }
+          const result = saveConfig(await readJsonBody(req));
+          jsonResponse(res, result.success ? { success: true, message: 'Configuration saved.' } : result, result.success ? 200 : 500);
           return;
         }
 
-        // 404
+        if (pathname === '/api/dashboard/overview' && req.method === 'GET') {
+          jsonResponse(res, getDashboardOverview());
+          return;
+        }
+        if (pathname === '/api/agents' && req.method === 'GET') {
+          jsonResponse(res, { agents: getAgentCatalog() });
+          return;
+        }
+        if (pathname === '/api/sessions' && req.method === 'GET') {
+          jsonResponse(res, captureSessionOverview());
+          return;
+        }
+        if (pathname === '/api/activity' && req.method === 'GET') {
+          const limit = Number(url.searchParams.get('limit') || '50');
+          jsonResponse(res, { events: getRecentActivity(limit) });
+          return;
+        }
+        if (pathname === '/api/files' && req.method === 'GET') {
+          const currentPath = url.searchParams.get('path') || getManagedRoots()[0]?.path || '';
+          jsonResponse(res, {
+            roots: getManagedRoots(),
+            currentPath,
+            entries: listManagedFiles(currentPath),
+          });
+          return;
+        }
+        if (pathname === '/api/files/content' && req.method === 'GET') {
+          const targetPath = url.searchParams.get('path') || '';
+          jsonResponse(res, readManagedFile(targetPath));
+          return;
+        }
+        if (pathname === '/api/files/content' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          if (typeof body.path !== 'string' || typeof body.content !== 'string') {
+            jsonResponse(res, { success: false, message: '请求格式错误' }, 400);
+            return;
+          }
+          jsonResponse(res, writeManagedFile(body.path, body.content));
+          return;
+        }
+        if (pathname === '/api/memory' && req.method === 'GET') {
+          jsonResponse(res, { files: listMemoryFiles() });
+          return;
+        }
+        if (pathname === '/api/search' && req.method === 'GET') {
+          const query = url.searchParams.get('q') || '';
+          const limit = Number(url.searchParams.get('limit') || '100');
+          jsonResponse(res, { results: searchManagedFiles(query, limit) });
+          return;
+        }
+        if (pathname === '/api/costs' && req.method === 'GET') {
+          jsonResponse(res, captureSessionOverview().costSummary);
+          return;
+        }
+        if (pathname === '/api/cron-ui' && req.method === 'GET') {
+          jsonResponse(res, getCronOverview());
+          return;
+        }
+        if (pathname === '/api/cron-ui/enable' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          jsonResponse(res, enableCronJob(typeof body.jobId === 'string' ? body.jobId : ''));
+          return;
+        }
+        if (pathname === '/api/cron-ui/disable' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          jsonResponse(res, disableCronJob(typeof body.jobId === 'string' ? body.jobId : ''));
+          return;
+        }
+        if (pathname === '/api/cron-ui/run' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          jsonResponse(res, runCronJob(typeof body.jobId === 'string' ? body.jobId : ''));
+          return;
+        }
+        if (pathname === '/api/cron-ui/remove' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          jsonResponse(res, removeCronJob(typeof body.jobId === 'string' ? body.jobId : ''));
+          return;
+        }
+
+        if (pathname === '/api/git-sync/status' && req.method === 'GET') {
+          jsonResponse(res, getGitSyncStatus());
+          return;
+        }
+        if (pathname === '/api/git-sync/init' && req.method === 'POST') {
+          jsonResponse(res, initGitSync());
+          return;
+        }
+        if (pathname === '/api/git-sync/connect' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          jsonResponse(res, connectGitRemote({
+            provider: body.provider === 'github' || body.provider === 'gitee' ? body.provider : undefined,
+            remoteUrl: typeof body.remoteUrl === 'string' ? body.remoteUrl : '',
+            remoteName: typeof body.remoteName === 'string' ? body.remoteName : undefined,
+          }));
+          return;
+        }
+        if (pathname === '/api/git-sync/auth/token' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          jsonResponse(res, saveGitTokenAuth({
+            provider: body.provider === 'github' || body.provider === 'gitee' ? body.provider : undefined,
+            token: typeof body.token === 'string' ? body.token : '',
+            username: typeof body.username === 'string' ? body.username : undefined,
+          }));
+          return;
+        }
+        if (pathname === '/api/git-sync/auth/oauth' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          if ((body.provider !== 'github' && body.provider !== 'gitee') || typeof body.clientId !== 'string' || typeof body.clientSecret !== 'string') {
+            jsonResponse(res, { success: false, message: 'provider / clientId / clientSecret 必填' }, 400);
+            return;
+          }
+          jsonResponse(res, await startOAuthLogin({
+            provider: body.provider,
+            clientId: body.clientId,
+            clientSecret: body.clientSecret,
+            scope: typeof body.scope === 'string' ? body.scope : undefined,
+            redirectPort: typeof body.redirectPort === 'number' ? body.redirectPort : undefined,
+            openBrowser: body.openBrowser !== false,
+          }));
+          return;
+        }
+        if (pathname === '/api/git-sync/check-private' && req.method === 'POST') {
+          jsonResponse(res, await checkGitRemotePrivate());
+          return;
+        }
+        if (pathname === '/api/git-sync/commit' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          jsonResponse(res, commitGitSync(typeof body.message === 'string' ? body.message : undefined));
+          return;
+        }
+        if (pathname === '/api/git-sync/push' && req.method === 'POST') {
+          jsonResponse(res, pushGitSync());
+          return;
+        }
+        if (pathname === '/api/git-sync/sync' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          jsonResponse(res, syncGitSync(typeof body.message === 'string' ? body.message : undefined));
+          return;
+        }
+
+        if (pathname === '/api/notifications' && req.method === 'GET') {
+          const limit = Number(url.searchParams.get('limit') || '100');
+          jsonResponse(res, { items: listNotifications(limit) });
+          return;
+        }
+        if (pathname === '/api/notifications/read' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          jsonResponse(res, { success: markNotificationRead(typeof body.id === 'string' ? body.id : '', body.read !== false) });
+          return;
+        }
+
         jsonResponse(res, { error: 'Not Found' }, 404);
-      } catch (err) {
-        console.error('[Guard] 璺敱澶勭悊寮傚父:', err);
-        jsonResponse(res, { error: 'Internal server error', message: String(err) }, 500);
+      } catch (error) {
+        console.error('[Guard] 路由处理异常:', error);
+        jsonResponse(res, { error: 'Internal server error', message: error instanceof Error ? error.message : String(error) }, 500);
       }
     });
   }
-
-  let currentPort = port;
 
   function tryListen(attempt: number): http.Server {
     const server = createHttpServer();
     server.on('error', (err: NodeJS.ErrnoException) => {
       if (err.code === 'EADDRINUSE' && attempt < maxRetries) {
-        currentPort++;
+        currentPort += 1;
         console.log('[Guard] Port is in use, trying next port...');
         tryListen(attempt + 1);
       } else if (err.code === 'EADDRINUSE') {
@@ -459,6 +624,7 @@ export function startServer(port: number) {
     server.listen(currentPort, () => {
       console.log('\n[Guard] OpenClaw Guard web UI started.');
       console.log(`   URL: http://localhost:${currentPort}`);
+      console.log(`   Workbench: http://localhost:${currentPort}/workbench`);
       console.log('   Press Ctrl+C to stop.\n');
     });
     return server;
@@ -466,6 +632,3 @@ export function startServer(port: number) {
 
   return tryListen(0);
 }
-
-
-

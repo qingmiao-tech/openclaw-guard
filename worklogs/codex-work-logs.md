@@ -1310,3 +1310,54 @@
   - 2026-02-10 15:30 | openclaw-feishu | ec81f9f | feat: Windows bat 备份脚本 + 跨格式恢复支持
 
 
+
+## [2026-03-08 11:24] openclaw-guard 原生工作台第一期 MVP 落地 [TASK-20260308-001]
+
+- 任务来源: 用户指派（将 tenacitOS 可迁移能力原生重写进 `openclaw-guard`，替代外挂模式）。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-08 09:xx
+- 开始时间: 2026-03-08 10:xx
+- 提交时间: 2026-03-08 11:24
+- 任务目标:
+  1) 在 `openclaw-guard` 内部落地第一期原生工作台底座，不再依赖 tenacitOS sidecar。
+  2) 保持 Guard 轻量 Node CLI + 原生 Web 架构，避免引入 Next.js / React / SQLite / native addon。
+  3) 为后续第二期的 Git 同步中心、工作台导航、跨平台运维与内容浏览打下稳定基础。
+- 执行过程:
+  1) 先梳理现有 `openclaw-guard` 入口与边界，确认当前能力仍以 `mission` 外挂桥接和单文件 `web-ui.ts` 为主。
+  2) 新增 Guard 状态目录与快照工具层，统一管理 `notifications / sessions / activity / costs / git-sync` 的状态落盘。
+  3) 新增 OpenClaw 运行态解析层，兼容 `openclaw status --json` 与 `openclaw cron list --json` 的结构归一化。
+  4) 新增 Agent / 文件 / 记忆 / 搜索 / 成本 / Cron / Git 同步服务层，并接入新的 HTTP API。
+  5) 新增 `/workbench` 原生工作台页面，保留旧版 `/` 页面，先以并行方式上线第一期工作台。
+  6) 重写 `openclaw-guard` CLI 主入口，增加 `dashboard / agents / sessions / activity / files / memory / search / costs / cron-ui / git-sync` 等命令分组。
+  7) 补充新增模块测试，完成构建与回归验证。
+- 交付成果:
+  1) 原生工作台第一期 MVP 已可访问：`/workbench`。
+  2) `.openclaw` Git 同步中心第一期能力已可用：初始化仓库、绑定 GitHub/Gitee、保存 Token、发起 OAuth 骨架、private 校验、commit/push/sync。
+  3) Guard 已具备系统概览、Agent、会话、活动、文件、记忆、搜索、成本、Cron 的原生 API 与 CLI。
+- 变更清单:
+  - `openclaw-guard/src/guard-state.ts`
+  - `openclaw-guard/src/notifications.ts`
+  - `openclaw-guard/src/openclaw-runtime.ts`
+  - `openclaw-guard/src/workspace-files.ts`
+  - `openclaw-guard/src/costs.ts`
+  - `openclaw-guard/src/dashboard.ts`
+  - `openclaw-guard/src/cron-ui.ts`
+  - `openclaw-guard/src/git-sync.ts`
+  - `openclaw-guard/src/workbench-ui.ts`
+  - `openclaw-guard/src/server.ts`
+  - `openclaw-guard/src/index.ts`
+  - `openclaw-guard/src/__tests__/guard-state.test.ts`
+  - `openclaw-guard/src/__tests__/workspace-files.test.ts`
+  - `openclaw-guard/src/__tests__/openclaw-runtime.test.ts`
+  - `openclaw-guard/src/__tests__/costs.test.ts`
+  - `openclaw-guard/src/__tests__/git-sync.test.ts`
+- 验证结果:
+  - 已验证: `cmd /c npm run build` 通过。
+  - 已验证: `cmd /c npm run test` 通过，累计 50 个测试全绿。
+  - 已验证: `/workbench` 路由已接入新的工作台页面。
+  - 未验证: 尚未用本机真实 `openclaw status --json` 与 `openclaw cron list --json` 样本做字段对照增强。
+  - 未验证: 根路由 `/` 仍指向旧版页面，兼容降级尚未处理。
+- 风险与待办:
+  1) 第二阶段需要把根路由切到新工作台，并将旧版页面降为兼容入口。
+  2) 需要用真实 OpenClaw JSON 输出样本对齐解析器，减少不同版本字段漂移风险。
+  3) 需要继续提升 Web 交互体验，尤其是 notifications、Git OAuth、文件编辑与 Cron 操作反馈。

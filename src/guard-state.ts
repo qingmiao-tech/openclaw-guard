@@ -11,6 +11,8 @@ export interface GuardLayout {
   costsDir: string;
 }
 
+let cachedLayout: GuardLayout | null = null;
+
 export function resolveUserPath(inputPath: string): string {
   const trimmed = String(inputPath || '').trim();
   if (!trimmed) return trimmed;
@@ -37,8 +39,8 @@ export function getGuardSecretsDir(): string {
   return path.join(getGuardDir(), 'secrets');
 }
 
-export function ensureGuardLayout(): GuardLayout {
-  const guardDir = ensureDir(getGuardDir());
+function createLayout(baseDir: string): GuardLayout {
+  const guardDir = ensureDir(baseDir);
   const stateDir = ensureDir(path.join(guardDir, 'state'));
   const secretsDir = ensureDir(path.join(guardDir, 'secrets'));
   const sessionsDir = ensureDir(path.join(stateDir, 'sessions'));
@@ -53,6 +55,20 @@ export function ensureGuardLayout(): GuardLayout {
     activityDir,
     costsDir,
   };
+}
+
+export function ensureGuardLayout(): GuardLayout {
+  if (cachedLayout) return cachedLayout;
+
+  const preferredDir = getGuardDir();
+  try {
+    cachedLayout = createLayout(preferredDir);
+    return cachedLayout;
+  } catch {
+    const fallbackDir = path.resolve(process.cwd(), '.guard-runtime', 'openclaw-state');
+    cachedLayout = createLayout(fallbackDir);
+    return cachedLayout;
+  }
 }
 
 export function readJsonFile<T>(filePath: string, fallback: T): T {

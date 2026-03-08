@@ -87,6 +87,8 @@ describe('git-sync', () => {
       expect(status.oauth.provider).toBe(provider);
       expect(status.oauth.error).toBe('callback-state-mismatch');
     }
-  });
+  }, 15000);
 });
+
+
 

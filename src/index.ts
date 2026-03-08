@@ -41,6 +41,10 @@ function printAction(result: { success: boolean; message: string }) {
   console.log(result.success ? chalk.green(result.message) : chalk.red(result.message));
 }
 
+function printMissionDeprecation() {
+  console.log(chalk.yellow('提示: mission 已降级为兼容层，默认请使用根路由工作台 / 或 dashboard、agents、sessions、files、cron-ui、git-sync 等原生命令。该兼容链路将在后续版本移除。'));
+}
+
 function printAuditSummary(results: AuditResult[]) {
   const grouped = new Map<string, AuditResult[]>();
   for (const item of results) {
@@ -220,7 +224,17 @@ envCmd.command('set <key> <value>').description('写入 env').action((key: strin
   console.log(chalk.green(`已保存 ${key}`));
 });
 
-const missionCmd = program.command('mission').description('tenacitOS 兼容层');
+const missionCmd = program.command('mission').description('tenacitOS 兼容层（已弃用，建议迁移到原生工作台）');
+missionCmd.addHelpText('after', `
+兼容层说明:
+  - Web 默认入口已切换到新的 Guard 工作台: /
+  - 迁移说明页: /compat
+  - 旧版完整面板保险丝: /legacy
+  - 建议优先使用 dashboard / agents / sessions / files / cron-ui / git-sync
+`);
+missionCmd.hook('preAction', () => {
+  printMissionDeprecation();
+});
 missionCmd.command('status').description('查看 Mission Control 状态').action(() => printJson(getMissionStatus()));
 missionCmd.command('install').description('安装或更新 Mission Control').action(() => printAction(installMissionControl()));
 missionCmd.command('sync').description('同步 Mission Control').action(() => printAction(syncMissionControl()));
@@ -473,3 +487,5 @@ program.command('web').description('启动 Web 管理界面').option('-p, --port
 });
 
 program.parse();
+
+

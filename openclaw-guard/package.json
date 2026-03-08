@@ -1,38 +1,43 @@
-{
-  "name": "openclaw-guard",
-  "version": "2.0.0",
-  "description": "OpenClaw 管理工具 - 服务管理、渠道配置、AI模型、安全审计",
-  "type": "module",
-  "main": "dist/index.js",
-  "bin": {
-    "openclaw-guard": "dist/index.js"
-  },
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsx src/index.ts web --port 18088",
-    "dev:cli": "tsx src/index.ts",
-    "start": "node dist/index.js",
-    "test": "vitest run",
-    "web": "tsx src/index.ts web --port 18088"
-  },
-  "keywords": [
-    "openclaw",
-    "security",
-    "permissions",
-    "guard",
-    "config"
-  ],
-  "license": "MIT",
-  "dependencies": {
-    "chalk": "^5.3.0",
-    "commander": "^12.1.0",
-    "inquirer": "^9.3.0"
-  },
-  "devDependencies": {
-    "@types/node": "^22.15.17",
-    "fast-check": "^4.5.3",
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.3",
-    "vitest": "^3.1.3"
-  }
+﻿{
+    "name":  "openclaw-guard",
+    "version":  "2.0.0",
+    "description":  "OpenClaw Guard management toolkit",
+    "type":  "module",
+    "main":  "dist/index.js",
+    "bin":  {
+                "openclaw-guard":  "dist/index.js"
+            },
+    "scripts":  {
+                    "build":  "tsc",
+                    "dev":  "node scripts/dev-runner.mjs",
+                    "dev:tsx":  "tsx src/index.ts web --port 18088",
+                    "dev:dist":  "npm run build \u0026\u0026 node dist/index.js web --port 18088",
+                    "dev:cli":  "tsx src/index.ts",
+                    "start":  "node dist/index.js",
+                    "test":  "vitest run",
+                    "web":  "tsx src/index.ts web --port 18088",
+                    "web:bg:start":  "npm run build \u0026\u0026 node scripts/web-background.mjs start --port 18088",
+                    "web:bg:stop":  "node scripts/web-background.mjs stop --port 18088",
+                    "web:bg:status":  "node scripts/web-background.mjs status --port 18088"
+                },
+    "keywords":  [
+                     "openclaw",
+                     "security",
+                     "permissions",
+                     "guard",
+                     "config"
+                 ],
+    "license":  "MIT",
+    "dependencies":  {
+                         "chalk":  "^5.3.0",
+                         "commander":  "^12.1.0",
+                         "inquirer":  "^9.3.0"
+                     },
+    "devDependencies":  {
+                            "@types/node":  "^22.15.17",
+                            "fast-check":  "^4.5.3",
+                            "tsx":  "^4.19.0",
+                            "typescript":  "^5.7.3",
+                            "vitest":  "^3.1.3"
+                        }
 }

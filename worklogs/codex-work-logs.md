@@ -1487,3 +1487,52 @@
   2) OAuth 当前完成的是“本地 callback + 状态迁移”的自动化回归，不是假装完成了真实 GitHub/Gitee 授权；真实第三方授权仍需在有正式 OAuth 应用凭据的环境里补一次人工端到端验证。
   3) 现在的状态更稳：兼容层已经开始收口，但回滚保险丝仍在；OAuth 已有可重复回归基础，而不是只能靠手点浏览器碰运气。
 
+
+## [2026-03-08 18:12] openclaw-guard 统一主面板修复与后台停服能力补齐 [TASK-20260308-005]
+
+- 任务来源: 用户续作（增加一键停后台服务、修复新页面样式与菜单不可点击、回归原有 UI 框架并保证可用性）。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-08 17:08
+- 开始时间: 2026-03-08 17:08
+- 当前状态: 已完成代码修复与本地自检，待用户决定是否提交 git。
+- 任务目标:
+  1) 修复新工作台页面菜单无法点击、样式不达标的问题。
+  2) 增加一键停掉 Guard Web 后台服务的能力。
+  3) 将新能力并回统一主 UI 壳子，不再依赖坏掉的旧字符串页面。
+  4) 确保根路由和关键 API 可用，不再出现首页直接 500。
+- 实际完成:
+  1) 新增统一 UI 壳层 `src/ui-shell.ts` + 静态资源 `web/guard-ui.css` / `web/guard-ui.js`，根路由 `/`、`/index.html`、`/workbench` 统一回到新的顶部标签页主面板。
+  2) `server.ts` 已补齐 `/ui/guard-ui.css`、`/ui/guard-ui.js` 静态资源服务，增加 `favicon` 兜底，避免前端入口缺失导致整页初始化失败。
+  3) 新主面板已整合概览、系统、OpenClaw、飞书、渠道、AI、通知、Agent、会话、活动、文件、记忆、搜索、成本、Cron、Git 同步、兼容层、审计、预设、加固、日志等标签页。
+  4) 新增 `src/web-background.ts` 与 `scripts/web-background.mjs`，补齐 Guard Web 后台运行状态探测与“一键停后台服务”能力；`package.json` 已增加 `web:bg:start / web:bg:stop / web:bg:status`。
+  5) `service-mgr.ts` 已重写为干净 UTF-8 文案，修复此前乱码提示，避免服务动作反馈继续污染 UI。
+  6) `guard-state.ts` 已增强容错：优先写入 `~/.openclaw/guard`，权限不足时自动回退到项目内 `.guard-runtime/openclaw-state`，修复首页 `/api/dashboard/overview` 因 `EPERM` 直接 500 的问题。
+  7) `.gitignore` 已补充 `openclaw-guard/.guard-runtime/` 与 `worklogs/plans/`，避免运行时缓存和计划文件污染提交。
+  8) `start-web.bat` 已清理乱码并统一为 UTF-8 友好的启动说明。
+  9) `git-sync.test.ts` 已补充更合理的超时上限，消除本机 OAuth 回归测试的偶发超时误报。
+- 交付清单:
+  - `openclaw-guard/src/server.ts`
+  - `openclaw-guard/src/ui-shell.ts`
+  - `openclaw-guard/src/web-ui.ts`
+  - `openclaw-guard/src/workbench-ui.ts`
+  - `openclaw-guard/src/service-mgr.ts`
+  - `openclaw-guard/src/web-background.ts`
+  - `openclaw-guard/src/guard-state.ts`
+  - `openclaw-guard/scripts/dev-runner.mjs`
+  - `openclaw-guard/scripts/web-background.mjs`
+  - `openclaw-guard/web/guard-ui.css`
+  - `openclaw-guard/web/guard-ui.js`
+  - `openclaw-guard/package.json`
+  - `openclaw-guard/start-web.bat`
+  - `.gitignore`
+  - `openclaw-guard/src/__tests__/git-sync.test.ts`
+- 验证结果:
+  1) 已验证 `node --check web/guard-ui.js` 通过，前端静态脚本无语法错误。
+  2) 已验证 `cmd /c npm run build` 通过。
+  3) 已验证 `cmd /c npm run test` 通过，当前 9 个测试文件、51 个测试全部通过。
+  4) 已通过临时本地自检确认：`/` 根路由返回新的 UI 壳，`/ui/guard-ui.js` 能正常返回，`/api/dashboard/overview` 和 `/api/cron-ui` 均返回 200。
+  5) 已确认旧的 18088 占用进程会干扰验证，并已在提权后将其终止，避免继续误看旧页面。
+- 风险与补充说明:
+  1) 当前沙箱环境下，`web:bg:start` 的后台常驻行为仍受宿主机/会话管理方式影响，但“停后台服务”接口与前端按钮逻辑已补齐。
+  2) 在用户自己的正常桌面环境中，建议优先使用 `npm run dev` 或 `start-web.bat` 做前台调试；如需常驻，再使用 `npm run web:bg:start` / `npm run web:bg:stop`。
+  3) 这轮已经把“菜单不可点 + 首页 500 + 样式散乱 + 停服缺失”一起收口，后续再继续做视觉细节和操作顺手度优化即可。

@@ -1,5 +1,7 @@
-﻿import http from 'node:http';
+﻿import fs from 'node:fs';
+import http from 'node:http';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { runFullAudit } from './audit.js';
 import { applyProfile, PROFILES } from './profiles.js';
 import { generateHardenScript, getAllHardenSteps } from './harden.js';
@@ -73,6 +75,22 @@ import {
   startOAuthLogin,
 } from './git-sync.js';
 import { listNotifications, markNotificationRead, markAllNotifications, clearNotifications, clearReadNotifications, getNotificationSummary } from './notifications.js';
+import { getWebBackgroundStatus, stopWebBackgroundService, registerBackgroundProcess } from './web-background.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const WEB_DIR = path.resolve(__dirname, '..', 'web');
+
+const STATIC_UI_ASSETS: Record<string, { file: string; contentType: string }> = {
+  '/ui/guard-ui.css': {
+    file: path.join(WEB_DIR, 'guard-ui.css'),
+    contentType: 'text/css; charset=utf-8',
+  },
+  '/ui/guard-ui.js': {
+    file: path.join(WEB_DIR, 'guard-ui.js'),
+    contentType: 'application/javascript; charset=utf-8',
+  },
+};
 
 function jsonResponse(res: http.ServerResponse, data: unknown, status = 200) {
   res.writeHead(status, {
@@ -95,6 +113,15 @@ function textResponse(res: http.ServerResponse, text: string, status = 200, head
     ...headers,
   });
   res.end(text);
+}
+
+function staticResponse(res: http.ServerResponse, filePath: string, contentType: string) {
+  if (!fs.existsSync(filePath)) {
+    jsonResponse(res, { error: 'Static asset not found' }, 404);
+    return;
+  }
+  res.writeHead(200, { 'Content-Type': contentType, 'Cache-Control': 'no-cache' });
+  res.end(fs.readFileSync(filePath));
 }
 
 async function readJsonBody(req: http.IncomingMessage): Promise<Record<string, unknown>> {
@@ -171,6 +198,7 @@ export function startServer(port: number) {
 
   let currentPort = port;
 
+
   function createHttpServer() {
     return http.createServer(async (req, res) => {
       try {
@@ -184,6 +212,18 @@ export function startServer(port: number) {
             'Access-Control-Allow-Headers': 'Content-Type, X-Mission-Token, Authorization',
           });
           res.end();
+          return;
+        }
+
+        if (pathname === '/favicon.ico') {
+          res.writeHead(204);
+          res.end();
+          return;
+        }
+
+        if (pathname in STATIC_UI_ASSETS) {
+          const asset = STATIC_UI_ASSETS[pathname];
+          staticResponse(res, asset.file, asset.contentType);
           return;
         }
 
@@ -285,6 +325,21 @@ export function startServer(port: number) {
         if (pathname === '/api/service/logs') {
           const lines = Number(url.searchParams.get('lines') || '100');
           jsonResponse(res, { logs: getLogs(lines) });
+          return;
+        }
+        if (pathname === '/api/web-background/status') {
+          jsonResponse(res, getWebBackgroundStatus(currentPort));
+          return;
+        }
+        if (pathname === '/api/web-background/stop' && req.method === 'POST') {
+          const result = stopWebBackgroundService({
+            port: currentPort,
+            currentPid: process.pid,
+          });
+          jsonResponse(res, result, result.success ? 200 : 400);
+          if (result.success && result.selfExit) {
+            setTimeout(() => process.exit(0), 150);
+          }
           return;
         }
 
@@ -676,6 +731,9 @@ export function startServer(port: number) {
       }
     });
     server.listen(currentPort, () => {
+      if (process.env.OPENCLAW_GUARD_BACKGROUND === '1') {
+        registerBackgroundProcess(currentPort);
+      }
       console.log('\n[Guard] OpenClaw Guard web UI started.');
       console.log(`   URL: http://localhost:${currentPort}`);
       console.log(`   Compatibility: http://localhost:${currentPort}/compat`);
@@ -687,6 +745,8 @@ export function startServer(port: number) {
 
   return tryListen(0);
 }
+
+
 
 
 

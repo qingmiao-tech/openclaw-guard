@@ -26,3 +26,5 @@ openclaw-feishu/
 
 # User profile (OpenClaw local config)
 %USERPROFILE%/
+openclaw-guard/.guard-runtime/
+worklogs/plans/

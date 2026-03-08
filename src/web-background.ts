@@ -27,6 +27,11 @@ export interface WebBackgroundActionResult {
   selfExit?: boolean;
 }
 
+interface ListeningSocket {
+  pid: number;
+  port: number;
+}
+
 function getProjectRoot(): string {
   const modulePath = fileURLToPath(import.meta.url);
   return path.resolve(path.dirname(modulePath), '..');
@@ -69,31 +74,65 @@ function isPidAlive(pid: number): boolean {
   }
 }
 
-function findPidByPort(port: number): number | null {
-  if (!Number.isFinite(port) || port <= 0) return null;
+function listListeningSockets(): ListeningSocket[] {
   try {
     if (process.platform === 'win32') {
       const output = execFileSync('netstat', ['-ano'], {
         encoding: 'utf-8',
         windowsHide: true,
       });
+      const rows: ListeningSocket[] = [];
       for (const line of output.split(/\r?\n/)) {
-        if (!line.includes(`:${port}`) || !line.includes('LISTENING')) continue;
+        if (!line.includes('LISTENING')) continue;
         const parts = line.trim().split(/\s+/);
+        if (parts.length < 5) continue;
+        const localAddress = parts[1];
         const pid = Number(parts[parts.length - 1]);
-        if (Number.isInteger(pid) && pid > 0) return pid;
+        const match = localAddress.match(/:(\d+)$/);
+        if (!match || !Number.isInteger(pid) || pid <= 0) continue;
+        rows.push({ pid, port: Number(match[1]) });
       }
-      return null;
+      return rows;
     }
 
-    const output = execFileSync('lsof', ['-ti', `tcp:${port}`], {
+    const output = execFileSync('lsof', ['-nP', '-iTCP', '-sTCP:LISTEN'], {
       encoding: 'utf-8',
-    }).trim();
-    const pid = Number(output.split(/\r?\n/)[0]);
-    return Number.isInteger(pid) && pid > 0 ? pid : null;
+    });
+    const rows: ListeningSocket[] = [];
+    for (const line of output.split(/\r?\n/).slice(1)) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const parts = trimmed.split(/\s+/);
+      const pid = Number(parts[1]);
+      const match = trimmed.match(/:(\d+)\s*\(LISTEN\)$/);
+      if (!match || !Number.isInteger(pid) || pid <= 0) continue;
+      rows.push({ pid, port: Number(match[1]) });
+    }
+    return rows;
   } catch {
-    return null;
+    return [];
   }
+}
+
+function findPidByPort(port: number): number | null {
+  if (!Number.isFinite(port) || port <= 0) return null;
+  const entry = listListeningSockets().find((item) => item.port === port);
+  return entry ? entry.pid : null;
+}
+
+function findListeningPortsByPid(pid: number): number[] {
+  if (!Number.isInteger(pid) || pid <= 0) return [];
+  const ports = listListeningSockets()
+    .filter((item) => item.pid === pid)
+    .map((item) => item.port);
+  return [...new Set(ports)].sort((a, b) => a - b);
+}
+
+function resolveTrackedPort(pid: number, fallbackPort: number): number {
+  const ports = findListeningPortsByPid(pid);
+  if (!ports.length) return fallbackPort;
+  if (ports.includes(fallbackPort)) return fallbackPort;
+  return ports[0];
 }
 
 function killPid(pid: number): boolean {
@@ -151,7 +190,7 @@ export function getWebBackgroundStatus(port: number): WebBackgroundStatus {
       return {
         running: true,
         pid: record.pid,
-        port: record.port,
+        port: resolveTrackedPort(record.pid, record.port),
         source: 'pid-file',
         managed: record.managed,
         pidFile,

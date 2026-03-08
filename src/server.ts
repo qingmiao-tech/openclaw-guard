@@ -20,6 +20,7 @@ import {
 } from './config.js';
 import {
   getChannels,
+  getChannelDefinitions,
   getChannel,
   saveChannel,
   clearChannel,
@@ -81,6 +82,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const WEB_DIR = path.resolve(__dirname, '..', 'web');
 
+function resolveStaticAsset(...segments: string[]) {
+  const candidates = [
+    path.resolve(__dirname, '..', 'src', ...segments),
+    path.resolve(__dirname, ...segments),
+    path.resolve(process.cwd(), 'src', ...segments),
+    path.resolve(process.cwd(), ...segments),
+    path.resolve(WEB_DIR, ...segments.slice(1)),
+  ];
+  return candidates.find((candidate) => fs.existsSync(candidate)) ?? candidates[0];
+}
+
 const STATIC_UI_ASSETS: Record<string, { file: string; contentType: string }> = {
   '/ui/guard-ui.css': {
     file: path.join(WEB_DIR, 'guard-ui.css'),
@@ -89,6 +101,10 @@ const STATIC_UI_ASSETS: Record<string, { file: string; contentType: string }> = 
   '/ui/guard-ui.js': {
     file: path.join(WEB_DIR, 'guard-ui.js'),
     contentType: 'application/javascript; charset=utf-8',
+  },
+  '/ui/logo.png': {
+    file: resolveStaticAsset('assets', 'logo.png'),
+    contentType: 'image/png',
   },
 };
 
@@ -396,6 +412,10 @@ export function startServer(port: number) {
 
         if (pathname === '/api/channels' && req.method === 'GET') {
           jsonResponse(res, getChannels());
+          return;
+        }
+        if (pathname === '/api/channels/meta' && req.method === 'GET') {
+          jsonResponse(res, getChannelDefinitions());
           return;
         }
         if (pathname.startsWith('/api/channels/') && req.method === 'GET') {
@@ -745,6 +765,7 @@ export function startServer(port: number) {
 
   return tryListen(0);
 }
+
 
 
 

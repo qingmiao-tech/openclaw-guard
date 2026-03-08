@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+﻿import fs from 'node:fs';
 import http from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
@@ -625,7 +625,7 @@ function generateCommitMessage(): string {
   const dd = `${now.getDate()}`.padStart(2, '0');
   const hh = `${now.getHours()}`.padStart(2, '0');
   const mi = `${now.getMinutes()}`.padStart(2, '0');
-  return `Sync OpenClaw config ${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+  return `同步 OpenClaw 配置 ${yyyy}-${mm}-${dd} ${hh}:${mi}`;
 }
 
 function getReadyStatus(): GitSyncStatus {

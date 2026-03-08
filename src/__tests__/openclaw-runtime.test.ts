@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getCronSnapshot, getRuntimeSnapshot } from '../openclaw-runtime.js';
+﻿import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { getCronSnapshot, getRuntimeSnapshot, parseOpenClawJsonOutput } from '../openclaw-runtime.js';
 
 describe('openclaw-runtime', () => {
   beforeEach(() => {
@@ -108,5 +108,23 @@ describe('openclaw-runtime', () => {
     expect(snapshot.jobs[0].enabled).toBe(true);
     expect(snapshot.status?.enabled).toBe(true);
     expect(snapshot.status?.storePath).toContain('jobs.json');
+  });
+
+  it('extracts json payload from noisy openclaw output', () => {
+    const parsed = parseOpenClawJsonOutput(
+      [
+        '[plugins] feishu_doc: Registered feishu_doc, feishu_app_scopes',
+        '[plugins] feishu_wiki: Registered feishu_wiki tool',
+        '{',
+        '  "gateway": { "reachable": false },',
+        '  "agents": { "totalSessions": 2 }',
+        '}',
+      ].join('\n'),
+      '[plugins] feishu-enhanced: loaded without install/load-path provenance',
+    ) as Record<string, any> | null;
+
+    expect(parsed).not.toBeNull();
+    expect(parsed?.gateway?.reachable).toBe(false);
+    expect(parsed?.agents?.totalSessions).toBe(2);
   });
 });

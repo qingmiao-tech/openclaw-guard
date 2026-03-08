@@ -189,6 +189,10 @@ function extractJsonPayload(text: string): unknown | null {
   return null;
 }
 
+export function parseOpenClawJsonOutput(stdout: string, stderr = ''): unknown | null {
+  return extractJsonPayload([stdout, stderr].filter(Boolean).join('\n'));
+}
+
 function toObject(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
@@ -457,7 +461,7 @@ export function runOpenClawJson(args: string[], mockEnvKey?: string): { ok: bool
     };
   }
 
-  const parsed = extractJsonPayload([result.stdout, result.stderr].filter(Boolean).join('\n'));
+  const parsed = parseOpenClawJsonOutput(result.stdout, result.stderr);
   if (parsed !== null) {
     return {
       ok: true,
@@ -615,6 +619,9 @@ export function getCronSnapshot(): CronSnapshot {
     raw,
   };
 }
+
+
+
 
 
 

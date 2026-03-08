@@ -76,7 +76,7 @@ import {
   startOAuthLogin,
 } from './git-sync.js';
 import { listNotifications, markNotificationRead, markAllNotifications, clearNotifications, clearReadNotifications, getNotificationSummary } from './notifications.js';
-import { getWebBackgroundStatus, stopWebBackgroundService, registerBackgroundProcess } from './web-background.js';
+import { getWebBackgroundStatus, stopWebBackgroundService, registerBackgroundProcess, startWebBackgroundService } from './web-background.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -262,6 +262,7 @@ export function startServer(port: number) {
             user: getCurrentUser(),
             home: getHomeDir(),
             openclawDir: getOpenClawDir(),
+            pid: process.pid,
             nodeVersion: process.version,
             arch: process.arch,
             openclaw: detectOpenClaw(),
@@ -345,6 +346,14 @@ export function startServer(port: number) {
         }
         if (pathname === '/api/web-background/status') {
           jsonResponse(res, getWebBackgroundStatus(currentPort));
+          return;
+        }
+        if (pathname === '/api/web-background/start' && req.method === 'POST') {
+          const result = await startWebBackgroundService({
+            port: currentPort,
+            currentPid: process.pid,
+          });
+          jsonResponse(res, result, result.success ? 200 : 400);
           return;
         }
         if (pathname === '/api/web-background/stop' && req.method === 'POST') {

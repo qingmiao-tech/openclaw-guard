@@ -184,12 +184,18 @@
     searchQuery: '',
     searchResults: [],
     notificationFilter: 'all',
+    notificationSource: 'all',
+    notificationSearchQuery: '',
     hardenPlatform: null,
     logsTarget: 'service',
     currentViewData: null,
     aiSelectedProvider: '__new__',
     channelSelectedId: 'feishu',
+    cronFilter: 'all',
+    cronSearchQuery: '',
+    cronLastAction: null,
     gitSyncDraftMessage: '',
+    gitSyncLastAction: null,
     gitSyncPollTimer: null,
   };
 
@@ -321,6 +327,65 @@
 
   function emptyState(message) {
     return `<div class="empty">${escapeHtml(message || t('noData'))}</div>`;
+  }
+
+  async function copyTextValue(text, options = {}) {
+    const value = text === null || text === undefined ? '' : String(text);
+    if (!value.trim()) {
+      showToast(options.emptyMessage || (state.lang === 'zh' ? '当前没有可复制的内容。' : 'Nothing to copy.'), 'error');
+      return false;
+    }
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+        showToast(options.successMessage || (state.lang === 'zh' ? '内容已复制到剪贴板。' : 'Copied to clipboard.'));
+        return true;
+      }
+    } catch {
+      // Fallback to prompt below.
+    }
+
+    window.prompt(options.promptLabel || (state.lang === 'zh' ? '请手动复制以下内容' : 'Copy the value below'), value);
+    return true;
+  }
+
+  function matchesTextQuery(fields, query) {
+    const normalized = String(query || '').trim().toLowerCase();
+    if (!normalized) return true;
+    const haystack = fields
+      .map((item) => (item === null || item === undefined ? '' : String(item)))
+      .join(' ')
+      .toLowerCase();
+    return normalized.split(/\s+/).every((keyword) => haystack.includes(keyword));
+  }
+
+  function renderActionFeedback(title, entry, emptyMessage = '') {
+    if (!entry) {
+      return emptyMessage ? `<div class="status">${escapeHtml(emptyMessage)}</div>` : '';
+    }
+
+    const detailText = entry.detail
+      ? (typeof entry.detail === 'string' ? entry.detail : JSON.stringify(entry.detail, null, 2))
+      : '';
+    const statusClass = entry.type === 'error' ? 'error' : entry.type === 'warn' ? 'warn' : '';
+    const statusLabel = entry.type === 'error'
+      ? (state.lang === 'zh' ? '失败' : 'Failed')
+      : entry.type === 'warn'
+        ? (state.lang === 'zh' ? '警告' : 'Warning')
+        : (state.lang === 'zh' ? '成功' : 'Success');
+
+    return `
+      <div class="card">
+        <div class="row" style="justify-content:space-between; align-items:flex-start;">
+          <h3>${escapeHtml(title)}</h3>
+          <span class="pill ${statusClass || 'success'}">${escapeHtml(statusLabel)}</span>
+        </div>
+        <div>${escapeHtml(entry.message || '-')}</div>
+        <div class="muted small" style="margin-top:8px;">${escapeHtml(formatDate(entry.at))}</div>
+        ${detailText ? `<pre style="margin-top:12px;">${escapeHtml(detailText)}</pre>` : ''}
+      </div>
+    `;
   }
 
   const FIELD_LABELS = {
@@ -599,70 +664,110 @@
       apiRequest('/api/web-background/status'),
     ]);
 
-    const webCommandPort = webStatus.port || 18088;
-    const startCommand = `cmd /c start "" /b node dist/index.js web --port ${webCommandPort}`;
-    const statusCommand = 'npm run web:bg:status';
-    const stopCommand = 'npm run web:bg:stop';
+    const currentPid = Number(info.pid || 0);
+    const isCurrentInstance = !!(webStatus.running && webStatus.pid && currentPid && webStatus.pid === currentPid);
+    const isCurrentManaged = isCurrentInstance && webStatus.managed;
+    const isOtherProcess = !!(webStatus.running && webStatus.pid && !isCurrentInstance);
+
+    let webPrimaryLabel = state.lang === 'zh' ? '后台启动 Guard Web' : 'Start Guard Web in Background';
+    let webPrimaryHint = state.lang === 'zh'
+      ? '当前端口没有 Guard Web 监听时，会以 detached 模式直接在后台拉起。'
+      : 'When no Guard Web process is listening on this port, Guard will start one in detached mode.';
+    let webPrimaryDisabled = false;
+
+    if (isCurrentManaged) {
+      webPrimaryLabel = state.lang === 'zh' ? '当前实例已托管' : 'Current Instance Managed';
+      webPrimaryHint = state.lang === 'zh'
+        ? '当前页面就是 Guard 托管实例，不需要重复纳入。'
+        : 'This page is already backed by a managed Guard instance.';
+      webPrimaryDisabled = true;
+    } else if (isCurrentInstance) {
+      webPrimaryLabel = state.lang === 'zh' ? '纳入后台托管' : 'Adopt Current Instance';
+      webPrimaryHint = state.lang === 'zh'
+        ? '当前页面已经在运行，但不是由 web:bg 管理。点击后会把当前实例写入 Guard 的后台运行记录。'
+        : 'This page is already running, but it is not tracked by web:bg yet. Guard will adopt it into managed background state.';
+    } else if (isOtherProcess) {
+      webPrimaryLabel = state.lang === 'zh' ? '已有其他 Guard Web 实例' : 'Another Guard Web Is Running';
+      webPrimaryHint = state.lang === 'zh'
+        ? `端口 ${webStatus.port} 已被 PID ${webStatus.pid} 占用。请先停掉这个实例，再决定是否后台启动。`
+        : `Port ${webStatus.port} is already occupied by PID ${webStatus.pid}. Stop it before starting another background instance.`;
+      webPrimaryDisabled = true;
+    }
 
     const body = `
       <div class="grid">
         ${metricCard('Gateway', service.running ? 'RUNNING' : 'STOPPED', `PID ${service.pid || '-'}`, service.running ? 'success' : 'danger')}
-        ${metricCard('Guard Web', webStatus.running ? 'RUNNING' : 'STOPPED', webStatus.running ? `PID ${webStatus.pid}` : '-', webStatus.running ? 'success' : 'warn')}
+        ${metricCard('Guard Web', webStatus.running ? 'RUNNING' : 'STOPPED', webStatus.running ? `PID ${webStatus.pid || '-'}` : '-', webStatus.running ? 'success' : 'warn')}
         ${metricCard('Node.js', info.nodeVersion || '-', info.arch || '-')}
-        ${metricCard('OpenClaw', info.openclaw?.installed ? 'INSTALLED' : 'MISSING', info.openclaw?.version || '-')}
+        ${metricCard('OpenClaw', info.openclaw?.installed ? 'INSTALLED' : 'MISSING', info.openclaw?.version || '-', info.openclaw?.installed ? 'success' : 'warn')}
       </div>
       <div class="grid">
         <div class="card">
-          <h3>${state.lang === 'zh' ? '\u7cfb\u7edf\u4fe1\u606f' : 'System Info'}</h3>
+          <h3>${state.lang === 'zh' ? '系统信息' : 'System Info'}</h3>
           ${keyValueGrid([
-            { label: state.lang === 'zh' ? '\u5e73\u53f0' : 'Platform', value: info.platform || '-' },
-            { label: state.lang === 'zh' ? '\u7528\u6237' : 'User', value: info.user || '-' },
+            { label: state.lang === 'zh' ? '平台' : 'Platform', value: info.platform || '-' },
+            { label: state.lang === 'zh' ? '用户' : 'User', value: info.user || '-' },
             { label: 'Home', value: info.home || '-' },
             { label: 'OpenClaw Dir', value: info.openclawDir || '-' },
+            { label: state.lang === 'zh' ? '当前页面 PID' : 'Current Page PID', value: info.pid || '-' },
+            { label: state.lang === 'zh' ? '当前监听端口' : 'Current Listen Port', value: webStatus.port || '-' },
           ])}
         </div>
         <div class="card">
-          <h3>${state.lang === 'zh' ? '\u540e\u53f0\u670d\u52a1\u63a7\u5236' : 'Background Service Controls'}</h3>
+          <h3>${state.lang === 'zh' ? '后台服务控制' : 'Background Service Controls'}</h3>
           <div class="toolbar">
             <button class="action-btn primary" type="button" data-service-action="start">${escapeHtml(t('start'))} Gateway</button>
             <button class="action-btn" type="button" data-service-action="restart">${escapeHtml(t('restart'))} Gateway</button>
             <button class="action-btn danger" type="button" data-service-action="stop">${escapeHtml(t('stop'))} Gateway</button>
-            <button class="action-btn danger" type="button" data-service-action="stop-web">${escapeHtml(t('stopWeb'))}</button>
+            <button class="action-btn ${webPrimaryDisabled ? '' : 'primary'}" type="button" data-service-action="start-web" ${webPrimaryDisabled ? 'disabled' : ''}>${escapeHtml(webPrimaryLabel)}</button>
+            <button class="action-btn danger" type="button" data-service-action="stop-web" ${webStatus.running ? '' : 'disabled'}>${escapeHtml(t('stopWeb'))}</button>
           </div>
+          <div class="status ${webPrimaryDisabled && !isCurrentManaged ? 'warn' : ''}" style="margin-top:14px;">${escapeHtml(webPrimaryHint)}</div>
           <div class="grid" style="margin-top:14px;">
             <div class="list-item">
               <div class="row" style="justify-content:space-between;">
-                <strong>${state.lang === 'zh' ? '\u0057\u0065\u0062 \u8fdb\u7a0b\u6765\u6e90' : 'Guard Web Source'}</strong>
-                <span class="pill ${webStatus.managed ? 'success' : 'warn'}">${escapeHtml(webStatus.source || '-')}</span>
+                <strong>${state.lang === 'zh' ? '检测结果' : 'Detection Result'}</strong>
+                <span class="pill ${webStatus.running ? 'success' : 'warn'}">${escapeHtml(webStatus.running ? (state.lang === 'zh' ? '运行中' : 'running') : (state.lang === 'zh' ? '未运行' : 'stopped'))}</span>
               </div>
               <div class="muted small" style="margin-top:8px;">
-                ${escapeHtml(webStatus.managed
-                  ? (state.lang === 'zh' ? '\u5f53\u524d\u5b9e\u4f8b\u7531 Guard \u8bb0\u5f55\u4e3a\u53d7\u6258\u7ba1\u540e\u53f0\u8fdb\u7a0b\u3002' : 'This instance is tracked as a managed background process.')
-                  : (state.lang === 'zh' ? '\u5f53\u524d\u5b9e\u4f8b\u662f\u901a\u8fc7\u7aef\u53e3\u626b\u63cf\u8bc6\u522b\u51fa\u6765\u7684\uff0c\u8bf4\u660e\u5b83\u4e0d\u662f\u7531 web:bg \u811a\u672c\u6258\u7ba1\u542f\u52a8\u3002' : 'This instance was detected via port scan, which means it was not started by the web:bg manager.'))}
+                ${escapeHtml(webStatus.running
+                  ? (state.lang === 'zh' ? `当前检测到 PID ${webStatus.pid || '-'} 正在监听端口 ${webStatus.port}。` : `PID ${webStatus.pid || '-'} is listening on port ${webStatus.port}.`)
+                  : (state.lang === 'zh' ? '当前端口没有 Guard Web 进程在监听。' : 'No Guard Web process is listening on this port right now.'))}
               </div>
             </div>
             <div class="list-item">
               <div class="row" style="justify-content:space-between;">
-                <strong>${state.lang === 'zh' ? '\u8fd0\u884c\u8bb0\u5f55\u6587\u4ef6' : 'Runtime Record File'}</strong>
+                <strong>${state.lang === 'zh' ? '托管来源' : 'Tracking Source'}</strong>
+                <span class="pill ${webStatus.managed ? 'success' : 'warn'}">${escapeHtml(webStatus.source || '-')}</span>
+              </div>
+              <div class="muted small" style="margin-top:8px;">
+                ${escapeHtml(webStatus.managed
+                  ? (state.lang === 'zh' ? '该实例已经被 Guard 写入后台运行记录。' : 'This instance is already tracked by Guard background runtime records.')
+                  : (state.lang === 'zh' ? '当前只是通过端口扫描识别到进程，尚未进入 Guard 托管。' : 'This instance is currently detected by port scan only and is not under Guard management yet.'))}
+              </div>
+            </div>
+            <div class="list-item">
+              <div class="row" style="justify-content:space-between;">
+                <strong>${state.lang === 'zh' ? '运行记录文件' : 'Runtime Record File'}</strong>
                 <span class="chip">${escapeHtml(webStatus.port || '-')}</span>
               </div>
               <div class="muted small" style="margin-top:8px;">${escapeHtml(webStatus.pidFile || '-')}</div>
             </div>
           </div>
           <div class="sub-card" style="margin-top:14px;">
-            <h3 style="margin-bottom:10px;">${state.lang === 'zh' ? '\u624b\u52a8\u547d\u4ee4\u53c2\u8003' : 'Manual Commands'}</h3>
+            <h3 style="margin-bottom:10px;">${state.lang === 'zh' ? '手动命令参考' : 'Manual Commands'}</h3>
             <div class="command-list">
-              <code>${escapeHtml(statusCommand)}</code>
-              <code>${escapeHtml(stopCommand)}</code>
-              <code>${escapeHtml(startCommand)}</code>
+              <code>npm run web:bg:start</code>
+              <code>npm run web:bg:status</code>
+              <code>npm run web:bg:stop</code>
             </div>
             <div class="muted small" style="margin-top:10px;">
               ${escapeHtml(state.lang === 'zh'
-                ? '\u5f53\u540e\u53f0\u6258\u7ba1\u72b6\u6001\u548c\u5b9e\u9645\u7aef\u53e3\u4e0d\u4e00\u81f4\u65f6\uff0c\u5148\u770b status\uff0c\u518d\u51b3\u5b9a\u662f\u7528 stop \u505c\u6258\u7ba1\u5b9e\u4f8b\uff0c\u8fd8\u662f\u76f4\u63a5\u7ed3\u675f\u5f53\u524d\u7aef\u53e3\u4e0a\u7684\u65e7\u8fdb\u7a0b\u3002'
-                : 'If the tracked background state and the actual listening port drift apart, check status first, then decide whether to use stop for the managed instance or terminate the stale port owner directly.')}
+                ? '推荐优先用上面三个命令排查后台托管状态。如果页面本身已经打开，优先点击“纳入后台托管”，不要重复拉起第二个同端口实例。'
+                : 'Prefer the three commands above to inspect background runtime state. If this page is already open, adopt the current instance before trying to start a second process on the same port.')}
             </div>
           </div>
-          <pre style="margin-top:14px;">${prettyJson({ gateway: service, web: webStatus })}</pre>
+          <pre style="margin-top:14px;">${prettyJson({ info, gateway: service, web: webStatus })}</pre>
         </div>
       </div>
     `;
@@ -672,14 +777,17 @@
       button.addEventListener('click', async () => {
         const action = button.getAttribute('data-service-action');
         try {
-          if (action === 'stop-web') {
-            const result = await postJson('/api/web-background/stop', {});
-            showToast(result.message || 'OK');
+          let result;
+          if (action === 'start-web') {
+            result = await postJson('/api/web-background/start', {});
+          } else if (action === 'stop-web') {
+            result = await postJson('/api/web-background/stop', {});
           } else {
-            const result = await postJson(`/api/service/${action}`, {});
-            showToast(result.message || 'OK');
+            result = await postJson(`/api/service/${action}`, {});
           }
-          loadSystem();
+          const ok = result?.success !== false;
+          showToast(result?.message || 'OK', ok ? 'success' : 'error');
+          await loadSystem();
         } catch (error) {
           showToast(error.message || String(error), 'error');
         }
@@ -1413,53 +1521,135 @@
   async function loadNotifications() {
     const summary = await apiRequest('/api/notifications?limit=200');
     const items = summary.items || [];
+    const warningCount = items.filter((item) => item.severity === 'warning' || item.severity === 'error').length;
+    const successCount = items.filter((item) => item.severity === 'success').length;
+    const sources = Array.from(new Set(items.map((item) => item.source).filter(Boolean))).sort();
     const filtered = items.filter((item) => {
-      if (state.notificationFilter === 'unread') return !item.read;
-      if (state.notificationFilter === 'error') return item.severity === 'error' || item.severity === 'warning';
-      return true;
+      if (state.notificationFilter === 'unread' && item.read) return false;
+      if (state.notificationFilter === 'warning' && item.severity !== 'warning' && item.severity !== 'error') return false;
+      if (state.notificationFilter === 'success' && item.severity !== 'success') return false;
+      if (state.notificationSource !== 'all' && item.source !== state.notificationSource) return false;
+      return matchesTextQuery([
+        item.title,
+        item.message,
+        item.type,
+        item.source,
+        item.severity,
+        item.meta ? JSON.stringify(item.meta) : '',
+      ], state.notificationSearchQuery);
     });
 
     const body = `
-      <div class="toolbar tight">
-        <button class="chip ${state.notificationFilter === 'all' ? 'active' : ''}" data-notify-filter="all">All (${summary.total || 0})</button>
-        <button class="chip ${state.notificationFilter === 'unread' ? 'active' : ''}" data-notify-filter="unread">Unread (${summary.unread || 0})</button>
-        <button class="chip ${state.notificationFilter === 'error' ? 'active' : ''}" data-notify-filter="error">Warnings</button>
+      <div class="grid">
+        ${metricCard(state.lang === 'zh' ? '通知总数' : 'Total Notifications', formatNumber(summary.total || 0), state.lang === 'zh' ? '全部记录' : 'all records')}
+        ${metricCard(state.lang === 'zh' ? '未读通知' : 'Unread', formatNumber(summary.unread || 0), state.lang === 'zh' ? '待处理' : 'requires attention', (summary.unread || 0) > 0 ? 'warn' : 'success')}
+        ${metricCard(state.lang === 'zh' ? '警告 / 错误' : 'Warnings / Errors', formatNumber(warningCount), state.lang === 'zh' ? '需要排查' : 'needs review', warningCount > 0 ? 'warn' : 'success')}
+        ${metricCard(state.lang === 'zh' ? '成功事件' : 'Success Events', formatNumber(successCount), state.lang === 'zh' ? '最近完成' : 'recent completions', successCount > 0 ? 'success' : '')}
       </div>
-      <div class="toolbar tight">
-        <button class="action-btn" data-notify-bulk="read-all">${escapeHtml(t('readAll'))}</button>
-        <button class="action-btn" data-notify-bulk="unread-all">${escapeHtml(t('unreadAll'))}</button>
-        <button class="action-btn" data-notify-bulk="clear-read">${escapeHtml(t('clearRead'))}</button>
-        <button class="action-btn danger" data-notify-bulk="clear-all">${escapeHtml(t('clearAll'))}</button>
+      <div class="card">
+        <div class="toolbar tight">
+          <input id="notify-search" value="${escapeHtml(state.notificationSearchQuery || '')}" placeholder="${escapeHtml(state.lang === 'zh' ? '搜索标题 / 消息 / 来源' : 'Search title / message / source')}" />
+          <select id="notify-source">
+            <option value="all">${escapeHtml(state.lang === 'zh' ? '全部来源' : 'All sources')}</option>
+            ${sources.map((source) => `<option value="${escapeHtml(source)}" ${state.notificationSource === source ? 'selected' : ''}>${escapeHtml(source)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="toolbar tight" style="margin-top:12px;">
+          <button class="chip ${state.notificationFilter === 'all' ? 'active' : ''}" type="button" data-notify-filter="all">${state.lang === 'zh' ? '全部' : 'All'} (${formatNumber(summary.total || 0)})</button>
+          <button class="chip ${state.notificationFilter === 'unread' ? 'active' : ''}" type="button" data-notify-filter="unread">${state.lang === 'zh' ? '未读' : 'Unread'} (${formatNumber(summary.unread || 0)})</button>
+          <button class="chip ${state.notificationFilter === 'warning' ? 'active' : ''}" type="button" data-notify-filter="warning">${state.lang === 'zh' ? '警告' : 'Warning'} (${formatNumber(warningCount)})</button>
+          <button class="chip ${state.notificationFilter === 'success' ? 'active' : ''}" type="button" data-notify-filter="success">${state.lang === 'zh' ? '成功' : 'Success'} (${formatNumber(successCount)})</button>
+        </div>
+        <div class="toolbar tight" style="margin-top:12px;">
+          <button class="action-btn" type="button" data-notify-bulk="read-all">${escapeHtml(t('readAll'))}</button>
+          <button class="action-btn" type="button" data-notify-bulk="unread-all">${escapeHtml(t('unreadAll'))}</button>
+          <button class="action-btn" type="button" data-notify-bulk="clear-read">${escapeHtml(t('clearRead'))}</button>
+          <button class="action-btn danger" type="button" data-notify-bulk="clear-all">${escapeHtml(t('clearAll'))}</button>
+        </div>
       </div>
-      <div class="list">${filtered.length ? filtered.map((item) => `<div class="list-item ${item.read ? '' : 'unread'}"><div class="row" style="justify-content:space-between"><div><strong>${escapeHtml(item.title)}</strong><div class="muted small">${escapeHtml(item.type)} · ${escapeHtml(formatDate(item.createdAt))}</div></div><span class="pill ${item.severity === 'success' ? 'success' : item.severity === 'warning' ? 'warn' : item.severity === 'error' ? 'danger' : ''}">${escapeHtml(item.severity)}</span></div><p>${escapeHtml(item.message)}</p><div class="toolbar tight"><button class="action-btn" data-notify-item="${escapeHtml(item.id)}" data-next-read="${item.read ? 'false' : 'true'}">${escapeHtml(item.read ? t('markUnread') : t('markRead'))}</button></div></div>`).join('') : emptyState(state.lang === 'zh' ? '没有符合筛选条件的通知。' : 'No notifications for this filter.')}</div>
+      <div class="list">
+        ${filtered.length ? filtered.map((item) => `
+          <div class="list-item ${item.read ? '' : 'unread'}">
+            <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+              <div>
+                <strong>${escapeHtml(item.title)}</strong>
+                <div class="muted small">${escapeHtml(item.type)} · ${escapeHtml(item.source)} · ${escapeHtml(formatDate(item.createdAt))}</div>
+              </div>
+              <span class="pill ${item.severity === 'success' ? 'success' : item.severity === 'warning' ? 'warn' : item.severity === 'error' ? 'danger' : ''}">${escapeHtml(item.severity)}</span>
+            </div>
+            <p style="margin-top:10px;">${escapeHtml(item.message)}</p>
+            ${item.meta ? `<pre style="margin-top:12px;">${prettyJson(item.meta)}</pre>` : ''}
+            <div class="toolbar tight" style="margin-top:12px;">
+              <button class="action-btn" type="button" data-notify-item="${escapeHtml(item.id)}" data-next-read="${item.read ? 'false' : 'true'}">${escapeHtml(item.read ? t('markUnread') : t('markRead'))}</button>
+              <button class="action-btn" type="button" data-notify-copy="${escapeHtml(item.id)}">${escapeHtml(state.lang === 'zh' ? '复制详情' : 'Copy Details')}</button>
+            </div>
+          </div>
+        `).join('') : emptyState(state.lang === 'zh' ? '没有符合筛选条件的通知。' : 'No notifications match the current filters.')}
+      </div>
     `;
 
     setPanel(t('tabs.notifications'), t('desc.notifications'), body);
+
+    document.getElementById('notify-search')?.addEventListener('input', (event) => {
+      state.notificationSearchQuery = event.target.value;
+      loadNotifications();
+    });
+    document.getElementById('notify-source')?.addEventListener('change', (event) => {
+      state.notificationSource = event.target.value || 'all';
+      loadNotifications();
+    });
+
     document.querySelectorAll('[data-notify-filter]').forEach((button) => {
       button.addEventListener('click', () => {
         state.notificationFilter = button.getAttribute('data-notify-filter') || 'all';
         loadNotifications();
       });
     });
+
     document.querySelectorAll('[data-notify-bulk]').forEach((button) => {
       button.addEventListener('click', async () => {
+        const action = button.getAttribute('data-notify-bulk');
+        if (action === 'clear-all') {
+          const confirmed = confirm(state.lang === 'zh' ? '确认清空所有通知吗？这个操作不可撤销。' : 'Clear all notifications? This cannot be undone.');
+          if (!confirmed) return;
+        }
         try {
-          const result = await postJson('/api/notifications/bulk', { action: button.getAttribute('data-notify-bulk') });
-          showToast(result.message || 'OK');
-          loadNotifications();
+          const result = await postJson('/api/notifications/bulk', { action });
+          const ok = result?.success !== false;
+          showToast(result?.message || 'OK', ok ? 'success' : 'error');
+          await loadNotifications();
         } catch (error) {
           showToast(error.message || String(error), 'error');
         }
       });
     });
+
     document.querySelectorAll('[data-notify-item]').forEach((button) => {
       button.addEventListener('click', async () => {
         try {
-          await postJson('/api/notifications/read', { id: button.getAttribute('data-notify-item'), read: button.getAttribute('data-next-read') === 'true' });
-          loadNotifications();
+          const result = await postJson('/api/notifications/read', {
+            id: button.getAttribute('data-notify-item'),
+            read: button.getAttribute('data-next-read') === 'true',
+          });
+          const ok = result?.success !== false;
+          showToast(ok ? (state.lang === 'zh' ? '通知状态已更新。' : 'Notification updated.') : (state.lang === 'zh' ? '通知状态更新失败。' : 'Failed to update notification.'), ok ? 'success' : 'error');
+          await loadNotifications();
         } catch (error) {
           showToast(error.message || String(error), 'error');
         }
+      });
+    });
+
+    document.querySelectorAll('[data-notify-copy]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const item = items.find((entry) => entry.id === button.getAttribute('data-notify-copy'));
+        if (!item) {
+          showToast(state.lang === 'zh' ? '没有找到对应的通知详情。' : 'Notification detail not found.', 'error');
+          return;
+        }
+        await copyTextValue(JSON.stringify(item, null, 2), {
+          successMessage: state.lang === 'zh' ? '通知详情已复制。' : 'Notification detail copied.',
+        });
       });
     });
   }
@@ -1735,32 +1925,122 @@
 
   async function loadCron() {
     const data = await apiRequest('/api/cron-ui');
+    const jobs = data.jobs || [];
+    const enabledJobs = jobs.filter((job) => job.enabled);
+    const disabledJobs = jobs.filter((job) => !job.enabled);
+    const filteredJobs = jobs.filter((job) => {
+      if (state.cronFilter === 'enabled' && !job.enabled) return false;
+      if (state.cronFilter === 'disabled' && job.enabled) return false;
+      return matchesTextQuery([
+        job.name,
+        job.id,
+        job.agentId,
+        job.schedule,
+        job.prompt,
+        job.status,
+      ], state.cronSearchQuery);
+    });
+
     const body = `
       <div class="grid">
-        ${metricCard(state.lang === 'zh' ? '任务数' : 'Jobs', formatNumber((data.jobs || []).length), '')}
-        ${metricCard(state.lang === 'zh' ? '调度器' : 'Scheduler', data.status?.enabled === null ? '-' : (data.status.enabled ? 'ON' : 'OFF'), data.status?.storePath || '-')}
-        ${metricCard(state.lang === 'zh' ? '下一次唤醒' : 'Next Wake', formatDate(data.status?.schedulerNextWakeAt), '')}
+        ${metricCard(state.lang === 'zh' ? '任务数' : 'Jobs', formatNumber(jobs.length), state.lang === 'zh' ? '当前已发现任务' : 'detected tasks')}
+        ${metricCard(state.lang === 'zh' ? '启用中' : 'Enabled', formatNumber(enabledJobs.length), state.lang === 'zh' ? '正在调度' : 'active schedule', enabledJobs.length > 0 ? 'success' : '')}
+        ${metricCard(state.lang === 'zh' ? '已停用' : 'Disabled', formatNumber(disabledJobs.length), state.lang === 'zh' ? '待恢复或清理' : 'paused jobs', disabledJobs.length > 0 ? 'warn' : '')}
+        ${metricCard(state.lang === 'zh' ? '调度器' : 'Scheduler', data.status?.enabled === null ? '-' : (data.status.enabled ? 'ON' : 'OFF'), data.status?.schedulerNextWakeAt ? formatDate(data.status.schedulerNextWakeAt) : (data.status?.storePath || '-'), data.status?.enabled ? 'success' : 'warn')}
       </div>
-      ${(data.warnings || []).length ? `<div class="status warn">${escapeHtml(data.warnings.join('\n'))}</div>` : ''}
-      <div class="list">${(data.jobs || []).length ? data.jobs.map((job) => `<div class="list-item"><div class="row" style="justify-content:space-between"><div><strong>${escapeHtml(job.name || job.id)}</strong><div class="muted small">${escapeHtml(job.agentId)} · ${escapeHtml(job.schedule)}</div></div><span class="pill ${job.enabled ? 'success' : 'warn'}">${job.enabled ? 'enabled' : 'disabled'}</span></div><div>${escapeHtml(job.prompt)}</div><div class="toolbar tight" style="margin-top:12px;"><button class="action-btn" data-cron-action="run" data-job-id="${escapeHtml(job.id)}">${escapeHtml(t('run'))}</button><button class="action-btn" data-cron-action="${job.enabled ? 'disable' : 'enable'}" data-job-id="${escapeHtml(job.id)}">${escapeHtml(job.enabled ? t('disable') : t('enable'))}</button><button class="action-btn danger" data-cron-action="remove" data-job-id="${escapeHtml(job.id)}">${escapeHtml(t('remove'))}</button></div></div>`).join('') : emptyState(state.lang === 'zh' ? '当前没有 Cron 任务。' : 'No cron jobs.')}</div>
+      <div style="margin-top:14px;">${renderActionFeedback(state.lang === 'zh' ? '最近 Cron 操作' : 'Latest Cron Action', state.cronLastAction, state.lang === 'zh' ? '还没有执行过 Cron 管理动作。' : 'No cron action has been executed yet.')}</div>
+      ${(data.warnings || []).length ? `<div class="status warn" style="margin-top:14px; white-space:pre-wrap;">${escapeHtml(data.warnings.join('\n'))}</div>` : ''}
+      <div class="card" style="margin-top:14px;">
+        <div class="toolbar tight">
+          <input id="cron-search" value="${escapeHtml(state.cronSearchQuery || '')}" placeholder="${escapeHtml(state.lang === 'zh' ? '搜索任务名 / Agent / 表达式 / Prompt' : 'Search name / agent / schedule / prompt')}" />
+          <button class="action-btn" type="button" data-cron-action="refresh">${escapeHtml(t('reload'))}</button>
+        </div>
+        <div class="toolbar tight" style="margin-top:12px;">
+          <button class="chip ${state.cronFilter === 'all' ? 'active' : ''}" type="button" data-cron-filter="all">${state.lang === 'zh' ? '全部' : 'All'} (${formatNumber(jobs.length)})</button>
+          <button class="chip ${state.cronFilter === 'enabled' ? 'active' : ''}" type="button" data-cron-filter="enabled">${state.lang === 'zh' ? '启用中' : 'Enabled'} (${formatNumber(enabledJobs.length)})</button>
+          <button class="chip ${state.cronFilter === 'disabled' ? 'active' : ''}" type="button" data-cron-filter="disabled">${state.lang === 'zh' ? '已停用' : 'Disabled'} (${formatNumber(disabledJobs.length)})</button>
+        </div>
+      </div>
+      <div class="list" style="margin-top:14px;">
+        ${filteredJobs.length ? filteredJobs.map((job) => `
+          <div class="list-item">
+            <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+              <div>
+                <strong>${escapeHtml(job.name || job.id)}</strong>
+                <div class="muted small">${escapeHtml(job.agentId)} · ${escapeHtml(job.schedule || '-')}</div>
+              </div>
+              <div class="row" style="gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+                <span class="pill ${job.enabled ? 'success' : 'warn'}">${escapeHtml(job.enabled ? (state.lang === 'zh' ? '已启用' : 'enabled') : (state.lang === 'zh' ? '已停用' : 'disabled'))}</span>
+                <span class="chip">${escapeHtml(job.status || '-')}</span>
+              </div>
+            </div>
+            <div class="row" style="margin-top:10px; gap:8px; flex-wrap:wrap;">
+              <span class="chip">${escapeHtml((state.lang === 'zh' ? '最近运行: ' : 'Last run: ') + formatDate(job.lastRunAt))}</span>
+              <span class="chip">${escapeHtml((state.lang === 'zh' ? '下次运行: ' : 'Next run: ') + formatDate(job.nextRunAt))}</span>
+            </div>
+            <p style="margin-top:10px;">${escapeHtml(job.prompt || '')}</p>
+            <div class="toolbar tight" style="margin-top:12px;">
+              <button class="action-btn" type="button" data-cron-action="run" data-job-id="${escapeHtml(job.id)}">${escapeHtml(t('run'))}</button>
+              <button class="action-btn" type="button" data-cron-action="${job.enabled ? 'disable' : 'enable'}" data-job-id="${escapeHtml(job.id)}">${escapeHtml(job.enabled ? t('disable') : t('enable'))}</button>
+              <button class="action-btn danger" type="button" data-cron-action="remove" data-job-id="${escapeHtml(job.id)}">${escapeHtml(t('remove'))}</button>
+            </div>
+          </div>
+        `).join('') : emptyState(state.lang === 'zh' ? '没有符合筛选条件的 Cron 任务。' : 'No cron jobs match the current filters.')}
+      </div>
     `;
+
     setPanel(t('tabs.cron'), t('desc.cron'), body);
+
+    document.getElementById('cron-search')?.addEventListener('input', (event) => {
+      state.cronSearchQuery = event.target.value;
+      loadCron();
+    });
+
+    document.querySelectorAll('[data-cron-filter]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.cronFilter = button.getAttribute('data-cron-filter') || 'all';
+        loadCron();
+      });
+    });
+
     document.querySelectorAll('[data-cron-action]').forEach((button) => {
       button.addEventListener('click', async () => {
         const action = button.getAttribute('data-cron-action');
         const jobId = button.getAttribute('data-job-id');
+        if (action === 'refresh') {
+          await loadCron();
+          return;
+        }
+        if (action === 'remove') {
+          const confirmed = confirm(state.lang === 'zh' ? `确认删除 Cron 任务 ${jobId} 吗？` : `Remove cron job ${jobId}?`);
+          if (!confirmed) return;
+        }
         try {
           const result = await postJson(`/api/cron-ui/${action}`, { jobId });
-          showToast(result.message || 'OK');
-          loadCron();
+          const ok = result?.success !== false;
+          state.cronLastAction = {
+            type: ok ? 'success' : 'error',
+            message: result?.message || 'OK',
+            at: new Date().toISOString(),
+            detail: result?.output || { action, jobId },
+          };
+          showToast(result?.message || 'OK', ok ? 'success' : 'error');
+          await loadCron();
         } catch (error) {
+          state.cronLastAction = {
+            type: 'error',
+            message: error.message || String(error),
+            at: new Date().toISOString(),
+            detail: { action, jobId },
+          };
           showToast(error.message || String(error), 'error');
+          await loadCron();
         }
       });
     });
   }
 
-﻿  async function loadGitSync() {
+  async function loadGitSync() {
     clearGitSyncPollTimer();
     const status = await apiRequest('/api/git-sync/status');
     const oauth = status.oauth || {};
@@ -1817,6 +2097,7 @@
         : oauth.phase === 'error'
           ? (oauth.error || oauth.message || (state.lang === 'zh' ? 'OAuth 失败。' : 'OAuth failed.'))
           : (state.lang === 'zh' ? '如需浏览器授权，可在这里配置 Client ID / Secret。' : 'Configure Client ID / Secret here if you prefer browser OAuth.');
+
     const blockingReasonsHtml = status.reasons?.length
       ? status.reasons.map((reason) => `<div class="list-item"><div>${escapeHtml(reason)}</div></div>`).join('')
       : `<div class="status">${escapeHtml(state.lang === 'zh' ? '当前没有阻断项，可以继续执行同步。' : 'No blockers detected. You can continue with sync.')}</div>`;
@@ -1832,7 +2113,7 @@
     const changedFilesHtml = (status.changedFiles || []).length
       ? status.changedFiles.map((file) => `
           <div class="list-item">
-            <div class="row" style="justify-content:space-between;">
+            <div class="row" style="justify-content:space-between; gap:12px;">
               <strong>${escapeHtml(file)}</strong>
               <span class="muted small">${escapeHtml(status.currentBranch || '-')}</span>
             </div>
@@ -1847,10 +2128,17 @@
         ${metricCard(state.lang === 'zh' ? '认证' : 'Auth', status.authConfigured ? (status.authMode || 'configured') : 'missing', status.authConfigured ? (state.lang === 'zh' ? '认证已配置' : 'credentials ready') : (state.lang === 'zh' ? '尚未配置' : 'not configured'), status.authConfigured ? 'success' : 'warn')}
         ${metricCard(state.lang === 'zh' ? '本地变更' : 'Changes', formatNumber((status.changedFiles || []).length), status.currentBranch || '-', (status.changedFiles || []).length > 0 ? 'warn' : 'success')}
       </div>
-      <div class="grid">
+      ${status.state?.lastError ? `<div class="status error" style="margin-top:14px;">${escapeHtml((state.lang === 'zh' ? '最近错误: ' : 'Last error: ') + status.state.lastError)}</div>` : ''}
+      <div style="margin-top:14px;">${renderActionFeedback(state.lang === 'zh' ? '最近 Git 同步操作' : 'Latest Git Sync Action', state.gitSyncLastAction, state.lang === 'zh' ? '还没有执行过 Git 同步动作。' : 'No Git sync action has been executed yet.')}</div>
+      <div class="grid" style="margin-top:14px;">
         <div class="card">
           <h3>${state.lang === 'zh' ? '同步准备度' : 'Sync Readiness'}</h3>
           <div class="list">${stageHtml}</div>
+          <div class="toolbar tight" style="margin-top:12px;">
+            <button class="action-btn" type="button" data-git-action="copy-repo-path">${state.lang === 'zh' ? '复制本地目录' : 'Copy Repo Path'}</button>
+            <button class="action-btn" type="button" data-git-action="copy-remote" ${status.remoteUrl ? '' : 'disabled'}>${state.lang === 'zh' ? '复制远程地址' : 'Copy Remote URL'}</button>
+            <button class="action-btn primary" type="button" data-git-action="check-sync">${state.lang === 'zh' ? '检查并同步' : 'Check + Sync'}</button>
+          </div>
         </div>
         <div class="card">
           <h3>${state.lang === 'zh' ? '当前阻断项' : 'Blocking Reasons'}</h3>
@@ -1862,7 +2150,7 @@
           </div>
         </div>
       </div>
-      <div class="grid">
+      <div class="grid" style="margin-top:14px;">
         <div class="card">
           <h3>${state.lang === 'zh' ? '初始化与远程绑定' : 'Init & Remote Bind'}</h3>
           <div class="toolbar tight" style="margin-bottom:12px;">
@@ -1891,7 +2179,7 @@
           </div>
         </div>
       </div>
-      <div class="grid">
+      <div class="grid" style="margin-top:14px;">
         <div class="card">
           <h3>OAuth</h3>
           <div class="status ${oauthStatusClass}">${escapeHtml(oauthStatusMessage)}</div>
@@ -1921,6 +2209,7 @@
           <div class="toolbar tight" style="margin-top:12px;">
             <button class="action-btn" type="button" data-git-action="commit">commit</button>
             <button class="action-btn" type="button" data-git-action="push">push</button>
+            <button class="action-btn" type="button" data-git-action="check-sync">${state.lang === 'zh' ? '检查并同步' : 'Check + Sync'}</button>
             <button class="action-btn primary" type="button" data-git-action="sync">sync</button>
           </div>
           <div class="list" style="margin-top:12px;">${changedFilesHtml}</div>
@@ -1930,18 +2219,43 @@
 
     setPanel(t('tabs.git-sync'), t('desc.git-sync'), body);
 
+    const rememberGitAction = (result, detail) => {
+      const ok = result?.success !== false;
+      state.gitSyncLastAction = {
+        type: ok ? 'success' : 'error',
+        message: result?.message || 'OK',
+        at: new Date().toISOString(),
+        detail: detail ?? result?.output ?? result?.status ?? null,
+      };
+      showToast(result?.message || 'OK', ok ? 'success' : 'error');
+      return ok;
+    };
+
     document.querySelectorAll('[data-git-action]').forEach((button) => {
       button.addEventListener('click', async () => {
         const action = button.getAttribute('data-git-action');
         try {
           if (action === 'refresh-status') {
-            loadGitSync();
+            await loadGitSync();
+            return;
+          }
+          if (action === 'copy-repo-path') {
+            await copyTextValue(status.repoPath, {
+              successMessage: state.lang === 'zh' ? '本地目录已复制。' : 'Repository path copied.',
+            });
+            return;
+          }
+          if (action === 'copy-remote') {
+            await copyTextValue(status.remoteUrl || '', {
+              successMessage: state.lang === 'zh' ? '远程地址已复制。' : 'Remote URL copied.',
+              emptyMessage: state.lang === 'zh' ? '当前还没有远程地址可复制。' : 'No remote URL to copy yet.',
+            });
             return;
           }
           if (action === 'init' || action === 'check' || action === 'push') {
             const result = await postJson(`/api/git-sync/${action === 'check' ? 'check-private' : action}`, {});
-            showToast(result.message || 'OK');
-            loadGitSync();
+            rememberGitAction(result);
+            await loadGitSync();
             return;
           }
           if (action === 'connect') {
@@ -1955,8 +2269,22 @@
               return;
             }
             const result = await postJson('/api/git-sync/connect', payload);
-            showToast(result.message || 'OK');
-            loadGitSync();
+            let finalResult = result;
+            let detail = result?.status || null;
+            if (result?.success !== false && result?.status?.authConfigured) {
+              const checkResult = await postJson('/api/git-sync/check-private', {});
+              finalResult = {
+                ...checkResult,
+                success: checkResult?.success !== false,
+                message: `${result.message || ''}${result.message && checkResult?.message ? '；' : ''}${checkResult?.message || ''}`,
+              };
+              detail = {
+                connect: result?.status || null,
+                privateCheck: checkResult?.status || checkResult?.output || checkResult?.message || null,
+              };
+            }
+            rememberGitAction(finalResult, detail);
+            await loadGitSync();
             return;
           }
           if (action === 'token') {
@@ -1970,8 +2298,22 @@
               return;
             }
             const result = await postJson('/api/git-sync/auth/token', payload);
-            showToast(result.message || 'OK');
-            loadGitSync();
+            let finalResult = result;
+            let detail = result?.status || null;
+            if (result?.success !== false && (result?.status?.remoteUrl || status.remoteUrl)) {
+              const checkResult = await postJson('/api/git-sync/check-private', {});
+              finalResult = {
+                ...checkResult,
+                success: checkResult?.success !== false,
+                message: `${result.message || ''}${result.message && checkResult?.message ? '；' : ''}${checkResult?.message || ''}`,
+              };
+              detail = {
+                token: result?.status || null,
+                privateCheck: checkResult?.status || checkResult?.output || checkResult?.message || null,
+              };
+            }
+            rememberGitAction(finalResult, detail);
+            await loadGitSync();
             return;
           }
           if (action === 'oauth') {
@@ -1986,15 +2328,18 @@
               return;
             }
             const result = await postJson('/api/git-sync/auth/oauth', payload);
-            showToast(result.message || 'OK');
-            if (result.output) {
+            rememberGitAction(result, {
+              authorizeUrl: result?.output || null,
+              status: result?.status || null,
+            });
+            if (result?.output) {
               try {
                 window.open(result.output, '_blank');
               } catch {
                 // noop
               }
             }
-            loadGitSync();
+            await loadGitSync();
             return;
           }
           if (action === 'copy-oauth') {
@@ -2002,24 +2347,43 @@
               showToast(state.lang === 'zh' ? '当前没有可复制的授权地址。' : 'No authorization URL available.', 'error');
               return;
             }
-            if (navigator.clipboard?.writeText) {
-              await navigator.clipboard.writeText(oauth.authorizeUrl);
-              showToast(state.lang === 'zh' ? '授权地址已复制。' : 'Authorization URL copied.');
-            } else {
-              window.prompt(state.lang === 'zh' ? '请手动复制下面的授权地址' : 'Copy the authorization URL below', oauth.authorizeUrl);
+            await copyTextValue(oauth.authorizeUrl, {
+              successMessage: state.lang === 'zh' ? '授权地址已复制。' : 'Authorization URL copied.',
+            });
+            return;
+          }
+          if (action === 'check-sync') {
+            const message = document.querySelector('[name="gitCommitMessage"]')?.value.trim() || '';
+            state.gitSyncDraftMessage = message;
+            const checkResult = await postJson('/api/git-sync/check-private', {});
+            if (checkResult?.success === false) {
+              rememberGitAction(checkResult);
+              await loadGitSync();
+              return;
             }
+            const syncResult = await postJson('/api/git-sync/sync', { message });
+            rememberGitAction({
+              ...syncResult,
+              success: syncResult?.success !== false,
+              message: `${checkResult.message || ''}${checkResult.message && syncResult?.message ? '；' : ''}${syncResult?.message || ''}`,
+            }, {
+              privateCheck: checkResult?.status || checkResult?.output || checkResult?.message || null,
+              sync: syncResult?.status || syncResult?.output || syncResult?.message || null,
+            });
+            await loadGitSync();
             return;
           }
           if (action === 'commit' || action === 'sync') {
             const message = document.querySelector('[name="gitCommitMessage"]')?.value.trim() || '';
             state.gitSyncDraftMessage = message;
             const result = await postJson(`/api/git-sync/${action}`, { message });
-            showToast(result.message || 'OK');
-            loadGitSync();
+            rememberGitAction(result);
+            await loadGitSync();
             return;
           }
         } catch (error) {
-          showToast(error.message || String(error), 'error');
+          rememberGitAction({ success: false, message: error.message || String(error) });
+          await loadGitSync();
         }
       });
     });

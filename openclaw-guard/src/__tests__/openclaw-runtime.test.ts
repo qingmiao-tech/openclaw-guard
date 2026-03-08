@@ -19,17 +19,17 @@ describe('openclaw-runtime', () => {
         },
         recent: [
           {
-            agentId: 'task-hub',
-            key: 'agent:task-hub:feishu:direct:demo',
+            sessionId: '49d7df99-5cb6-43d0-baa6-ac01bd3e9799',
+            agentId: 'main',
+            key: 'agent:main:feishu:direct:demo',
             kind: 'direct',
-            sessionId: 'session-1',
             updatedAt: 1772707272073,
             inputTokens: 120,
             outputTokens: 80,
             cacheRead: 10,
             cacheWrite: 5,
             totalTokens: 215,
-            model: 'demo/model-a',
+            model: 'gpt-5.3-codex',
             contextTokens: 272000,
             remainingTokens: 211645,
             percentUsed: 22,
@@ -41,13 +41,13 @@ describe('openclaw-runtime', () => {
         mode: 'local',
         url: 'ws://127.0.0.1:18789',
         reachable: false,
-        error: 'connect failed: EPERM',
+        error: 'timeout',
       },
       agents: {
-        defaultId: 'task-hub',
+        defaultId: 'main',
         totalSessions: 1,
         bootstrapPendingCount: 0,
-        agents: [{ id: 'task-hub' }],
+        agents: [{ id: 'main' }],
       },
       securityAudit: {
         summary: {
@@ -90,11 +90,13 @@ describe('openclaw-runtime', () => {
     const snapshot = getRuntimeSnapshot();
     expect(snapshot.ok).toBe(true);
     expect(snapshot.sessions).toHaveLength(1);
-    expect(snapshot.sessions[0].id).toBe('session-1');
+    expect(snapshot.sessions[0].id).toBe('49d7df99-5cb6-43d0-baa6-ac01bd3e9799');
     expect(snapshot.sessions[0].channel).toBe('feishu');
     expect(snapshot.sessions[0].usage.totalTokens).toBe(215);
     expect(snapshot.summary?.defaultModel).toBe('gpt-5.3-codex');
     expect(snapshot.gateway?.reachable).toBe(false);
+    expect(snapshot.gateway?.error).toBe('timeout');
+    expect(snapshot.agents?.defaultId).toBe('main');
     expect(snapshot.alerts?.some((item) => item.code === 'gateway-unreachable')).toBe(true);
   });
 
@@ -126,5 +128,21 @@ describe('openclaw-runtime', () => {
     expect(parsed).not.toBeNull();
     expect(parsed?.gateway?.reachable).toBe(false);
     expect(parsed?.agents?.totalSessions).toBe(2);
+  });
+
+  it('handles the real cron empty-list shape', () => {
+    vi.stubEnv('OPENCLAW_GUARD_MOCK_CRON_JSON', JSON.stringify({
+      jobs: [],
+      total: 0,
+      offset: 0,
+      limit: 50,
+      hasMore: false,
+      nextOffset: null,
+    }));
+
+    const snapshot = getCronSnapshot();
+    expect(snapshot.ok).toBe(true);
+    expect(snapshot.jobs).toEqual([]);
+    expect(snapshot.status?.enabled).toBe(true);
   });
 });

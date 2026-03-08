@@ -194,6 +194,9 @@
     cronFilter: 'all',
     cronSearchQuery: '',
     cronLastAction: null,
+    cronEditorMode: 'create',
+    cronEditingJobId: null,
+    cronDraft: null,
     gitSyncDraftMessage: '',
     gitSyncLastAction: null,
     gitSyncPollTimer: null,
@@ -494,6 +497,108 @@
       clearTimeout(state.gitSyncPollTimer);
       state.gitSyncPollTimer = null;
     }
+  }
+
+  function getDefaultCronDraft() {
+    return {
+      name: '',
+      description: '',
+      agentId: '',
+      prompt: '',
+      scheduleMode: 'cron',
+      scheduleValue: '0 9 * * *',
+      enabled: true,
+      timezone: '',
+      model: '',
+      thinking: '',
+      session: 'main',
+      wake: 'now',
+      timeoutMs: '',
+      timeoutSeconds: '30',
+      stagger: '',
+      announce: false,
+      bestEffortDeliver: false,
+      deleteAfterRun: false,
+    };
+  }
+
+  function formatDurationInput(ms) {
+    const value = Number(ms);
+    if (!Number.isFinite(value) || value <= 0) return '';
+    if (value % 86_400_000 === 0) return `${value / 86_400_000}d`;
+    if (value % 3_600_000 === 0) return `${value / 3_600_000}h`;
+    if (value % 60_000 === 0) return `${value / 60_000}m`;
+    if (value % 1000 === 0) return `${value / 1000}s`;
+    return String(value);
+  }
+
+  function buildCronDraftFromJob(job) {
+    const raw = job?.raw || {};
+    const payload = raw.payload || {};
+    const schedule = raw.schedule || {};
+    const draft = getDefaultCronDraft();
+
+    if (schedule && typeof schedule === 'object') {
+      if (schedule.kind === 'every') {
+        draft.scheduleMode = 'every';
+        draft.scheduleValue = formatDurationInput(schedule.everyMs) || '';
+      } else if (schedule.kind === 'at') {
+        draft.scheduleMode = 'at';
+        draft.scheduleValue = schedule.at || '';
+      } else if (schedule.kind === 'cron') {
+        draft.scheduleMode = 'cron';
+        draft.scheduleValue = schedule.expr || '';
+      }
+      draft.stagger = formatDurationInput(schedule.staggerMs) || '';
+    }
+
+    if (!draft.scheduleValue && typeof job?.schedule === 'string') {
+      if (job.schedule.startsWith('cron ')) {
+        draft.scheduleMode = 'cron';
+        draft.scheduleValue = job.schedule.slice(5).trim();
+      } else if (job.schedule.startsWith('every ')) {
+        draft.scheduleMode = 'every';
+        draft.scheduleValue = job.schedule.slice(6).trim();
+      } else if (job.schedule.startsWith('at ')) {
+        draft.scheduleMode = 'at';
+        draft.scheduleValue = job.schedule.slice(3).trim();
+      } else {
+        draft.scheduleValue = job.schedule.trim();
+      }
+    }
+
+    draft.name = raw.name || job?.name || '';
+    draft.description = raw.description || '';
+    draft.agentId = raw.agentId || job?.agentId || '';
+    draft.prompt = payload.message || payload.text || raw.message || job?.prompt || '';
+    draft.enabled = job?.enabled !== false;
+    draft.timezone = raw.tz || '';
+    draft.model = raw.model || payload.model || '';
+    draft.thinking = raw.thinking || payload.thinking || '';
+    draft.session = raw.session || payload.session || draft.session;
+    draft.wake = raw.wake || draft.wake;
+    draft.timeoutMs = raw.timeout ? String(raw.timeout) : '';
+    draft.timeoutSeconds = raw.timeoutSeconds ? String(raw.timeoutSeconds) : draft.timeoutSeconds;
+    draft.announce = raw.announce === true || raw.deliver === true;
+    draft.bestEffortDeliver = raw.bestEffortDeliver === true;
+    draft.deleteAfterRun = raw.deleteAfterRun === true;
+
+    return draft;
+  }
+
+  function syncCronDraftFromForm() {
+    const form = document.getElementById('cron-editor-form');
+    if (!form) return state.cronDraft || getDefaultCronDraft();
+    const next = getDefaultCronDraft();
+    form.querySelectorAll('[name]').forEach((element) => {
+      if (element.type === 'checkbox') {
+        next[element.name] = !!element.checked;
+      } else {
+        next[element.name] = element.value;
+      }
+    });
+    state.cronDraft = next;
+    return next;
   }
 
   function setPanel(title, description, bodyHtml, actionsHtml = '') {
@@ -1928,6 +2033,19 @@
     const jobs = data.jobs || [];
     const enabledJobs = jobs.filter((job) => job.enabled);
     const disabledJobs = jobs.filter((job) => !job.enabled);
+    const editingJob = state.cronEditingJobId
+      ? jobs.find((job) => job.id === state.cronEditingJobId) || null
+      : null;
+
+    if (state.cronEditorMode === 'edit' && !editingJob) {
+      state.cronEditorMode = 'create';
+      state.cronEditingJobId = null;
+      state.cronDraft = getDefaultCronDraft();
+    } else if (!state.cronDraft) {
+      state.cronDraft = editingJob ? buildCronDraftFromJob(editingJob) : getDefaultCronDraft();
+    }
+
+    const draft = state.cronDraft || getDefaultCronDraft();
     const filteredJobs = jobs.filter((job) => {
       if (state.cronFilter === 'enabled' && !job.enabled) return false;
       if (state.cronFilter === 'disabled' && job.enabled) return false;
@@ -1941,6 +2059,10 @@
       ], state.cronSearchQuery);
     });
 
+    const formTitle = state.cronEditorMode === 'edit'
+      ? (state.lang === 'zh' ? `编辑任务 ${state.cronEditingJobId}` : `Edit Job ${state.cronEditingJobId}`)
+      : (state.lang === 'zh' ? '新建 Cron 任务' : 'Create Cron Job');
+
     const body = `
       <div class="grid">
         ${metricCard(state.lang === 'zh' ? '任务数' : 'Jobs', formatNumber(jobs.length), state.lang === 'zh' ? '当前已发现任务' : 'detected tasks')}
@@ -1950,46 +2072,193 @@
       </div>
       <div style="margin-top:14px;">${renderActionFeedback(state.lang === 'zh' ? '最近 Cron 操作' : 'Latest Cron Action', state.cronLastAction, state.lang === 'zh' ? '还没有执行过 Cron 管理动作。' : 'No cron action has been executed yet.')}</div>
       ${(data.warnings || []).length ? `<div class="status warn" style="margin-top:14px; white-space:pre-wrap;">${escapeHtml(data.warnings.join('\n'))}</div>` : ''}
-      <div class="card" style="margin-top:14px;">
-        <div class="toolbar tight">
-          <input id="cron-search" value="${escapeHtml(state.cronSearchQuery || '')}" placeholder="${escapeHtml(state.lang === 'zh' ? '搜索任务名 / Agent / 表达式 / Prompt' : 'Search name / agent / schedule / prompt')}" />
-          <button class="action-btn" type="button" data-cron-action="refresh">${escapeHtml(t('reload'))}</button>
-        </div>
-        <div class="toolbar tight" style="margin-top:12px;">
-          <button class="chip ${state.cronFilter === 'all' ? 'active' : ''}" type="button" data-cron-filter="all">${state.lang === 'zh' ? '全部' : 'All'} (${formatNumber(jobs.length)})</button>
-          <button class="chip ${state.cronFilter === 'enabled' ? 'active' : ''}" type="button" data-cron-filter="enabled">${state.lang === 'zh' ? '启用中' : 'Enabled'} (${formatNumber(enabledJobs.length)})</button>
-          <button class="chip ${state.cronFilter === 'disabled' ? 'active' : ''}" type="button" data-cron-filter="disabled">${state.lang === 'zh' ? '已停用' : 'Disabled'} (${formatNumber(disabledJobs.length)})</button>
-        </div>
-      </div>
-      <div class="list" style="margin-top:14px;">
-        ${filteredJobs.length ? filteredJobs.map((job) => `
-          <div class="list-item">
-            <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
-              <div>
-                <strong>${escapeHtml(job.name || job.id)}</strong>
-                <div class="muted small">${escapeHtml(job.agentId)} · ${escapeHtml(job.schedule || '-')}</div>
-              </div>
-              <div class="row" style="gap:8px; flex-wrap:wrap; justify-content:flex-end;">
-                <span class="pill ${job.enabled ? 'success' : 'warn'}">${escapeHtml(job.enabled ? (state.lang === 'zh' ? '已启用' : 'enabled') : (state.lang === 'zh' ? '已停用' : 'disabled'))}</span>
-                <span class="chip">${escapeHtml(job.status || '-')}</span>
-              </div>
-            </div>
-            <div class="row" style="margin-top:10px; gap:8px; flex-wrap:wrap;">
-              <span class="chip">${escapeHtml((state.lang === 'zh' ? '最近运行: ' : 'Last run: ') + formatDate(job.lastRunAt))}</span>
-              <span class="chip">${escapeHtml((state.lang === 'zh' ? '下次运行: ' : 'Next run: ') + formatDate(job.nextRunAt))}</span>
-            </div>
-            <p style="margin-top:10px;">${escapeHtml(job.prompt || '')}</p>
-            <div class="toolbar tight" style="margin-top:12px;">
-              <button class="action-btn" type="button" data-cron-action="run" data-job-id="${escapeHtml(job.id)}">${escapeHtml(t('run'))}</button>
-              <button class="action-btn" type="button" data-cron-action="${job.enabled ? 'disable' : 'enable'}" data-job-id="${escapeHtml(job.id)}">${escapeHtml(job.enabled ? t('disable') : t('enable'))}</button>
-              <button class="action-btn danger" type="button" data-cron-action="remove" data-job-id="${escapeHtml(job.id)}">${escapeHtml(t('remove'))}</button>
-            </div>
+      <div class="grid" style="margin-top:14px; align-items:start;">
+        <div class="card">
+          <div class="row" style="justify-content:space-between; align-items:center;">
+            <h3>${escapeHtml(formTitle)}</h3>
+            <span class="pill ${state.cronEditorMode === 'edit' ? 'warn' : 'success'}">${escapeHtml(state.cronEditorMode === 'edit' ? (state.lang === 'zh' ? '编辑模式' : 'edit mode') : (state.lang === 'zh' ? '创建模式' : 'create mode'))}</span>
           </div>
-        `).join('') : emptyState(state.lang === 'zh' ? '没有符合筛选条件的 Cron 任务。' : 'No cron jobs match the current filters.')}
+          <form id="cron-editor-form" class="form-grid" style="margin-top:12px;">
+            ${renderFormField({
+              name: 'name',
+              label: state.lang === 'zh' ? '任务名称' : 'Job Name',
+              value: draft.name,
+              placeholder: state.lang === 'zh' ? '例如：每日汇总' : 'Example: Daily Brief',
+            })}
+            ${renderFormField({
+              name: 'agentId',
+              label: state.lang === 'zh' ? 'Agent ID' : 'Agent ID',
+              value: draft.agentId,
+              placeholder: state.lang === 'zh' ? '例如：task-hub' : 'Example: task-hub',
+            })}
+            ${renderFormField({
+              name: 'scheduleMode',
+              label: state.lang === 'zh' ? '调度类型' : 'Schedule Mode',
+              value: draft.scheduleMode,
+              type: 'select',
+              options: ['cron', 'every', 'at'],
+            })}
+            ${renderFormField({
+              name: 'scheduleValue',
+              label: state.lang === 'zh' ? '调度值' : 'Schedule Value',
+              value: draft.scheduleValue,
+              placeholder: draft.scheduleMode === 'every'
+                ? '10m / 1h'
+                : draft.scheduleMode === 'at'
+                  ? '2026-03-10T09:00:00+08:00'
+                  : '0 9 * * *',
+              help: state.lang === 'zh'
+                ? 'cron: 5 段表达式；every: 10m/1h；at: ISO 时间或 +20m'
+                : 'cron: 5-field expression; every: 10m/1h; at: ISO time or +20m',
+            })}
+            ${renderFormField({
+              name: 'timezone',
+              label: state.lang === 'zh' ? '时区' : 'Timezone',
+              value: draft.timezone,
+              placeholder: 'Asia/Shanghai',
+            })}
+            ${renderFormField({
+              name: 'session',
+              label: state.lang === 'zh' ? '会话模式' : 'Session',
+              value: draft.session,
+              type: 'select',
+              options: ['main', 'isolated'],
+            })}
+            ${renderFormField({
+              name: 'prompt',
+              label: state.lang === 'zh' ? '任务消息' : 'Prompt',
+              value: draft.prompt,
+              type: 'textarea',
+              fullWidth: true,
+              placeholder: state.lang === 'zh' ? '例如：汇总今天的新线索并输出成 Markdown' : 'Example: Summarize today’s new leads in Markdown',
+            })}
+            ${renderFormField({
+              name: 'description',
+              label: state.lang === 'zh' ? '描述' : 'Description',
+              value: draft.description,
+              type: 'textarea',
+              fullWidth: true,
+              placeholder: state.lang === 'zh' ? '可选，给团队说明这个任务的用途' : 'Optional note for your team',
+            })}
+            ${renderFormField({
+              name: 'model',
+              label: state.lang === 'zh' ? '模型覆盖' : 'Model Override',
+              value: draft.model,
+              placeholder: state.lang === 'zh' ? '留空则使用 Agent 默认模型' : 'Leave blank to use agent default',
+            })}
+            ${renderFormField({
+              name: 'thinking',
+              label: state.lang === 'zh' ? 'Thinking' : 'Thinking',
+              value: draft.thinking,
+              type: 'select',
+              options: ['', 'off', 'minimal', 'low', 'medium', 'high'],
+            })}
+            ${renderFormField({
+              name: 'wake',
+              label: state.lang === 'zh' ? '唤醒时机' : 'Wake Mode',
+              value: draft.wake,
+              type: 'select',
+              options: ['now', 'next-heartbeat'],
+            })}
+            ${renderFormField({
+              name: 'timeoutSeconds',
+              label: state.lang === 'zh' ? '超时秒数' : 'Timeout Seconds',
+              value: draft.timeoutSeconds,
+              placeholder: '30',
+            })}
+            ${renderFormField({
+              name: 'timeoutMs',
+              label: state.lang === 'zh' ? '超时毫秒' : 'Timeout Milliseconds',
+              value: draft.timeoutMs,
+              placeholder: '30000',
+            })}
+            ${renderFormField({
+              name: 'stagger',
+              label: state.lang === 'zh' ? '抖动窗口' : 'Stagger',
+              value: draft.stagger,
+              placeholder: state.lang === 'zh' ? '30s / 5m / 0(表示 exact)' : '30s / 5m / 0 for exact',
+            })}
+            ${renderFormField({
+              name: 'enabled',
+              label: state.lang === 'zh' ? '启用任务' : 'Enabled',
+              type: 'checkbox',
+              checked: !!draft.enabled,
+              help: state.lang === 'zh' ? '保存后立即参与调度' : 'Participate in scheduling right away',
+            })}
+            ${renderFormField({
+              name: 'announce',
+              label: state.lang === 'zh' ? '推送摘要' : 'Announce',
+              type: 'checkbox',
+              checked: !!draft.announce,
+              help: state.lang === 'zh' ? '执行后向聊天发送摘要' : 'Send a summary to chat after execution',
+            })}
+            ${renderFormField({
+              name: 'bestEffortDeliver',
+              label: state.lang === 'zh' ? '最佳努力投递' : 'Best Effort Deliver',
+              type: 'checkbox',
+              checked: !!draft.bestEffortDeliver,
+              help: state.lang === 'zh' ? '投递失败不阻断任务成功' : 'Do not fail the job when delivery fails',
+            })}
+            ${renderFormField({
+              name: 'deleteAfterRun',
+              label: state.lang === 'zh' ? '成功后删除' : 'Delete After Run',
+              type: 'checkbox',
+              checked: !!draft.deleteAfterRun,
+              help: state.lang === 'zh' ? '适合一次性任务' : 'Useful for one-shot jobs',
+            })}
+          </form>
+          <div class="toolbar tight" style="margin-top:12px;">
+            <button class="action-btn primary" type="button" data-cron-action="${state.cronEditorMode === 'edit' ? 'save-edit' : 'create'}">${escapeHtml(state.cronEditorMode === 'edit' ? (state.lang === 'zh' ? '保存修改' : 'Save Changes') : (state.lang === 'zh' ? '创建任务' : 'Create Job'))}</button>
+            <button class="action-btn" type="button" data-cron-action="reset-form">${escapeHtml(state.lang === 'zh' ? '重置表单' : 'Reset Form')}</button>
+            ${state.cronEditorMode === 'edit' ? `<button class="action-btn" type="button" data-cron-action="cancel-edit">${escapeHtml(state.lang === 'zh' ? '取消编辑' : 'Cancel Edit')}</button>` : ''}
+          </div>
+        </div>
+        <div class="card">
+          <div class="toolbar tight">
+            <input id="cron-search" value="${escapeHtml(state.cronSearchQuery || '')}" placeholder="${escapeHtml(state.lang === 'zh' ? '搜索任务名 / Agent / 表达式 / Prompt' : 'Search name / agent / schedule / prompt')}" />
+            <button class="action-btn" type="button" data-cron-action="refresh">${escapeHtml(t('reload'))}</button>
+          </div>
+          <div class="toolbar tight" style="margin-top:12px;">
+            <button class="chip ${state.cronFilter === 'all' ? 'active' : ''}" type="button" data-cron-filter="all">${state.lang === 'zh' ? '全部' : 'All'} (${formatNumber(jobs.length)})</button>
+            <button class="chip ${state.cronFilter === 'enabled' ? 'active' : ''}" type="button" data-cron-filter="enabled">${state.lang === 'zh' ? '启用中' : 'Enabled'} (${formatNumber(enabledJobs.length)})</button>
+            <button class="chip ${state.cronFilter === 'disabled' ? 'active' : ''}" type="button" data-cron-filter="disabled">${state.lang === 'zh' ? '已停用' : 'Disabled'} (${formatNumber(disabledJobs.length)})</button>
+          </div>
+          <div class="list" style="margin-top:14px;">
+            ${filteredJobs.length ? filteredJobs.map((job) => `
+              <div class="list-item">
+                <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+                  <div>
+                    <strong>${escapeHtml(job.name || job.id)}</strong>
+                    <div class="muted small">${escapeHtml(job.agentId)} · ${escapeHtml(job.schedule || '-')}</div>
+                  </div>
+                  <div class="row" style="gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+                    <span class="pill ${job.enabled ? 'success' : 'warn'}">${escapeHtml(job.enabled ? (state.lang === 'zh' ? '已启用' : 'enabled') : (state.lang === 'zh' ? '已停用' : 'disabled'))}</span>
+                    <span class="chip">${escapeHtml(job.status || '-')}</span>
+                  </div>
+                </div>
+                <div class="row" style="margin-top:10px; gap:8px; flex-wrap:wrap;">
+                  <span class="chip">${escapeHtml((state.lang === 'zh' ? '最近运行: ' : 'Last run: ') + formatDate(job.lastRunAt))}</span>
+                  <span class="chip">${escapeHtml((state.lang === 'zh' ? '下次运行: ' : 'Next run: ') + formatDate(job.nextRunAt))}</span>
+                </div>
+                <p style="margin-top:10px;">${escapeHtml(job.prompt || '')}</p>
+                <div class="toolbar tight" style="margin-top:12px;">
+                  <button class="action-btn" type="button" data-cron-action="edit" data-job-id="${escapeHtml(job.id)}">${escapeHtml(state.lang === 'zh' ? '编辑' : 'Edit')}</button>
+                  <button class="action-btn" type="button" data-cron-action="run" data-job-id="${escapeHtml(job.id)}">${escapeHtml(t('run'))}</button>
+                  <button class="action-btn" type="button" data-cron-action="${job.enabled ? 'disable' : 'enable'}" data-job-id="${escapeHtml(job.id)}">${escapeHtml(job.enabled ? t('disable') : t('enable'))}</button>
+                  <button class="action-btn danger" type="button" data-cron-action="remove" data-job-id="${escapeHtml(job.id)}">${escapeHtml(t('remove'))}</button>
+                </div>
+              </div>
+            `).join('') : emptyState(state.lang === 'zh' ? '没有符合筛选条件的 Cron 任务。' : 'No cron jobs match the current filters.')}
+          </div>
+        </div>
       </div>
     `;
 
     setPanel(t('tabs.cron'), t('desc.cron'), body);
+
+    document.getElementById('cron-editor-form')?.addEventListener('input', () => {
+      syncCronDraftFromForm();
+    });
 
     document.getElementById('cron-search')?.addEventListener('input', (event) => {
       state.cronSearchQuery = event.target.value;
@@ -2007,7 +2276,23 @@
       button.addEventListener('click', async () => {
         const action = button.getAttribute('data-cron-action');
         const jobId = button.getAttribute('data-job-id');
+
         if (action === 'refresh') {
+          await loadCron();
+          return;
+        }
+        if (action === 'edit') {
+          const target = jobs.find((job) => job.id === jobId);
+          state.cronEditorMode = 'edit';
+          state.cronEditingJobId = jobId;
+          state.cronDraft = target ? buildCronDraftFromJob(target) : getDefaultCronDraft();
+          await loadCron();
+          return;
+        }
+        if (action === 'reset-form' || action === 'cancel-edit') {
+          state.cronEditorMode = 'create';
+          state.cronEditingJobId = null;
+          state.cronDraft = getDefaultCronDraft();
           await loadCron();
           return;
         }
@@ -2015,7 +2300,41 @@
           const confirmed = confirm(state.lang === 'zh' ? `确认删除 Cron 任务 ${jobId} 吗？` : `Remove cron job ${jobId}?`);
           if (!confirmed) return;
         }
+
         try {
+          if (action === 'create' || action === 'save-edit') {
+            const payload = syncCronDraftFromForm();
+            if (!payload.prompt?.trim()) {
+              showToast(state.lang === 'zh' ? '请先填写任务消息。' : 'Prompt is required.', 'error');
+              return;
+            }
+            if (!payload.scheduleValue?.trim()) {
+              showToast(state.lang === 'zh' ? '请先填写调度值。' : 'Schedule value is required.', 'error');
+              return;
+            }
+
+            const endpoint = action === 'create' ? '/api/cron-ui/create' : '/api/cron-ui/update';
+            const requestBody = action === 'create'
+              ? payload
+              : { ...payload, jobId: state.cronEditingJobId };
+            const result = await postJson(endpoint, requestBody);
+            const ok = result?.success !== false;
+            state.cronLastAction = {
+              type: ok ? 'success' : 'error',
+              message: result?.message || 'OK',
+              at: new Date().toISOString(),
+              detail: result?.output || requestBody,
+            };
+            if (ok) {
+              state.cronEditorMode = 'create';
+              state.cronEditingJobId = null;
+              state.cronDraft = getDefaultCronDraft();
+            }
+            showToast(result?.message || 'OK', ok ? 'success' : 'error');
+            await loadCron();
+            return;
+          }
+
           const result = await postJson(`/api/cron-ui/${action}`, { jobId });
           const ok = result?.success !== false;
           state.cronLastAction = {
@@ -2063,7 +2382,9 @@
       {
         label: state.lang === 'zh' ? '认证配置' : 'Authentication',
         ok: !!status.authConfigured,
-        detail: status.authConfigured ? (status.authMode || 'token') : (state.lang === 'zh' ? '尚未配置 Token / OAuth' : 'Token or OAuth required'),
+        detail: status.authConfigured
+          ? `${status.authMode || 'token'}${status.accountUsername ? ` · ${status.accountUsername}` : ''}`
+          : (state.lang === 'zh' ? '尚未配置 Token / OAuth' : 'Token or OAuth required'),
       },
       {
         label: state.lang === 'zh' ? '私有仓校验' : 'Private Check',
@@ -2075,11 +2396,25 @@
             : (state.lang === 'zh' ? '尚未检查' : 'not checked yet'),
       },
       {
-        label: state.lang === 'zh' ? '同步就绪' : 'Ready To Sync',
+        label: state.lang === 'zh' ? '可本地提交' : 'Commit Ready',
+        ok: !!status.canCommit,
+        detail: status.canCommit
+          ? (state.lang === 'zh' ? '可以创建本地提交' : 'ready for local commit')
+          : (state.lang === 'zh' ? '提交前还有待处理项' : 'commit is still blocked'),
+      },
+      {
+        label: state.lang === 'zh' ? '可远程推送' : 'Push Ready',
+        ok: !!status.canPush,
+        detail: status.canPush
+          ? (state.lang === 'zh' ? '可以直接推送远程' : 'ready for remote push')
+          : (state.lang === 'zh' ? '推送前还有待处理项' : 'push is still blocked'),
+      },
+      {
+        label: state.lang === 'zh' ? '一键同步' : 'Sync Ready',
         ok: !!status.canSync,
         detail: status.canSync
-          ? (state.lang === 'zh' ? '可以直接提交并推送' : 'ready for commit and push')
-          : (state.lang === 'zh' ? '仍有阻断项' : 'blocked by pending issues'),
+          ? (state.lang === 'zh' ? '可以执行检查并同步' : 'ready for check + sync')
+          : (state.lang === 'zh' ? '仍有同步阻断项' : 'blocked by pending sync issues'),
       },
     ];
 
@@ -2098,7 +2433,13 @@
           ? (oauth.error || oauth.message || (state.lang === 'zh' ? 'OAuth 失败。' : 'OAuth failed.'))
           : (state.lang === 'zh' ? '如需浏览器授权，可在这里配置 Client ID / Secret。' : 'Configure Client ID / Secret here if you prefer browser OAuth.');
 
-    const blockingReasonsHtml = status.reasons?.length
+    const commitBlockingHtml = status.commitReasons?.length
+      ? status.commitReasons.map((reason) => `<div class="list-item"><div>${escapeHtml(reason)}</div></div>`).join('')
+      : `<div class="status">${escapeHtml(state.lang === 'zh' ? '本地提交链路已就绪。' : 'Commit path is ready.')}</div>`;
+    const pushBlockingHtml = status.pushReasons?.length
+      ? status.pushReasons.map((reason) => `<div class="list-item"><div>${escapeHtml(reason)}</div></div>`).join('')
+      : `<div class="status">${escapeHtml(state.lang === 'zh' ? '远程推送链路已就绪。' : 'Push path is ready.')}</div>`;
+    const syncBlockingHtml = status.reasons?.length
       ? status.reasons.map((reason) => `<div class="list-item"><div>${escapeHtml(reason)}</div></div>`).join('')
       : `<div class="status">${escapeHtml(state.lang === 'zh' ? '当前没有阻断项，可以继续执行同步。' : 'No blockers detected. You can continue with sync.')}</div>`;
     const stageHtml = stages.map((stage) => `
@@ -2124,9 +2465,9 @@
     const body = `
       <div class="grid">
         ${metricCard(state.lang === 'zh' ? '仓库状态' : 'Repository', status.repoInitialized ? 'READY' : 'MISSING', status.repoPath || '-', status.repoInitialized ? 'success' : 'warn')}
-        ${metricCard(state.lang === 'zh' ? '远程仓库' : 'Remote', status.remoteUrl || '-', status.provider || '-', status.remoteUrl ? 'success' : 'warn')}
-        ${metricCard(state.lang === 'zh' ? '认证' : 'Auth', status.authConfigured ? (status.authMode || 'configured') : 'missing', status.authConfigured ? (state.lang === 'zh' ? '认证已配置' : 'credentials ready') : (state.lang === 'zh' ? '尚未配置' : 'not configured'), status.authConfigured ? 'success' : 'warn')}
-        ${metricCard(state.lang === 'zh' ? '本地变更' : 'Changes', formatNumber((status.changedFiles || []).length), status.currentBranch || '-', (status.changedFiles || []).length > 0 ? 'warn' : 'success')}
+        ${metricCard(state.lang === 'zh' ? '远程仓库' : 'Remote', status.remoteRepo || status.remoteUrl || '-', status.remoteWebUrl || status.provider || '-', status.remoteUrl ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '认证' : 'Auth', status.authConfigured ? (status.accountUsername || status.authMode || 'configured') : 'missing', status.authConfigured ? (state.lang === 'zh' ? '认证已配置' : 'credentials ready') : (state.lang === 'zh' ? '尚未配置' : 'not configured'), status.authConfigured ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '本地变更' : 'Changes', formatNumber((status.changedFiles || []).length), `${status.currentBranch || '-'} · ${status.canCommit ? (state.lang === 'zh' ? '可提交' : 'commit ready') : (state.lang === 'zh' ? '待处理' : 'needs work')}`, (status.changedFiles || []).length > 0 ? 'warn' : 'success')}
       </div>
       ${status.state?.lastError ? `<div class="status error" style="margin-top:14px;">${escapeHtml((state.lang === 'zh' ? '最近错误: ' : 'Last error: ') + status.state.lastError)}</div>` : ''}
       <div style="margin-top:14px;">${renderActionFeedback(state.lang === 'zh' ? '最近 Git 同步操作' : 'Latest Git Sync Action', state.gitSyncLastAction, state.lang === 'zh' ? '还没有执行过 Git 同步动作。' : 'No Git sync action has been executed yet.')}</div>
@@ -2137,12 +2478,26 @@
           <div class="toolbar tight" style="margin-top:12px;">
             <button class="action-btn" type="button" data-git-action="copy-repo-path">${state.lang === 'zh' ? '复制本地目录' : 'Copy Repo Path'}</button>
             <button class="action-btn" type="button" data-git-action="copy-remote" ${status.remoteUrl ? '' : 'disabled'}>${state.lang === 'zh' ? '复制远程地址' : 'Copy Remote URL'}</button>
-            <button class="action-btn primary" type="button" data-git-action="check-sync">${state.lang === 'zh' ? '检查并同步' : 'Check + Sync'}</button>
+            <button class="action-btn" type="button" data-git-action="open-remote" ${status.remoteWebUrl ? '' : 'disabled'}>${state.lang === 'zh' ? '打开远程仓库' : 'Open Remote'}</button>
+            <button class="action-btn primary" type="button" data-git-action="check-sync" ${status.canSync ? '' : ''}>${state.lang === 'zh' ? '检查并同步' : 'Check + Sync'}</button>
           </div>
         </div>
         <div class="card">
-          <h3>${state.lang === 'zh' ? '当前阻断项' : 'Blocking Reasons'}</h3>
-          ${blockingReasonsHtml}
+          <h3>${state.lang === 'zh' ? '阻断拆解' : 'Readiness Breakdown'}</h3>
+          <div class="stack">
+            <div>
+              <div class="muted small" style="margin-bottom:8px;">${escapeHtml(state.lang === 'zh' ? '提交阻断' : 'Commit blockers')}</div>
+              ${commitBlockingHtml}
+            </div>
+            <div>
+              <div class="muted small" style="margin-bottom:8px;">${escapeHtml(state.lang === 'zh' ? '推送阻断' : 'Push blockers')}</div>
+              ${pushBlockingHtml}
+            </div>
+            <div>
+              <div class="muted small" style="margin-bottom:8px;">${escapeHtml(state.lang === 'zh' ? '同步阻断' : 'Sync blockers')}</div>
+              ${syncBlockingHtml}
+            </div>
+          </div>
           <div class="stack" style="margin-top:14px;">
             <div class="list-item"><strong>${state.lang === 'zh' ? '最近校验' : 'Last Check'}</strong><div class="muted small">${escapeHtml(formatDate(status.state?.lastCheckedAt))}</div></div>
             <div class="list-item"><strong>${state.lang === 'zh' ? '最近提交' : 'Last Commit'}</strong><div class="muted small">${escapeHtml(formatDate(status.state?.lastCommitAt))}</div></div>
@@ -2207,10 +2562,10 @@
             fullWidth: true,
           })}
           <div class="toolbar tight" style="margin-top:12px;">
-            <button class="action-btn" type="button" data-git-action="commit">commit</button>
-            <button class="action-btn" type="button" data-git-action="push">push</button>
+            <button class="action-btn" type="button" data-git-action="commit" ${status.canCommit ? '' : 'disabled'}>commit</button>
+            <button class="action-btn" type="button" data-git-action="push" ${status.canPush ? '' : 'disabled'}>push</button>
             <button class="action-btn" type="button" data-git-action="check-sync">${state.lang === 'zh' ? '检查并同步' : 'Check + Sync'}</button>
-            <button class="action-btn primary" type="button" data-git-action="sync">sync</button>
+            <button class="action-btn primary" type="button" data-git-action="sync" ${status.canSync ? '' : 'disabled'}>sync</button>
           </div>
           <div class="list" style="margin-top:12px;">${changedFilesHtml}</div>
         </div>
@@ -2250,6 +2605,14 @@
               successMessage: state.lang === 'zh' ? '远程地址已复制。' : 'Remote URL copied.',
               emptyMessage: state.lang === 'zh' ? '当前还没有远程地址可复制。' : 'No remote URL to copy yet.',
             });
+            return;
+          }
+          if (action === 'open-remote') {
+            if (!status.remoteWebUrl) {
+              showToast(state.lang === 'zh' ? '当前没有可打开的远程仓库页面。' : 'No remote repository page is available.', 'error');
+              return;
+            }
+            window.open(status.remoteWebUrl, '_blank');
             return;
           }
           if (action === 'init' || action === 'check' || action === 'push') {

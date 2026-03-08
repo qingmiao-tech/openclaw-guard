@@ -1620,3 +1620,52 @@
   1) 本机 `.openclaw` 当前没有配置远程仓库与 Git 认证，因此 Git Sync 页目前展示的是“阻断项正确提示”的回归结果，不是完整同步成功链路。
   2) Cron 当前环境下无任务，因此本轮只验证了空状态、搜索和过滤壳层、以及动作回显结构是否可用。
   3) 这轮没有新增后端测试用例，主要原因是改动集中在前端工作台交互与后台进程管理体验；后续若继续推进第三期，建议为 `web-background` 和前端 API 交互补更细的自动化覆盖。
+
+## [2026-03-09 07:30] openclaw-guard Git Sync 成功链路补强、Cron 创建编辑落地与自动化测试扩充 [TASK-20260309-001]
+
+- 任务来源: 用户续作（按顺序执行 3 个任务：1) 补强 Git Sync 真实可用链路；2) 实现 Cron 创建 / 编辑；3) 为 web-background / Git Sync / Cron 补细测试）。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-09 06:55
+- 开始时间: 2026-03-09 06:55
+- 当前状态: 已完成开发、自测、浏览器回归，待提交 git。
+- 任务目标:
+  1) 把 Guard 的 Git Sync 从“能看状态”补到“状态更完整、提交/推送边界更清晰、OAuth/Token 流程更像完整产品”。
+  2) 把 Cron 从“只能启停/运行/删除”补到“支持创建和编辑”，并接入 Web / CLI / API 三层。
+  3) 用自动化测试和真实浏览器回归覆盖本轮新增链路，降低后续重构回归风险。
+- 实际完成:
+  1) `src/git-sync.ts` 已补强状态模型，新增 `remoteOwner`、`remoteRepo`、`remoteHost`、`remoteWebUrl`、`accountUsername`、`canCommit`、`canPush`、`commitReasons`、`pushReasons` 等字段，让前端能明确区分“可本地提交”“可远程推送”“可一键同步”三种状态。
+  2) 已修复 Git Sync 的前置检查语义：`commitGitSync()` 不再错误依赖 private 校验，可在本地有变更时先完成本地提交；`pushGitSync()` 仍继续严格要求远程已绑定、认证已配置、private 已确认。
+  3) `src/index.ts` 的 `git-sync status` CLI 已同步输出远程页面、认证账号、提交阻断、推送阻断与同步阻断，便于命令行定位问题。
+  4) `web/guard-ui.js` 的 Git Sync 页已改为展示更细的准备度拆解：仓库初始化、远程绑定、认证配置、private 校验、可本地提交、可远程推送、一键同步；同时补充“打开远程仓库”动作和更清晰的阻断分层展示。
+  5) `src/cron-ui.ts` 已新增 `createCronJob()` / `updateCronJob()`，统一把 Web / CLI 传来的表单字段转换为真实 `openclaw cron add/edit` 参数，支持 `cron/every/at` 三种调度模式、Agent、Prompt、Timezone、Session、Wake、Timeout、Stagger、Announce、BestEffort、DeleteAfterRun 等核心字段。
+  6) `src/server.ts` 已新增 `/api/cron-ui/create` 与 `/api/cron-ui/update`，并补了请求解析，Guard Web 可以直接发起 Cron 创建 / 编辑。
+  7) `src/index.ts` 的 `cron-ui` CLI 已新增 `create` 与 `edit` 子命令，支持从命令行直接创建/更新任务，不必再跳出 Guard 用原生 OpenClaw CLI 手工拼参数。
+  8) `web/guard-ui.js` 的 Cron 页已升级为可操作工作台：新增“新建 / 编辑”表单、任务回填、重置 / 取消编辑、搜索与筛选共存、操作成功/失败反馈卡片。
+  9) `src/__tests__/git-sync.test.ts` 已补 3 类关键测试：
+     - private 校验成功后状态字段补全
+     - 未完成 private 校验时仍允许本地 commit
+     - GitHub OAuth 成功回调后能保存账号与授权状态
+  10) 已新增 `src/__tests__/cron-ui.test.ts`，覆盖 Cron 创建参数拼装、Cron 编辑参数拼装、Cron 概览 warning 合并。
+  11) 已新增 `src/__tests__/web-background.test.ts`，覆盖 pid-file 托管识别、port-scan 回退、自停进程 self-exit 三条后台链路。
+  12) `src/__tests__/openclaw-runtime.test.ts` 已补更贴近真实 `openclaw status --json` 的样本字段，并增加真实 `cron list --json` 空列表结构测试。
+  13) 已按 `webapp-testing` 技能做真实浏览器回归：通过 `with_server.py` 拉起本地 Guard Web，并用 Playwright 验证根路由 `/` 能打开、菜单可切换到 `Cron` 和 `Git Sync`、两个表单真实渲染成功。
+- 交付清单:
+  - `openclaw-guard/src/git-sync.ts`
+  - `openclaw-guard/src/cron-ui.ts`
+  - `openclaw-guard/src/server.ts`
+  - `openclaw-guard/src/index.ts`
+  - `openclaw-guard/web/guard-ui.js`
+  - `openclaw-guard/src/__tests__/git-sync.test.ts`
+  - `openclaw-guard/src/__tests__/cron-ui.test.ts`
+  - `openclaw-guard/src/__tests__/web-background.test.ts`
+  - `openclaw-guard/src/__tests__/openclaw-runtime.test.ts`
+  - `worklogs/codex-work-logs.md`
+- 验证结果:
+  1) 已验证 `npm run build` 通过。
+  2) 已验证 `npm test` 通过，当前 11 个测试文件、62 个测试全部通过。
+  3) 已使用 `python .../with_server.py --server "npm run web" --port 18088 -- python guard-ui-smoke.py` 做真实页面回归，结果显示：`overview_title=概览`、`cron_form_count=1`、`git_form_count=1`。
+  4) 已抓取本地工作台截图 `openclaw-guard/.guard-runtime/guard-workbench-smoke.png`，确认 Git Sync 页面可见、无空白页、表单区域正常渲染。
+- 风险与补充说明:
+  1) 本轮没有接入真实 GitHub/Gitee 私有仓和真实凭证，只把 Token/OAuth/private-check 成功链路在代码与测试层完整打通，并在 UI 上给出清晰的 readiness 拆解。
+  2) Cron 编辑目前优先覆盖最常用字段，像“清空 model”这类更细的 patch 语义暂未继续扩展；如果后续要做第三期，可以补“字段清空”专用开关。
+  3) `web/guard-ui.js` 当前仍是大文件，虽然本轮功能已可用，但后续如果继续做第二期交互增强，仍建议拆成模块化前端文件，降低维护成本。

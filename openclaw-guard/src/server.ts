@@ -63,7 +63,7 @@ import {
   listMemoryFiles,
   searchManagedFiles,
 } from './workspace-files.js';
-import { getCronOverview, enableCronJob, disableCronJob, runCronJob, removeCronJob } from './cron-ui.js';
+import { getCronOverview, enableCronJob, disableCronJob, runCronJob, removeCronJob, createCronJob, updateCronJob, type CronJobInput } from './cron-ui.js';
 import {
   getGitSyncStatus,
   initGitSync,
@@ -152,6 +152,38 @@ async function readJsonBody(req: http.IncomingMessage): Promise<Record<string, u
 function getHeaderValue(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) return value[0]?.trim();
   return value?.trim();
+}
+
+function parseOptionalNumber(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseCronJobInput(body: Record<string, unknown>, jobId?: string): CronJobInput {
+  return {
+    jobId,
+    name: typeof body.name === 'string' ? body.name : undefined,
+    description: typeof body.description === 'string' ? body.description : undefined,
+    agentId: typeof body.agentId === 'string' ? body.agentId : undefined,
+    prompt: typeof body.prompt === 'string' ? body.prompt : undefined,
+    scheduleMode: body.scheduleMode === 'every' || body.scheduleMode === 'at' ? body.scheduleMode : 'cron',
+    scheduleValue: typeof body.scheduleValue === 'string' ? body.scheduleValue : '',
+    enabled: typeof body.enabled === 'boolean' ? body.enabled : undefined,
+    timezone: typeof body.timezone === 'string' ? body.timezone : undefined,
+    model: typeof body.model === 'string' ? body.model : undefined,
+    thinking: body.thinking === 'off' || body.thinking === 'minimal' || body.thinking === 'low' || body.thinking === 'medium' || body.thinking === 'high'
+      ? body.thinking
+      : undefined,
+    session: body.session === 'main' || body.session === 'isolated' ? body.session : undefined,
+    wake: body.wake === 'now' || body.wake === 'next-heartbeat' ? body.wake : undefined,
+    timeoutMs: parseOptionalNumber(body.timeoutMs),
+    timeoutSeconds: parseOptionalNumber(body.timeoutSeconds),
+    stagger: typeof body.stagger === 'string' ? body.stagger : undefined,
+    announce: typeof body.announce === 'boolean' ? body.announce : undefined,
+    bestEffortDeliver: typeof body.bestEffortDeliver === 'boolean' ? body.bestEffortDeliver : undefined,
+    deleteAfterRun: typeof body.deleteAfterRun === 'boolean' ? body.deleteAfterRun : undefined,
+  };
 }
 
 function isLoopbackAddress(remoteAddress?: string | null): boolean {
@@ -615,6 +647,20 @@ export function startServer(port: number) {
         }
         if (pathname === '/api/cron-ui' && req.method === 'GET') {
           jsonResponse(res, getCronOverview());
+          return;
+        }
+        if (pathname === '/api/cron-ui/create' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          jsonResponse(res, createCronJob(parseCronJobInput(body)));
+          return;
+        }
+        if (pathname === '/api/cron-ui/update' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          if (typeof body.jobId !== 'string' || !body.jobId.trim()) {
+            jsonResponse(res, { success: false, message: 'jobId is required' }, 400);
+            return;
+          }
+          jsonResponse(res, updateCronJob(parseCronJobInput(body, body.jobId)));
           return;
         }
         if (pathname === '/api/cron-ui/enable' && req.method === 'POST') {

@@ -1,10 +1,21 @@
 ﻿import fs from 'node:fs';
 import http from 'node:http';
+import https from 'node:https';
 import os from 'node:os';
 import path from 'node:path';
+import { EventEmitter } from 'node:events';
+import { execFileSync } from 'node:child_process';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { connectGitRemote, getGitSyncStatus, initGitSync, parseGitRemote, saveGitTokenAuth, startOAuthLogin } from '../git-sync.js';
-
+import {
+  checkGitRemotePrivate,
+  commitGitSync,
+  connectGitRemote,
+  getGitSyncStatus,
+  initGitSync,
+  parseGitRemote,
+  saveGitTokenAuth,
+  startOAuthLogin,
+} from '../git-sync.js';
 
 function httpGetText(targetUrl: string): Promise<{ statusCode: number; body: string }> {
   return new Promise((resolve, reject) => {
@@ -20,6 +31,35 @@ function httpGetText(targetUrl: string): Promise<{ statusCode: number; body: str
     }).on('error', reject);
   });
 }
+
+function mockHttpsResponses(routes: Array<{ match: string; body: Record<string, unknown>; statusCode?: number }>) {
+  return vi.spyOn(https, 'request').mockImplementation((target: any, _options: any, callback: any) => {
+    const targetUrl = typeof target === 'string'
+      ? target
+      : target?.href || target?.toString?.() || '';
+    const matched = routes.find((route) => targetUrl.includes(route.match));
+
+    const request = new EventEmitter() as any;
+    request.write = vi.fn();
+    request.end = () => {
+      if (!matched) {
+        request.emit('error', new Error(`No mocked response for ${targetUrl}`));
+        return;
+      }
+
+      const response = new EventEmitter() as any;
+      response.statusCode = matched.statusCode || 200;
+      callback(response);
+      queueMicrotask(() => {
+        response.emit('data', Buffer.from(JSON.stringify(matched.body)));
+        response.emit('end');
+      });
+    };
+    request.destroy = vi.fn();
+    return request;
+  });
+}
+
 describe('git-sync', () => {
   let tempRoot: string;
 
@@ -30,6 +70,7 @@ describe('git-sync', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.restoreAllMocks();
     fs.rmSync(tempRoot, { recursive: true, force: true });
   });
 
@@ -57,8 +98,49 @@ describe('git-sync', () => {
 
     const status = getGitSyncStatus();
     expect(status.remoteUrl).toBe('https://github.com/acme/demo.git');
+    expect(status.remoteWebUrl).toBe('https://github.com/acme/demo');
     expect(status.authConfigured).toBe(true);
     expect(status.reasons.join(' ')).toContain('private');
+  });
+
+  it('allows local commit before private check when the repo has changes', () => {
+    initGitSync();
+    execFileSync('git', ['-C', tempRoot, 'config', 'user.name', 'OpenClaw Guard Test'], { stdio: 'ignore' });
+    execFileSync('git', ['-C', tempRoot, 'config', 'user.email', 'guard@example.com'], { stdio: 'ignore' });
+    fs.writeFileSync(path.join(tempRoot, 'README.md'), '# guard\n', 'utf-8');
+
+    const before = getGitSyncStatus();
+    expect(before.canCommit).toBe(true);
+    expect(before.canPush).toBe(false);
+
+    const result = commitGitSync('本地提交测试');
+    expect(result.success).toBe(true);
+
+    const after = getGitSyncStatus();
+    expect(after.hasChanges).toBe(false);
+    expect(after.state.lastCommitAt).not.toBeNull();
+  });
+
+  it('checks github private repo successfully and enriches status fields', async () => {
+    initGitSync();
+    connectGitRemote({ provider: 'github', remoteUrl: 'https://github.com/acme/demo.git' });
+    saveGitTokenAuth({ provider: 'github', token: 'token-demo', username: 'octocat' });
+    const httpsSpy = mockHttpsResponses([
+      {
+        match: '/repos/acme/demo',
+        body: { private: true },
+      },
+    ]);
+
+    const result = await checkGitRemotePrivate();
+    expect(result.success).toBe(true);
+    expect(result.status.repoPrivate).toBe(true);
+    expect(result.status.remoteWebUrl).toBe('https://github.com/acme/demo');
+    expect(result.status.remoteOwner).toBe('acme');
+    expect(result.status.remoteRepo).toBe('demo');
+    expect(result.status.accountUsername).toBe('octocat');
+    expect(result.status.canPush).toBe(true);
+    expect(httpsSpy).toHaveBeenCalled();
   });
 
   it('starts OAuth locally and records callback verification failures for github and gitee', async () => {
@@ -88,7 +170,50 @@ describe('git-sync', () => {
       expect(status.oauth.error).toBe('callback-state-mismatch');
     }
   }, 15000);
+
+  it('completes github OAuth successfully and saves the authenticated account', async () => {
+    initGitSync();
+    const httpsSpy = mockHttpsResponses([
+      {
+        match: '/login/oauth/access_token',
+        body: { access_token: 'oauth-demo-token' },
+      },
+      {
+        match: '/user',
+        body: { login: 'octocat' },
+      },
+    ]);
+
+    const result = await startOAuthLogin({
+      provider: 'github',
+      clientId: 'demo-client-id',
+      clientSecret: 'demo-client-secret',
+      openBrowser: false,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.output).toContain('github.com/login/oauth/authorize');
+
+    const authorizeUrl = new URL(String(result.output));
+    const oauthState = authorizeUrl.searchParams.get('state');
+    const callbackUrl = `${result.status.oauth.redirectUrl}?code=demo-code&state=${oauthState}`;
+    const response = await httpGetText(callbackUrl);
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('OpenClaw Guard OAuth completed');
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const status = getGitSyncStatus();
+    expect(status.oauth.phase).toBe('success');
+    expect(status.authConfigured).toBe(true);
+    expect(status.authMode).toBe('oauth');
+    expect(status.accountUsername).toBe('octocat');
+    const requestedUrls = httpsSpy.mock.calls.map(([target]) => (
+      typeof target === 'string'
+        ? target
+        : target?.href || target?.toString?.() || ''
+    ));
+    expect(requestedUrls.some((item) => item.includes('/login/oauth/access_token'))).toBe(true);
+    expect(requestedUrls.some((item) => item.includes('/user'))).toBe(true);
+  }, 15000);
 });
-
-
-

@@ -2,7 +2,7 @@
 import http from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { URL, URLSearchParams } from 'node:url';
 import { getOpenClawDir } from './platform.js';
 import { ensureDir, ensureGuardLayout, readJsonFile, writeJsonFile } from './guard-state.js';
@@ -64,9 +64,18 @@ export interface GitSyncStatus {
   authMode: GitAuthMode;
   authConfigured: boolean;
   repoPrivate: boolean | null;
+  remoteOwner: string | null;
+  remoteRepo: string | null;
+  remoteHost: string | null;
+  remoteWebUrl: string | null;
+  accountUsername: string | null;
   hasChanges: boolean;
   changedFiles: string[];
+  canCommit: boolean;
+  canPush: boolean;
   canSync: boolean;
+  commitReasons: string[];
+  pushReasons: string[];
   reasons: string[];
   state: GitSyncState;
   oauth: GitOAuthState;
@@ -169,6 +178,29 @@ let activeOAuthServer: http.Server | null = null;
 let activeOAuthTimeout: NodeJS.Timeout | null = null;
 
 function runGit(args: string[], extraEnv?: NodeJS.ProcessEnv) {
+  if (extraEnv && Object.keys(extraEnv).length > 0) {
+    const result = spawnSync('git', args, {
+      encoding: 'utf-8',
+      timeout: 60000,
+      shell: process.platform === 'win32',
+      windowsHide: true,
+      env: {
+        ...process.env,
+        ...extraEnv,
+      },
+    });
+
+    return {
+      success: result.status === 0 && !result.error,
+      command: 'git',
+      args,
+      exitCode: result.status,
+      stdout: result.stdout || '',
+      stderr: result.stderr || '',
+      error: result.error?.message,
+    };
+  }
+
   return runCommand('git', args, 60000);
 }
 
@@ -335,19 +367,51 @@ function buildStatus(stateOverride?: Partial<GitSyncState>): GitSyncStatus {
   const remote = remoteUrl ? parseGitRemote(remoteUrl) : null;
   const secret = loadSecret();
   const changedFiles = getChangedFiles();
-  const reasons: string[] = [];
+  const gitAvailable = ensureGitAvailable();
+  const repoInitialized = isRepoInitialized();
+  const commitReasons: string[] = [];
+  const pushReasons: string[] = [];
+  const syncReasons: string[] = [];
 
-  if (!ensureGitAvailable()) reasons.push('Git executable was not detected');
-  if (!isRepoInitialized()) reasons.push('The current .openclaw directory is not a Git repository yet');
-  if (!remoteUrl) reasons.push('No remote repository is connected yet');
-  if (remoteUrl && !remote) reasons.push('The remote repository is not a standard GitHub/Gitee URL');
-  if (!secret?.token) reasons.push('Git authentication is not configured yet');
-  if (state.repoPrivate !== true) reasons.push('The remote repository is not confirmed as private, sync is blocked');
+  if (!gitAvailable) {
+    commitReasons.push('Git executable was not detected');
+    pushReasons.push('Git executable was not detected');
+    syncReasons.push('Git executable was not detected');
+  }
+  if (!repoInitialized) {
+    commitReasons.push('The current .openclaw directory is not a Git repository yet');
+    pushReasons.push('The current .openclaw directory is not a Git repository yet');
+    syncReasons.push('The current .openclaw directory is not a Git repository yet');
+  }
+  if (!changedFiles.length) {
+    commitReasons.push('There are no local changes to commit');
+    syncReasons.push('There are no local changes to commit');
+  }
+  if (!remoteUrl) {
+    pushReasons.push('No remote repository is connected yet');
+    syncReasons.push('No remote repository is connected yet');
+  }
+  if (remoteUrl && !remote) {
+    pushReasons.push('The remote repository is not a standard GitHub/Gitee URL');
+    syncReasons.push('The remote repository is not a standard GitHub/Gitee URL');
+  }
+  if (!secret?.token) {
+    pushReasons.push('Git authentication is not configured yet');
+    syncReasons.push('Git authentication is not configured yet');
+  }
+  if (state.repoPrivate !== true) {
+    pushReasons.push('The remote repository is not confirmed as private, push is blocked');
+    syncReasons.push('The remote repository is not confirmed as private, sync is blocked');
+  }
+
+  const canCommit = commitReasons.length === 0;
+  const canPush = pushReasons.length === 0;
+  const canSync = syncReasons.length === 0;
 
   const status: GitSyncStatus = {
     repoPath: repoPath(),
-    gitAvailable: ensureGitAvailable(),
-    repoInitialized: isRepoInitialized(),
+    gitAvailable,
+    repoInitialized,
     currentBranch: getCurrentBranch(),
     remoteName: state.remoteName,
     remoteUrl,
@@ -355,10 +419,19 @@ function buildStatus(stateOverride?: Partial<GitSyncState>): GitSyncStatus {
     authMode: state.authMode,
     authConfigured: !!secret?.token,
     repoPrivate: state.repoPrivate,
+    remoteOwner: remote?.owner || state.repoOwner || null,
+    remoteRepo: remote?.repo || state.repoName || null,
+    remoteHost: remote?.host || null,
+    remoteWebUrl: remote?.webUrl || null,
+    accountUsername: state.username || null,
     hasChanges: changedFiles.length > 0,
     changedFiles,
-    canSync: reasons.length === 0,
-    reasons,
+    canCommit,
+    canPush,
+    canSync,
+    commitReasons,
+    pushReasons,
+    reasons: syncReasons,
     state: {
       ...state,
       provider: remote?.provider || state.provider,
@@ -635,17 +708,10 @@ function getReadyStatus(): GitSyncStatus {
 
 export function commitGitSync(message?: string): GitSyncActionResult {
   const status = getReadyStatus();
-  if (!status.canSync) {
+  if (!status.canCommit) {
     return {
       success: false,
-      message: `Sync pre-check failed: ${status.reasons.join('; ')}`,
-      status,
-    };
-  }
-  if (!status.hasChanges) {
-    return {
-      success: false,
-      message: 'There are no changes to commit.',
+      message: `Commit pre-check failed: ${status.commitReasons.join('; ')}`,
       status,
     };
   }
@@ -693,10 +759,10 @@ export function commitGitSync(message?: string): GitSyncActionResult {
 
 export function pushGitSync(): GitSyncActionResult {
   const status = getReadyStatus();
-  if (!status.canSync) {
+  if (!status.canPush) {
     return {
       success: false,
-      message: `Push pre-check failed: ${status.reasons.join('; ')}`,
+      message: `Push pre-check failed: ${status.pushReasons.join('; ')}`,
       status,
     };
   }

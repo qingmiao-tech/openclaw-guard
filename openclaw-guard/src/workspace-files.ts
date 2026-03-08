@@ -1,4 +1,4 @@
-﻿import fs from 'node:fs';
+import fs from 'node:fs';
 import path from 'node:path';
 import { loadConfig, getNested } from './config.js';
 import { resolveUserPath, statSafe } from './guard-state.js';
@@ -59,6 +59,12 @@ export interface SearchHit {
   relativePath: string;
   line: number;
   preview: string;
+}
+
+export interface CreateManagedEntryResult {
+  success: boolean;
+  path?: string;
+  message: string;
 }
 
 const EDITABLE_EXTENSIONS = new Set(['.md', '.txt', '.json', '.json5', '.yml', '.yaml', '.log', '.csv']);
@@ -163,19 +169,56 @@ export function getManagedRoots(): ManagedRoot[] {
   return roots;
 }
 
+function getManagedRootForPath(targetPath: string): ManagedRoot | null {
+  const resolved = resolveUserPath(targetPath);
+  const roots = getManagedRoots()
+    .filter((root) => resolved === root.path || resolved.startsWith(`${root.path}${path.sep}`))
+    .sort((a, b) => b.path.length - a.path.length);
+  return roots[0] || null;
+}
+
 function ensureManagedPath(targetPath: string): string {
   const resolved = resolveUserPath(targetPath);
-  const allowed = getManagedRoots().map((root) => root.path);
-  const matched = allowed.find((root) => resolved === root || resolved.startsWith(`${root}${path.sep}`));
+  const matched = getManagedRootForPath(resolved);
   if (!matched) {
     throw new Error('目标路径不在 Guard 允许的工作区范围内');
   }
   return resolved;
 }
 
+function ensureManagedDirectory(targetPath: string): string {
+  const resolved = ensureManagedPath(targetPath);
+  if (!fs.existsSync(resolved)) {
+    fs.mkdirSync(resolved, { recursive: true });
+  }
+  const stats = fs.statSync(resolved);
+  if (!stats.isDirectory()) {
+    throw new Error('目标目录无效');
+  }
+  return resolved;
+}
+
+function relativeToManagedRoot(targetPath: string): string {
+  const matched = getManagedRootForPath(targetPath);
+  if (!matched) return path.basename(targetPath);
+  const relative = path.relative(matched.path, targetPath);
+  return relative && relative !== '.' ? relative : path.basename(targetPath);
+}
+
+function validateNewEntryName(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    throw new Error('新建名称不能为空');
+  }
+  if (trimmed.includes('/') || trimmed.includes('\\') || trimmed === '.' || trimmed === '..') {
+    throw new Error('新建名称不能包含路径分隔符');
+  }
+  return trimmed;
+}
+
 export function listManagedFiles(targetPath?: string): ManagedFileEntry[] {
   const roots = getManagedRoots();
-  const resolved = targetPath ? ensureManagedPath(targetPath) : roots[0]?.path;
+  const resolved = targetPath ? ensureManagedDirectory(targetPath) : roots[0]?.path;
   if (!resolved || !fs.existsSync(resolved)) return [];
 
   const entries = fs.readdirSync(resolved, { withFileTypes: true })
@@ -185,7 +228,7 @@ export function listManagedFiles(targetPath?: string): ManagedFileEntry[] {
       return {
         name: entry.name,
         path: absolutePath,
-        relativePath: path.basename(absolutePath),
+        relativePath: relativeToManagedRoot(absolutePath),
         isDirectory: entry.isDirectory(),
         size: stats?.size || 0,
         modifiedAt: stats?.mtime.toISOString() || null,
@@ -207,7 +250,7 @@ export function readManagedFile(targetPath: string, maxBytes = 64 * 1024): Manag
   const content = buffer.subarray(0, maxBytes).toString('utf-8');
   return {
     path: resolved,
-    relativePath: path.basename(resolved),
+    relativePath: relativeToManagedRoot(resolved),
     size: buffer.byteLength,
     truncated,
     content,
@@ -224,6 +267,35 @@ export function writeManagedFile(targetPath: string, content: string): { success
   fs.mkdirSync(path.dirname(resolved), { recursive: true });
   fs.writeFileSync(resolved, content, 'utf-8');
   return { success: true, message: `已保存 ${resolved}` };
+}
+
+export function createManagedEntry(parentPath: string, name: string, kind: 'file' | 'directory' = 'file'): CreateManagedEntryResult {
+  try {
+    const resolvedParent = ensureManagedDirectory(parentPath);
+    const safeName = validateNewEntryName(name);
+    const targetPath = ensureManagedPath(path.join(resolvedParent, safeName));
+    if (fs.existsSync(targetPath)) {
+      return { success: false, message: '同名文件或目录已存在' };
+    }
+
+    if (kind === 'directory') {
+      fs.mkdirSync(targetPath, { recursive: true });
+    } else {
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+      fs.writeFileSync(targetPath, '', 'utf-8');
+    }
+
+    return {
+      success: true,
+      path: targetPath,
+      message: kind === 'directory' ? `已创建目录 ${targetPath}` : `已创建文件 ${targetPath}`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 function walkDirectory(rootPath: string, collector: string[]): void {
@@ -310,7 +382,7 @@ export function searchManagedFiles(query: string, limit = 100): SearchHit[] {
       if (!line.toLowerCase().includes(normalizedQuery)) continue;
       results.push({
         path: absolutePath,
-        relativePath: baseName,
+        relativePath: relativeToManagedRoot(absolutePath),
         line: index + 1,
         preview: line.trim(),
       });

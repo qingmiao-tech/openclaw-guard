@@ -1,4 +1,4 @@
-﻿import fs from 'node:fs';
+import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { detectPlatform, getCurrentUser, getHomeDir, getOpenClawDir } from './platform.js';
@@ -64,6 +64,17 @@ export interface DashboardOverview {
   notifications: {
     unread: number;
     latest: GuardNotification[];
+  };
+  runtime: {
+    warnings: string[];
+    alerts: Array<{
+      level: 'info' | 'warning' | 'error' | 'critical';
+      code: string;
+      message: string;
+    }>;
+    gateway: RuntimeSnapshot['gateway'];
+    securityAudit: RuntimeSnapshot['securityAudit'];
+    summary: RuntimeSnapshot['summary'];
   };
 }
 
@@ -264,6 +275,13 @@ export function getDashboardOverview(): DashboardOverview {
     notifications: {
       unread: getUnreadNotificationCount(),
       latest: listNotifications(5),
+    },
+    runtime: {
+      warnings: sessionOverview.snapshot.warnings,
+      alerts: sessionOverview.snapshot.alerts || [],
+      gateway: sessionOverview.snapshot.gateway,
+      securityAudit: sessionOverview.snapshot.securityAudit,
+      summary: sessionOverview.snapshot.summary,
     },
   };
 }

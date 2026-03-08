@@ -1379,3 +1379,27 @@
   3) 调整 `openclaw-guard/src/openclaw-runtime.ts`，增强 `sessions.recent`、`jobs[]`、数值时间戳和网关错误提示兼容。
   4) 调整 `server.ts` 与 `workbench-ui.ts`，完成根路由切换、兼容页保留和第二期 Web 交互增强。
   5) 补测试、跑构建和回归，再按中文提交说明分批提交。
+- 实际完成:
+  1) 根路由 /、/index.html 与 /workbench 已统一切到新工作台，旧版页面保留在 /compat 与 /legacy，并在兼容页顶部明确提示“建议使用新工作台”。
+  2) 基于本机真实 openclaw status --json 样本，补强了 openclaw-runtime.ts 对 sessions.recent、agents、gateway.error、securityAudit.summary、heartbeat、channelSummary、alerts 与 summary 的解析。
+  3) 基于本机真实 openclaw cron list --json 失败样本与 cron status --json 结构，补强了 Cron 快照解析，能在 Web 中展示 jobs、调度器状态与 warnings，而不是把连接失败误判为空列表。
+  4) 第二期 Web 交互已补强：新增通知中心 Tab、Git OAuth 发起入口、文件新建/上一级/截断预览保护、搜索结果直达文件、Cron 状态卡片与更顺手的 Git Sync 表单。
+  5) workbench-ui.ts 在开发中出现了本地编码污染，已统一转回 UTF-8 并重置为可读文案，避免根路由切换后出现页面乱码。
+- 交付清单:
+  - openclaw-guard/src/openclaw-runtime.ts
+  - openclaw-guard/src/dashboard.ts
+  - openclaw-guard/src/workspace-files.ts
+  - openclaw-guard/src/cron-ui.ts
+  - openclaw-guard/src/server.ts
+  - openclaw-guard/src/web-ui.ts
+  - openclaw-guard/src/workbench-ui.ts
+  - openclaw-guard/src/__tests__/openclaw-runtime.test.ts
+- 验证结果:
+  - 已验证: cmd /c npm run build 通过。
+  - 已验证: cmd /c npm run test 通过，9 个测试文件、50 个测试全部通过。
+  - 已验证: 根路由与新工作台路由已完成切换，旧版兼容页入口已保留。
+  - 已验证: 运行态与 Cron 解析器已按真实样本结构增强，并补充了对应测试。
+- mission 兼容层评估:
+  1) 当前不建议下线 mission。
+  2) 原因不是底座不够，而是第二期虽然已覆盖核心浏览、状态和同步能力，但 mission 仍可作为旧流程与历史入口的兼容层，适合在下一轮完成通知闭环、Git 授权细节和 Web 操作体验后再正式移除。
+  3) 结论: 先保留 mission 为兼容入口，待第三阶段再评估下线窗口。

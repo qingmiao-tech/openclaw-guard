@@ -20,7 +20,7 @@ function runCronAction(args: string[], successMessage: string, failureMessage: s
     addNotification({
       type: 'cron',
       source: 'cron-ui',
-      title: 'Cron 操作成功',
+      title: 'Cron action succeeded',
       message: successMessage,
       severity: 'success',
       meta: { args },
@@ -35,7 +35,7 @@ function runCronAction(args: string[], successMessage: string, failureMessage: s
   addNotification({
     type: 'cron',
     source: 'cron-ui',
-    title: 'Cron 操作失败',
+    title: 'Cron action failed',
     message: `${failureMessage}: ${result.error || result.stderr || result.stdout}`,
     severity: 'error',
     meta: { args },
@@ -67,17 +67,17 @@ export function getCronOverview(): CronOverview {
 }
 
 export function enableCronJob(jobId: string): CronActionResult {
-  return runCronAction(['enable', jobId], `已启用定时任务 ${jobId}`, `启用定时任务 ${jobId} 失败`);
+  return runCronAction(['enable', jobId], `Enabled cron job ${jobId}`, `Failed to enable cron job ${jobId}`);
 }
 
 export function disableCronJob(jobId: string): CronActionResult {
-  return runCronAction(['disable', jobId], `已停用定时任务 ${jobId}`, `停用定时任务 ${jobId} 失败`);
+  return runCronAction(['disable', jobId], `Disabled cron job ${jobId}`, `Failed to disable cron job ${jobId}`);
 }
 
 export function runCronJob(jobId: string): CronActionResult {
-  return runCronAction(['run', jobId], `已触发定时任务 ${jobId}`, `触发定时任务 ${jobId} 失败`);
+  return runCronAction(['run', jobId], `Triggered cron job ${jobId}`, `Failed to trigger cron job ${jobId}`);
 }
 
 export function removeCronJob(jobId: string): CronActionResult {
-  return runCronAction(['remove', jobId], `已删除定时任务 ${jobId}`, `删除定时任务 ${jobId} 失败`);
+  return runCronAction(['remove', jobId], `Removed cron job ${jobId}`, `Failed to remove cron job ${jobId}`);
 }

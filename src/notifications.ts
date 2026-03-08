@@ -80,10 +80,48 @@ export function markNotificationRead(id: string, read = true): boolean {
   return true;
 }
 
+export function markAllNotifications(read = true): number {
+  const items = listNotifications(0);
+  let changed = 0;
+  for (const item of items) {
+    if (item.read !== read) {
+      item.read = read;
+      changed += 1;
+    }
+  }
+  if (changed > 0) saveNotifications(items);
+  return changed;
+}
+
+export function clearReadNotifications(): number {
+  const items = listNotifications(0);
+  const next = items.filter((item) => !item.read);
+  saveNotifications(next);
+  return items.length - next.length;
+}
+
 export function clearNotifications(): void {
   saveNotifications([]);
 }
 
 export function getUnreadNotificationCount(): number {
   return listNotifications(0).filter((item) => !item.read).length;
+}
+
+export function getNotificationSummary(limit = 100): {
+  items: GuardNotification[];
+  total: number;
+  unread: number;
+  read: number;
+} {
+  const all = listNotifications(0);
+  const unread = all.filter((item) => !item.read).length;
+  const read = all.length - unread;
+  const items = limit > 0 ? all.slice(0, limit) : all;
+  return {
+    items,
+    total: all.length,
+    unread,
+    read,
+  };
 }

@@ -1536,3 +1536,41 @@
   1) 当前沙箱环境下，`web:bg:start` 的后台常驻行为仍受宿主机/会话管理方式影响，但“停后台服务”接口与前端按钮逻辑已补齐。
   2) 在用户自己的正常桌面环境中，建议优先使用 `npm run dev` 或 `start-web.bat` 做前台调试；如需常驻，再使用 `npm run web:bg:start` / `npm run web:bg:stop`。
   3) 这轮已经把“菜单不可点 + 首页 500 + 样式散乱 + 停服缺失”一起收口，后续再继续做视觉细节和操作顺手度优化即可。
+
+## [2026-03-08 20:38] openclaw-guard 工作台空白页回归修复与后台控制收尾 [TASK-20260308-006]
+
+- 任务来源: 用户续作（排查启动后页面无内容，确认是否受 `src/assets` logo 改动影响，并完成本轮代码收尾、日志与提交准备）。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-08 19:36
+- 开始时间: 2026-03-08 19:36
+- 当前状态: 已完成修复、自测与浏览器回归，待提交 git。
+- 任务目标:
+  1) 排查工作台“页面空白”根因，确认是否由 `src/assets` 的 logo 改动导致。
+  2) 修复 Guard Web 根路由工作台的可用性问题，并补齐后台服务停服操作入口。
+  3) 对新工作台做一次真实浏览器回归，确认菜单切换、静态资源与关键页面可用。
+  4) 记录本轮变更并为中文 git 提交做收口。
+- 实际完成:
+  1) 已确认空白页根因不是 `src/assets/logo.png`，而是 `web/guard-ui.js` 之前模板字符串拼接损坏，导致前端初始化脚本中断。
+  2) 已修复 `guard-ui.js` 的工作台头部结构与事件绑定，恢复根路由 `/` 的正常渲染，并保留统一 UI 壳承接全部主功能。
+  3) `server.ts` 已增加静态资源多路径兜底，`/ui/logo.png` 现在可稳定命中 `src/assets/logo.png`，避免 logo 404 再次拖垮界面观感与验证过程。
+  4) 工作台头部动作区已补齐“刷新当前页”“打开兼容页”“打开旧版页”“一键停后台服务”，同时系统页补充了后台来源、PID 记录文件与手动命令参考。
+  5) `web-background.mjs` 与 `web-background.ts` 已增强 PID/端口识别逻辑，支持 stale pid 清理、按 PID 反查端口、端口快照对比，减轻后台进程记录与真实监听状态不一致时的误判。
+  6) `guard-ui.css` 已补一轮结构样式，增强头部与内容容器层次、横向标签滚动、卡片表现与命令列表可读性。
+  7) 已完成浏览器实测：根页面可正常打开，logo 正常显示，`系统 / 渠道 / AI / 文件 / 兼容层` 均能正常切换，中文文案无残留空白页级错误。
+- 交付清单:
+  - `openclaw-guard/src/server.ts`
+  - `openclaw-guard/src/web-background.ts`
+  - `openclaw-guard/scripts/web-background.mjs`
+  - `openclaw-guard/web/guard-ui.css`
+  - `openclaw-guard/web/guard-ui.js`
+  - `worklogs/codex-work-logs.md`
+- 验证结果:
+  1) 已验证 `node --check web/guard-ui.js` 通过。
+  2) 已验证 `cmd /c npm run build` 通过。
+  3) 已验证 `cmd /c npm run test` 通过，当前 9 个测试文件、52 个测试全部通过。
+  4) 已在浏览器中验证 [http://localhost:18088/](http://localhost:18088/) 可正常打开，`/ui/logo.png` 返回 200。
+  5) 已确认“一键停后台服务”按钮已接到 `/api/web-background/stop`，系统页能展示当前后台来源与 PID 文件信息。
+- 风险与补充说明:
+  1) 当前 Codex 沙箱内对后台拉起子进程仍有限制，`web:bg:start` 的最终真机级验证在这里不稳定，但这不影响现有页面修复和停服链路可用。
+  2) 这轮没有动 `src/assets/logo.png` 本身，保留了另一位同伴的资源改动，只补了服务端静态资源兜底与前端脚本稳定性。
+  3) 后续如果继续做第二期优化，建议优先补“后台一键启动”的真机验证，再继续打磨通知、Cron、Git Sync 的顺手度。

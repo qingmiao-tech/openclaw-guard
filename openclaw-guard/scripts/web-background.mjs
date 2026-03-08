@@ -10,6 +10,7 @@ const runtimeDir = path.join(rootDir, '.guard-runtime');
 const pidFile = path.join(runtimeDir, 'guard-web.pid.json');
 const outLog = path.join(runtimeDir, 'guard-web.out.log');
 const errLog = path.join(runtimeDir, 'guard-web.err.log');
+const portRetryWindow = 10;
 
 function ensureRuntimeDir() {
   fs.mkdirSync(runtimeDir, { recursive: true });
@@ -43,25 +44,58 @@ function isPidAlive(pid) {
   }
 }
 
-function findPidByPort(port) {
+function listListeningSockets() {
   try {
     if (process.platform === 'win32') {
       const output = execFileSync('netstat', ['-ano'], { encoding: 'utf-8', windowsHide: true });
+      const rows = [];
       for (const line of output.split(/\r?\n/)) {
-        if (!line.includes(`:${port}`) || !line.includes('LISTENING')) continue;
+        if (!line.includes('LISTENING')) continue;
         const parts = line.trim().split(/\s+/);
+        if (parts.length < 5) continue;
+        const localAddress = parts[1];
         const pid = Number(parts[parts.length - 1]);
-        if (Number.isInteger(pid) && pid > 0) return pid;
+        const match = localAddress.match(/:(\d+)$/);
+        if (!match || !Number.isInteger(pid) || pid <= 0) continue;
+        rows.push({ pid, port: Number(match[1]) });
       }
-      return null;
+      return rows;
     }
 
-    const output = execFileSync('lsof', ['-ti', `tcp:${port}`], { encoding: 'utf-8' }).trim();
-    const pid = Number(output.split(/\r?\n/)[0]);
-    return Number.isInteger(pid) && pid > 0 ? pid : null;
+    const output = execFileSync('lsof', ['-nP', '-iTCP', '-sTCP:LISTEN'], { encoding: 'utf-8' });
+    const rows = [];
+    for (const line of output.split(/\r?\n/).slice(1)) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const parts = trimmed.split(/\s+/);
+      const pid = Number(parts[1]);
+      const match = trimmed.match(/:(\d+)\s*\(LISTEN\)$/);
+      if (!match || !Number.isInteger(pid) || pid <= 0) continue;
+      rows.push({ pid, port: Number(match[1]) });
+    }
+    return rows;
   } catch {
-    return null;
+    return [];
   }
+}
+
+function findPidByPort(port) {
+  const entry = listListeningSockets().find((item) => item.port === port);
+  return entry ? entry.pid : null;
+}
+
+function findPortsByPid(pid) {
+  const ports = listListeningSockets()
+    .filter((item) => item.pid === pid)
+    .map((item) => item.port);
+  return [...new Set(ports)].sort((a, b) => a - b);
+}
+
+function resolvePortForPid(pid, preferredPort) {
+  const ports = findPortsByPid(pid);
+  if (!ports.length) return null;
+  const preferred = ports.find((port) => port >= preferredPort && port <= preferredPort + portRetryWindow);
+  return preferred ?? ports[0];
 }
 
 function killPid(pid) {
@@ -81,11 +115,56 @@ function sleep(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
+function capturePortSnapshot(basePort) {
+  const snapshot = new Map();
+  for (let current = basePort; current <= basePort + portRetryWindow; current += 1) {
+    const pid = findPidByPort(current);
+    if (pid) snapshot.set(current, pid);
+  }
+  return snapshot;
+}
+
+function findNewPortBinding(basePort, beforeSnapshot) {
+  for (let current = basePort; current <= basePort + portRetryWindow; current += 1) {
+    const pid = findPidByPort(current);
+    if (!pid) continue;
+    if (!beforeSnapshot.has(current) || beforeSnapshot.get(current) !== pid) {
+      return { pid, port: current };
+    }
+  }
+  return null;
+}
+
+function launchBackgroundProcess(port) {
+  ensureRuntimeDir();
+
+  if (process.platform === 'win32') {
+    execFileSync('cmd.exe', ['/c', 'start', '', '/b', process.execPath, 'dist/index.js', 'web', '--port', String(port)], {
+      cwd: rootDir,
+      windowsHide: true,
+    });
+    return null;
+  }
+
+  const outFd = fs.openSync(outLog, 'a');
+  const errFd = fs.openSync(errLog, 'a');
+  const child = spawn(process.execPath, ['dist/index.js', 'web', '--port', String(port)], {
+    cwd: rootDir,
+    detached: true,
+    stdio: ['ignore', outFd, errFd],
+    windowsHide: true,
+  });
+  child.unref();
+  return child.pid;
+}
+
 function getStatus(port) {
   const record = readPidRecord();
   if (record?.pid) {
     if (isPidAlive(record.pid)) {
-      return { running: true, pid: record.pid, port: record.port || port, source: 'pid-file', managed: true };
+      const fallbackPort = record.port || port;
+      const actualPort = resolvePortForPid(record.pid, fallbackPort) ?? fallbackPort;
+      return { running: true, pid: record.pid, port: actualPort, source: 'pid-file', managed: true };
     }
 
     const pidFromRecordedPort = findPidByPort(record.port || port);
@@ -107,38 +186,46 @@ function getStatus(port) {
 function start(port) {
   const status = getStatus(port);
   if (status.running) {
-    console.log(`Guard Web 已在运行: PID ${status.pid}, port ${status.port} (${status.source})`);
+    console.log(`Guard Web already running: PID ${status.pid}, port ${status.port} (${status.source})`);
     process.exit(0);
   }
 
-  ensureRuntimeDir();
-  const outFd = fs.openSync(outLog, 'a');
-  const errFd = fs.openSync(errLog, 'a');
-  const child = spawn(process.execPath, ['dist/index.js', 'web', '--port', String(port)], {
-    cwd: rootDir,
-    detached: true,
-    stdio: ['ignore', outFd, errFd],
-    windowsHide: true,
-    env: {
-      ...process.env,
-      OPENCLAW_GUARD_BACKGROUND: '1',
-    },
-  });
+  const startedAt = new Date().toISOString();
+  const beforeSnapshot = capturePortSnapshot(port);
+  let pid = null;
+  try {
+    pid = launchBackgroundProcess(port);
+  } catch (error) {
+    console.error(`Guard Web background start failed: ${error instanceof Error ? error.message : String(error)}`);
+    process.exit(1);
+  }
 
-  child.unref();
-  writePidRecord({ pid: child.pid, port, managed: true, startedAt: new Date().toISOString() });
-
-  for (let index = 0; index < 20; index += 1) {
+  for (let index = 0; index < 40; index += 1) {
     sleep(500);
-    const current = getStatus(port);
-    if (current.running) {
-      console.log(`Guard Web 已在后台启动: http://localhost:${current.port} (PID ${current.pid})`);
-      console.log(`日志: ${outLog}`);
+
+    if (pid) {
+      const actualPort = resolvePortForPid(pid, port);
+      if (actualPort) {
+        writePidRecord({ pid, port: actualPort, managed: true, startedAt });
+        console.log(`Guard Web background started: http://localhost:${actualPort} (PID ${pid})`);
+        console.log(`Logs: ${outLog}`);
+        process.exit(0);
+      }
+      if (index >= 3 && !isPidAlive(pid)) break;
+      continue;
+    }
+
+    const binding = findNewPortBinding(port, beforeSnapshot);
+    if (binding) {
+      writePidRecord({ pid: binding.pid, port: binding.port, managed: true, startedAt });
+      console.log(`Guard Web background started: http://localhost:${binding.port} (PID ${binding.pid})`);
+      console.log(`Logs: ${outLog}`);
       process.exit(0);
     }
   }
 
-  console.error('Guard Web 后台启动超时，请查看日志。');
+  clearPidRecord();
+  console.error('Guard Web background start timed out. Check logs for details.');
   process.exit(1);
 }
 
@@ -160,13 +247,24 @@ function stop(port) {
 
 function printStatus(port) {
   const status = getStatus(port);
-  console.log(JSON.stringify(status, null, 2));
+  console.log(JSON.stringify({ ...status, pidFile }, null, 2));
+}
+
+function resolvePortArg(args) {
+  let resolved = 18088;
+  for (let index = 0; index < args.length; index += 1) {
+    if (args[index] === '--port') {
+      const next = Number(args[index + 1]);
+      if (Number.isFinite(next) && next > 0) resolved = next;
+      index += 1;
+    }
+  }
+  return resolved;
 }
 
 const args = process.argv.slice(2);
 const command = args[0] || 'status';
-const portIndex = args.indexOf('--port');
-const port = portIndex >= 0 ? Number(args[portIndex + 1]) || 18088 : 18088;
+const port = resolvePortArg(args);
 
 if (command === 'start') {
   start(port);

@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   const app = document.getElementById('guard-app');
   if (!app) return;
 
@@ -8,10 +8,12 @@
 
   const I18N = {
     zh: {
-      appTitle: 'OpenClaw Guard 原生工作台',
-      appSubtitle: '把安全、渠道、AI、工作台、Git 同步和兼容层收口到同一套可维护面板里。',
+      appTitle: '虾护卫',
+      appSubtitle: '自带“防弹衣”与“复活甲”。内置多档安全预设，精准隔离越权风险；结合 Git 深度同步，让你的虾进可自由折腾，退可一键重生。',
       refresh: '刷新当前页',
       stopWeb: '一键停后台服务',
+      openCompat: '\u6253\u5f00\u517c\u5bb9\u9875',
+      openLegacy: '\u6253\u5f00\u65e7\u7248\u9875',
       compat: '兼容说明',
       legacy: '旧版别名',
       loading: '正在加载…',
@@ -89,6 +91,8 @@
       appSubtitle: 'One maintainable shell for security, channels, AI, workbench flows, Git sync, and the legacy compatibility layer.',
       refresh: 'Refresh',
       stopWeb: 'Stop Background Web',
+      openCompat: 'Open Compat Page',
+      openLegacy: 'Open Legacy Page',
       compat: 'Compatibility',
       legacy: 'Legacy Alias',
       loading: 'Loading…',
@@ -183,6 +187,10 @@
     hardenPlatform: null,
     logsTarget: 'service',
     currentViewData: null,
+    aiSelectedProvider: '__new__',
+    channelSelectedId: 'feishu',
+    gitSyncDraftMessage: '',
+    gitSyncPollTimer: null,
   };
 
   function t(key) {
@@ -315,6 +323,114 @@
     return `<div class="empty">${escapeHtml(message || t('noData'))}</div>`;
   }
 
+  const FIELD_LABELS = {
+    appId: 'App ID',
+    appSecret: 'App Secret',
+    encryptKey: 'Encrypt Key',
+    verificationToken: 'Verification Token',
+    connectionMode: 'Connection Mode',
+    webhookPath: 'Webhook Path',
+    webhookHost: 'Webhook Host',
+    webhookPort: 'Webhook Port',
+    dmPolicy: 'DM Policy',
+    groupPolicy: 'Group Policy',
+    requireMention: 'Require Mention',
+    streaming: 'Streaming',
+    renderMode: 'Render Mode',
+    whisperModel: 'Whisper Model',
+    botToken: 'Bot Token',
+    appToken: 'App Token',
+    baseUrl: 'Base URL',
+    apiType: 'API Type',
+    apiKey: 'API Key',
+    clientId: 'Client ID',
+    clientSecret: 'Client Secret',
+    remoteUrl: 'Remote URL',
+    remoteName: 'Remote Name',
+    redirectPort: 'Redirect Port',
+  };
+
+  const CHANNEL_SELECT_OPTIONS = {
+    connectionMode: ['websocket', 'webhook'],
+    dmPolicy: ['open', 'allowlist', 'closed'],
+    groupPolicy: ['open', 'allowlist', 'closed'],
+    renderMode: ['auto', 'rich', 'compact'],
+  };
+
+  const AI_API_TYPE_OPTIONS = ['openai-completions', 'anthropic-messages', 'openai-responses'];
+
+  function humanizeFieldLabel(key) {
+    const label = FIELD_LABELS[key] || key.replace(/^env:/, 'ENV ').replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+
+  function isSensitiveField(key) {
+    return /token|secret|password|apiKey|encryptKey|verificationToken|botToken|appToken/i.test(key);
+  }
+
+  function parseBooleanValue(value) {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+      return ['true', '1', 'yes', 'on'].includes(value.trim().toLowerCase());
+    }
+    return Boolean(value);
+  }
+
+  function parseOptionalNumber(value) {
+    if (value === '' || value === null || value === undefined) return undefined;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  function renderFormField({ name, label, value = '', type = 'text', placeholder = '', options = [], help = '', fullWidth = false, checked = false }) {
+    const widthClass = fullWidth ? ' field-span' : '';
+    if (type === 'checkbox') {
+      return `
+        <div class="field${widthClass}">
+          <label>${escapeHtml(label)}</label>
+          <label class="checkbox-field">
+            <input type="checkbox" name="${escapeHtml(name)}" ${checked ? 'checked' : ''}>
+            <span>${escapeHtml(help || label)}</span>
+          </label>
+        </div>
+      `;
+    }
+    if (type === 'select') {
+      return `
+        <div class="field${widthClass}">
+          <label>${escapeHtml(label)}</label>
+          <select name="${escapeHtml(name)}">
+            ${options.map((option) => `<option value="${escapeHtml(option)}" ${String(value) === String(option) ? 'selected' : ''}>${escapeHtml(option)}</option>`).join('')}
+          </select>
+          ${help ? `<div class="muted small">${escapeHtml(help)}</div>` : ''}
+        </div>
+      `;
+    }
+    if (type === 'textarea') {
+      return `
+        <div class="field${widthClass}">
+          <label>${escapeHtml(label)}</label>
+          <textarea name="${escapeHtml(name)}" placeholder="${escapeHtml(placeholder)}">${escapeHtml(value)}</textarea>
+          ${help ? `<div class="muted small">${escapeHtml(help)}</div>` : ''}
+        </div>
+      `;
+    }
+    return `
+      <div class="field${widthClass}">
+        <label>${escapeHtml(label)}</label>
+        <input type="${escapeHtml(type)}" name="${escapeHtml(name)}" value="${escapeHtml(value)}" placeholder="${escapeHtml(placeholder)}">
+        ${help ? `<div class="muted small">${escapeHtml(help)}</div>` : ''}
+      </div>
+    `;
+  }
+
+  function clearGitSyncPollTimer() {
+    if (state.gitSyncPollTimer) {
+      clearTimeout(state.gitSyncPollTimer);
+      state.gitSyncPollTimer = null;
+    }
+  }
+
   function setPanel(title, description, bodyHtml, actionsHtml = '') {
     const panel = document.getElementById('guard-panel');
     if (!panel) return;
@@ -335,31 +451,39 @@
     app.innerHTML = `
       <div class="guard-shell">
         <header class="guard-header">
-          <div class="guard-header-top">
-            <div class="guard-brand">
-              <div class="guard-badge">OC</div>
-              <div class="guard-title">
-                <h1>${escapeHtml(t('appTitle'))}</h1>
-                <p>${escapeHtml(t('appSubtitle'))}</p>
+          <div class="guard-header-inner">
+            <div class="guard-header-top">
+              <div class="guard-brand">
+                <div class="guard-badge">
+                  <img class="guard-badge-logo" src="/ui/logo.png" alt="OpenClaw Guard logo" />
+                </div>
+                <div class="guard-title">
+                  <h1>${escapeHtml(t('appTitle'))}</h1>
+                  <p>${escapeHtml(t('appSubtitle'))}</p>
+                </div>
+              </div>
+              <div class="guard-actions">
+                <div class="lang-switch">
+                  <button type="button" data-lang="zh" class="${state.lang === 'zh' ? 'active' : ''}">\u4e2d\u6587</button>
+                  <button type="button" data-lang="en" class="${state.lang === 'en' ? 'active' : ''}">EN</button>
+                </div>
+                <button class="action-btn" type="button" data-global-action="refresh">${escapeHtml(t('refresh'))}</button>
+                <button class="action-btn" type="button" data-global-action="compat">${escapeHtml(t('openCompat'))}</button>
+                <button class="action-btn" type="button" data-global-action="legacy">${escapeHtml(t('openLegacy'))}</button>
+                <button class="action-btn danger" type="button" data-global-action="stop-web">${escapeHtml(t('stopWeb'))}</button>
               </div>
             </div>
-            <div class="guard-actions">
-              <div class="lang-switch">
-                <button type="button" data-lang="zh" class="${state.lang === 'zh' ? 'active' : ''}">中文</button>
-                <button type="button" data-lang="en" class="${state.lang === 'en' ? 'active' : ''}">EN</button>
-              </div>
-              <button class="action-btn" type="button" data-global-action="refresh">${escapeHtml(t('refresh'))}</button>
-              <button class="action-btn danger" type="button" data-global-action="stop-web">${escapeHtml(t('stopWeb'))}</button>
-              <a class="action-btn" href="${shellConfig.compatUrl || '/compat'}">${escapeHtml(t('compat'))}</a>
-              <a class="action-btn" href="${shellConfig.legacyUrl || '/legacy'}">${escapeHtml(t('legacy'))}</a>
+            <div class="guard-tabs-wrap">
+              <nav class="guard-tabs" id="guard-nav">
+                ${TAB_ORDER.map((tabId) => `<button type="button" class="guard-tab ${tabId === active ? 'active' : ''}" data-tab="${tabId}">${escapeHtml(t(`tabs.${tabId}`))}</button>`).join('')}
+              </nav>
             </div>
           </div>
-          <nav class="guard-tabs" id="guard-nav">
-            ${TAB_ORDER.map((tabId) => `<button type="button" class="guard-tab ${tabId === active ? 'active' : ''}" data-tab="${tabId}">${escapeHtml(t(`tabs.${tabId}`))}</button>`).join('')}
-          </nav>
         </header>
         <main class="guard-main">
-          <div id="guard-panel"><div class="empty">${escapeHtml(t('loading'))}</div></div>
+          <div class="guard-main-inner">
+            <div id="guard-panel"><div class="empty">${escapeHtml(t('loading'))}</div></div>
+          </div>
         </main>
         <div id="guard-toast" class="toast"></div>
       </div>
@@ -377,16 +501,23 @@
       });
     });
     app.querySelector('[data-global-action="refresh"]')?.addEventListener('click', () => loadActiveTab(true));
+    app.querySelector('[data-global-action="compat"]')?.addEventListener('click', () => {
+      window.location.href = shellConfig.compatUrl || '/compat';
+    });
+    app.querySelector('[data-global-action="legacy"]')?.addEventListener('click', () => {
+      window.location.href = shellConfig.legacyUrl || '/legacy';
+    });
     app.querySelector('[data-global-action="stop-web"]')?.addEventListener('click', async () => {
-      if (!confirm(state.lang === 'zh' ? '确认停止当前 Guard Web 服务？' : 'Stop the current Guard Web service?')) return;
+      if (!confirm(state.lang === 'zh' ? '\u786e\u8ba4\u505c\u6b62\u5f53\u524d Guard Web \u670d\u52a1\uff1f' : 'Stop the current Guard Web service?')) return;
       try {
         const result = await postJson('/api/web-background/stop', {});
-        showToast(result.message || (state.lang === 'zh' ? '停止命令已发送。' : 'Stop command sent.'));
+        showToast(result.message || (state.lang === 'zh' ? '\u505c\u6b62\u547d\u4ee4\u5df2\u53d1\u9001\u3002' : 'Stop command sent.'));
       } catch (error) {
         showToast(error.message || String(error), 'error');
       }
     });
   }
+
   async function loadOverview() {
     const [overview, webStatus] = await Promise.all([
       apiRequest('/api/dashboard/overview'),
@@ -468,6 +599,11 @@
       apiRequest('/api/web-background/status'),
     ]);
 
+    const webCommandPort = webStatus.port || 18088;
+    const startCommand = `cmd /c start "" /b node dist/index.js web --port ${webCommandPort}`;
+    const statusCommand = 'npm run web:bg:status';
+    const stopCommand = 'npm run web:bg:stop';
+
     const body = `
       <div class="grid">
         ${metricCard('Gateway', service.running ? 'RUNNING' : 'STOPPED', `PID ${service.pid || '-'}`, service.running ? 'success' : 'danger')}
@@ -477,21 +613,54 @@
       </div>
       <div class="grid">
         <div class="card">
-          <h3>${state.lang === 'zh' ? '系统信息' : 'System Info'}</h3>
+          <h3>${state.lang === 'zh' ? '\u7cfb\u7edf\u4fe1\u606f' : 'System Info'}</h3>
           ${keyValueGrid([
-            { label: state.lang === 'zh' ? '平台' : 'Platform', value: info.platform || '-' },
-            { label: state.lang === 'zh' ? '用户' : 'User', value: info.user || '-' },
+            { label: state.lang === 'zh' ? '\u5e73\u53f0' : 'Platform', value: info.platform || '-' },
+            { label: state.lang === 'zh' ? '\u7528\u6237' : 'User', value: info.user || '-' },
             { label: 'Home', value: info.home || '-' },
             { label: 'OpenClaw Dir', value: info.openclawDir || '-' },
           ])}
         </div>
         <div class="card">
-          <h3>${state.lang === 'zh' ? '后台服务控制' : 'Background Service Controls'}</h3>
+          <h3>${state.lang === 'zh' ? '\u540e\u53f0\u670d\u52a1\u63a7\u5236' : 'Background Service Controls'}</h3>
           <div class="toolbar">
             <button class="action-btn primary" type="button" data-service-action="start">${escapeHtml(t('start'))} Gateway</button>
             <button class="action-btn" type="button" data-service-action="restart">${escapeHtml(t('restart'))} Gateway</button>
             <button class="action-btn danger" type="button" data-service-action="stop">${escapeHtml(t('stop'))} Gateway</button>
             <button class="action-btn danger" type="button" data-service-action="stop-web">${escapeHtml(t('stopWeb'))}</button>
+          </div>
+          <div class="grid" style="margin-top:14px;">
+            <div class="list-item">
+              <div class="row" style="justify-content:space-between;">
+                <strong>${state.lang === 'zh' ? '\u0057\u0065\u0062 \u8fdb\u7a0b\u6765\u6e90' : 'Guard Web Source'}</strong>
+                <span class="pill ${webStatus.managed ? 'success' : 'warn'}">${escapeHtml(webStatus.source || '-')}</span>
+              </div>
+              <div class="muted small" style="margin-top:8px;">
+                ${escapeHtml(webStatus.managed
+                  ? (state.lang === 'zh' ? '\u5f53\u524d\u5b9e\u4f8b\u7531 Guard \u8bb0\u5f55\u4e3a\u53d7\u6258\u7ba1\u540e\u53f0\u8fdb\u7a0b\u3002' : 'This instance is tracked as a managed background process.')
+                  : (state.lang === 'zh' ? '\u5f53\u524d\u5b9e\u4f8b\u662f\u901a\u8fc7\u7aef\u53e3\u626b\u63cf\u8bc6\u522b\u51fa\u6765\u7684\uff0c\u8bf4\u660e\u5b83\u4e0d\u662f\u7531 web:bg \u811a\u672c\u6258\u7ba1\u542f\u52a8\u3002' : 'This instance was detected via port scan, which means it was not started by the web:bg manager.'))}
+              </div>
+            </div>
+            <div class="list-item">
+              <div class="row" style="justify-content:space-between;">
+                <strong>${state.lang === 'zh' ? '\u8fd0\u884c\u8bb0\u5f55\u6587\u4ef6' : 'Runtime Record File'}</strong>
+                <span class="chip">${escapeHtml(webStatus.port || '-')}</span>
+              </div>
+              <div class="muted small" style="margin-top:8px;">${escapeHtml(webStatus.pidFile || '-')}</div>
+            </div>
+          </div>
+          <div class="sub-card" style="margin-top:14px;">
+            <h3 style="margin-bottom:10px;">${state.lang === 'zh' ? '\u624b\u52a8\u547d\u4ee4\u53c2\u8003' : 'Manual Commands'}</h3>
+            <div class="command-list">
+              <code>${escapeHtml(statusCommand)}</code>
+              <code>${escapeHtml(stopCommand)}</code>
+              <code>${escapeHtml(startCommand)}</code>
+            </div>
+            <div class="muted small" style="margin-top:10px;">
+              ${escapeHtml(state.lang === 'zh'
+                ? '\u5f53\u540e\u53f0\u6258\u7ba1\u72b6\u6001\u548c\u5b9e\u9645\u7aef\u53e3\u4e0d\u4e00\u81f4\u65f6\uff0c\u5148\u770b status\uff0c\u518d\u51b3\u5b9a\u662f\u7528 stop \u505c\u6258\u7ba1\u5b9e\u4f8b\uff0c\u8fd8\u662f\u76f4\u63a5\u7ed3\u675f\u5f53\u524d\u7aef\u53e3\u4e0a\u7684\u65e7\u8fdb\u7a0b\u3002'
+                : 'If the tracked background state and the actual listening port drift apart, check status first, then decide whether to use stop for the managed instance or terminate the stale port owner directly.')}
+            </div>
           </div>
           <pre style="margin-top:14px;">${prettyJson({ gateway: service, web: webStatus })}</pre>
         </div>
@@ -629,71 +798,615 @@
   }
 
   async function loadChannels() {
-    const channels = await apiRequest('/api/channels');
-    const body = channels.length ? `<div class="grid">${channels.map((channel) => `
-      <div class="card">
-        <div class="row" style="justify-content:space-between; align-items:flex-start;">
-          <div>
-            <h3>${escapeHtml(channel.icon || '')} ${escapeHtml(channel.name || channel.id)}</h3>
-            <p>${escapeHtml(channel.id)}</p>
-          </div>
-          <span class="pill ${channel.enabled ? 'success' : 'warn'}">${channel.enabled ? 'enabled' : 'disabled'}</span>
-        </div>
-        <pre>${prettyJson(channel.config || {})}</pre>
-      </div>
-    `).join('')}</div>` : emptyState(state.lang === 'zh' ? '当前没有渠道配置。' : 'No channel configuration.');
-    setPanel(t('tabs.channels'), t('desc.channels'), body);
-  }
-
-  async function loadAI() {
-    const [config, providers] = await Promise.all([
-      apiRequest('/api/ai/config'),
-      apiRequest('/api/ai/providers'),
+    const [channels, channelDefs] = await Promise.all([
+      apiRequest('/api/channels'),
+      apiRequest('/api/channels/meta').catch(() => []),
     ]);
+
+    const defs = Array.isArray(channelDefs) && channelDefs.length
+      ? channelDefs
+      : (channels || []).map((channel) => ({
+          id: channel.id,
+          name: channel.name,
+          icon: channel.icon,
+          fields: Object.keys(channel.config || {}).filter((key) => !key.startsWith('env:')),
+          envFields: Object.keys(channel.config || {})
+            .filter((key) => key.startsWith('env:'))
+            .map((key) => key.slice(4)),
+        }));
+    const channelMap = Object.fromEntries((channels || []).map((channel) => [channel.id, channel]));
+    const defMap = Object.fromEntries((defs || []).map((def) => [def.id, def]));
+
+    if (!state.channelSelectedId || !defMap[state.channelSelectedId]) {
+      state.channelSelectedId = defs[0]?.id || channels[0]?.id || 'feishu';
+    }
+
+    const selectedDef = defMap[state.channelSelectedId] || defs[0] || {
+      id: 'feishu',
+      name: 'Feishu / Lark',
+      icon: '🪁',
+      fields: [],
+      envFields: [],
+    };
+    const selected = channelMap[selectedDef.id] || {
+      id: selectedDef.id,
+      name: selectedDef.name,
+      icon: selectedDef.icon,
+      enabled: false,
+      configured: false,
+      config: {},
+    };
+    const envKeys = Object.keys(selected.config || {}).filter((key) => key.startsWith('env:'));
+    const configKeys = Object.keys(selected.config || {}).filter((key) => !key.startsWith('env:'));
+
+    function renderChannelField(fieldName, fieldValue, kind = 'config') {
+      const value = fieldValue ?? '';
+      const label = kind === 'env'
+        ? `${humanizeFieldLabel(fieldName)} (${fieldName})`
+        : humanizeFieldLabel(fieldName);
+      if (fieldName === 'enabled') {
+        return renderFormField({
+          name: fieldName,
+          label,
+          type: 'checkbox',
+          checked: parseBooleanValue(value),
+          help: state.lang === 'zh' ? '关闭后会保留配置，但运行态不会启用该渠道。' : 'Keep config but disable this channel at runtime.',
+          fullWidth: true,
+        });
+      }
+      if (['requireMention', 'streaming'].includes(fieldName)) {
+        return renderFormField({
+          name: fieldName,
+          label,
+          type: 'checkbox',
+          checked: parseBooleanValue(value),
+          help: state.lang === 'zh' ? '勾选即启用。' : 'Checked means enabled.',
+        });
+      }
+      if (CHANNEL_SELECT_OPTIONS[fieldName]) {
+        return renderFormField({
+          name: fieldName,
+          label,
+          type: 'select',
+          value: value || CHANNEL_SELECT_OPTIONS[fieldName][0],
+          options: CHANNEL_SELECT_OPTIONS[fieldName],
+        });
+      }
+      const isNumber = /port/i.test(fieldName);
+      const inputType = kind === 'env' || isSensitiveField(fieldName)
+        ? 'password'
+        : isNumber
+          ? 'number'
+          : 'text';
+      return renderFormField({
+        name: kind === 'env' ? `env:${fieldName}` : fieldName,
+        label,
+        type: inputType,
+        value,
+        placeholder: kind === 'env'
+          ? (state.lang === 'zh' ? '留空将清除该环境变量' : 'Leave blank to clear this env var')
+          : '',
+        help: kind === 'env'
+          ? (state.lang === 'zh' ? '优先写入 .env / 环境变量。' : 'Stored via env file / environment variable.')
+          : '',
+      });
+    }
+
+    const editorFields = [
+      renderChannelField('enabled', selected.enabled),
+      ...selectedDef.fields.map((fieldName) => renderChannelField(fieldName, selected.config?.[fieldName])),
+      ...selectedDef.envFields.map((fieldName) => renderChannelField(fieldName, selected.config?.[`env:${fieldName}`], 'env')),
+    ].join('');
 
     const body = `
       <div class="grid">
-        ${metricCard(state.lang === 'zh' ? '主模型' : 'Primary Model', config.primaryModel || '-', `${config.providers?.length || 0} providers`)}
-        ${metricCard(state.lang === 'zh' ? 'Fallback 数量' : 'Fallback Count', formatNumber((config.fallbackModels || []).length), (config.fallbackModels || []).join(', ') || '-')}
-        ${metricCard(state.lang === 'zh' ? '可用模型' : 'Available Models', formatNumber((config.availableModels || []).length), '-')}
+        ${metricCard(state.lang === 'zh' ? '渠道总数' : 'Channels', formatNumber(defs.length), state.lang === 'zh' ? '当前可管理的消息入口' : 'configured channel surfaces')}
+        ${metricCard(state.lang === 'zh' ? '已启用' : 'Enabled', formatNumber((channels || []).filter((item) => item.enabled).length), state.lang === 'zh' ? '运行态会接收消息' : 'receives traffic now')}
+        ${metricCard(state.lang === 'zh' ? '已配置' : 'Configured', formatNumber((channels || []).filter((item) => item.configured).length), state.lang === 'zh' ? '已填入配置或 env' : 'config or env present')}
+        ${metricCard(state.lang === 'zh' ? '当前选中' : 'Selected', selected.name || selected.id, selected.enabled ? (state.lang === 'zh' ? '已启用' : 'enabled') : (state.lang === 'zh' ? '停用中' : 'disabled'), selected.enabled ? 'success' : 'warn')}
       </div>
-      <div class="grid">
+      <div class="two-col">
         <div class="card">
-          <h3>${state.lang === 'zh' ? '主模型与 Fallback' : 'Primary & Fallbacks'}</h3>
-          <div class="field"><label>${state.lang === 'zh' ? '主模型 ID' : 'Primary model ID'}</label><input id="ai-primary-input" value="${escapeHtml(config.primaryModel || '')}" placeholder="openai-codex/gpt-5.3-codex"></div>
-          <div class="field"><label>Fallbacks</label><textarea id="ai-fallback-input">${escapeHtml((config.fallbackModels || []).join('\n'))}</textarea></div>
-          <div class="toolbar tight">
-            <button class="action-btn primary" type="button" data-ai-action="save-primary">${escapeHtml(t('save'))} Primary</button>
-            <button class="action-btn" type="button" data-ai-action="save-fallbacks">${escapeHtml(t('save'))} Fallbacks</button>
+          <h3>${state.lang === 'zh' ? '渠道目录' : 'Channel Catalog'}</h3>
+          <div class="split-list">
+            ${defs.map((def) => {
+              const info = channelMap[def.id] || { enabled: false, configured: false };
+              return `
+                <button type="button" class="${state.channelSelectedId === def.id ? 'active' : ''}" data-channel-select="${escapeHtml(def.id)}">
+                  <strong>${escapeHtml(`${def.icon || ''} ${def.name || def.id}`.trim())}</strong>
+                  <div class="row" style="margin-top:8px;">
+                    <span class="pill ${info.enabled ? 'success' : 'warn'}">${escapeHtml(info.enabled ? (state.lang === 'zh' ? '已启用' : 'Enabled') : (state.lang === 'zh' ? '停用' : 'Disabled'))}</span>
+                    <span class="pill ${info.configured ? 'success' : 'warn'}">${escapeHtml(info.configured ? (state.lang === 'zh' ? '已配置' : 'Configured') : (state.lang === 'zh' ? '未配置' : 'Empty'))}</span>
+                  </div>
+                </button>
+              `;
+            }).join('') || emptyState(state.lang === 'zh' ? '暂无渠道定义。' : 'No channel definitions.')}
           </div>
         </div>
-        <div class="card">
-          <h3>${state.lang === 'zh' ? 'Provider 摘要' : 'Provider Summary'}</h3>
-          <div class="list">${(config.providers || []).map((provider) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(provider.name)}</strong><span class="pill ${provider.hasApiKey ? 'success' : 'warn'}">${provider.hasApiKey ? 'apiKey' : 'no key'}</span></div><div class="muted">${escapeHtml(provider.baseUrl || '-')}</div><div class="tag-list">${provider.models.map((model) => `<span class="chip ${model.isPrimary || model.isFallback ? 'active' : ''}">${escapeHtml(model.fullId)}</span>`).join('')}</div></div>`).join('') || emptyState(state.lang === 'zh' ? '暂无 Provider。' : 'No providers yet.')}</div>
-          <pre>${prettyJson(providers.presets || [])}</pre>
+        <div class="stack">
+          <div class="card">
+            <div class="row" style="justify-content:space-between; align-items:flex-start;">
+              <div>
+                <h3>${escapeHtml(selected.name || selected.id)}</h3>
+                <p>${escapeHtml(selected.id)}</p>
+              </div>
+              <div class="tag-list">
+                <span class="pill ${selected.enabled ? 'success' : 'warn'}">${escapeHtml(selected.enabled ? (state.lang === 'zh' ? '运行中' : 'enabled') : (state.lang === 'zh' ? '已停用' : 'disabled'))}</span>
+                <span class="pill ${selected.configured ? 'success' : 'warn'}">${escapeHtml(selected.configured ? (state.lang === 'zh' ? '配置已落地' : 'configured') : (state.lang === 'zh' ? '尚未配置' : 'empty'))}</span>
+              </div>
+            </div>
+            <div class="status ${selected.enabled ? '' : 'warn'}" style="margin-bottom:14px;">
+              ${escapeHtml(selected.enabled
+                ? (state.lang === 'zh' ? '保存后会直接更新当前渠道配置。' : 'Saving here updates the live channel config directly.')
+                : (state.lang === 'zh' ? '当前处于停用状态，可以先补齐配置，再启用。' : 'This channel is disabled. Fill the form first, then enable it.'))}
+            </div>
+            <div class="form-grid" id="channel-config-form">
+              ${editorFields || emptyState(state.lang === 'zh' ? '该渠道暂无可编辑字段。' : 'No editable fields for this channel.')}
+            </div>
+            <div class="toolbar tight" style="margin-top:14px;">
+              <button class="action-btn primary" type="button" data-channel-action="save">${escapeHtml(t('save'))}</button>
+              <button class="action-btn" type="button" data-channel-action="reload">${escapeHtml(t('reload'))}</button>
+              <button class="action-btn danger" type="button" data-channel-action="clear">${state.lang === 'zh' ? '清空配置' : 'Clear Config'}</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>${state.lang === 'zh' ? '配置摘要' : 'Config Summary'}</h3>
+            <div class="grid">
+              ${metricCard(state.lang === 'zh' ? '普通字段' : 'Config Fields', formatNumber(configKeys.length), configKeys.join(', ') || '-')}
+              ${metricCard(state.lang === 'zh' ? 'Env 字段' : 'Env Fields', formatNumber(envKeys.length), envKeys.join(', ') || '-')}
+            </div>
+            <pre style="margin-top:14px;">${prettyJson(selected.config || {})}</pre>
+          </div>
         </div>
       </div>
     `;
 
-    setPanel(t('tabs.ai'), t('desc.ai'), body);
-    document.querySelector('[data-ai-action="save-primary"]')?.addEventListener('click', async () => {
+    setPanel(t('tabs.channels'), t('desc.channels'), body);
+
+    document.querySelectorAll('[data-channel-select]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.channelSelectedId = button.getAttribute('data-channel-select') || selected.id;
+        loadChannels();
+      });
+    });
+
+    document.querySelector('[data-channel-action="reload"]')?.addEventListener('click', () => loadChannels());
+    document.querySelector('[data-channel-action="save"]')?.addEventListener('click', async () => {
+      const payload = {};
+      document.querySelectorAll('#channel-config-form [name]').forEach((element) => {
+        if (element.type === 'checkbox') {
+          payload[element.name] = element.checked;
+          return;
+        }
+        if (element.type === 'number') {
+          payload[element.name] = element.value.trim() ? Number(element.value) : '';
+          return;
+        }
+        payload[element.name] = element.value.trim();
+      });
+
       try {
-        const result = await postJson('/api/ai/primary', { modelId: document.getElementById('ai-primary-input').value.trim() });
+        const result = await postJson(`/api/channels/${encodeURIComponent(selected.id)}`, payload);
+        showToast(result.message || 'OK');
+        loadChannels();
+      } catch (error) {
+        showToast(error.message || String(error), 'error');
+      }
+    });
+    document.querySelector('[data-channel-action="clear"]')?.addEventListener('click', async () => {
+      if (!confirm(state.lang === 'zh' ? `确认清空 ${selected.name || selected.id} 的配置？` : `Clear ${selected.name || selected.id} configuration?`)) return;
+      try {
+        const result = await apiRequest(`/api/channels/${encodeURIComponent(selected.id)}`, { method: 'DELETE' });
+        showToast(result.message || 'OK');
+        loadChannels();
+      } catch (error) {
+        showToast(error.message || String(error), 'error');
+      }
+    });
+  }
+
+  async function loadAI() {
+    const [config, providerResponse] = await Promise.all([
+      apiRequest('/api/ai/config'),
+      apiRequest('/api/ai/providers'),
+    ]);
+
+    const configuredProviders = Array.isArray(config.providers) ? config.providers : [];
+    const configuredProviderMap = Object.fromEntries(configuredProviders.map((provider) => [provider.name, provider]));
+    const customProviders = Array.isArray(providerResponse.custom) ? providerResponse.custom : [];
+    const customProviderMap = Object.fromEntries(customProviders.map((provider) => [provider.name, provider]));
+    const presetProviders = Array.isArray(providerResponse.presets) ? providerResponse.presets : [];
+    const presetProviderMap = Object.fromEntries(presetProviders.map((provider) => [provider.id, provider]));
+
+    const pickerOptions = [
+      { value: '__new__', label: state.lang === 'zh' ? '新建空白 Provider' : 'Create Blank Provider', kind: 'new' },
+      ...configuredProviders.map((provider) => ({
+        value: provider.name,
+        label: `${provider.name} · ${state.lang === 'zh' ? '已配置' : 'configured'}`,
+        kind: 'custom',
+      })),
+      ...presetProviders
+        .filter((preset) => !configuredProviderMap[preset.id])
+        .map((preset) => ({
+          value: preset.id,
+          label: `${preset.id} · ${state.lang === 'zh' ? '预设' : 'preset'}`,
+          kind: 'preset',
+        })),
+    ];
+
+    if (!pickerOptions.some((option) => option.value === state.aiSelectedProvider)) {
+      state.aiSelectedProvider = pickerOptions[1]?.value || '__new__';
+    }
+
+    function formatProviderModels(models, defaultApiType) {
+      return (models || []).map((model) => [
+        model.id || '',
+        model.name || model.id || '',
+        model.contextWindow || '',
+        model.maxTokens || '',
+        model.api || defaultApiType || '',
+      ].join('|')).join('\n');
+    }
+
+    function parseProviderModels(textValue, defaultApiType) {
+      return String(textValue || '')
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const [id, name, contextWindow, maxTokens, api] = line.split('|').map((part) => part.trim());
+          return {
+            id,
+            name: name || id,
+            contextWindow: parseOptionalNumber(contextWindow),
+            maxTokens: parseOptionalNumber(maxTokens),
+            api: api || defaultApiType || undefined,
+          };
+        })
+        .filter((model) => model.id);
+    }
+
+    function buildProviderDraft(selectionKey) {
+      if (!selectionKey || selectionKey === '__new__') {
+        return {
+          kind: 'new',
+          title: state.lang === 'zh' ? '新建 Provider' : 'Create Provider',
+          canDelete: false,
+          name: '',
+          baseUrl: '',
+          apiType: 'openai-completions',
+          apiKey: '',
+          apiKeyHelp: state.lang === 'zh' ? '保存后写入 openclaw.json。' : 'Saved to openclaw.json.',
+          modelsText: '',
+        };
+      }
+      if (customProviderMap[selectionKey]) {
+        const raw = customProviderMap[selectionKey];
+        const overview = configuredProviderMap[selectionKey] || {};
+        return {
+          kind: 'custom',
+          title: state.lang === 'zh' ? '编辑已配置 Provider' : 'Edit Configured Provider',
+          canDelete: true,
+          name: selectionKey,
+          baseUrl: raw.baseUrl || '',
+          apiType: raw.apiType || raw.api || raw.models?.[0]?.api || 'openai-completions',
+          apiKey: '',
+          apiKeyHelp: overview.apiKeyMasked
+            ? (state.lang === 'zh' ? `留空会保留现有密钥：${overview.apiKeyMasked}` : `Leave blank to keep existing key: ${overview.apiKeyMasked}`)
+            : (state.lang === 'zh' ? '填写后会覆盖当前密钥。' : 'Filled value will replace the current key.'),
+          modelsText: formatProviderModels(raw.models || [], raw.apiType || raw.api),
+        };
+      }
+      const preset = presetProviderMap[selectionKey];
+      if (preset) {
+        return {
+          kind: 'preset',
+          title: state.lang === 'zh' ? '从预设带入 Provider' : 'Bootstrap Provider From Preset',
+          canDelete: false,
+          name: preset.id,
+          baseUrl: preset.defaultBaseUrl || '',
+          apiType: preset.apiType || 'openai-completions',
+          apiKey: '',
+          apiKeyHelp: preset.requiresApiKey
+            ? (state.lang === 'zh' ? '保存前请填写 API Key。' : 'Fill in the API key before saving.')
+            : (state.lang === 'zh' ? '该 Provider 通常不需要 API Key。' : 'This provider usually does not require an API key.'),
+          modelsText: formatProviderModels(
+            (preset.suggestedModels || []).map((model) => ({ id: model.id, name: model.name, api: preset.apiType })),
+            preset.apiType,
+          ),
+        };
+      }
+      return {
+        kind: 'new',
+        title: state.lang === 'zh' ? '新建 Provider' : 'Create Provider',
+        canDelete: false,
+        name: '',
+        baseUrl: '',
+        apiType: 'openai-completions',
+        apiKey: '',
+        apiKeyHelp: state.lang === 'zh' ? '保存后写入 openclaw.json。' : 'Saved to openclaw.json.',
+        modelsText: '',
+      };
+    }
+
+    const providerDraft = buildProviderDraft(state.aiSelectedProvider);
+    const providerSummaryHtml = configuredProviders.length
+      ? configuredProviders.map((provider) => {
+          const keyBadge = provider.hasApiKey
+            ? `<span class="pill success">${escapeHtml(state.lang === 'zh' ? '已配置密钥' : 'key ready')}</span>`
+            : `<span class="pill warn">${escapeHtml(state.lang === 'zh' ? '缺少密钥' : 'missing key')}</span>`;
+          const apiBadge = provider.apiType ? `<span class="chip">${escapeHtml(provider.apiType)}</span>` : '';
+          return `
+            <div class="list-item">
+              <div class="row" style="justify-content:space-between; align-items:flex-start;">
+                <div>
+                  <strong>${escapeHtml(provider.name)}</strong>
+                  <div class="muted small">${escapeHtml(provider.baseUrl || '-')}</div>
+                </div>
+                <div class="tag-list">${keyBadge}${apiBadge}</div>
+              </div>
+              <div class="toolbar tight" style="margin-top:12px;">
+                <button class="action-btn" type="button" data-ai-select-provider="${escapeHtml(provider.name)}">${state.lang === 'zh' ? '编辑这个 Provider' : 'Edit Provider'}</button>
+              </div>
+            </div>
+          `;
+        }).join('')
+      : emptyState(state.lang === 'zh' ? '还没有 Provider，先从右侧创建一个。' : 'No provider yet. Create one from the editor.');
+
+    const pickerOptionsHtml = pickerOptions.map((option) => `
+      <button type="button" class="${state.aiSelectedProvider === option.value ? 'active' : ''}" data-ai-picker-select="${escapeHtml(option.value)}">
+        <strong>${escapeHtml(option.label)}</strong>
+        <div class="muted small">${escapeHtml(option.kind === 'custom'
+          ? (state.lang === 'zh' ? '已写入配置' : 'already configured')
+          : option.kind === 'preset'
+            ? (state.lang === 'zh' ? '官方预设' : 'preset template')
+            : (state.lang === 'zh' ? '空白模板' : 'blank template'))}</div>
+      </button>
+    `).join('');
+
+    const quickActionsHtml = configuredProviders.length
+      ? configuredProviders.map((provider) => {
+          const modelsHtml = (provider.models || []).map((model) => {
+            const badges = [
+              model.isPrimary ? `<span class="pill success">${escapeHtml(state.lang === 'zh' ? '主模型' : 'primary')}</span>` : '',
+              model.isFallback ? `<span class="pill warn">fallback</span>` : '',
+              model.contextWindow ? `<span class="chip">ctx ${escapeHtml(formatNumber(model.contextWindow))}</span>` : '',
+              model.maxTokens ? `<span class="chip">max ${escapeHtml(formatNumber(model.maxTokens))}</span>` : '',
+            ].join('');
+            const fallbackButton = model.isFallback
+              ? `<button class="action-btn danger" type="button" data-ai-model-action="remove-fallback" data-model-id="${escapeHtml(model.fullId)}">${state.lang === 'zh' ? '移出 Fallback' : 'Remove Fallback'}</button>`
+              : `<button class="action-btn" type="button" data-ai-model-action="add-fallback" data-model-id="${escapeHtml(model.fullId)}">${state.lang === 'zh' ? '加入 Fallback' : 'Add Fallback'}</button>`;
+            return `
+              <div class="sub-card">
+                <div class="row" style="justify-content:space-between; align-items:flex-start;">
+                  <div>
+                    <strong>${escapeHtml(model.name || model.id)}</strong>
+                    <div class="muted small">${escapeHtml(model.fullId)}</div>
+                  </div>
+                  <div class="tag-list">${badges}</div>
+                </div>
+                <div class="toolbar tight" style="margin-top:12px;">
+                  <button class="action-btn" type="button" data-ai-model-action="primary" data-model-id="${escapeHtml(model.fullId)}">${state.lang === 'zh' ? '设为主模型' : 'Set Primary'}</button>
+                  ${fallbackButton}
+                </div>
+              </div>
+            `;
+          }).join('');
+          return `
+            <div class="list-item">
+              <div class="row" style="justify-content:space-between; align-items:flex-start;">
+                <div>
+                  <strong>${escapeHtml(provider.name)}</strong>
+                  <div class="muted small">${escapeHtml(provider.baseUrl || '-')}</div>
+                </div>
+                <button class="action-btn" type="button" data-ai-select-provider="${escapeHtml(provider.name)}">${state.lang === 'zh' ? '编辑 Provider' : 'Edit Provider'}</button>
+              </div>
+              <div class="stack" style="margin-top:12px;">${modelsHtml}</div>
+            </div>
+          `;
+        }).join('')
+      : emptyState(state.lang === 'zh' ? '先创建 Provider，模型快捷操作才会出现。' : 'Create a provider first to unlock model quick actions.');
+
+    const body = `
+      <div class="grid">
+        ${metricCard(state.lang === 'zh' ? '主模型' : 'Primary Model', config.primaryModel || '-', `${configuredProviders.length} ${state.lang === 'zh' ? '个 Provider' : 'providers'}`)}
+        ${metricCard(state.lang === 'zh' ? 'Fallback 数量' : 'Fallback Count', formatNumber((config.fallbackModels || []).length), (config.fallbackModels || []).join(', ') || '-')}
+        ${metricCard(state.lang === 'zh' ? '可选模型' : 'Available Models', formatNumber((config.availableModels || []).length), state.lang === 'zh' ? '允许直接用于主模型 / 回退链' : 'usable in primary / fallback routing')}
+        ${metricCard(state.lang === 'zh' ? '已配置 Provider' : 'Configured Providers', formatNumber(configuredProviders.length), configuredProviders.map((item) => item.name).join(', ') || '-')}
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h3>${state.lang === 'zh' ? '主模型与回退链' : 'Primary Model & Fallback Chain'}</h3>
+          ${renderFormField({
+            name: 'primaryModel',
+            label: state.lang === 'zh' ? '主模型 ID' : 'Primary Model ID',
+            value: config.primaryModel || '',
+            placeholder: 'openai-codex/gpt-5.3-codex',
+            help: state.lang === 'zh' ? '可直接填完整 model id，也可通过下方快捷按钮写入。' : 'Use a full model id or fill it from the quick actions below.',
+          })}
+          ${renderFormField({
+            name: 'fallbackModels',
+            label: 'Fallbacks',
+            type: 'textarea',
+            value: (config.fallbackModels || []).join('\n'),
+            placeholder: 'provider/model-a\nprovider/model-b',
+            help: state.lang === 'zh' ? '一行一个模型，顺序即回退顺序。' : 'One model per line, in failover order.',
+            fullWidth: true,
+          })}
+          <div class="toolbar tight" style="margin-top:14px;">
+            <button class="action-btn primary" type="button" data-ai-action="save-routing">${state.lang === 'zh' ? '保存主模型与回退链' : 'Save Routing'}</button>
+            <button class="action-btn" type="button" data-ai-action="clear-fallbacks">${state.lang === 'zh' ? '清空 Fallbacks' : 'Clear Fallbacks'}</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>${state.lang === 'zh' ? 'Provider 速览' : 'Provider Snapshot'}</h3>
+          <div class="list">${providerSummaryHtml}</div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <h3>${state.lang === 'zh' ? 'Provider 目录' : 'Provider Catalog'}</h3>
+          <div class="split-list">${pickerOptionsHtml}</div>
+        </div>
+        <div class="card">
+          <div class="row" style="justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+            <div>
+              <h3>${escapeHtml(providerDraft.title)}</h3>
+              <p>${escapeHtml(providerDraft.kind === 'preset'
+                ? (state.lang === 'zh' ? '先带入推荐参数，再补充 API Key 和模型细节。' : 'Start from preset defaults, then refine API key and models.')
+                : providerDraft.kind === 'custom'
+                  ? (state.lang === 'zh' ? '保存时会覆盖这个 Provider 的当前配置。' : 'Saving here replaces the current provider config.')
+                  : (state.lang === 'zh' ? '用于新增一个可直接接入 OpenClaw 的 Provider。' : 'Create a new provider that OpenClaw can use immediately.'))}</p>
+            </div>
+            <div class="tag-list">
+              <span class="pill ${providerDraft.kind === 'custom' ? 'success' : providerDraft.kind === 'preset' ? 'warn' : ''}">${escapeHtml(providerDraft.kind)}</span>
+            </div>
+          </div>
+          <div class="toolbar tight" style="margin-bottom:12px;">
+            <select id="ai-provider-picker">
+              ${pickerOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === state.aiSelectedProvider ? 'selected' : ''}>${escapeHtml(option.label)}</option>`).join('')}
+            </select>
+            <button class="action-btn" type="button" data-ai-action="load-selected-provider">${state.lang === 'zh' ? '载入到编辑器' : 'Load Into Editor'}</button>
+            <button class="action-btn" type="button" data-ai-action="new-provider">${state.lang === 'zh' ? '新建空白' : 'Blank Provider'}</button>
+          </div>
+          <div class="form-grid" id="ai-provider-form">
+            ${renderFormField({ name: 'name', label: state.lang === 'zh' ? 'Provider 名称' : 'Provider Name', value: providerDraft.name, placeholder: 'openai-codex / qwen / wenwen' })}
+            ${renderFormField({ name: 'baseUrl', label: 'Base URL', value: providerDraft.baseUrl, placeholder: 'https://api.example.com/v1' })}
+            ${renderFormField({ name: 'apiType', label: 'API Type', type: 'select', value: providerDraft.apiType, options: AI_API_TYPE_OPTIONS })}
+            ${renderFormField({ name: 'apiKey', label: 'API Key', type: 'password', value: providerDraft.apiKey, placeholder: providerDraft.kind === 'custom' ? (state.lang === 'zh' ? '留空保留现有值' : 'Leave blank to keep existing key') : 'sk-xxx', help: providerDraft.apiKeyHelp, fullWidth: true })}
+          </div>
+          ${renderFormField({
+            name: 'modelsText',
+            label: state.lang === 'zh' ? '模型清单' : 'Model Rows',
+            type: 'textarea',
+            value: providerDraft.modelsText,
+            placeholder: 'gpt-5.3-codex|GPT-5.3 Codex|128000|8192|openai-completions',
+            help: state.lang === 'zh' ? '一行一个模型，格式：id|展示名|contextWindow|maxTokens|api。后两列可留空。' : 'One model per line: id|display name|contextWindow|maxTokens|api. The last two columns are optional.',
+            fullWidth: true,
+          })}
+          <div class="toolbar tight" style="margin-top:14px;">
+            <button class="action-btn primary" type="button" data-ai-action="save-provider">${state.lang === 'zh' ? '保存 Provider' : 'Save Provider'}</button>
+            <button class="action-btn danger" type="button" data-ai-action="delete-provider" ${providerDraft.canDelete ? '' : 'disabled'}>${state.lang === 'zh' ? '删除 Provider' : 'Delete Provider'}</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>${state.lang === 'zh' ? '模型快捷操作' : 'Model Quick Actions'}</h3>
+        <div class="list">${quickActionsHtml}</div>
+      </div>
+    `;
+
+    setPanel(t('tabs.ai'), t('desc.ai'), body);
+
+    document.querySelectorAll('[data-ai-picker-select], [data-ai-select-provider]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.aiSelectedProvider = button.getAttribute('data-ai-picker-select') || button.getAttribute('data-ai-select-provider') || '__new__';
+        loadAI();
+      });
+    });
+
+    document.querySelector('[data-ai-action="load-selected-provider"]')?.addEventListener('click', () => {
+      state.aiSelectedProvider = document.getElementById('ai-provider-picker')?.value || '__new__';
+      loadAI();
+    });
+
+    document.querySelector('[data-ai-action="new-provider"]')?.addEventListener('click', () => {
+      state.aiSelectedProvider = '__new__';
+      loadAI();
+    });
+
+    document.querySelector('[data-ai-action="save-routing"]')?.addEventListener('click', async () => {
+      const primaryInput = document.querySelector('[name="primaryModel"]');
+      const fallbackInput = document.querySelector('[name="fallbackModels"]');
+      const primaryModel = primaryInput ? primaryInput.value.trim() : '';
+      const fallbackModels = fallbackInput
+        ? fallbackInput.value.split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean)
+        : [];
+      try {
+        const primaryResult = await postJson('/api/ai/primary', { modelId: primaryModel });
+        const fallbackResult = await postJson('/api/ai/fallbacks', { modelIds: fallbackModels });
+        showToast(fallbackResult.message || primaryResult.message || 'OK');
+        loadAI();
+      } catch (error) {
+        showToast(error.message || String(error), 'error');
+      }
+    });
+
+    document.querySelector('[data-ai-action="clear-fallbacks"]')?.addEventListener('click', async () => {
+      try {
+        const result = await postJson('/api/ai/fallbacks', { modelIds: [] });
         showToast(result.message || 'OK');
         loadAI();
       } catch (error) {
         showToast(error.message || String(error), 'error');
       }
     });
-    document.querySelector('[data-ai-action="save-fallbacks"]')?.addEventListener('click', async () => {
-      const modelIds = document.getElementById('ai-fallback-input').value.split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean);
+
+    document.querySelector('[data-ai-action="save-provider"]')?.addEventListener('click', async () => {
+      const form = document.getElementById('ai-provider-form');
+      const payload = {};
+      form?.querySelectorAll('[name]').forEach((element) => {
+        payload[element.name] = element.value.trim();
+      });
+      payload.models = parseProviderModels(document.querySelector('[name="modelsText"]')?.value || '', payload.apiType);
+
+      if (!payload.name) {
+        showToast(state.lang === 'zh' ? '请先填写 Provider 名称。' : 'Provider name is required.', 'error');
+        return;
+      }
+      if (!payload.baseUrl) {
+        showToast(state.lang === 'zh' ? '请先填写 Base URL。' : 'Base URL is required.', 'error');
+        return;
+      }
+      if (!payload.models.length) {
+        showToast(state.lang === 'zh' ? '请至少填写一个模型。' : 'At least one model is required.', 'error');
+        return;
+      }
+
       try {
-        const result = await postJson('/api/ai/fallbacks', { modelIds });
+        const result = await postJson('/api/ai/provider', payload);
+        state.aiSelectedProvider = payload.name;
         showToast(result.message || 'OK');
         loadAI();
       } catch (error) {
         showToast(error.message || String(error), 'error');
       }
+    });
+
+    document.querySelector('[data-ai-action="delete-provider"]')?.addEventListener('click', async () => {
+      if (!providerDraft.canDelete) return;
+      if (!confirm(state.lang === 'zh' ? `确认删除 Provider ${providerDraft.name}？` : `Delete provider ${providerDraft.name}?`)) return;
+      try {
+        const result = await apiRequest(`/api/ai/provider/${encodeURIComponent(providerDraft.name)}`, { method: 'DELETE' });
+        state.aiSelectedProvider = '__new__';
+        showToast(result.message || 'OK');
+        loadAI();
+      } catch (error) {
+        showToast(error.message || String(error), 'error');
+      }
+    });
+
+    document.querySelectorAll('[data-ai-model-action]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const action = button.getAttribute('data-ai-model-action');
+        const modelId = button.getAttribute('data-model-id') || '';
+        try {
+          if (action === 'primary') {
+            const result = await postJson('/api/ai/primary', { modelId });
+            showToast(result.message || 'OK');
+            loadAI();
+            return;
+          }
+          const nextFallbacks = new Set(config.fallbackModels || []);
+          if (action === 'add-fallback') nextFallbacks.add(modelId);
+          if (action === 'remove-fallback') nextFallbacks.delete(modelId);
+          const result = await postJson('/api/ai/fallbacks', { modelIds: Array.from(nextFallbacks) });
+          showToast(result.message || 'OK');
+          loadAI();
+        } catch (error) {
+          showToast(error.message || String(error), 'error');
+        }
+      });
     });
   }
 
@@ -1047,67 +1760,184 @@
     });
   }
 
-  async function loadGitSync() {
+﻿  async function loadGitSync() {
+    clearGitSyncPollTimer();
     const status = await apiRequest('/api/git-sync/status');
+    const oauth = status.oauth || {};
+
+    if (!state.gitSyncDraftMessage) {
+      state.gitSyncDraftMessage = '';
+    }
+
+    const stages = [
+      {
+        label: state.lang === 'zh' ? '仓库初始化' : 'Repository',
+        ok: !!status.repoInitialized,
+        detail: status.repoInitialized ? (status.repoPath || '-') : (state.lang === 'zh' ? '尚未 git init' : 'git init required'),
+      },
+      {
+        label: state.lang === 'zh' ? '远程绑定' : 'Remote',
+        ok: !!status.remoteUrl,
+        detail: status.remoteUrl || (state.lang === 'zh' ? '未绑定远程仓库' : 'No remote connected'),
+      },
+      {
+        label: state.lang === 'zh' ? '认证配置' : 'Authentication',
+        ok: !!status.authConfigured,
+        detail: status.authConfigured ? (status.authMode || 'token') : (state.lang === 'zh' ? '尚未配置 Token / OAuth' : 'Token or OAuth required'),
+      },
+      {
+        label: state.lang === 'zh' ? '私有仓校验' : 'Private Check',
+        ok: status.repoPrivate === true,
+        detail: status.repoPrivate === true
+          ? (state.lang === 'zh' ? '已确认 private' : 'private confirmed')
+          : status.repoPrivate === false
+            ? (state.lang === 'zh' ? '检测到 public 仓库' : 'public repo detected')
+            : (state.lang === 'zh' ? '尚未检查' : 'not checked yet'),
+      },
+      {
+        label: state.lang === 'zh' ? '同步就绪' : 'Ready To Sync',
+        ok: !!status.canSync,
+        detail: status.canSync
+          ? (state.lang === 'zh' ? '可以直接提交并推送' : 'ready for commit and push')
+          : (state.lang === 'zh' ? '仍有阻断项' : 'blocked by pending issues'),
+      },
+    ];
+
+    const oauthStatusClass = oauth.phase === 'error'
+      ? 'error'
+      : oauth.phase === 'success'
+        ? ''
+        : oauth.phase === 'authorizing'
+          ? 'warn'
+          : '';
+    const oauthStatusMessage = oauth.phase === 'authorizing'
+      ? (state.lang === 'zh' ? '授权进行中，请在浏览器完成登录，然后此页面会自动刷新状态。' : 'Authorization in progress. Finish the browser login and this page will refresh automatically.')
+      : oauth.phase === 'success'
+        ? (oauth.message || (state.lang === 'zh' ? 'OAuth 已完成。' : 'OAuth completed.'))
+        : oauth.phase === 'error'
+          ? (oauth.error || oauth.message || (state.lang === 'zh' ? 'OAuth 失败。' : 'OAuth failed.'))
+          : (state.lang === 'zh' ? '如需浏览器授权，可在这里配置 Client ID / Secret。' : 'Configure Client ID / Secret here if you prefer browser OAuth.');
+    const blockingReasonsHtml = status.reasons?.length
+      ? status.reasons.map((reason) => `<div class="list-item"><div>${escapeHtml(reason)}</div></div>`).join('')
+      : `<div class="status">${escapeHtml(state.lang === 'zh' ? '当前没有阻断项，可以继续执行同步。' : 'No blockers detected. You can continue with sync.')}</div>`;
+    const stageHtml = stages.map((stage) => `
+      <div class="list-item">
+        <div class="row" style="justify-content:space-between; align-items:flex-start;">
+          <strong>${escapeHtml(stage.label)}</strong>
+          <span class="pill ${stage.ok ? 'success' : 'warn'}">${escapeHtml(stage.ok ? (state.lang === 'zh' ? '已完成' : 'ready') : (state.lang === 'zh' ? '待处理' : 'pending'))}</span>
+        </div>
+        <div class="muted small">${escapeHtml(stage.detail)}</div>
+      </div>
+    `).join('');
+    const changedFilesHtml = (status.changedFiles || []).length
+      ? status.changedFiles.map((file) => `
+          <div class="list-item">
+            <div class="row" style="justify-content:space-between;">
+              <strong>${escapeHtml(file)}</strong>
+              <span class="muted small">${escapeHtml(status.currentBranch || '-')}</span>
+            </div>
+          </div>
+        `).join('')
+      : emptyState(state.lang === 'zh' ? '当前没有待同步变更。' : 'No local changes to sync.');
+
     const body = `
       <div class="grid">
-        ${metricCard(state.lang === 'zh' ? '仓库状态' : 'Repo', status.repoInitialized ? 'READY' : 'MISSING', status.repoPath || '-')}
-        ${metricCard(state.lang === 'zh' ? '远程仓库' : 'Remote', status.remoteUrl || '-', status.provider || '-')}
-        ${metricCard(state.lang === 'zh' ? '认证' : 'Auth', status.authConfigured ? (status.authMode || 'configured') : 'missing', status.repoPrivate === true ? 'private' : (status.repoPrivate === false ? 'public' : 'unchecked'), status.repoPrivate === true ? 'success' : 'warn')}
-        ${metricCard(state.lang === 'zh' ? '本地变更' : 'Changes', formatNumber((status.changedFiles || []).length), status.currentBranch || '-')}
+        ${metricCard(state.lang === 'zh' ? '仓库状态' : 'Repository', status.repoInitialized ? 'READY' : 'MISSING', status.repoPath || '-', status.repoInitialized ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '远程仓库' : 'Remote', status.remoteUrl || '-', status.provider || '-', status.remoteUrl ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '认证' : 'Auth', status.authConfigured ? (status.authMode || 'configured') : 'missing', status.authConfigured ? (state.lang === 'zh' ? '认证已配置' : 'credentials ready') : (state.lang === 'zh' ? '尚未配置' : 'not configured'), status.authConfigured ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '本地变更' : 'Changes', formatNumber((status.changedFiles || []).length), status.currentBranch || '-', (status.changedFiles || []).length > 0 ? 'warn' : 'success')}
       </div>
-      ${status.reasons?.length ? `<div class="status warn">${escapeHtml(status.reasons.join('； '))}</div>` : ''}
       <div class="grid">
         <div class="card">
-          <h3>${state.lang === 'zh' ? '初始化与远程绑定' : 'Init & Remote'}</h3>
-          <div class="toolbar"><button class="action-btn" data-git-action="init">git init</button></div>
-          <div class="form-grid" id="git-connect-form" style="margin-top:12px;">
-            <div class="field"><label>provider</label><select name="provider"><option value="github">GitHub</option><option value="gitee">Gitee</option></select></div>
-            <div class="field"><label>remoteName</label><input name="remoteName" value="${escapeHtml(status.remoteName || 'origin')}"></div>
-            <div class="field" style="grid-column:1 / -1;"><label>remoteUrl</label><input name="remoteUrl" value="${escapeHtml(status.remoteUrl || '')}" placeholder="https://github.com/owner/repo.git"></div>
-          </div>
-          <div class="toolbar tight" style="margin-top:12px;"><button class="action-btn primary" data-git-action="connect">connect</button><button class="action-btn" data-git-action="check">check-private</button></div>
+          <h3>${state.lang === 'zh' ? '同步准备度' : 'Sync Readiness'}</h3>
+          <div class="list">${stageHtml}</div>
         </div>
         <div class="card">
-          <h3>${state.lang === 'zh' ? 'HTTPS Token' : 'HTTPS Token'}</h3>
-          <div class="form-grid" id="git-token-form">
-            <div class="field"><label>provider</label><select name="provider"><option value="github">GitHub</option><option value="gitee">Gitee</option></select></div>
-            <div class="field"><label>username</label><input name="username" value="${escapeHtml(status.state?.username || '')}"></div>
-            <div class="field" style="grid-column:1 / -1;"><label>token</label><input name="token" value="" placeholder="ghp_xxx / gitee token"></div>
+          <h3>${state.lang === 'zh' ? '当前阻断项' : 'Blocking Reasons'}</h3>
+          ${blockingReasonsHtml}
+          <div class="stack" style="margin-top:14px;">
+            <div class="list-item"><strong>${state.lang === 'zh' ? '最近校验' : 'Last Check'}</strong><div class="muted small">${escapeHtml(formatDate(status.state?.lastCheckedAt))}</div></div>
+            <div class="list-item"><strong>${state.lang === 'zh' ? '最近提交' : 'Last Commit'}</strong><div class="muted small">${escapeHtml(formatDate(status.state?.lastCommitAt))}</div></div>
+            <div class="list-item"><strong>${state.lang === 'zh' ? '最近推送' : 'Last Push'}</strong><div class="muted small">${escapeHtml(formatDate(status.state?.lastSyncAt))}</div></div>
           </div>
-          <div class="toolbar tight" style="margin-top:12px;"><button class="action-btn primary" data-git-action="token">save token</button></div>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h3>${state.lang === 'zh' ? '初始化与远程绑定' : 'Init & Remote Bind'}</h3>
+          <div class="toolbar tight" style="margin-bottom:12px;">
+            <button class="action-btn" type="button" data-git-action="init">git init</button>
+            <button class="action-btn" type="button" data-git-action="check">${state.lang === 'zh' ? '检查 private' : 'Check Private'}</button>
+            <button class="action-btn" type="button" data-git-action="refresh-status">${escapeHtml(t('reload'))}</button>
+          </div>
+          <div class="form-grid" id="git-connect-form">
+            ${renderFormField({ name: 'provider', label: 'Provider', type: 'select', value: status.provider || status.state?.provider || 'github', options: ['github', 'gitee'] })}
+            ${renderFormField({ name: 'remoteName', label: 'Remote Name', value: status.remoteName || 'origin' })}
+            ${renderFormField({ name: 'remoteUrl', label: 'Remote URL', value: status.remoteUrl || '', placeholder: 'https://github.com/owner/private-repo.git', fullWidth: true, help: state.lang === 'zh' ? '只支持 GitHub / Gitee，且后续会强制校验 private。' : 'GitHub / Gitee only. Guard will block public repositories.' })}
+          </div>
+          <div class="toolbar tight" style="margin-top:12px;">
+            <button class="action-btn primary" type="button" data-git-action="connect">${state.lang === 'zh' ? '绑定远程仓库' : 'Connect Remote'}</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>${state.lang === 'zh' ? 'HTTPS Token 认证' : 'HTTPS Token Auth'}</h3>
+          <div class="form-grid" id="git-token-form">
+            ${renderFormField({ name: 'provider', label: 'Provider', type: 'select', value: status.provider || status.state?.provider || 'github', options: ['github', 'gitee'] })}
+            ${renderFormField({ name: 'username', label: state.lang === 'zh' ? '用户名 / 账号' : 'Username', value: status.state?.username || '', placeholder: 'optional-user' })}
+            ${renderFormField({ name: 'token', label: 'Token', type: 'password', value: '', placeholder: 'ghp_xxx / gitee token', fullWidth: true, help: state.lang === 'zh' ? '这里不会回显已保存的 Token；需要更新时请重新粘贴。' : 'Saved token is never echoed here; paste again to update it.' })}
+          </div>
+          <div class="toolbar tight" style="margin-top:12px;">
+            <button class="action-btn primary" type="button" data-git-action="token">${state.lang === 'zh' ? '保存 Token' : 'Save Token'}</button>
+          </div>
         </div>
       </div>
       <div class="grid">
         <div class="card">
           <h3>OAuth</h3>
-          <div class="form-grid" id="git-oauth-form">
-            <div class="field"><label>provider</label><select name="provider"><option value="github">GitHub</option><option value="gitee">Gitee</option></select></div>
-            <div class="field"><label>redirectPort</label><input name="redirectPort" value="43189"></div>
-            <div class="field"><label>scope</label><input name="scope" value="repo read:user"></div>
-            <div class="field"><label>clientId</label><input name="clientId" value=""></div>
-            <div class="field" style="grid-column:1 / -1;"><label>clientSecret</label><input name="clientSecret" value=""></div>
+          <div class="status ${oauthStatusClass}">${escapeHtml(oauthStatusMessage)}</div>
+          <div class="form-grid" id="git-oauth-form" style="margin-top:14px;">
+            ${renderFormField({ name: 'provider', label: 'Provider', type: 'select', value: oauth.provider || status.provider || status.state?.provider || 'github', options: ['github', 'gitee'] })}
+            ${renderFormField({ name: 'redirectPort', label: 'Redirect Port', value: '43189', type: 'number' })}
+            ${renderFormField({ name: 'scope', label: 'Scope', value: 'repo read:user' })}
+            ${renderFormField({ name: 'clientId', label: 'Client ID', value: '' })}
+            ${renderFormField({ name: 'clientSecret', label: 'Client Secret', type: 'password', value: '', fullWidth: true })}
           </div>
-          <div class="toolbar tight" style="margin-top:12px;"><button class="action-btn" data-git-action="oauth">start oauth</button></div>
-          <pre style="margin-top:12px;">${prettyJson(status.oauth || {})}</pre>
+          <div class="toolbar tight" style="margin-top:12px;">
+            <button class="action-btn" type="button" data-git-action="oauth">${state.lang === 'zh' ? '启动 OAuth' : 'Start OAuth'}</button>
+            <button class="action-btn" type="button" data-git-action="copy-oauth" ${oauth.authorizeUrl ? '' : 'disabled'}>${state.lang === 'zh' ? '复制授权地址' : 'Copy Auth URL'}</button>
+          </div>
+          <pre style="margin-top:12px;">${prettyJson(oauth)}</pre>
         </div>
         <div class="card">
           <h3>${state.lang === 'zh' ? '提交与推送' : 'Commit & Push'}</h3>
-          <div class="toolbar tight">
-            <button class="action-btn" data-git-action="commit">commit</button>
-            <button class="action-btn" data-git-action="push">push</button>
-            <button class="action-btn primary" data-git-action="sync">sync</button>
+          ${renderFormField({
+            name: 'gitCommitMessage',
+            label: state.lang === 'zh' ? '提交说明' : 'Commit Message',
+            value: state.gitSyncDraftMessage,
+            placeholder: state.lang === 'zh' ? '留空则使用默认中文提交说明' : 'Leave blank to use the default Chinese commit message',
+            help: state.lang === 'zh' ? '建议写成中文变更摘要，例如：同步 .openclaw 配置与记忆。' : 'A short Chinese summary is recommended for consistency.',
+            fullWidth: true,
+          })}
+          <div class="toolbar tight" style="margin-top:12px;">
+            <button class="action-btn" type="button" data-git-action="commit">commit</button>
+            <button class="action-btn" type="button" data-git-action="push">push</button>
+            <button class="action-btn primary" type="button" data-git-action="sync">sync</button>
           </div>
-          <div class="list" style="margin-top:12px;">${(status.changedFiles || []).length ? status.changedFiles.map((file) => `<div class="list-item">${escapeHtml(file)}</div>`).join('') : emptyState(state.lang === 'zh' ? '当前没有待同步变更。' : 'No local changes to sync.')}</div>
+          <div class="list" style="margin-top:12px;">${changedFilesHtml}</div>
         </div>
       </div>
     `;
+
     setPanel(t('tabs.git-sync'), t('desc.git-sync'), body);
 
     document.querySelectorAll('[data-git-action]').forEach((button) => {
       button.addEventListener('click', async () => {
         const action = button.getAttribute('data-git-action');
         try {
+          if (action === 'refresh-status') {
+            loadGitSync();
+            return;
+          }
           if (action === 'init' || action === 'check' || action === 'push') {
             const result = await postJson(`/api/git-sync/${action === 'check' ? 'check-private' : action}`, {});
             showToast(result.message || 'OK');
@@ -1117,9 +1947,13 @@
           if (action === 'connect') {
             const form = document.getElementById('git-connect-form');
             const payload = {};
-            form.querySelectorAll('input,select').forEach((input) => {
-              payload[input.name] = input.value.trim();
+            form?.querySelectorAll('[name]').forEach((element) => {
+              payload[element.name] = element.value.trim();
             });
+            if (!payload.remoteUrl) {
+              showToast(state.lang === 'zh' ? '请先填写远程仓库地址。' : 'Remote URL is required.', 'error');
+              return;
+            }
             const result = await postJson('/api/git-sync/connect', payload);
             showToast(result.message || 'OK');
             loadGitSync();
@@ -1128,9 +1962,13 @@
           if (action === 'token') {
             const form = document.getElementById('git-token-form');
             const payload = {};
-            form.querySelectorAll('input,select').forEach((input) => {
-              payload[input.name] = input.value.trim();
+            form?.querySelectorAll('[name]').forEach((element) => {
+              payload[element.name] = element.value.trim();
             });
+            if (!payload.token) {
+              showToast(state.lang === 'zh' ? '请先粘贴 Token。' : 'Token is required.', 'error');
+              return;
+            }
             const result = await postJson('/api/git-sync/auth/token', payload);
             showToast(result.message || 'OK');
             loadGitSync();
@@ -1139,18 +1977,42 @@
           if (action === 'oauth') {
             const form = document.getElementById('git-oauth-form');
             const payload = {};
-            form.querySelectorAll('input,select').forEach((input) => {
-              payload[input.name] = input.value.trim();
+            form?.querySelectorAll('[name]').forEach((element) => {
+              payload[element.name] = element.value.trim();
             });
             payload.redirectPort = Number(payload.redirectPort || 43189);
+            if (!payload.clientId || !payload.clientSecret) {
+              showToast(state.lang === 'zh' ? '请先填写 Client ID 和 Client Secret。' : 'Client ID and Client Secret are required.', 'error');
+              return;
+            }
             const result = await postJson('/api/git-sync/auth/oauth', payload);
             showToast(result.message || 'OK');
-            if (result.output) window.open(result.output, '_blank');
+            if (result.output) {
+              try {
+                window.open(result.output, '_blank');
+              } catch {
+                // noop
+              }
+            }
             loadGitSync();
             return;
           }
+          if (action === 'copy-oauth') {
+            if (!oauth.authorizeUrl) {
+              showToast(state.lang === 'zh' ? '当前没有可复制的授权地址。' : 'No authorization URL available.', 'error');
+              return;
+            }
+            if (navigator.clipboard?.writeText) {
+              await navigator.clipboard.writeText(oauth.authorizeUrl);
+              showToast(state.lang === 'zh' ? '授权地址已复制。' : 'Authorization URL copied.');
+            } else {
+              window.prompt(state.lang === 'zh' ? '请手动复制下面的授权地址' : 'Copy the authorization URL below', oauth.authorizeUrl);
+            }
+            return;
+          }
           if (action === 'commit' || action === 'sync') {
-            const message = prompt(state.lang === 'zh' ? '请输入提交说明（可留空使用默认中文说明）' : 'Commit message (leave empty for default message)') || '';
+            const message = document.querySelector('[name="gitCommitMessage"]')?.value.trim() || '';
+            state.gitSyncDraftMessage = message;
             const result = await postJson(`/api/git-sync/${action}`, { message });
             showToast(result.message || 'OK');
             loadGitSync();
@@ -1161,7 +2023,20 @@
         }
       });
     });
+
+    document.querySelector('[name="gitCommitMessage"]')?.addEventListener('input', (event) => {
+      state.gitSyncDraftMessage = event.target.value;
+    });
+
+    if (oauth.phase === 'authorizing' && state.activeTab === 'git-sync') {
+      state.gitSyncPollTimer = setTimeout(() => {
+        if (state.activeTab === 'git-sync') {
+          loadGitSync();
+        }
+      }, 3000);
+    }
   }
+
   async function loadMission() {
     const [status, health, logs] = await Promise.all([
       apiRequest('/api/mission/status').catch((error) => ({ error: error.message })),
@@ -1288,6 +2163,7 @@
 
   async function loadActiveTab() {
     const active = state.activeTab || 'overview';
+    if (active !== 'git-sync') clearGitSyncPollTimer();
     const panel = document.getElementById('guard-panel');
     if (panel) panel.innerHTML = `<div class="empty">${escapeHtml(t('loading'))}</div>`;
     try {
@@ -1330,3 +2206,4 @@
     }
   });
 })();
+

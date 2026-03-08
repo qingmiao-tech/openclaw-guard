@@ -1,5 +1,5 @@
-﻿import { addNotification } from './notifications.js';
-import { getCronSnapshot, runOpenClawCommand, type CronJobRecord } from './openclaw-runtime.js';
+import { addNotification } from './notifications.js';
+import { getCronSnapshot, runOpenClawCommand, type CronJobRecord, type CronStatusSummary } from './openclaw-runtime.js';
 
 export interface CronActionResult {
   success: boolean;
@@ -11,6 +11,7 @@ export interface CronOverview {
   snapshotAt: string;
   jobs: CronJobRecord[];
   warnings: string[];
+  status: CronStatusSummary;
 }
 
 function runCronAction(args: string[], successMessage: string, failureMessage: string): CronActionResult {
@@ -48,10 +49,20 @@ function runCronAction(args: string[], successMessage: string, failureMessage: s
 
 export function getCronOverview(): CronOverview {
   const snapshot = getCronSnapshot();
+  const warnings = [...snapshot.warnings, ...(snapshot.status?.warnings || [])]
+    .map((item) => item.trim())
+    .filter(Boolean);
   return {
     snapshotAt: snapshot.capturedAt,
     jobs: snapshot.jobs,
-    warnings: snapshot.warnings,
+    warnings,
+    status: snapshot.status || {
+      enabled: null,
+      storePath: null,
+      schedulerNextWakeAt: null,
+      warnings: [],
+      raw: null,
+    },
   };
 }
 

@@ -1,10 +1,11 @@
-﻿import http from 'node:http';
+import http from 'node:http';
+import path from 'node:path';
 import { runFullAudit } from './audit.js';
 import { applyProfile, PROFILES } from './profiles.js';
 import { generateHardenScript, getAllHardenSteps } from './harden.js';
 import { detectPlatform, getCurrentUser, getHomeDir, getOpenClawDir } from './platform.js';
 import { detectOpenClaw, installOrUpdateSync } from './openclaw.js';
-import { getHtmlPage } from './web-ui.js';
+import { getCompatibilityPage } from './web-ui.js';
 import { getWorkbenchPage } from './workbench-ui.js';
 import {
   loadConfig,
@@ -55,6 +56,7 @@ import {
   listManagedFiles,
   readManagedFile,
   writeManagedFile,
+  createManagedEntry,
   listMemoryFiles,
   searchManagedFiles,
 } from './workspace-files.js';
@@ -185,12 +187,12 @@ export function startServer(port: number) {
           return;
         }
 
-        if (pathname === '/' || pathname === '/index.html') {
-          htmlResponse(res, getHtmlPage());
+        if (pathname === '/' || pathname === '/index.html' || pathname === '/workbench') {
+          htmlResponse(res, getWorkbenchPage());
           return;
         }
-        if (pathname === '/workbench') {
-          htmlResponse(res, getWorkbenchPage());
+        if (pathname === '/compat' || pathname === '/legacy') {
+          htmlResponse(res, getCompatibilityPage());
           return;
         }
 
@@ -466,10 +468,18 @@ export function startServer(port: number) {
           return;
         }
         if (pathname === '/api/files' && req.method === 'GET') {
-          const currentPath = url.searchParams.get('path') || getManagedRoots()[0]?.path || '';
+          const roots = getManagedRoots();
+          const currentPath = url.searchParams.get('path') || roots[0]?.path || '';
+          const matchedRoot = roots
+            .filter((root) => currentPath === root.path || currentPath.startsWith(`${root.path}${path.sep}`))
+            .sort((a, b) => b.path.length - a.path.length)[0];
+          const parentPath = matchedRoot && currentPath !== matchedRoot.path
+            ? path.dirname(currentPath)
+            : null;
           jsonResponse(res, {
-            roots: getManagedRoots(),
+            roots,
             currentPath,
+            parentPath,
             entries: listManagedFiles(currentPath),
           });
           return;
@@ -486,6 +496,19 @@ export function startServer(port: number) {
             return;
           }
           jsonResponse(res, writeManagedFile(body.path, body.content));
+          return;
+        }
+        if (pathname === '/api/files/create' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          if (typeof body.parentPath !== 'string' || typeof body.name !== 'string') {
+            jsonResponse(res, { success: false, message: 'parentPath / name 必填' }, 400);
+            return;
+          }
+          jsonResponse(res, createManagedEntry(
+            body.parentPath,
+            body.name,
+            body.kind === 'directory' ? 'directory' : 'file',
+          ));
           return;
         }
         if (pathname === '/api/memory' && req.method === 'GET') {
@@ -624,7 +647,7 @@ export function startServer(port: number) {
     server.listen(currentPort, () => {
       console.log('\n[Guard] OpenClaw Guard web UI started.');
       console.log(`   URL: http://localhost:${currentPort}`);
-      console.log(`   Workbench: http://localhost:${currentPort}/workbench`);
+      console.log(`   Compatibility: http://localhost:${currentPort}/compat`);
       console.log('   Press Ctrl+C to stop.\n');
     });
     return server;
@@ -632,3 +655,8 @@ export function startServer(port: number) {
 
   return tryListen(0);
 }
+
+
+
+
+

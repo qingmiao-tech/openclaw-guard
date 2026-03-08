@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Web UI HTML builder.
  * getHtmlPage() returns the full HTML page for the guard dashboard.
  */
@@ -147,144 +147,144 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     '',
     'var TAB_LABELS = {',
     ' en: { dashboard: "Dashboard", info: "System", openclaw: "OpenClaw", feishu: "Feishu", channels: "Channels", ai: "AI Models", mission: "Mission", audit: "Audit", profiles: "Profiles", harden: "Harden", logs: "Logs" },',
-    ' zh: { dashboard: "浠〃鐩?, info: "绯荤粺", openclaw: "OpenClaw", feishu: "椋炰功", channels: "娓犻亾", ai: "AI 妯″瀷", mission: "浠诲姟", audit: "瀹¤", profiles: "棰勮", harden: "鍔犲浐", logs: "鏃ュ織" }',
+    ' zh: { dashboard: "娴狀亣銆冮惄?, info: "缁崵绮?, openclaw: "OpenClaw", feishu: "妞嬬偘鍔?, channels: "濞撶娀浜?, ai: "AI 濡€崇€?, mission: "娴犺濮?, audit: "鐎孤ゎ吀", profiles: "妫板嫯顔?, harden: "閸旂姴娴?, logs: "閺冦儱绻? }',
     '};',
     '',
     'var I18N_ZH_PAIRS = [',
-    ' ["OpenClaw Guard - Security Dashboard","OpenClaw Guard - 瀹夊叏鎺у埗鍙?],',
-    ' ["If copy fails, ensure Node.js v22+ is installed, then run onboard.","濡傛灉澶嶅埗澶辫触锛岃鍏堢‘璁?Node.js v22+ 宸插畨瑁咃紝鍐嶆墽琛?onboard銆?],',
-    ' ["Use comma-separated provider/model IDs. Order matters.","浣跨敤閫楀彿鍒嗛殧 provider/model锛岄『搴忓嵆浼樺厛绾с€?],',
-    ' ["Configure channel defaults and runtime settings.","閰嶇疆鍚勬笭閬撻粯璁ゅ€间笌杩愯鍙傛暟銆?],',
-    ' ["Mission API Token (optional for remote calls)","Mission API Token锛堣繙绋嬭皟鐢ㄥ彲閫夛級"],',
-    ' ["Keep empty for loopback-only usage","鐣欑┖琛ㄧず浠呭厑璁告湰鏈哄洖鐜皟鐢?],',
-    ' ["Task is in progress. Waiting for status updates...","浠诲姟鎵ц涓紝绛夊緟鐘舵€佹洿鏂?.."],',
-    ' ["Mission command completed, but status confirmation timed out","Mission 鍛戒护宸插畬鎴愶紝浣嗙姸鎬佺‘璁よ秴鏃?],',
-    ' ["Current status: running=","褰撳墠鐘舵€? running="],',
-    ' ["Status confirmation pending: ","鐘舵€佺‘璁ょ瓑寰呬腑锛?],',
-    ' ["Current version: ","褰撳墠鐗堟湰锛?],',
-    ' ["Latest version: ","鏈€鏂扮増鏈細"],',
-    ' ["Log auto refresh enabled (3s interval)","鏃ュ織鑷姩鍒锋柊宸插惎鐢紙3绉掗棿闅旓級"],',
-    ' ["Log auto refresh disabled","鏃ュ織鑷姩鍒锋柊宸插叧闂?],',
-    ' ["No configurable keys returned for this channel.","褰撳墠娓犻亾娌℃湁鍙厤缃瓧娈点€?],',
-    ' ["Please provide Provider name and Base URL","璇峰～鍐?Provider 鍚嶇О鍜?Base URL"],',
-    ' ["Please select at least one model","璇疯嚦灏戦€夋嫨涓€涓ā鍨?],',
-    ' ["Choose a preset to bootstrap provider configuration.","閫夋嫨涓€涓璁惧揩閫熷垱寤?Provider 閰嶇疆銆?],',
-    ' ["Failed to load logs: ","鍔犺浇鏃ュ織澶辫触锛?],',
-    ' ["Load presets failed: ","鍔犺浇棰勮澶辫触锛?],',
-    ' ["Load failed: ","鍔犺浇澶辫触锛?],',
-    ' ["Service is not running","鏈嶅姟鏈繍琛?],',
-    ' ["OpenClaw installed","OpenClaw 宸插畨瑁?],',
-    ' ["Update available","鍙戠幇鍙敤鏇存柊"],',
-    ' ["Security Profiles","瀹夊叏棰勮"],',
-    ' ["Hardening Steps","鍔犲浐姝ラ"],',
-    ' ["Download Script","涓嬭浇鑴氭湰"],',
-    ' ["Quick Install","蹇€熷畨瑁?],',
-    ' ["Service Status","鏈嶅姟鐘舵€?],',
-    ' ["Service Actions","鏈嶅姟鎿嶄綔"],',
-    ' ["Gateway Token","缃戝叧浠ょ墝"],',
-    ' ["Click to copy","鐐瑰嚮澶嶅埗"],',
-    ' ["System Info","绯荤粺淇℃伅"],',
-    ' ["OpenClaw Status","OpenClaw 鐘舵€?],',
-    ' ["OpenClaw Home","OpenClaw 鐩綍"],',
-    ' ["OpenClaw Dir","OpenClaw 鐩綍"],',
-    ' ["Audit Summary","瀹¤姹囨€?],',
-    ' ["Pass: ","閫氳繃锛?],',
-    ' ["Warn: ","璀﹀憡锛?],',
-    ' ["Fail: ","澶辫触锛?],',
-    ' ["Fix: ","淇寤鸿锛?],',
-    ' ["Feishu Plugin Status","椋炰功鎻掍欢鐘舵€?],',
-    ' ["Basic Credentials","鍩虹鍑嵁"],',
-    ' ["Access Control","璁块棶鎺у埗"],',
-    ' ["Message Settings","娑堟伅璁剧疆"],',
-    ' ["Webhook Config","Webhook 閰嶇疆"],',
-    ' ["Render Mode","娓叉煋妯″紡"],',
-    ' ["Whisper Model","Whisper 妯″瀷"],',
-    ' ["Connection Mode","杩炴帴妯″紡"],',
-    ' ["Verification Token","鏍￠獙 Token"],',
-    ' ["Encrypt Key","鍔犲瘑 Key"],',
-    ' ["App Secret","搴旂敤瀵嗛挜"],',
-    ' ["App ID","搴旂敤 ID"],',
-    ' ["Domain","鍩熷悕"],',
-    ' ["Webhook Path","Webhook 璺緞"],',
-    ' ["Webhook Host","Webhook 鍦板潃"],',
-    ' ["Webhook Port","Webhook 绔彛"],',
-    ' ["DM Policy (dmPolicy)","绉佽亰绛栫暐 (dmPolicy)"],',
-    ' ["Group Policy (groupPolicy)","缇よ亰绛栫暐 (groupPolicy)"],',
-    ' ["Require @mention","蹇呴』 @ 鎻愬強"],',
-    ' ["Enable Streaming","鍚敤娴佸紡杈撳嚭"],',
-    ' ["Channel Configuration","娓犻亾閰嶇疆"],',
-    ' ["Primary Model","涓绘ā鍨?],',
-    ' ["Fallback Models","鍥為€€妯″瀷"],',
-    ' ["Save Fallbacks","淇濆瓨鍥為€€閾?],',
-    ' ["Configured Providers","宸查厤缃?Provider"],',
-    ' ["No providers configured yet.","灏氭湭閰嶇疆浠讳綍 Provider銆?],',
-    ' ["Provider Presets","Provider 棰勮"],',
-    ' ["Provider Name","Provider 鍚嶇О"],',
-    ' ["Recommended Models","鎺ㄨ崘妯″瀷"],',
-    ' ["Save Provider","淇濆瓨 Provider"],',
-    ' ["Add Provider","鏂板 Provider"],',
-    ' ["Set as primary","璁句负涓绘ā鍨?],',
-    ' ["Fallback","鍥為€€"],',
-    ' ["Requires API Key","闇€瑕?API Key"],',
-    ' ["No Key Needed","鏃犻渶 Key"],',
-    ' ["No API Key","鏃?API Key"],',
-    ' ["Mission Task Timeline","Mission 浠诲姟鏃堕棿绾?],',
-    ' ["Mission Control Logs","Mission 鎺у埗鏃ュ織"],',
-    ' ["Task running","浠诲姟杩涜涓?],',
-    ' ["Health check OK","鍋ュ悍妫€鏌ラ€氳繃"],',
-    ' ["Health check failed","鍋ュ悍妫€鏌ュけ璐?],',
-    ' ["Install/Update","瀹夎/鏇存柊"],',
-    ' ["Start DEV","鍚姩 DEV"],',
-    ' ["Start PROD","鍚姩 PROD"],',
-    ' ["Restart DEV","閲嶅惎 DEV"],',
-    ' ["Restart PROD","閲嶅惎 PROD"],',
-    ' ["Save Config","淇濆瓨閰嶇疆"],',
-    ' ["Delete Config","鍒犻櫎閰嶇疆"],',
-    ' ["Save Token","淇濆瓨 Token"],',
-    ' ["Delete provider: ","鍒犻櫎 Provider锛?],',
-    ' ["Clear this channel configuration?","纭娓呯┖璇ユ笭閬撻厤缃紵"],',
-    ' ["Loading logs...","鍔犺浇鏃ュ織涓?.."],',
-    ' ["No logs yet","鏆傛棤鏃ュ織"],',
-    ' ["Loading OpenClaw...","鍔犺浇 OpenClaw 涓?.."],',
-    ' ["Loading...","鍔犺浇涓?.."],',
-    ' ["Starting...","鍚姩涓?.."],',
-    ' ["Stopping...","鍋滄涓?.."],',
-    ' ["Restarting...","閲嶅惎涓?.."],',
-    ' ["Processing...","澶勭悊涓?.."],',
-    ' ["Success: ","鎴愬姛锛?],',
-    ' ["Failed: ","澶辫触锛?],',
-    ' ["Dashboard","浠〃鐩?],',
-    ' ["System","绯荤粺"],',
-    ' ["Feishu","椋炰功"],',
-    ' ["Channels","娓犻亾"],',
-    ' ["AI Models","AI 妯″瀷"],',
-    ' ["Mission","浠诲姟"],',
-    ' ["Audit","瀹¤"],',
-    ' ["Profiles","棰勮"],',
-    ' ["Harden","鍔犲浐"],',
-    ' ["Logs","鏃ュ織"],',
-    ' ["Service Logs","鏈嶅姟鏃ュ織"],',
-    ' ["Refresh Logs","鍒锋柊鏃ュ織"],',
-    ' ["Auto refresh","鑷姩鍒锋柊"],',
-    ' ["Installed","宸插畨瑁?],',
-    ' ["Not Installed","鏈畨瑁?],',
-    ' ["Details","璇︽儏"],',
-    ' ["Platform","骞冲彴"],',
-    ' ["Version","鐗堟湰"],',
-    ' ["Latest","鏈€鏂?],',
-    ' ["Binary Path","浜岃繘鍒惰矾寰?],',
-    ' ["Architecture","鏋舵瀯"],',
-    ' ["Directory","鐩綍"],',
-    ' ["User","鐢ㄦ埛"],',
-    ' ["Home","涓荤洰褰?],',
-    ' ["Start","鍚姩"],',
-    ' ["Stop","鍋滄"],',
-    ' ["Restart","閲嶅惎"],',
-    ' ["Apply","搴旂敤"],',
-    ' ["Delete","鍒犻櫎"],',
-    ' ["Clear","娓呯┖"],',
-    ' ["Back","杩斿洖"],',
-    ' ["Optional","鍙€?]',
+    ' ["OpenClaw Guard - Security Dashboard","OpenClaw Guard - 鐎瑰鍙忛幒褍鍩楅崣?],',
+    ' ["If copy fails, ensure Node.js v22+ is installed, then run onboard.","婵″倹鐏夋径宥呭煑婢惰精瑙﹂敍宀冾嚞閸忓牏鈥樼拋?Node.js v22+ 瀹告彃鐣ㄧ憗鍜冪礉閸愬秵澧界悰?onboard閵?],',
+    ' ["Use comma-separated provider/model IDs. Order matters.","娴ｈ法鏁ら柅妤€褰块崚鍡涙 provider/model閿涘矂銆庢惔蹇撳祮娴兼ê鍘涚痪褋鈧?],',
+    ' ["Configure channel defaults and runtime settings.","闁板秶鐤嗛崥鍕闁捇绮拋銈呪偓闂寸瑢鏉╂劘顢戦崣鍌涙殶閵?],',
+    ' ["Mission API Token (optional for remote calls)","Mission API Token閿涘牐绻欑粙瀣殶閻劌褰查柅澶涚礆"],',
+    ' ["Keep empty for loopback-only usage","閻ｆ瑧鈹栫悰銊с仛娴犲懎鍘戠拋鍛婃拱閺堝搫娲栭悳顖濈殶閻?],',
+    ' ["Task is in progress. Waiting for status updates...","娴犺濮熼幍褑顢戞稉顓ㄧ礉缁涘绶熼悩鑸碘偓浣规纯閺?.."],',
+    ' ["Mission command completed, but status confirmation timed out","Mission 閸涙垝鎶ゅ鎻掔暚閹存劧绱濇担鍡欏Ц閹胶鈥樼拋銈堢Т閺?],',
+    ' ["Current status: running=","瑜版挸澧犻悩鑸碘偓? running="],',
+    ' ["Status confirmation pending: ","閻樿埖鈧胶鈥樼拋銈囩搼瀵板懍鑵戦敍?],',
+    ' ["Current version: ","瑜版挸澧犻悧鍫熸拱閿?],',
+    ' ["Latest version: ","閺堚偓閺傛壆澧楅張顒婄窗"],',
+    ' ["Log auto refresh enabled (3s interval)","閺冦儱绻旈懛顏勫З閸掗攱鏌婂鎻掓儙閻㈩煉绱?缁夋帡妫块梾鏃撶礆"],',
+    ' ["Log auto refresh disabled","閺冦儱绻旈懛顏勫З閸掗攱鏌婂鎻掑彠闂?],',
+    ' ["No configurable keys returned for this channel.","瑜版挸澧犲〒鐘讳壕濞屸剝婀侀崣顖炲帳缂冾喖鐡у▓鐐光偓?],',
+    ' ["Please provide Provider name and Base URL","鐠囧嘲锝為崘?Provider 閸氬秶袨閸?Base URL"],',
+    ' ["Please select at least one model","鐠囩柉鍤︾亸鎴︹偓澶嬪娑撯偓娑擃亝膩閸?],',
+    ' ["Choose a preset to bootstrap provider configuration.","闁瀚ㄦ稉鈧稉顏堫暕鐠佹儳鎻╅柅鐔峰灡瀵?Provider 闁板秶鐤嗛妴?],',
+    ' ["Failed to load logs: ","閸旂姾娴囬弮銉ョ箶婢惰精瑙﹂敍?],',
+    ' ["Load presets failed: ","閸旂姾娴囨０鍕啎婢惰精瑙﹂敍?],',
+    ' ["Load failed: ","閸旂姾娴囨径杈Е閿?],',
+    ' ["Service is not running","閺堝秴濮熼張顏囩箥鐞?],',
+    ' ["OpenClaw installed","OpenClaw 瀹告彃鐣ㄧ憗?],',
+    ' ["Update available","閸欐垹骞囬崣顖滄暏閺囧瓨鏌?],',
+    ' ["Security Profiles","鐎瑰鍙忔０鍕啎"],',
+    ' ["Hardening Steps","閸旂姴娴愬銉╊€?],',
+    ' ["Download Script","娑撳娴囬懘姘拱"],',
+    ' ["Quick Install","韫囶偊鈧喎鐣ㄧ憗?],',
+    ' ["Service Status","閺堝秴濮熼悩鑸碘偓?],',
+    ' ["Service Actions","閺堝秴濮熼幙宥勭稊"],',
+    ' ["Gateway Token","缂冩垵鍙ф禒銈囧"],',
+    ' ["Click to copy","閻愮懓鍤径宥呭煑"],',
+    ' ["System Info","缁崵绮烘穱鈩冧紖"],',
+    ' ["OpenClaw Status","OpenClaw 閻樿埖鈧?],',
+    ' ["OpenClaw Home","OpenClaw 閻╊喖缍?],',
+    ' ["OpenClaw Dir","OpenClaw 閻╊喖缍?],',
+    ' ["Audit Summary","鐎孤ゎ吀濮瑰洦鈧?],',
+    ' ["Pass: ","闁俺绻冮敍?],',
+    ' ["Warn: ","鐠€锕€鎲￠敍?],',
+    ' ["Fail: ","婢惰精瑙﹂敍?],',
+    ' ["Fix: ","娣囶喖顦插楦款唴閿?],',
+    ' ["Feishu Plugin Status","妞嬬偘鍔熼幓鎺嶆閻樿埖鈧?],',
+    ' ["Basic Credentials","閸╄櫣顢呴崙顓熷祦"],',
+    ' ["Access Control","鐠佸潡妫堕幒褍鍩?],',
+    ' ["Message Settings","濞戝牊浼呯拋鍓х枂"],',
+    ' ["Webhook Config","Webhook 闁板秶鐤?],',
+    ' ["Render Mode","濞撳弶鐓嬪Ο鈥崇础"],',
+    ' ["Whisper Model","Whisper 濡€崇€?],',
+    ' ["Connection Mode","鏉╃偞甯村Ο鈥崇础"],',
+    ' ["Verification Token","閺嶏繝鐛?Token"],',
+    ' ["Encrypt Key","閸旂姴鐦?Key"],',
+    ' ["App Secret","鎼存梻鏁ょ€靛棝鎸?],',
+    ' ["App ID","鎼存梻鏁?ID"],',
+    ' ["Domain","閸╃喎鎮?],',
+    ' ["Webhook Path","Webhook 鐠侯垰绶?],',
+    ' ["Webhook Host","Webhook 閸︽澘娼?],',
+    ' ["Webhook Port","Webhook 缁旑垰褰?],',
+    ' ["DM Policy (dmPolicy)","缁変浇浜扮粵鏍殣 (dmPolicy)"],',
+    ' ["Group Policy (groupPolicy)","缂囥倛浜扮粵鏍殣 (groupPolicy)"],',
+    ' ["Require @mention","韫囧懘銆?@ 閹绘劕寮?],',
+    ' ["Enable Streaming","閸氼垳鏁ゅù浣哥础鏉堟挸鍤?],',
+    ' ["Channel Configuration","濞撶娀浜鹃柊宥囩枂"],',
+    ' ["Primary Model","娑撶粯膩閸?],',
+    ' ["Fallback Models","閸ョ偤鈧偓濡€崇€?],',
+    ' ["Save Fallbacks","娣囨繂鐡ㄩ崶鐐衡偓鈧柧?],',
+    ' ["Configured Providers","瀹告煡鍘ょ純?Provider"],',
+    ' ["No providers configured yet.","鐏忔碍婀柊宥囩枂娴犺缍?Provider閵?],',
+    ' ["Provider Presets","Provider 妫板嫯顔?],',
+    ' ["Provider Name","Provider 閸氬秶袨"],',
+    ' ["Recommended Models","閹恒劏宕樺Ο鈥崇€?],',
+    ' ["Save Provider","娣囨繂鐡?Provider"],',
+    ' ["Add Provider","閺傛澘顤?Provider"],',
+    ' ["Set as primary","鐠佸彞璐熸稉缁樐侀崹?],',
+    ' ["Fallback","閸ョ偤鈧偓"],',
+    ' ["Requires API Key","闂団偓鐟?API Key"],',
+    ' ["No Key Needed","閺冪娀娓?Key"],',
+    ' ["No API Key","閺?API Key"],',
+    ' ["Mission Task Timeline","Mission 娴犺濮熼弮鍫曟？缁?],',
+    ' ["Mission Control Logs","Mission 閹貉冨煑閺冦儱绻?],',
+    ' ["Task running","娴犺濮熸潻娑滎攽娑?],',
+    ' ["Health check OK","閸嬨儱鎮嶅Λ鈧弻銉┾偓姘崇箖"],',
+    ' ["Health check failed","閸嬨儱鎮嶅Λ鈧弻銉ャ亼鐠?],',
+    ' ["Install/Update","鐎瑰顥?閺囧瓨鏌?],',
+    ' ["Start DEV","閸氼垰濮?DEV"],',
+    ' ["Start PROD","閸氼垰濮?PROD"],',
+    ' ["Restart DEV","闁插秴鎯?DEV"],',
+    ' ["Restart PROD","闁插秴鎯?PROD"],',
+    ' ["Save Config","娣囨繂鐡ㄩ柊宥囩枂"],',
+    ' ["Delete Config","閸掔娀娅庨柊宥囩枂"],',
+    ' ["Save Token","娣囨繂鐡?Token"],',
+    ' ["Delete provider: ","閸掔娀娅?Provider閿?],',
+    ' ["Clear this channel configuration?","绾喛顓诲〒鍛敄鐠囥儲绗柆鎾诲帳缂冾噯绱?],',
+    ' ["Loading logs...","閸旂姾娴囬弮銉ョ箶娑?.."],',
+    ' ["No logs yet","閺嗗倹妫ら弮銉ョ箶"],',
+    ' ["Loading OpenClaw...","閸旂姾娴?OpenClaw 娑?.."],',
+    ' ["Loading...","閸旂姾娴囨稉?.."],',
+    ' ["Starting...","閸氼垰濮╂稉?.."],',
+    ' ["Stopping...","閸嬫粍顒涙稉?.."],',
+    ' ["Restarting...","闁插秴鎯庢稉?.."],',
+    ' ["Processing...","婢跺嫮鎮婃稉?.."],',
+    ' ["Success: ","閹存劕濮涢敍?],',
+    ' ["Failed: ","婢惰精瑙﹂敍?],',
+    ' ["Dashboard","娴狀亣銆冮惄?],',
+    ' ["System","缁崵绮?],',
+    ' ["Feishu","妞嬬偘鍔?],',
+    ' ["Channels","濞撶娀浜?],',
+    ' ["AI Models","AI 濡€崇€?],',
+    ' ["Mission","娴犺濮?],',
+    ' ["Audit","鐎孤ゎ吀"],',
+    ' ["Profiles","妫板嫯顔?],',
+    ' ["Harden","閸旂姴娴?],',
+    ' ["Logs","閺冦儱绻?],',
+    ' ["Service Logs","閺堝秴濮熼弮銉ョ箶"],',
+    ' ["Refresh Logs","閸掗攱鏌婇弮銉ョ箶"],',
+    ' ["Auto refresh","閼奉亜濮╅崚閿嬫煀"],',
+    ' ["Installed","瀹告彃鐣ㄧ憗?],',
+    ' ["Not Installed","閺堫亜鐣ㄧ憗?],',
+    ' ["Details","鐠囷附鍎?],',
+    ' ["Platform","楠炲啿褰?],',
+    ' ["Version","閻楀牊婀?],',
+    ' ["Latest","閺堚偓閺?],',
+    ' ["Binary Path","娴滃矁绻橀崚鎯扮熅瀵?],',
+    ' ["Architecture","閺嬭埖鐎?],',
+    ' ["Directory","閻╊喖缍?],',
+    ' ["User","閻劍鍩?],',
+    ' ["Home","娑撹崵娲拌ぐ?],',
+    ' ["Start","閸氼垰濮?],',
+    ' ["Stop","閸嬫粍顒?],',
+    ' ["Restart","闁插秴鎯?],',
+    ' ["Apply","鎼存梻鏁?],',
+    ' ["Delete","閸掔娀娅?],',
+    ' ["Clear","濞撳懐鈹?],',
+    ' ["Back","鏉╂柨娲?],',
+    ' ["Optional","閸欘垶鈧?]',
     '];',
     'I18N_ZH_PAIRS.sort(function(a, b) { return b[0].length - a[0].length; });',
     '',
@@ -396,7 +396,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     '',
     'function applyI18n() {',
     ' document.documentElement.lang = guardLang === "zh" ? "zh-CN" : "en";',
-    ' document.title = guardLang === "zh" ? "OpenClaw Guard - 瀹夊叏鎺у埗鍙? : "OpenClaw Guard - Security Dashboard";',
+    ' document.title = guardLang === "zh" ? "OpenClaw Guard - 鐎瑰鍙忛幒褍鍩楅崣? : "OpenClaw Guard - Security Dashboard";',
     ' updateTabLabels();',
     ' updateLangButtons();',
     ' if (guardLang === "zh") {',
@@ -1727,7 +1727,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     + ' <h1>OpenClaw Guard</h1>\n'
     + ' <span class="badge">v2.0.0</span>\n'
     + ' <div class="lang-switch">\n'
-    + '   <button class="lang-btn" id="lang-btn-zh" type="button">涓枃</button>\n'
+    + '   <button class="lang-btn" id="lang-btn-zh" type="button">娑擃厽鏋?/button>\n'
     + '   <button class="lang-btn" id="lang-btn-en" type="button">EN</button>\n'
     + ' </div>\n'
     + '</div>\n'
@@ -1783,8 +1783,218 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
 
 export function getCompatibilityPage(): string {
-  return getHtmlPage().replace(
-    '<body>',
-    '<body><div style="padding:12px 18px;background:#7c2d12;color:#fff;font:14px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><strong>旧版兼容页</strong>：该页面仅用于过渡，后续将逐步下线。建议优先使用新的 Guard 工作台。</div><div><a href="/" style="color:#fff;text-decoration:underline">打开新工作台</a></div></div>'
-  );
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenClaw Guard 兼容迁移页</title>
+  <style>
+    :root {
+      --bg: #f4f7f1;
+      --panel: #ffffff;
+      --line: #d7ddcf;
+      --text: #1f2a20;
+      --muted: #617061;
+      --accent: #1f6f52;
+      --accent-soft: #e3efe7;
+      --warn: #8a4b12;
+      --warn-soft: #fff1e2;
+      --shadow: 0 18px 42px rgba(25, 56, 37, 0.08);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(153, 192, 163, 0.22), transparent 28%),
+        linear-gradient(180deg, #fbfdf8 0%, var(--bg) 100%);
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 40px 20px 56px;
+    }
+    .hero, .card {
+      background: rgba(255,255,255,0.9);
+      border: 1px solid rgba(0,0,0,0.05);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .hero {
+      padding: 28px;
+      margin-bottom: 18px;
+    }
+    .badge {
+      display: inline-flex;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--warn-soft);
+      color: var(--warn);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      margin-bottom: 14px;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 32px;
+      line-height: 1.25;
+    }
+    p {
+      margin: 0;
+      line-height: 1.75;
+      color: var(--muted);
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      padding: 12px 18px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      color: var(--text);
+      background: #fff;
+      font-weight: 600;
+    }
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+    .card {
+      padding: 20px;
+    }
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+    }
+    ul, ol {
+      margin: 0;
+      padding-left: 20px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+    }
+    .table {
+      display: grid;
+      gap: 10px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px 0;
+      border-top: 1px solid rgba(0,0,0,0.06);
+    }
+    .row:first-child { border-top: 0; padding-top: 0; }
+    .label { font-weight: 700; }
+    .muted { color: var(--muted); }
+    @media (max-width: 760px) {
+      .wrap { padding: 24px 16px 40px; }
+      h1 { font-size: 26px; }
+      .row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="badge">兼容层 / 迁移模式</div>
+      <h1>旧版面板已经降级为迁移页</h1>
+      <p>
+        OpenClaw Guard 的默认入口已经切换到新的原生工作台。这个页面现在只负责告诉你“去哪里、怎么迁移、旧保险丝还在什么地方”，
+        不再承担完整的日常操作面板职责。
+      </p>
+      <div class="actions">
+        <a class="btn primary" href="/">打开新工作台</a>
+        <a class="btn" href="/legacy">仍需打开旧版完整面板</a>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <h2>现在应该怎么用</h2>
+        <ul>
+          <li>日常查看与操作，优先使用根路由 <code>/</code> 的新工作台。</li>
+          <li>如果你还在沿用旧流程，可以暂时继续使用 <code>mission</code> CLI，但它已经进入兼容维护阶段。</li>
+          <li>如果你确实需要旧版完整面板，仍可通过 <code>/legacy</code> 打开。</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>为什么要迁移</h2>
+        <ul>
+          <li>新工作台已经覆盖概览、Agent、会话、文件、记忆、搜索、成本、Cron、Git 同步等主流程。</li>
+          <li><code>mission</code> 保留的主要价值已经变成旧链路兼容与回滚保险丝，而不是主入口。</li>
+          <li>后续版本会继续收缩兼容层，先迁移可以减少后面切换成本。</li>
+        </ul>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:18px;">
+      <h2>常见迁移对照</h2>
+      <div class="table">
+        <div class="row">
+          <div class="label">旧的打开方式</div>
+          <div class="muted">新默认入口是 <code>/</code>，兼容说明页是 <code>/compat</code>，旧版完整面板保险丝是 <code>/legacy</code>。</div>
+        </div>
+        <div class="row">
+          <div class="label">查看总览 / 系统状态</div>
+          <div class="muted">优先使用新工作台首页，CLI 可用 <code>openclaw-guard dashboard</code>。</div>
+        </div>
+        <div class="row">
+          <div class="label">查看 Agent / 会话</div>
+          <div class="muted">使用 <code>openclaw-guard agents list</code>、<code>openclaw-guard sessions list</code>，Web 侧直接在新工作台切换对应标签页。</div>
+        </div>
+        <div class="row">
+          <div class="label">文件 / 记忆 / 搜索</div>
+          <div class="muted">使用 <code>openclaw-guard files</code>、<code>memory</code>、<code>search</code> 命令，或在新工作台的文件、记忆、搜索标签页完成。</div>
+        </div>
+        <div class="row">
+          <div class="label">Cron / Git 同步</div>
+          <div class="muted">迁移到 <code>openclaw-guard cron-ui</code> 与 <code>openclaw-guard git-sync</code>，这些能力已经有原生 Web API 与工作台入口。</div>
+        </div>
+        <div class="row">
+          <div class="label">仍然要用 mission</div>
+          <div class="muted">可以继续执行 <code>openclaw-guard mission ...</code>，但命令会提示它已处于兼容层，后续版本计划移除。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:18px;">
+      <h2>迁移建议</h2>
+      <ol>
+        <li>先把团队的默认入口改成新工作台 <code>/</code>。</li>
+        <li>把脚本、README、课程文档中对 <code>mission</code> 的默认引用替换为原生命令或新工作台。</li>
+        <li>只有在需要兜底时，再使用 <code>/legacy</code> 或 <code>mission</code> CLI。</li>
+      </ol>
+    </section>
+  </div>
+</body>
+</html>`;
 }

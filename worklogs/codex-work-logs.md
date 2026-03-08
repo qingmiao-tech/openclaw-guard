@@ -1453,3 +1453,37 @@
   2) 新工作台已经覆盖大多数高频浏览和运维动作，但 `mission` 仍承担旧流程入口、历史使用习惯和回滚保险丝的作用。
   3) 后续只有在三端手工回归、GitHub/Gitee OAuth 端到端验证、文档入口迁移和一个版本周期的弃用提示都完成后，才建议正式启动下线。
 
+
+## [2026-03-08 16:26] openclaw-guard 兼容层迁移与 OAuth 回归补强 [TASK-20260308-004]
+
+- 任务来源: 用户续作（继续处理上一轮建议中的三个任务）。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-08 16:26
+- 开始时间: 2026-03-08 16:26
+- 提交时间: 2026-03-08 16:34
+- 任务目标:
+  1) 给 `/compat` 和 `mission` CLI 增加正式的弃用/迁移提示，启动第一阶段下线准备。
+  2) 把旧版兼容页进一步瘦身成真正的迁移页，同时保留最后的旧版保险丝入口。
+  3) 为 GitHub / Gitee OAuth 增加更可靠的回归验证与记录，避免只停留在“有按钮、没验证”。
+- 实际完成:
+  1) `mission` CLI 已增加正式弃用提示：命令描述改为“已弃用，建议迁移到原生工作台”，并在每次执行前输出中文迁移提醒；`--help` 末尾也会给出新入口与替代命令。
+  2) `/compat` 已从“旧版完整面板”瘦身为真正的迁移说明页，明确告诉用户默认入口、迁移方式和常见操作对照；旧版完整面板改由 `/legacy` 单独承接，作为回滚保险丝保留。
+  3) `server.ts` 已将 `/compat` 与 `/legacy` 路由拆分，并在 Web 启动日志中同时打印两个地址，降低迁移期认知成本。
+  4) 新增 Git OAuth 的本地自动化回归：真实启动 callback server，覆盖 GitHub/Gitee 两个 provider 的 authorize URL 生成与 callback state 校验失败链路，确保 Guard 会把错误状态写回 `oauth.phase=error`。
+  5) 新增 `worklogs/openclaw-guard-git-oauth-regression-20260308.md`，记录本轮 OAuth 已验证范围、当前未完成的真实第三方授权项、以及后续人工端到端实测步骤。
+- 交付清单:
+  - `openclaw-guard/src/index.ts`
+  - `openclaw-guard/src/server.ts`
+  - `openclaw-guard/src/web-ui.ts`
+  - `openclaw-guard/src/__tests__/git-sync.test.ts`
+  - `worklogs/openclaw-guard-git-oauth-regression-20260308.md`
+- 验证结果:
+  - 已验证: `cmd /c npm run build` 通过。
+  - 已验证: `cmd /c npm run test` 通过，当前 9 个测试文件、51 个测试全部通过。
+  - 已验证: 新增的 OAuth 自动化回归已真实执行，覆盖 GitHub/Gitee 两个 provider 的本地 callback 验证失败场景。
+  - 已验证: `/compat` 与 `/legacy` 路由已逻辑拆分，兼容页和旧版完整页不再混用同一输出。
+- 风险与结论:
+  1) 当前已经进入 `mission` 下线的第一阶段准备，但还不建议直接删除 `mission` CLI 与 `/api/mission/*`。
+  2) OAuth 当前完成的是“本地 callback + 状态迁移”的自动化回归，不是假装完成了真实 GitHub/Gitee 授权；真实第三方授权仍需在有正式 OAuth 应用凭据的环境里补一次人工端到端验证。
+  3) 现在的状态更稳：兼容层已经开始收口，但回滚保险丝仍在；OAuth 已有可重复回归基础，而不是只能靠手点浏览器碰运气。
+

@@ -1,11 +1,11 @@
-import http from 'node:http';
+﻿import http from 'node:http';
 import path from 'node:path';
 import { runFullAudit } from './audit.js';
 import { applyProfile, PROFILES } from './profiles.js';
 import { generateHardenScript, getAllHardenSteps } from './harden.js';
 import { detectPlatform, getCurrentUser, getHomeDir, getOpenClawDir } from './platform.js';
 import { detectOpenClaw, installOrUpdateSync } from './openclaw.js';
-import { getCompatibilityPage } from './web-ui.js';
+import { getCompatibilityPage, getHtmlPage } from './web-ui.js';
 import { getWorkbenchPage } from './workbench-ui.js';
 import {
   loadConfig,
@@ -191,8 +191,12 @@ export function startServer(port: number) {
           htmlResponse(res, getWorkbenchPage());
           return;
         }
-        if (pathname === '/compat' || pathname === '/legacy') {
+        if (pathname === '/compat') {
           htmlResponse(res, getCompatibilityPage());
+          return;
+        }
+        if (pathname === '/legacy') {
+          htmlResponse(res, getHtmlPage());
           return;
         }
 
@@ -675,6 +679,7 @@ export function startServer(port: number) {
       console.log('\n[Guard] OpenClaw Guard web UI started.');
       console.log(`   URL: http://localhost:${currentPort}`);
       console.log(`   Compatibility: http://localhost:${currentPort}/compat`);
+      console.log(`   Legacy: http://localhost:${currentPort}/legacy`);
       console.log('   Press Ctrl+C to stop.\n');
     });
     return server;
@@ -682,6 +687,8 @@ export function startServer(port: number) {
 
   return tryListen(0);
 }
+
+
 
 
 

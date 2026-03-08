@@ -135,24 +135,43 @@ function findNewPortBinding(basePort, beforeSnapshot) {
   return null;
 }
 
-function launchBackgroundProcess(port) {
-  ensureRuntimeDir();
-
-  if (process.platform === 'win32') {
-    execFileSync('cmd.exe', ['/c', 'start', '', '/b', process.execPath, 'dist/index.js', 'web', '--port', String(port)], {
+function resolveLaunchCommand(port) {
+  const distEntry = path.join(rootDir, 'dist', 'index.js');
+  if (fs.existsSync(distEntry)) {
+    return {
+      command: process.execPath,
+      args: [distEntry, 'web', '--port', String(port)],
       cwd: rootDir,
-      windowsHide: true,
-    });
-    return null;
+    };
   }
 
+  const tsxCli = path.join(rootDir, 'node_modules', 'tsx', 'dist', 'cli.mjs');
+  const sourceEntry = path.join(rootDir, 'src', 'index.ts');
+  if (fs.existsSync(tsxCli) && fs.existsSync(sourceEntry)) {
+    return {
+      command: process.execPath,
+      args: [tsxCli, sourceEntry, 'web', '--port', String(port)],
+      cwd: rootDir,
+    };
+  }
+
+  throw new Error('No runnable Guard Web entry was found. Run npm install and npm run build first.');
+}
+
+function launchBackgroundProcess(port) {
+  ensureRuntimeDir();
+  const launch = resolveLaunchCommand(port);
   const outFd = fs.openSync(outLog, 'a');
   const errFd = fs.openSync(errLog, 'a');
-  const child = spawn(process.execPath, ['dist/index.js', 'web', '--port', String(port)], {
-    cwd: rootDir,
+  const child = spawn(launch.command, launch.args, {
+    cwd: launch.cwd,
     detached: true,
     stdio: ['ignore', outFd, errFd],
     windowsHide: true,
+    env: {
+      ...process.env,
+      OPENCLAW_GUARD_BACKGROUND: '1',
+    },
   });
   child.unref();
   return child.pid;

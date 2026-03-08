@@ -1574,3 +1574,49 @@
   1) 当前 Codex 沙箱内对后台拉起子进程仍有限制，`web:bg:start` 的最终真机级验证在这里不稳定，但这不影响现有页面修复和停服链路可用。
   2) 这轮没有动 `src/assets/logo.png` 本身，保留了另一位同伴的资源改动，只补了服务端静态资源兜底与前端脚本稳定性。
   3) 后续如果继续做第二期优化，建议优先补“后台一键启动”的真机验证，再继续打磨通知、Cron、Git Sync 的顺手度。
+
+## [2026-03-08 23:12] openclaw-guard 后台启动补强与通知/Cron/Git Sync 交互优化 [TASK-20260308-007]
+
+- 任务来源: 用户续作（按顺序推进 1、2：补齐“后台一键启动/托管”稳定体验，并继续优化通知、Cron、Git Sync 的 Web 交互）。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-08 22:10
+- 开始时间: 2026-03-08 22:10
+- 当前状态: 已完成开发、自测、真实页面回归与后台启动链路验证，待提交 git。
+- 任务目标:
+  1) 让 Guard Web 的后台启动与一键停服形成对称能力，支持“后台拉起”和“当前实例纳入后台托管”。
+  2) 优化通知、Cron、Git Sync 三个标签页的筛选、反馈和快捷操作体验。
+  3) 用真实运行中的本地 Guard Web 页面做一次回归，确认菜单可点击、页面不空白、动作可执行。
+- 实际完成:
+  1) `web/guard-ui.js` 已新增状态字段：`notificationSource`、`notificationSearchQuery`、`cronFilter`、`cronSearchQuery`、`cronLastAction`、`gitSyncLastAction`，为第二期交互打好前端状态底座。
+  2) 已新增通用前端 helper：`copyTextValue()`、`matchesTextQuery()`、`renderActionFeedback()`，统一处理复制、全文筛选与最近操作结果回显。
+  3) 系统页 `loadSystem()` 已改为识别三种 Guard Web 状态：
+     - 当前实例已托管
+     - 当前实例未托管但可“纳入后台托管”
+     - 端口已被其他 Guard Web 占用且禁止重复拉起
+  4) 系统页手动命令参考已统一为 `npm run web:bg:start` / `npm run web:bg:status` / `npm run web:bg:stop`，不再继续展示旧的直接 `node dist/index.js ...` 启动方式。
+  5) 通知页 `loadNotifications()` 已补齐统计卡片、来源筛选、标题/消息搜索、`all/unread/warning/success` 过滤、复制详情按钮，以及清空全部的二次确认。
+  6) Cron 页 `loadCron()` 已补齐任务统计、搜索框、`all/enabled/disabled` 过滤、最近操作反馈卡片、任务运行时间展示，以及删除前确认。
+  7) Git Sync 页 `loadGitSync()` 已补齐最近操作反馈、最近错误条、复制本地目录/远程地址、`检查并同步` 快捷动作，以及 `connect` / `token` 成功后的自动 `check-private` 串联逻辑。
+  8) 已清理 `guard-ui.js` 中残留的隐藏 BOM 脏字符，避免函数替换和后续脚本执行再被脏字符污染。
+  9) 已在真实浏览器里验证：`通知`、`Cron`、`Git 同步` 标签页可正常打开；`Git 同步 -> 检查并同步` 在未配置远程时会正确落失败反馈卡片，不再只是 toast 一闪而过。
+  10) 已在真实本机运行环境里完成后台链路验证：
+      - 识别并终止旧的 18088 端口实例
+      - 重新通过 `npm run web:bg:start` 拉起最新代码
+      - 最终确认 `web:bg:status` 返回 `pid-file / managed=true / port=18088`
+      - 页面系统页正确显示 `当前页面 PID` 与 `当前实例已托管`
+- 交付清单:
+  - `openclaw-guard/web/guard-ui.js`
+  - `openclaw-guard/src/web-background.ts`
+  - `openclaw-guard/scripts/web-background.mjs`
+  - `openclaw-guard/src/server.ts`
+  - `worklogs/codex-work-logs.md`
+- 验证结果:
+  1) 已验证 `cmd /c npm run build` 通过。
+  2) 已验证 `cmd /c npm run test` 通过，当前 9 个测试文件、52 个测试全部通过。
+  3) 已验证 `cmd /c npm run web:bg:status` 在最终状态下返回：`running=true / managed=true / source=pid-file / port=18088`。
+  4) 已用 Playwright 回归 `http://127.0.0.1:18088/`、`#system`、`#notifications`、`#cron`、`#git-sync`，页面均可渲染且菜单点击正常。
+  5) 已验证 Git Sync 页点击“检查并同步”后，会在页面内生成失败反馈卡片，而不是只弹 toast。
+- 风险与补充说明:
+  1) 本机 `.openclaw` 当前没有配置远程仓库与 Git 认证，因此 Git Sync 页目前展示的是“阻断项正确提示”的回归结果，不是完整同步成功链路。
+  2) Cron 当前环境下无任务，因此本轮只验证了空状态、搜索和过滤壳层、以及动作回显结构是否可用。
+  3) 这轮没有新增后端测试用例，主要原因是改动集中在前端工作台交互与后台进程管理体验；后续若继续推进第三期，建议为 `web-background` 和前端 API 交互补更细的自动化覆盖。

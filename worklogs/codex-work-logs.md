@@ -1361,3 +1361,21 @@
   1) 第二阶段需要把根路由切到新工作台，并将旧版页面降为兼容入口。
   2) 需要用真实 OpenClaw JSON 输出样本对齐解析器，减少不同版本字段漂移风险。
   3) 需要继续提升 Web 交互体验，尤其是 notifications、Git OAuth、文件编辑与 Cron 操作反馈。
+
+
+## [2026-03-08 12:05] openclaw-guard 原生工作台第二期推进 [TASK-20260308-002]
+
+- 任务来源: 用户续作（按既定工作方式继续推进第二阶段，并先写入工作日志）。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-08 11:xx
+- 开始时间: 2026-03-08 11:50
+- 任务目标:
+  1) 将根路由 `/` 正式切换到新的 Guard 工作台，旧版页面降级为兼容入口。
+  2) 用本机真实 `openclaw status --json` 与 `openclaw cron list --json` 输出对齐运行态解析器。
+  3) 继续补强工作台第二期交互，包括通知、Git OAuth、文件编辑、Cron 操作与 mission 兼容层评估。
+- 执行计划:
+  1) 记录当前任务边界，仅忽略既有未跟踪目录 `worklogs/plans/`，不混入本轮提交。
+  2) 读取本机真实 `openclaw status --json` 样本，并参考 `openclaw` 源码中的 `status` / `cron` CLI 输出结构。
+  3) 调整 `openclaw-guard/src/openclaw-runtime.ts`，增强 `sessions.recent`、`jobs[]`、数值时间戳和网关错误提示兼容。
+  4) 调整 `server.ts` 与 `workbench-ui.ts`，完成根路由切换、兼容页保留和第二期 Web 交互增强。
+  5) 补测试、跑构建和回归，再按中文提交说明分批提交。

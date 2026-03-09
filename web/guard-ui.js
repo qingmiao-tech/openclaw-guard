@@ -324,6 +324,66 @@
     return `<div class="card"><div class="row" style="justify-content:space-between"><h3>${escapeHtml(title)}</h3>${pillClass ? `<span class="pill ${pillClass}">${escapeHtml(detail || '')}</span>` : ''}</div><div class="metric">${escapeHtml(value)}</div>${pillClass ? '' : `<p>${escapeHtml(detail || '')}</p>`}</div>`;
   }
 
+  function normalizeRepoPath(value) {
+    return String(value || '')
+      .trim()
+      .replace(/\\/g, '/')
+      .replace(/^\.\//, '')
+      .replace(/\/+/g, '/')
+      .replace(/\/$/, '');
+  }
+
+  function uniqueItems(values) {
+    return Array.from(new Set((values || []).filter(Boolean)));
+  }
+
+  function buildGitIgnoreTemplate(paths) {
+    const normalizedPaths = uniqueItems((paths || []).map((item) => normalizeRepoPath(item)).filter(Boolean));
+    const lines = [
+      '# Nested Git repositories managed outside the root .openclaw sync',
+    ];
+    normalizedPaths.forEach((item) => lines.push(`${item}/`));
+    if (normalizedPaths.some((item) => /^workspace-[^/]+$/i.test(item))) {
+      lines.push('');
+      lines.push('# Optional wildcard for workspace-level child repositories');
+      lines.push('workspace-*/');
+    }
+    if (normalizedPaths.some((item) => /^extensions\/[^/]+$/i.test(item))) {
+      lines.push('');
+      lines.push('# Optional wildcard for extension repositories');
+      lines.push('extensions/*/');
+    }
+    if (normalizedPaths.some((item) => /^skills\/[^/]+$/i.test(item))) {
+      lines.push('');
+      lines.push('# Optional wildcard for skill repositories');
+      lines.push('skills/*/');
+    }
+    return lines.join('\n').trim();
+  }
+
+  function buildEmbeddedRepoGuide(paths) {
+    const normalizedPaths = uniqueItems((paths || []).map((item) => normalizeRepoPath(item)).filter(Boolean));
+    const pathList = normalizedPaths.length ? normalizedPaths.map((item) => `- ${item}/`).join('\n') : '- (none)';
+    const ignoreTemplate = buildGitIgnoreTemplate(normalizedPaths);
+    return [
+      state.lang === 'zh' ? 'OpenClaw Guard 嵌套仓库处理建议' : 'OpenClaw Guard Embedded Repository Guide',
+      '',
+      state.lang === 'zh' ? '当前检测到的嵌套仓库：' : 'Detected embedded repositories:',
+      pathList,
+      '',
+      state.lang === 'zh' ? '方案 1：继续把子目录当成独立仓库维护' : 'Option 1: Keep the child directory as an independent repository',
+      state.lang === 'zh' ? '把这些路径加入外层 .gitignore，避免 Git Sync 反复把它们当成未同步改动。' : 'Add these paths to the root .gitignore so Git Sync stops surfacing them as pending changes.',
+      '',
+      ignoreTemplate,
+      '',
+      state.lang === 'zh' ? '方案 2：需要并入主仓' : 'Option 2: Flatten into the root repository',
+      state.lang === 'zh' ? '删除子目录里的 .git 后，再回到外层仓库重新 add / commit。' : 'Remove the child .git directory first, then add and commit from the root repository.',
+      '',
+      state.lang === 'zh' ? '方案 3：继续单独同步' : 'Option 3: Sync separately',
+      state.lang === 'zh' ? '保留子仓库不动，但请在对应子目录里单独执行它自己的 Git 提交与推送。' : 'Leave the child repository intact and commit/push from inside that child directory.',
+    ].join('\n');
+  }
+
   function keyValueGrid(items) {
     return `<div class="stack">${items.map((item) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(item.label)}</strong><span class="muted">${escapeHtml(item.value)}</span></div>${item.help ? `<div class="muted small">${escapeHtml(item.help)}</div>` : ''}</div>`).join('')}</div>`;
   }
@@ -2364,57 +2424,61 @@
     const status = await apiRequest('/api/git-sync/status');
     const oauth = status.oauth || {};
 
-    if (!state.gitSyncDraftMessage) {
-      state.gitSyncDraftMessage = '';
-    }
+    if (!state.gitSyncDraftMessage) state.gitSyncDraftMessage = '';
+
+    const skippedEmbeddedRepos = Array.isArray(status.skippedEmbeddedRepos) ? status.skippedEmbeddedRepos : [];
+    const stageableChangedFiles = Array.isArray(status.stageableChangedFiles) ? status.stageableChangedFiles : [];
+    const allChangedFiles = Array.isArray(status.changedFiles) ? status.changedFiles : [];
+    const gitIgnoreTemplate = buildGitIgnoreTemplate(skippedEmbeddedRepos);
+    const embeddedRepoGuide = buildEmbeddedRepoGuide(skippedEmbeddedRepos);
 
     const stages = [
       {
         label: state.lang === 'zh' ? '仓库初始化' : 'Repository',
         ok: !!status.repoInitialized,
-        detail: status.repoInitialized ? (status.repoPath || '-') : (state.lang === 'zh' ? '尚未 git init' : 'git init required'),
+        detail: status.repoInitialized ? (status.repoPath || '-') : (state.lang === 'zh' ? '需要先执行 git init' : 'git init required'),
       },
       {
         label: state.lang === 'zh' ? '远程绑定' : 'Remote',
         ok: !!status.remoteUrl,
-        detail: status.remoteUrl || (state.lang === 'zh' ? '未绑定远程仓库' : 'No remote connected'),
+        detail: status.remoteUrl || (state.lang === 'zh' ? '当前还没有绑定远程仓库' : 'No remote repository connected'),
       },
       {
         label: state.lang === 'zh' ? '认证配置' : 'Authentication',
         ok: !!status.authConfigured,
         detail: status.authConfigured
           ? `${status.authMode || 'token'}${status.accountUsername ? ` · ${status.accountUsername}` : ''}`
-          : (state.lang === 'zh' ? '尚未配置 Token / OAuth' : 'Token or OAuth required'),
+          : (state.lang === 'zh' ? '需要先配置 Token 或 OAuth' : 'Token or OAuth required'),
       },
       {
         label: state.lang === 'zh' ? '私有仓校验' : 'Private Check',
         ok: status.repoPrivate === true,
         detail: status.repoPrivate === true
-          ? (state.lang === 'zh' ? '已确认 private' : 'private confirmed')
+          ? (state.lang === 'zh' ? '已确认是 private 仓库' : 'Private repository confirmed')
           : status.repoPrivate === false
-            ? (state.lang === 'zh' ? '检测到 public 仓库' : 'public repo detected')
-            : (state.lang === 'zh' ? '尚未检查' : 'not checked yet'),
+            ? (state.lang === 'zh' ? '检测到 public 仓库，Guard 已阻断同步' : 'Public repository detected, sync blocked')
+            : (state.lang === 'zh' ? '尚未执行 private 检查' : 'Private check not executed yet'),
       },
       {
-        label: state.lang === 'zh' ? '可本地提交' : 'Commit Ready',
+        label: state.lang === 'zh' ? '本地提交' : 'Commit Ready',
         ok: !!status.canCommit,
         detail: status.canCommit
-          ? (state.lang === 'zh' ? '可以创建本地提交' : 'ready for local commit')
-          : (state.lang === 'zh' ? '提交前还有待处理项' : 'commit is still blocked'),
+          ? (state.lang === 'zh' ? '可以执行本地 commit' : 'Ready for local commit')
+          : (state.lang === 'zh' ? '当前仍有提交阻断项' : 'Commit is still blocked'),
       },
       {
-        label: state.lang === 'zh' ? '可远程推送' : 'Push Ready',
+        label: state.lang === 'zh' ? '远程推送' : 'Push Ready',
         ok: !!status.canPush,
         detail: status.canPush
-          ? (state.lang === 'zh' ? '可以直接推送远程' : 'ready for remote push')
-          : (state.lang === 'zh' ? '推送前还有待处理项' : 'push is still blocked'),
+          ? (state.lang === 'zh' ? '可以执行远程 push' : 'Ready for remote push')
+          : (state.lang === 'zh' ? '当前仍有推送阻断项' : 'Push is still blocked'),
       },
       {
         label: state.lang === 'zh' ? '一键同步' : 'Sync Ready',
         ok: !!status.canSync,
         detail: status.canSync
-          ? (state.lang === 'zh' ? '可以执行检查并同步' : 'ready for check + sync')
-          : (state.lang === 'zh' ? '仍有同步阻断项' : 'blocked by pending sync issues'),
+          ? (state.lang === 'zh' ? '可以执行检查并同步' : 'Ready for check + sync')
+          : (state.lang === 'zh' ? '当前仍有同步阻断项' : 'Sync is still blocked'),
       },
     ];
 
@@ -2426,12 +2490,16 @@
           ? 'warn'
           : '';
     const oauthStatusMessage = oauth.phase === 'authorizing'
-      ? (state.lang === 'zh' ? '授权进行中，请在浏览器完成登录，然后此页面会自动刷新状态。' : 'Authorization in progress. Finish the browser login and this page will refresh automatically.')
+      ? (state.lang === 'zh'
+        ? '浏览器授权进行中，请在浏览器完成登录，这个页面会自动刷新状态。'
+        : 'Authorization is in progress. Finish the browser login and this page will refresh automatically.')
       : oauth.phase === 'success'
         ? (oauth.message || (state.lang === 'zh' ? 'OAuth 已完成。' : 'OAuth completed.'))
         : oauth.phase === 'error'
           ? (oauth.error || oauth.message || (state.lang === 'zh' ? 'OAuth 失败。' : 'OAuth failed.'))
-          : (state.lang === 'zh' ? '如需浏览器授权，可在这里配置 Client ID / Secret。' : 'Configure Client ID / Secret here if you prefer browser OAuth.');
+          : (state.lang === 'zh'
+            ? '如果你更偏好浏览器授权，可以在这里填写 Client ID / Client Secret。'
+            : 'Configure Client ID / Client Secret here if you prefer browser OAuth.');
 
     const commitBlockingHtml = status.commitReasons?.length
       ? status.commitReasons.map((reason) => `<div class="list-item"><div>${escapeHtml(reason)}</div></div>`).join('')
@@ -2441,45 +2509,77 @@
       : `<div class="status">${escapeHtml(state.lang === 'zh' ? '远程推送链路已就绪。' : 'Push path is ready.')}</div>`;
     const syncBlockingHtml = status.reasons?.length
       ? status.reasons.map((reason) => `<div class="list-item"><div>${escapeHtml(reason)}</div></div>`).join('')
-      : `<div class="status">${escapeHtml(state.lang === 'zh' ? '当前没有阻断项，可以继续执行同步。' : 'No blockers detected. You can continue with sync.')}</div>`;
+      : `<div class="status">${escapeHtml(state.lang === 'zh' ? '当前没有同步阻断项。' : 'No sync blockers detected.')}</div>`;
     const stageHtml = stages.map((stage) => `
       <div class="list-item">
         <div class="row" style="justify-content:space-between; align-items:flex-start;">
           <strong>${escapeHtml(stage.label)}</strong>
-          <span class="pill ${stage.ok ? 'success' : 'warn'}">${escapeHtml(stage.ok ? (state.lang === 'zh' ? '已完成' : 'ready') : (state.lang === 'zh' ? '待处理' : 'pending'))}</span>
+          <span class="pill ${stage.ok ? 'success' : 'warn'}">${escapeHtml(stage.ok ? (state.lang === 'zh' ? '就绪' : 'ready') : (state.lang === 'zh' ? '待处理' : 'pending'))}</span>
         </div>
         <div class="muted small">${escapeHtml(stage.detail)}</div>
       </div>
     `).join('');
-    const changedFilesHtml = (status.changedFiles || []).length
-      ? status.changedFiles.map((file) => `
+    const stageableFilesHtml = stageableChangedFiles.length
+      ? stageableChangedFiles.map((file) => `
           <div class="list-item">
             <div class="row" style="justify-content:space-between; gap:12px;">
               <strong>${escapeHtml(file)}</strong>
-              <span class="muted small">${escapeHtml(status.currentBranch || '-')}</span>
+              <span class="pill success">${escapeHtml(state.lang === 'zh' ? '会纳入本次提交' : 'Will be committed')}</span>
             </div>
           </div>
         `).join('')
-      : emptyState(state.lang === 'zh' ? '当前没有待同步变更。' : 'No local changes to sync.');
+      : emptyState(state.lang === 'zh' ? '当前没有可直接提交的普通文件。' : 'No stageable root-repo files detected.');
+    const skippedReposHtml = skippedEmbeddedRepos.length
+      ? skippedEmbeddedRepos.map((repoPath) => `
+          <div class="list-item">
+            <div class="row" style="justify-content:space-between; gap:12px;">
+              <strong>${escapeHtml(repoPath)}/</strong>
+              <span class="pill warn">${escapeHtml(state.lang === 'zh' ? '已自动跳过' : 'Skipped')}</span>
+            </div>
+            <div class="muted small">${escapeHtml(state.lang === 'zh' ? '这是嵌套 Git 仓库，需要单独处理或加入外层忽略规则。' : 'This is an embedded Git repository and must be handled separately or ignored in the root repo.')}</div>
+          </div>
+        `).join('')
+      : emptyState(state.lang === 'zh' ? '当前没有检测到嵌套 Git 仓库。' : 'No embedded Git repositories detected.');
+    const rawChangeSummary = allChangedFiles.length
+      ? `${formatNumber(allChangedFiles.length)} ${state.lang === 'zh' ? '项变更' : 'changed paths'}`
+      : (state.lang === 'zh' ? '没有本地变更' : 'No local changes');
+    const embeddedRepoNotice = skippedEmbeddedRepos.length
+      ? `<div class="status warn" style="margin-top:14px;">${escapeHtml(state.lang === 'zh'
+          ? `Guard 已检测到 ${skippedEmbeddedRepos.length} 个嵌套 Git 仓库。它们不会被纳入外层 .openclaw 的本次提交，请按下方建议单独处理。`
+          : `Guard detected ${skippedEmbeddedRepos.length} embedded Git repositories. They will stay outside the root .openclaw commit and should be handled separately using the guidance below.`)}</div>`
+      : '';
+    const guidanceTitle = skippedEmbeddedRepos.length
+      ? (state.lang === 'zh' ? '嵌套仓库处理建议' : 'Embedded Repository Guidance')
+      : (state.lang === 'zh' ? '常见嵌套仓库建议' : 'Common Embedded Repository Guidance');
+    const guidanceStatus = skippedEmbeddedRepos.length
+      ? (state.lang === 'zh'
+        ? '下面的建议基于当前检测到的嵌套仓库生成，可以直接复制忽略模板。'
+        : 'These recommendations are generated from the embedded repositories detected right now. You can copy the ignore template directly.')
+      : (state.lang === 'zh'
+        ? '当 .openclaw 里包含 workspace-*、extensions/* 这类独立 Git 仓库时，可以提前按这里的规则规划同步边界。'
+        : 'When .openclaw contains independent child repositories such as workspace-* or extensions/*, use these rules to plan the sync boundary ahead of time.');
 
     const body = `
       <div class="grid">
         ${metricCard(state.lang === 'zh' ? '仓库状态' : 'Repository', status.repoInitialized ? 'READY' : 'MISSING', status.repoPath || '-', status.repoInitialized ? 'success' : 'warn')}
         ${metricCard(state.lang === 'zh' ? '远程仓库' : 'Remote', status.remoteRepo || status.remoteUrl || '-', status.remoteWebUrl || status.provider || '-', status.remoteUrl ? 'success' : 'warn')}
-        ${metricCard(state.lang === 'zh' ? '认证' : 'Auth', status.authConfigured ? (status.accountUsername || status.authMode || 'configured') : 'missing', status.authConfigured ? (state.lang === 'zh' ? '认证已配置' : 'credentials ready') : (state.lang === 'zh' ? '尚未配置' : 'not configured'), status.authConfigured ? 'success' : 'warn')}
-        ${metricCard(state.lang === 'zh' ? '本地变更' : 'Changes', formatNumber((status.changedFiles || []).length), `${status.currentBranch || '-'} · ${status.canCommit ? (state.lang === 'zh' ? '可提交' : 'commit ready') : (state.lang === 'zh' ? '待处理' : 'needs work')}`, (status.changedFiles || []).length > 0 ? 'warn' : 'success')}
+        ${metricCard(state.lang === 'zh' ? '认证' : 'Auth', status.authConfigured ? (status.accountUsername || status.authMode || 'configured') : 'missing', status.authConfigured ? (state.lang === 'zh' ? '凭证已配置' : 'credentials ready') : (state.lang === 'zh' ? '尚未配置' : 'not configured'), status.authConfigured ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '全部变更' : 'All Changes', formatNumber(allChangedFiles.length), `${status.currentBranch || '-'} · ${rawChangeSummary}`, allChangedFiles.length > 0 ? 'warn' : 'success')}
+        ${metricCard(state.lang === 'zh' ? '可提交文件' : 'Stageable', formatNumber(stageableChangedFiles.length), stageableChangedFiles.length > 0 ? (state.lang === 'zh' ? '将纳入外层 commit' : 'Will be staged in the root repo') : (state.lang === 'zh' ? '当前没有可提交普通文件' : 'No stageable root-repo files'), stageableChangedFiles.length > 0 ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '嵌套仓库' : 'Embedded Repos', formatNumber(skippedEmbeddedRepos.length), skippedEmbeddedRepos.length > 0 ? (state.lang === 'zh' ? '已自动跳过，需单独处理' : 'Skipped automatically, requires separate handling') : (state.lang === 'zh' ? '当前未发现' : 'No embedded repos detected'), skippedEmbeddedRepos.length > 0 ? 'warn' : 'success')}
       </div>
-      ${status.state?.lastError ? `<div class="status error" style="margin-top:14px;">${escapeHtml((state.lang === 'zh' ? '最近错误: ' : 'Last error: ') + status.state.lastError)}</div>` : ''}
+      ${status.state?.lastError ? `<div class="status error" style="margin-top:14px;">${escapeHtml((state.lang === 'zh' ? '最近错误：' : 'Last error: ') + status.state.lastError)}</div>` : ''}
+      ${embeddedRepoNotice}
       <div style="margin-top:14px;">${renderActionFeedback(state.lang === 'zh' ? '最近 Git 同步操作' : 'Latest Git Sync Action', state.gitSyncLastAction, state.lang === 'zh' ? '还没有执行过 Git 同步动作。' : 'No Git sync action has been executed yet.')}</div>
       <div class="grid" style="margin-top:14px;">
-        <div class="card">
+        <div class="card accent-info">
           <h3>${state.lang === 'zh' ? '同步准备度' : 'Sync Readiness'}</h3>
           <div class="list">${stageHtml}</div>
           <div class="toolbar tight" style="margin-top:12px;">
             <button class="action-btn" type="button" data-git-action="copy-repo-path">${state.lang === 'zh' ? '复制本地目录' : 'Copy Repo Path'}</button>
             <button class="action-btn" type="button" data-git-action="copy-remote" ${status.remoteUrl ? '' : 'disabled'}>${state.lang === 'zh' ? '复制远程地址' : 'Copy Remote URL'}</button>
             <button class="action-btn" type="button" data-git-action="open-remote" ${status.remoteWebUrl ? '' : 'disabled'}>${state.lang === 'zh' ? '打开远程仓库' : 'Open Remote'}</button>
-            <button class="action-btn primary" type="button" data-git-action="check-sync" ${status.canSync ? '' : ''}>${state.lang === 'zh' ? '检查并同步' : 'Check + Sync'}</button>
+            <button class="action-btn primary" type="button" data-git-action="check-sync">${state.lang === 'zh' ? '检查并同步' : 'Check + Sync'}</button>
           </div>
         </div>
         <div class="card">
@@ -2506,6 +2606,49 @@
         </div>
       </div>
       <div class="grid" style="margin-top:14px;">
+        <div class="card accent-success">
+          <h3>${state.lang === 'zh' ? '本次会纳入提交的文件' : 'Stageable Files For This Commit'}</h3>
+          <div class="muted small" style="margin-bottom:12px;">${escapeHtml(state.lang === 'zh' ? '这些路径属于外层 .openclaw 仓库，可直接纳入本次提交。' : 'These paths belong to the root .openclaw repository and will be staged normally.')}</div>
+          <div class="list">${stageableFilesHtml}</div>
+        </div>
+        <div class="card accent-warn">
+          <h3>${state.lang === 'zh' ? '已自动跳过的嵌套仓库' : 'Skipped Embedded Repositories'}</h3>
+          <div class="muted small" style="margin-bottom:12px;">${escapeHtml(state.lang === 'zh' ? '这些路径带有自己的 .git，不会被外层 Git Sync 纳入 commit。' : 'These paths contain their own .git directories and will stay outside the root Git Sync commit.')}</div>
+          <div class="list">${skippedReposHtml}</div>
+        </div>
+      </div>
+      <div class="card accent-warn" style="margin-top:14px;">
+        <div class="row" style="justify-content:space-between; align-items:flex-start; gap:16px;">
+          <div>
+            <h3>${escapeHtml(guidanceTitle)}</h3>
+            <p>${escapeHtml(guidanceStatus)}</p>
+          </div>
+          <span class="pill warn">${escapeHtml(skippedEmbeddedRepos.length > 0 ? `${formatNumber(skippedEmbeddedRepos.length)} ${state.lang === 'zh' ? '个待处理路径' : 'paths to review'}` : (state.lang === 'zh' ? '预防性指南' : 'Preventive guide'))}</span>
+        </div>
+        <div class="guide-grid" style="margin-top:12px;">
+          <div class="sub-card">
+            <strong>${escapeHtml(state.lang === 'zh' ? '方案 1：继续独立维护' : 'Option 1: Keep It Independent')}</strong>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '推荐做法。把子仓库路径加入外层 .gitignore，后续外层 Git Sync 只管主仓内容。' : 'Recommended. Add child repository paths to the root .gitignore so the root Git Sync only manages the main repository.')}</div>
+          </div>
+          <div class="sub-card">
+            <strong>${escapeHtml(state.lang === 'zh' ? '方案 2：并入主仓' : 'Option 2: Flatten Into The Root Repo')}</strong>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '如果你想把内容并入 .openclaw 主仓，需要先删除子目录里的 .git，再重新 add / commit。' : 'If you want the content to live inside the root .openclaw repo, delete the child .git directory first, then add / commit again.')}</div>
+          </div>
+          <div class="sub-card">
+            <strong>${escapeHtml(state.lang === 'zh' ? '方案 3：继续单独同步' : 'Option 3: Sync Separately')}</strong>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '保持子仓库不变，但请在对应子目录里独立执行它自己的 commit / push。' : 'Leave the child repository untouched, but commit and push from inside that child directory separately.')}</div>
+          </div>
+        </div>
+        <div class="command-list" style="margin-top:14px;">
+          <div class="muted small">${escapeHtml(state.lang === 'zh' ? '建议加入外层 .gitignore 的模板' : 'Suggested root .gitignore template')}</div>
+          <code>${escapeHtml(gitIgnoreTemplate)}</code>
+        </div>
+        <div class="toolbar tight" style="margin-top:12px;">
+          <button class="action-btn" type="button" data-git-action="copy-ignore-template">${state.lang === 'zh' ? '复制忽略模板' : 'Copy Ignore Template'}</button>
+          <button class="action-btn" type="button" data-git-action="copy-embedded-guide">${state.lang === 'zh' ? '复制处理说明' : 'Copy Guidance'}</button>
+        </div>
+      </div>
+      <div class="grid" style="margin-top:14px;">
         <div class="card">
           <h3>${state.lang === 'zh' ? '初始化与远程绑定' : 'Init & Remote Bind'}</h3>
           <div class="toolbar tight" style="margin-bottom:12px;">
@@ -2516,7 +2659,7 @@
           <div class="form-grid" id="git-connect-form">
             ${renderFormField({ name: 'provider', label: 'Provider', type: 'select', value: status.provider || status.state?.provider || 'github', options: ['github', 'gitee'] })}
             ${renderFormField({ name: 'remoteName', label: 'Remote Name', value: status.remoteName || 'origin' })}
-            ${renderFormField({ name: 'remoteUrl', label: 'Remote URL', value: status.remoteUrl || '', placeholder: 'https://github.com/owner/private-repo.git', fullWidth: true, help: state.lang === 'zh' ? '只支持 GitHub / Gitee，且后续会强制校验 private。' : 'GitHub / Gitee only. Guard will block public repositories.' })}
+            ${renderFormField({ name: 'remoteUrl', label: 'Remote URL', value: status.remoteUrl || '', placeholder: 'https://github.com/owner/private-repo.git', fullWidth: true, help: state.lang === 'zh' ? '只支持 GitHub / Gitee，后续 Guard 会强制校验 private。' : 'GitHub / Gitee only. Guard will block public repositories.' })}
           </div>
           <div class="toolbar tight" style="margin-top:12px;">
             <button class="action-btn primary" type="button" data-git-action="connect">${state.lang === 'zh' ? '绑定远程仓库' : 'Connect Remote'}</button>
@@ -2527,7 +2670,7 @@
           <div class="form-grid" id="git-token-form">
             ${renderFormField({ name: 'provider', label: 'Provider', type: 'select', value: status.provider || status.state?.provider || 'github', options: ['github', 'gitee'] })}
             ${renderFormField({ name: 'username', label: state.lang === 'zh' ? '用户名 / 账号' : 'Username', value: status.state?.username || '', placeholder: 'optional-user' })}
-            ${renderFormField({ name: 'token', label: 'Token', type: 'password', value: '', placeholder: 'ghp_xxx / gitee token', fullWidth: true, help: state.lang === 'zh' ? '这里不会回显已保存的 Token；需要更新时请重新粘贴。' : 'Saved token is never echoed here; paste again to update it.' })}
+            ${renderFormField({ name: 'token', label: 'Token', type: 'password', value: '', placeholder: 'ghp_xxx / gitee token', fullWidth: true, help: state.lang === 'zh' ? '这里不会回显已保存的 Token；需要更新时请重新粘贴。' : 'Saved token is never echoed here; paste it again when you need to rotate it.' })}
           </div>
           <div class="toolbar tight" style="margin-top:12px;">
             <button class="action-btn primary" type="button" data-git-action="token">${state.lang === 'zh' ? '保存 Token' : 'Save Token'}</button>
@@ -2567,7 +2710,18 @@
             <button class="action-btn" type="button" data-git-action="check-sync">${state.lang === 'zh' ? '检查并同步' : 'Check + Sync'}</button>
             <button class="action-btn primary" type="button" data-git-action="sync" ${status.canSync ? '' : 'disabled'}>sync</button>
           </div>
-          <div class="list" style="margin-top:12px;">${changedFilesHtml}</div>
+          <div class="list" style="margin-top:12px;">
+            ${allChangedFiles.length
+              ? allChangedFiles.map((file) => `
+                  <div class="list-item">
+                    <div class="row" style="justify-content:space-between; gap:12px;">
+                      <strong>${escapeHtml(file)}</strong>
+                      <span class="muted small">${escapeHtml(skippedEmbeddedRepos.includes(file) ? (state.lang === 'zh' ? '嵌套仓库' : 'embedded repo') : (stageableChangedFiles.includes(file) ? (state.lang === 'zh' ? '可提交' : 'stageable') : (state.lang === 'zh' ? '待确认' : 'pending')))}</span>
+                    </div>
+                  </div>
+                `).join('')
+              : emptyState(state.lang === 'zh' ? '当前没有待同步的本地变更。' : 'No local changes to sync.')}
+          </div>
         </div>
       </div>
     `;
@@ -2712,6 +2866,19 @@
             }
             await copyTextValue(oauth.authorizeUrl, {
               successMessage: state.lang === 'zh' ? '授权地址已复制。' : 'Authorization URL copied.',
+            });
+            return;
+          }
+          if (action === 'copy-ignore-template') {
+            await copyTextValue(gitIgnoreTemplate, {
+              successMessage: state.lang === 'zh' ? '忽略模板已复制。' : 'Ignore template copied.',
+              emptyMessage: state.lang === 'zh' ? '当前没有可复制的忽略模板。' : 'No ignore template available.',
+            });
+            return;
+          }
+          if (action === 'copy-embedded-guide') {
+            await copyTextValue(embeddedRepoGuide, {
+              successMessage: state.lang === 'zh' ? '处理说明已复制。' : 'Embedded repository guidance copied.',
             });
             return;
           }

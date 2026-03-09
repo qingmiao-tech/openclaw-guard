@@ -71,6 +71,8 @@ export interface GitSyncStatus {
   accountUsername: string | null;
   hasChanges: boolean;
   changedFiles: string[];
+  stageableChangedFiles: string[];
+  skippedEmbeddedRepos: string[];
   canCommit: boolean;
   canPush: boolean;
   canSync: boolean;
@@ -503,6 +505,8 @@ function buildStatus(stateOverride?: Partial<GitSyncState>): GitSyncStatus {
     accountUsername: state.username || null,
     hasChanges: changedFiles.length > 0,
     changedFiles,
+    stageableChangedFiles: stagePreparation.stageableChanges,
+    skippedEmbeddedRepos: stagePreparation.skippedEmbeddedRepos,
     canCommit,
     canPush,
     canSync,

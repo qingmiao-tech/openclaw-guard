@@ -121,6 +121,35 @@ describe('git-sync', () => {
     expect(after.state.lastCommitAt).not.toBeNull();
   });
 
+  it('skips embedded repositories during commit and keeps them out of the staged set', () => {
+    initGitSync();
+    execFileSync('git', ['-C', tempRoot, 'config', 'user.name', 'OpenClaw Guard Test'], { stdio: 'ignore' });
+    execFileSync('git', ['-C', tempRoot, 'config', 'user.email', 'guard@example.com'], { stdio: 'ignore' });
+
+    fs.writeFileSync(path.join(tempRoot, 'README.md'), '# guard\n', 'utf-8');
+    const embeddedRepoPath = path.join(tempRoot, 'workspace-nanfeng');
+    fs.mkdirSync(embeddedRepoPath, { recursive: true });
+    execFileSync('git', ['-C', embeddedRepoPath, 'init'], { stdio: 'ignore' });
+    fs.writeFileSync(path.join(embeddedRepoPath, 'README.md'), '# nested repo\n', 'utf-8');
+
+    const result = commitGitSync('跳过嵌套仓库提交测试');
+    expect(result.success).toBe(true);
+    expect(result.message).toContain('workspace-nanfeng/');
+
+    const headMessage = execFileSync('git', ['-C', tempRoot, 'log', '-1', '--pretty=%s'], { encoding: 'utf-8' }).trim();
+    expect(headMessage).toBe('跳过嵌套仓库提交测试');
+
+    const trackedFiles = execFileSync('git', ['-C', tempRoot, 'ls-tree', '--name-only', 'HEAD'], { encoding: 'utf-8' });
+    expect(trackedFiles).toContain('README.md');
+    expect(trackedFiles).not.toContain('workspace-nanfeng');
+
+    const after = getGitSyncStatus();
+    expect(after.hasChanges).toBe(true);
+    expect(after.changedFiles).toContain('workspace-nanfeng');
+    expect(after.canCommit).toBe(false);
+    expect(after.commitReasons.join(' ')).toContain('embedded Git repositories');
+  });
+
   it('checks github private repo successfully and enriches status fields', async () => {
     initGitSync();
     connectGitRemote({ provider: 'github', remoteUrl: 'https://github.com/acme/demo.git' });

@@ -39,14 +39,16 @@ export function saveNotifications(items: GuardNotification[]): void {
 }
 
 function isRecentDuplicate(items: GuardNotification[], input: CreateNotificationInput, dedupeWindowMs: number): boolean {
-  const latest = items[0];
-  if (!latest) return false;
-  if (latest.type !== input.type || latest.source !== input.source || latest.title !== input.title || latest.message !== input.message) {
-    return false;
+  const now = Date.now();
+  for (const item of items) {
+    if (item.type !== input.type || item.source !== input.source || item.title !== input.title || item.message !== input.message) {
+      continue;
+    }
+    const createdAt = Date.parse(item.createdAt);
+    if (!Number.isFinite(createdAt)) continue;
+    if (now - createdAt < dedupeWindowMs) return true;
   }
-  const createdAt = Date.parse(latest.createdAt);
-  if (!Number.isFinite(createdAt)) return false;
-  return Date.now() - createdAt < dedupeWindowMs;
+  return false;
 }
 
 export function addNotification(input: CreateNotificationInput, dedupeWindowMs = 30_000): GuardNotification {

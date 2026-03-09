@@ -7,13 +7,16 @@ import { applyProfile, PROFILES } from './profiles.js';
 import { generateHardenScript, getAllHardenSteps } from './harden.js';
 import { detectPlatform, getCurrentUser, getHomeDir, getOpenClawDir } from './platform.js';
 import { detectOpenClaw, installOrUpdateSync } from './openclaw.js';
-import { getCompatibilityPage, getHtmlPage } from './web-ui.js';
+import { getCompatibilityPage } from './web-ui.js';
 import { getWorkbenchPage } from './workbench-ui.js';
 import {
   loadConfig,
   saveConfig,
   getNested,
+  getConfigPath,
+  getEnvPath,
   readAllEnv,
+  removeEnvValue,
   writeEnvValue,
   getOrCreateGatewayToken,
   getDashboardUrl,
@@ -228,7 +231,7 @@ export function startServer(port: number) {
           return;
         }
         if (pathname === '/legacy') {
-          htmlResponse(res, getHtmlPage());
+          htmlResponse(res, getCompatibilityPage());
           return;
         }
 
@@ -238,6 +241,8 @@ export function startServer(port: number) {
             user: getCurrentUser(),
             home: getHomeDir(),
             openclawDir: getOpenClawDir(),
+            configPath: getConfigPath(),
+            envPath: getEnvPath(),
             pid: process.pid,
             nodeVersion: process.version,
             arch: process.arch,
@@ -441,6 +446,16 @@ export function startServer(port: number) {
           }
           writeEnvValue(body.key, body.value);
           jsonResponse(res, { success: true, message: `${body.key} saved.` });
+          return;
+        }
+        if (pathname === '/api/env' && req.method === 'DELETE') {
+          const key = url.searchParams.get('key') || '';
+          if (!key.trim()) {
+            jsonResponse(res, { success: false, message: 'key is required' }, 400);
+            return;
+          }
+          removeEnvValue(key.trim());
+          jsonResponse(res, { success: true, message: `${key.trim()} removed.` });
           return;
         }
 
@@ -713,8 +728,7 @@ export function startServer(port: number) {
       }
       console.log('\n[Guard] OpenClaw Guard web UI started.');
       console.log(`   URL: http://localhost:${currentPort}`);
-      console.log(`   Compatibility: http://localhost:${currentPort}/compat`);
-      console.log(`   Legacy: http://localhost:${currentPort}/legacy`);
+      console.log(`   Alias: http://localhost:${currentPort}/workbench`);
       console.log('   Press Ctrl+C to stop.\n');
     });
     return server;
@@ -722,10 +736,6 @@ export function startServer(port: number) {
 
   return tryListen(0);
 }
-
-
-
-
 
 
 

@@ -6,7 +6,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { URL, URLSearchParams } from 'node:url';
 import { getOpenClawDir } from './platform.js';
 import { ensureDir, ensureGuardLayout, readJsonFile, writeJsonFile } from './guard-state.js';
-import { addNotification } from './notifications.js';
+import { addNotification, markNotificationsMatching } from './notifications.js';
 import { runCommand } from './openclaw-runtime.js';
 
 export type GitProvider = 'github' | 'gitee';
@@ -484,6 +484,46 @@ function normalizeGitIgnoreMode(input?: string | null): GitIgnoreMode {
   return input === 'exact' ? 'exact' : 'smart';
 }
 
+function toNormalizedPathList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return uniqueItems(value.map((item) => normalizeGitPath(String(item || ''))).filter(Boolean));
+}
+
+function includesOnlyKnownPaths(actualPaths: string[], expectedPaths: string[]): boolean {
+  if (actualPaths.length === 0 || expectedPaths.length === 0) return false;
+  const expectedSet = new Set(expectedPaths);
+  return actualPaths.every((item) => expectedSet.has(item));
+}
+
+function resolveGitSyncNotifications(predicate: (title: string, meta: Record<string, unknown> | undefined) => boolean): number {
+  return markNotificationsMatching((item) => {
+    if (item.source !== 'git-sync') return false;
+    return predicate(item.title, item.meta);
+  }, true);
+}
+
+function resolveEmbeddedRepoWarnings(paths: string[]): number {
+  const normalizedPaths = uniqueItems(paths.map((item) => normalizeGitPath(item)).filter(Boolean));
+  if (normalizedPaths.length === 0) return 0;
+  return resolveGitSyncNotifications((title, meta) => {
+    if (title === 'Embedded Git repositories detected') {
+      return includesOnlyKnownPaths(toNormalizedPathList(meta?.embeddedRepos), normalizedPaths);
+    }
+    if (title === 'Git sync commit skipped') {
+      return includesOnlyKnownPaths(toNormalizedPathList(meta?.skippedEmbeddedRepos), normalizedPaths);
+    }
+    return false;
+  });
+}
+
+function resolveUnsyncedChangeNotifications(): number {
+  return resolveGitSyncNotifications((title) => title === 'Detected unsynced .openclaw changes');
+}
+
+function resolveCommitSuccessNotifications(): number {
+  return resolveGitSyncNotifications((title) => title === 'Local commit succeeded');
+}
+
 export function parseGitRemote(remoteUrl: string): GitRepoRef | null {
   const trimmed = remoteUrl.trim();
   let match = trimmed.match(/^https?:\/\/(github\.com|gitee\.com)\/([^/]+)\/([^/]+?)(?:\.git)?$/i);
@@ -634,6 +674,7 @@ export function previewGitIgnoreRules(paths?: string[], mode: GitIgnoreMode = 's
 export function applyGitIgnoreRules(mode: GitIgnoreMode = 'smart'): GitIgnoreApplyResult {
   const normalizedMode = normalizeGitIgnoreMode(mode);
   const preview = previewGitIgnoreRules(undefined, normalizedMode);
+  const resolvedEmbeddedWarnings = resolveEmbeddedRepoWarnings(preview.embeddedRepos);
   if (!preview.willChange) {
     return {
       success: true,
@@ -661,15 +702,17 @@ export function applyGitIgnoreRules(mode: GitIgnoreMode = 'smart'): GitIgnoreApp
         mode: preview.mode,
         embeddedRepos: preview.embeddedRepos,
         missingEntries: preview.missingEntries,
+        resolvedNotificationCount: resolvedEmbeddedWarnings,
       },
     });
 
   const nextPreview = previewGitIgnoreRules(preview.embeddedRepos, normalizedMode);
+  const nextStatus = buildStatus();
   return {
     success: true,
-    message: `已将 ${preview.missingEntries.length} 条嵌套仓库忽略规则写入 .gitignore。`,
+    message: `已将 ${preview.missingEntries.length} 条嵌套仓库忽略规则写入 .gitignore，并刷新当前同步状态。`,
     preview: nextPreview,
-    status: buildStatus(),
+    status: nextStatus,
     output: nextPreview.gitignorePath,
   };
 }
@@ -1133,6 +1176,7 @@ export function commitGitSync(message?: string): GitSyncActionResult {
     severity: 'success',
     meta: { skippedEmbeddedRepos: stagePreparation.skippedEmbeddedRepos },
   });
+  resolveUnsyncedChangeNotifications();
   return {
     success: true,
     message: `Local commit succeeded.${skippedMessage}`,
@@ -1198,6 +1242,8 @@ export function pushGitSync(): GitSyncActionResult {
     message: pushResult.stdout.trim() || 'Changes were pushed to the private remote repository.',
     severity: 'success',
   });
+  resolveUnsyncedChangeNotifications();
+  resolveCommitSuccessNotifications();
   return {
     success: true,
     message: 'Remote push succeeded.',

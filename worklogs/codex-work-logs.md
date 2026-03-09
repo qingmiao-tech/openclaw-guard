@@ -1830,3 +1830,56 @@
   1) 当前通知跳转是基于 Git Sync 通知内容和 meta 规则判断的，没有单独引入新的通知 schema 字段，所以兼容性风险较低。
   2) `.gitignore` 模式目前只影响嵌套仓库建议规则，不影响 `guard/secrets/`、`guard/state/` 等基础忽略项；这些基础项仍由 `git init` 流程维护。
   3) 如果下一轮继续推进，比较自然的方向是把 Git Sync 通知、页面状态和提交/推送结果做成“操作后自动收敛”的闭环，例如成功写入 `.gitignore` 后自动把相应嵌套仓库提醒降级或归档。
+
+## [2026-03-09 13:54] openclaw-guard Git Sync 第四阶段收口：通知自动收敛闭环与 Mission 兼容层移除评估 [TASK-20260309-006]
+
+- 任务来源: 用户要求继续完成三项收口工作，并同时评估 `mission` 是否可以完全移除。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成开发补强、自动化验证、真实页面烟雾回归与兼容层评估，待提交 git。
+- 实际完成:
+  1) `openclaw-guard/src/notifications.ts` 新增 `markNotificationsMatching()`，支持后端按条件批量收敛通知，避免 Git Sync 成功后旧提醒继续挂在通知中心。
+  2) `openclaw-guard/src/git-sync.ts` 已把 Git Sync 三类成功后的通知闭环补齐：
+     - `.gitignore` 一键写入成功后，会自动收敛对应的嵌套仓库提醒。
+     - 本地 `commit` 成功后，会自动收敛 `Detected unsynced .openclaw changes`。
+     - 远程 `push` 成功后，会继续收敛残留的“未同步提醒”和 `Local commit succeeded`，减少重复提示。
+  3) `openclaw-guard/web/guard-ui.js` 已补强通知中心跳转规则：
+     - `Embedded Git repositories detected`
+     - `.gitignore updated for embedded repositories`
+     - `Local commit succeeded`
+     - `Remote push succeeded`
+     这些通知现在都能跳回 `Git Sync` 页面对应卡片，并依赖 `#git-sync-readiness-card` / `#git-sync-commit-card` 做精确定位。
+  4) 新增并通过 `openclaw-guard/src/__tests__/git-sync.test.ts` 测试：
+     - `marks embedded repository warnings as read after applying gitignore rules`
+     - `marks unsynced change notifications as read after a successful local commit`
+     - `marks local commit and unsynced notifications as read after a successful remote push`
+     其中 `push` 用本地 bare 仓库 + Git URL 重写方式验证，不依赖真实 GitHub 网络。
+  5) 已重新核查 `mission` 兼容层真实依赖，当前结论仍是“暂不建议完全移除”。保留原因包括：
+     - CLI 仍保留整套 `mission` 子命令入口。
+     - Web API 仍提供 `/api/mission/*` 路由和 token 校验逻辑。
+     - 前端标签顺序、兼容页加载器、日志页切换仍依赖 `mission`。
+     - `mission-control.ts` 仍是完整外部集成管理器，不是空壳。
+- 交付清单:
+  - openclaw-guard/src/notifications.ts
+  - openclaw-guard/src/git-sync.ts
+  - openclaw-guard/src/__tests__/git-sync.test.ts
+  - openclaw-guard/web/guard-ui.js
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  2) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  3) 已验证 `pnpm --dir openclaw-guard test -- --run src/__tests__/git-sync.test.ts` 通过，当前 git-sync 相关 16 项测试全部通过。
+  4) 已按 `webapp-testing` 技能要求使用 `with_server.py` 拉起本地服务，并执行 `openclaw-guard/.guard-runtime/commit-notification-jump-smoke.py`。
+     烟雾回归已确认：
+     - 在 `Git Sync` 页面执行本地 commit 后，通知中心会出现 `Local commit succeeded`
+     - 通知上的按钮可以切回 `Git Sync`
+     - 页面能正确高亮 `#git-sync-commit-card`
+  5) 已生成真实页面回归截图：`openclaw-guard/.guard-runtime/commit-notification-jump-smoke.png`
+- Mission 兼容层评估结论:
+  1) 现在适合继续“默认隐藏 / 标记弃用 / 限缩入口”，不适合直接物理删除。
+  2) 更稳妥的拆除顺序应为：
+     - 第一步：默认隐藏 Mission 标签，只保留显式兼容入口。
+     - 第二步：CLI / API 给出更明确弃用提示，并统计是否仍被使用。
+     - 第三步：确认课程内容和客户环境无依赖后，再删 `mission-control.ts`、`mission` CLI、`/api/mission/*` 与前端兼容页。
+- 风险与补充说明:
+  1) 当前 `mission` 的删除风险不是技术做不到，而是会直接破坏已有 CLI/API/前端兼容入口，所以更适合阶段性下线。
+  2) Git Sync 通知闭环目前已覆盖 `.gitignore -> commit -> push` 主路径；如果下一轮继续增强，可以再把“通知已处理”的可视反馈做得更明显，例如成功动作后给出短暂成功高亮或统计角标刷新。

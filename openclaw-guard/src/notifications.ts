@@ -95,6 +95,22 @@ export function markAllNotifications(read = true): number {
   return changed;
 }
 
+export function markNotificationsMatching(
+  predicate: (item: GuardNotification) => boolean,
+  read = true,
+): number {
+  const items = listNotifications(0);
+  let changed = 0;
+  for (const item of items) {
+    if (!predicate(item)) continue;
+    if (item.read === read) continue;
+    item.read = read;
+    changed += 1;
+  }
+  if (changed > 0) saveNotifications(items);
+  return changed;
+}
+
 export function clearReadNotifications(): number {
   const items = listNotifications(0);
   const next = items.filter((item) => !item.read);

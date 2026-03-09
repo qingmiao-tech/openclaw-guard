@@ -52,6 +52,71 @@ export interface RuntimeHeartbeatAgent {
   everyMs: number | null;
 }
 
+export interface RuntimeOsSummary {
+  platform: string | null;
+  arch: string | null;
+  release: string | null;
+  label: string | null;
+}
+
+export interface RuntimeUpdateSummary {
+  root: string | null;
+  installKind: string | null;
+  packageManager: string | null;
+  latestVersion: string | null;
+  channel: string | null;
+  channelSource: string | null;
+  depsStatus: string | null;
+  depsReason: string | null;
+}
+
+export interface RuntimeMemorySummary {
+  agentId: string | null;
+  backend: string | null;
+  provider: string | null;
+  requestedProvider: string | null;
+  searchMode: string | null;
+  workspaceDir: string | null;
+  dbPath: string | null;
+  files: number;
+  chunks: number;
+  dirty: boolean | null;
+  sources: string[];
+  extraPaths: string[];
+  providerUnavailableReason: string | null;
+}
+
+export interface RuntimeMemoryPluginSummary {
+  enabled: boolean | null;
+  slot: string | null;
+}
+
+export interface RuntimeGatewaySelfSummary {
+  host: string | null;
+  ip: string | null;
+  version: string | null;
+  platform: string | null;
+}
+
+export interface RuntimeServiceSummary {
+  label: string | null;
+  installed: boolean | null;
+  loadedText: string | null;
+  runtimeShort: string | null;
+}
+
+export interface RuntimeSessionsByAgentSummary {
+  agentId: string;
+  path: string | null;
+  count: number;
+  recent: SessionRecord[];
+}
+
+export interface RuntimeSessionsMeta {
+  paths: string[];
+  byAgent: RuntimeSessionsByAgentSummary[];
+}
+
 export interface RuntimeSnapshot {
   ok: boolean;
   source: string;
@@ -64,13 +129,20 @@ export interface RuntimeSnapshot {
     agents: RuntimeHeartbeatAgent[];
   };
   channelSummary?: string[];
+  os?: RuntimeOsSummary;
+  update?: RuntimeUpdateSummary;
+  memory?: RuntimeMemorySummary;
+  memoryPlugin?: RuntimeMemoryPluginSummary;
   gateway?: {
     mode: string | null;
     url: string | null;
     reachable: boolean | null;
     connectLatencyMs: number | null;
     error: string | null;
+    self?: RuntimeGatewaySelfSummary;
   };
+  gatewayService?: RuntimeServiceSummary;
+  nodeService?: RuntimeServiceSummary;
   securityAudit?: {
     critical: number;
     warn: number;
@@ -89,6 +161,7 @@ export interface RuntimeSnapshot {
     defaultContextTokens: number | null;
     queuedSystemEvents: number;
   };
+  sessionsMeta?: RuntimeSessionsMeta;
   raw: unknown;
 }
 
@@ -108,6 +181,7 @@ export interface CronJobRecord {
 export interface CronStatusSummary {
   enabled: boolean | null;
   storePath: string | null;
+  jobsCount: number | null;
   schedulerNextWakeAt: string | null;
   warnings: string[];
   raw: Record<string, unknown> | null;
@@ -119,6 +193,11 @@ export interface CronSnapshot {
   capturedAt: string;
   warnings: string[];
   jobs: CronJobRecord[];
+  total: number;
+  offset: number;
+  limit: number;
+  hasMore: boolean;
+  nextOffset: number | null;
   status?: CronStatusSummary;
   raw: unknown;
 }
@@ -310,6 +389,16 @@ function normalizeUsage(root: Record<string, unknown>): SessionUsage {
     cacheReadTokens,
     cacheWriteTokens,
     totalTokens,
+  };
+}
+
+function normalizeServiceSummary(root: unknown): RuntimeServiceSummary {
+  const service = toObject(root) || {};
+  return {
+    label: pickString(service.label) || null,
+    installed: typeof service.installed === 'boolean' ? service.installed : null,
+    loadedText: pickString(service.loadedText) || null,
+    runtimeShort: pickString(service.runtimeShort) || null,
   };
 }
 
@@ -528,12 +617,26 @@ export function getRuntimeSnapshot(): RuntimeSnapshot {
   const sessionsRoot = toObject(root.sessions) || {};
   const agentsRoot = toObject(root.agents) || {};
   const gatewayRoot = toObject(root.gateway) || {};
+  const gatewaySelfRoot = toObject(gatewayRoot.self) || {};
   const heartbeatRoot = toObject(root.heartbeat) || {};
   const securityAuditRoot = toObject(root.securityAudit) || {};
   const securitySummary = toObject(securityAuditRoot.summary) || {};
+  const memoryRoot = toObject(root.memory) || {};
+  const memoryCustomRoot = toObject(memoryRoot.custom) || {};
+  const memoryPluginRoot = toObject(root.memoryPlugin) || {};
+  const osRoot = toObject(root.os) || {};
+  const updateRoot = toObject(root.update) || {};
+  const updateRegistryRoot = toObject(updateRoot.registry) || {};
+  const updateDepsRoot = toObject(updateRoot.deps) || {};
   const sessions = response.ok
     ? resolveSessions(raw).map((item, index) => normalizeSession(item, index))
     : [];
+  const sessionsByAgent = toObjectArray(sessionsRoot.byAgent).map((item, index) => ({
+    agentId: pickString(item.agentId, item.id) || `agent-${index + 1}`,
+    path: pickString(item.path) || null,
+    count: pickNumber(item.count),
+    recent: toObjectArray(item.recent).map((session, sessionIndex) => normalizeSession(session, sessionIndex)),
+  }));
 
   return {
     ok: response.ok,
@@ -554,13 +657,56 @@ export function getRuntimeSnapshot(): RuntimeSnapshot {
     channelSummary: Array.isArray(root.channelSummary)
       ? root.channelSummary.map((item) => String(item))
       : [],
+    os: {
+      platform: pickString(osRoot.platform) || null,
+      arch: pickString(osRoot.arch) || null,
+      release: pickString(osRoot.release) || null,
+      label: pickString(osRoot.label) || null,
+    },
+    update: {
+      root: pickString(updateRoot.root) || null,
+      installKind: pickString(updateRoot.installKind) || null,
+      packageManager: pickString(updateRoot.packageManager) || null,
+      latestVersion: pickString(updateRegistryRoot.latestVersion) || null,
+      channel: pickString(root.updateChannel) || null,
+      channelSource: pickString(root.updateChannelSource) || null,
+      depsStatus: pickString(updateDepsRoot.status) || null,
+      depsReason: pickString(updateDepsRoot.reason) || null,
+    },
+    memory: {
+      agentId: pickString(memoryRoot.agentId) || null,
+      backend: pickString(memoryRoot.backend) || null,
+      provider: pickString(memoryRoot.provider) || null,
+      requestedProvider: pickString(memoryRoot.requestedProvider) || null,
+      searchMode: pickString(memoryCustomRoot.searchMode) || null,
+      workspaceDir: pickString(memoryRoot.workspaceDir) || null,
+      dbPath: pickString(memoryRoot.dbPath) || null,
+      files: pickNumber(memoryRoot.files),
+      chunks: pickNumber(memoryRoot.chunks),
+      dirty: typeof memoryRoot.dirty === 'boolean' ? memoryRoot.dirty : null,
+      sources: toStringArray(memoryRoot.sources),
+      extraPaths: toStringArray(memoryRoot.extraPaths),
+      providerUnavailableReason: pickString(memoryCustomRoot.providerUnavailableReason) || null,
+    },
+    memoryPlugin: {
+      enabled: typeof memoryPluginRoot.enabled === 'boolean' ? memoryPluginRoot.enabled : null,
+      slot: pickString(memoryPluginRoot.slot) || null,
+    },
     gateway: {
       mode: pickString(gatewayRoot.mode) || null,
       url: pickString(gatewayRoot.url) || null,
       reachable: typeof gatewayRoot.reachable === 'boolean' ? gatewayRoot.reachable : null,
       connectLatencyMs: pickNullableNumber(gatewayRoot.connectLatencyMs),
       error: pickString(gatewayRoot.error) || null,
+      self: {
+        host: pickString(gatewaySelfRoot.host) || null,
+        ip: pickString(gatewaySelfRoot.ip) || null,
+        version: pickString(gatewaySelfRoot.version) || null,
+        platform: pickString(gatewaySelfRoot.platform) || null,
+      },
     },
+    gatewayService: normalizeServiceSummary(root.gatewayService),
+    nodeService: normalizeServiceSummary(root.nodeService),
     securityAudit: {
       critical: pickNumber(securitySummary.critical),
       warn: pickNumber(securitySummary.warn),
@@ -579,6 +725,10 @@ export function getRuntimeSnapshot(): RuntimeSnapshot {
       defaultContextTokens: pickNullableNumber((toObject(sessionsRoot.defaults) || {}).contextTokens),
       queuedSystemEvents: Array.isArray(root.queuedSystemEvents) ? root.queuedSystemEvents.length : 0,
     },
+    sessionsMeta: {
+      paths: toStringArray(sessionsRoot.paths),
+      byAgent: sessionsByAgent,
+    },
     raw,
   };
 }
@@ -596,6 +746,7 @@ export function getCronStatusSummary(): CronStatusSummary {
   return {
     enabled: raw && typeof raw.enabled === 'boolean' ? raw.enabled : null,
     storePath: raw ? pickString(raw.storePath) || null : null,
+    jobsCount: raw ? pickNullableNumber(raw.jobs) : null,
     schedulerNextWakeAt: normalizeTimestamp(raw?.schedulerNextWakeAtMs ?? raw?.nextWakeAtMs),
     warnings: response.warnings,
     raw,
@@ -605,6 +756,7 @@ export function getCronStatusSummary(): CronStatusSummary {
 export function getCronSnapshot(): CronSnapshot {
   const response = runOpenClawJson(['cron', 'list'], 'OPENCLAW_GUARD_MOCK_CRON_JSON');
   const raw = response.data;
+  const root = toObject(raw) || {};
   const jobs = response.ok
     ? resolveCronJobs(raw).map((item, index) => normalizeCronJob(item, index))
     : [];
@@ -615,11 +767,15 @@ export function getCronSnapshot(): CronSnapshot {
     capturedAt: new Date().toISOString(),
     warnings: response.warnings,
     jobs,
+    total: pickNumber(root.total, jobs.length),
+    offset: pickNumber(root.offset),
+    limit: pickNumber(root.limit, jobs.length),
+    hasMore: root.hasMore === true,
+    nextOffset: pickNullableNumber(root.nextOffset),
     status: getCronStatusSummary(),
     raw,
   };
 }
-
 
 
 

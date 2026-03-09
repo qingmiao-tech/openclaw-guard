@@ -4,6 +4,26 @@ import { getCronSnapshot, getRuntimeSnapshot, parseOpenClawJsonOutput } from '..
 describe('openclaw-runtime', () => {
   beforeEach(() => {
     vi.stubEnv('OPENCLAW_GUARD_MOCK_STATUS_JSON', JSON.stringify({
+      os: {
+        platform: 'win32',
+        arch: 'x64',
+        release: '10.0.26200',
+        label: 'windows 10.0.26200 (x64)',
+      },
+      update: {
+        root: 'C:/Program Files/openclaw',
+        installKind: 'package',
+        packageManager: 'pnpm',
+        deps: {
+          status: 'unknown',
+          reason: 'lockfile missing',
+        },
+        registry: {
+          latestVersion: '2026.3.8',
+        },
+      },
+      updateChannel: 'stable',
+      updateChannelSource: 'default',
       heartbeat: {
         defaultAgentId: 'main',
         agents: [
@@ -17,6 +37,9 @@ describe('openclaw-runtime', () => {
           model: 'gpt-5.3-codex',
           contextTokens: 200000,
         },
+        paths: [
+          'C:/Users/demo/.openclaw/agents/main/sessions/sessions.json',
+        ],
         recent: [
           {
             sessionId: '49d7df99-5cb6-43d0-baa6-ac01bd3e9799',
@@ -36,12 +59,72 @@ describe('openclaw-runtime', () => {
             flags: ['system'],
           },
         ],
+        byAgent: [
+          {
+            agentId: 'main',
+            path: 'C:/Users/demo/.openclaw/agents/main/sessions/sessions.json',
+            count: 1,
+            recent: [
+              {
+                sessionId: '49d7df99-5cb6-43d0-baa6-ac01bd3e9799',
+                agentId: 'main',
+                key: 'agent:main:feishu:direct:demo',
+                kind: 'direct',
+                updatedAt: 1772707272073,
+                inputTokens: 120,
+                outputTokens: 80,
+                totalTokens: 215,
+                model: 'gpt-5.3-codex',
+                contextTokens: 272000,
+              },
+            ],
+          },
+        ],
+      },
+      memory: {
+        agentId: 'main',
+        backend: 'builtin',
+        provider: 'none',
+        requestedProvider: 'auto',
+        files: 0,
+        chunks: 0,
+        dirty: false,
+        workspaceDir: 'C:/Users/demo/.openclaw/workspace',
+        dbPath: 'C:/Users/demo/.openclaw/memory/main.sqlite',
+        sources: ['memory'],
+        extraPaths: [],
+        custom: {
+          searchMode: 'fts-only',
+          providerUnavailableReason: 'no api key',
+        },
+      },
+      memoryPlugin: {
+        enabled: true,
+        slot: 'memory-core',
       },
       gateway: {
         mode: 'local',
         url: 'ws://127.0.0.1:18789',
         reachable: false,
         error: 'timeout',
+        self: {
+          host: 'demo-host',
+          ip: '198.18.0.1',
+          version: '2026.2.21-2',
+          platform: 'windows 10.0.26200',
+        },
+      },
+      gatewayService: {
+        label: 'Scheduled Task',
+        installed: true,
+        loadedText: 'registered',
+        runtimeShort: 'unknown',
+      },
+      nodeService: {
+        label: 'Scheduled Task',
+        installed: false,
+        loadedText: 'missing',
+        runtimeShort: 'unknown (missing)',
       },
       agents: {
         defaultId: 'main',
@@ -78,6 +161,7 @@ describe('openclaw-runtime', () => {
     vi.stubEnv('OPENCLAW_GUARD_MOCK_CRON_STATUS_JSON', JSON.stringify({
       enabled: true,
       storePath: '/tmp/openclaw/cron/jobs.json',
+      jobs: 1,
       schedulerNextWakeAtMs: 1772793600000,
     }));
   });
@@ -94,8 +178,23 @@ describe('openclaw-runtime', () => {
     expect(snapshot.sessions[0].channel).toBe('feishu');
     expect(snapshot.sessions[0].usage.totalTokens).toBe(215);
     expect(snapshot.summary?.defaultModel).toBe('gpt-5.3-codex');
+    expect(snapshot.summary?.defaultContextTokens).toBe(200000);
+    expect(snapshot.sessionsMeta?.paths).toEqual([
+      'C:/Users/demo/.openclaw/agents/main/sessions/sessions.json',
+    ]);
+    expect(snapshot.sessionsMeta?.byAgent[0]?.count).toBe(1);
+    expect(snapshot.sessionsMeta?.byAgent[0]?.recent[0]?.modelId).toBe('gpt-5.3-codex');
+    expect(snapshot.memory?.provider).toBe('none');
+    expect(snapshot.memory?.searchMode).toBe('fts-only');
+    expect(snapshot.memoryPlugin?.slot).toBe('memory-core');
+    expect(snapshot.os?.label).toBe('windows 10.0.26200 (x64)');
+    expect(snapshot.update?.latestVersion).toBe('2026.3.8');
+    expect(snapshot.update?.channel).toBe('stable');
     expect(snapshot.gateway?.reachable).toBe(false);
     expect(snapshot.gateway?.error).toBe('timeout');
+    expect(snapshot.gateway?.self?.version).toBe('2026.2.21-2');
+    expect(snapshot.gatewayService?.installed).toBe(true);
+    expect(snapshot.nodeService?.loadedText).toBe('missing');
     expect(snapshot.agents?.defaultId).toBe('main');
     expect(snapshot.alerts?.some((item) => item.code === 'gateway-unreachable')).toBe(true);
   });
@@ -108,7 +207,13 @@ describe('openclaw-runtime', () => {
     expect(snapshot.jobs[0].schedule).toBe('cron 0 8 * * *');
     expect(snapshot.jobs[0].prompt).toBe('send report');
     expect(snapshot.jobs[0].enabled).toBe(true);
+    expect(snapshot.total).toBe(1);
+    expect(snapshot.offset).toBe(0);
+    expect(snapshot.limit).toBe(1);
+    expect(snapshot.hasMore).toBe(false);
+    expect(snapshot.nextOffset).toBeNull();
     expect(snapshot.status?.enabled).toBe(true);
+    expect(snapshot.status?.jobsCount).toBe(1);
     expect(snapshot.status?.storePath).toContain('jobs.json');
   });
 
@@ -143,6 +248,11 @@ describe('openclaw-runtime', () => {
     const snapshot = getCronSnapshot();
     expect(snapshot.ok).toBe(true);
     expect(snapshot.jobs).toEqual([]);
+    expect(snapshot.total).toBe(0);
+    expect(snapshot.offset).toBe(0);
+    expect(snapshot.limit).toBe(50);
+    expect(snapshot.hasMore).toBe(false);
+    expect(snapshot.nextOffset).toBeNull();
     expect(snapshot.status?.enabled).toBe(true);
   });
 });

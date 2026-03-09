@@ -72,9 +72,16 @@ export interface DashboardOverview {
       code: string;
       message: string;
     }>;
+    os: RuntimeSnapshot['os'];
+    update: RuntimeSnapshot['update'];
+    memory: RuntimeSnapshot['memory'];
+    memoryPlugin: RuntimeSnapshot['memoryPlugin'];
     gateway: RuntimeSnapshot['gateway'];
+    gatewayService: RuntimeSnapshot['gatewayService'];
+    nodeService: RuntimeSnapshot['nodeService'];
     securityAudit: RuntimeSnapshot['securityAudit'];
     summary: RuntimeSnapshot['summary'];
+    sessionsMeta: RuntimeSnapshot['sessionsMeta'];
   };
 }
 
@@ -279,9 +286,16 @@ export function getDashboardOverview(): DashboardOverview {
     runtime: {
       warnings: sessionOverview.snapshot.warnings,
       alerts: sessionOverview.snapshot.alerts || [],
+      os: sessionOverview.snapshot.os,
+      update: sessionOverview.snapshot.update,
+      memory: sessionOverview.snapshot.memory,
+      memoryPlugin: sessionOverview.snapshot.memoryPlugin,
       gateway: sessionOverview.snapshot.gateway,
+      gatewayService: sessionOverview.snapshot.gatewayService,
+      nodeService: sessionOverview.snapshot.nodeService,
       securityAudit: sessionOverview.snapshot.securityAudit,
       summary: sessionOverview.snapshot.summary,
+      sessionsMeta: sessionOverview.snapshot.sessionsMeta,
     },
   };
 }

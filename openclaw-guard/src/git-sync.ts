@@ -234,8 +234,79 @@ function getChangedFiles(): string[] {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
-    .map((line) => line.slice(3).trim())
+    .map((line) => normalizeGitPath(line.slice(3).trim()))
     .filter(Boolean);
+}
+
+function normalizeGitPath(value: string): string {
+  return value
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/^\.\//, '')
+    .replace(/\/+/g, '/')
+    .replace(/\/$/, '');
+}
+
+function isRelativeToRoot(rootPath: string, targetPath: string): boolean {
+  const relative = path.relative(rootPath, targetPath);
+  return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
+}
+
+function findEmbeddedRepoForPath(relativePath: string): string | null {
+  const repoRoot = path.resolve(repoPath());
+  const normalizedPath = normalizeGitPath(relativePath);
+  if (!normalizedPath) return null;
+
+  let currentPath = path.resolve(repoRoot, normalizedPath);
+  while (isRelativeToRoot(repoRoot, currentPath)) {
+    if (fs.existsSync(path.join(currentPath, '.git'))) {
+      return normalizeGitPath(path.relative(repoRoot, currentPath));
+    }
+    const parentPath = path.dirname(currentPath);
+    if (parentPath === currentPath) break;
+    currentPath = parentPath;
+  }
+
+  return null;
+}
+
+function isPathInsideEmbeddedRepo(relativePath: string, embeddedRepoPath: string): boolean {
+  const normalizedPath = normalizeGitPath(relativePath);
+  const normalizedRepoPath = normalizeGitPath(embeddedRepoPath);
+  return normalizedPath === normalizedRepoPath || normalizedPath.startsWith(`${normalizedRepoPath}/`);
+}
+
+function detectEmbeddedRepoPaths(changedFiles: string[]): string[] {
+  const embeddedRepos = new Set<string>();
+  for (const changedFile of changedFiles) {
+    const embeddedRepoPath = findEmbeddedRepoForPath(changedFile);
+    if (embeddedRepoPath) embeddedRepos.add(embeddedRepoPath);
+  }
+  return Array.from(embeddedRepos).sort();
+}
+
+interface StagePreparation {
+  changedFiles: string[];
+  stageableChanges: string[];
+  skippedEmbeddedRepos: string[];
+}
+
+function prepareStageChanges(changedFiles = getChangedFiles()): StagePreparation {
+  const normalizedFiles = changedFiles.map((file) => normalizeGitPath(file)).filter(Boolean);
+  const skippedEmbeddedRepos = detectEmbeddedRepoPaths(normalizedFiles);
+  const stageableChanges = normalizedFiles.filter((file) => (
+    !skippedEmbeddedRepos.some((embeddedRepoPath) => isPathInsideEmbeddedRepo(file, embeddedRepoPath))
+  ));
+
+  return {
+    changedFiles: normalizedFiles,
+    stageableChanges,
+    skippedEmbeddedRepos,
+  };
+}
+
+function formatEmbeddedRepoList(paths: string[]): string {
+  return paths.map((item) => `${item}/`).join(', ');
 }
 
 export function parseGitRemote(remoteUrl: string): GitRepoRef | null {
@@ -366,7 +437,8 @@ function buildStatus(stateOverride?: Partial<GitSyncState>): GitSyncStatus {
   const remoteUrl = state.remoteUrl || getRemoteUrl(state.remoteName) || null;
   const remote = remoteUrl ? parseGitRemote(remoteUrl) : null;
   const secret = loadSecret();
-  const changedFiles = getChangedFiles();
+  const stagePreparation = prepareStageChanges();
+  const changedFiles = stagePreparation.changedFiles;
   const gitAvailable = ensureGitAvailable();
   const repoInitialized = isRepoInitialized();
   const commitReasons: string[] = [];
@@ -386,6 +458,11 @@ function buildStatus(stateOverride?: Partial<GitSyncState>): GitSyncStatus {
   if (!changedFiles.length) {
     commitReasons.push('There are no local changes to commit');
     syncReasons.push('There are no local changes to commit');
+  }
+  if (changedFiles.length > 0 && stagePreparation.stageableChanges.length === 0) {
+    const embeddedRepoMessage = `Only embedded Git repositories were detected and skipped: ${formatEmbeddedRepoList(stagePreparation.skippedEmbeddedRepos)}`;
+    commitReasons.push(embeddedRepoMessage);
+    syncReasons.push(embeddedRepoMessage);
   }
   if (!remoteUrl) {
     pushReasons.push('No remote repository is connected yet');
@@ -716,13 +793,61 @@ export function commitGitSync(message?: string): GitSyncActionResult {
     };
   }
 
-  const addResult = runGit(['-C', repoPath(), 'add', '-A']);
+  const stagePreparation = prepareStageChanges(status.changedFiles);
+  if (!stagePreparation.stageableChanges.length) {
+    const skippedMessage = stagePreparation.skippedEmbeddedRepos.length > 0
+      ? `Only embedded Git repositories were detected and skipped: ${formatEmbeddedRepoList(stagePreparation.skippedEmbeddedRepos)}`
+      : 'No stageable local changes were found.';
+    addNotification({
+      type: 'git-sync',
+      source: 'git-sync',
+      title: 'Git sync commit skipped',
+      message: skippedMessage,
+      severity: 'warning',
+      meta: { skippedEmbeddedRepos: stagePreparation.skippedEmbeddedRepos },
+    });
+    return {
+      success: false,
+      message: skippedMessage,
+      status,
+    };
+  }
+
+  const addArgs = ['-C', repoPath(), 'add', '-A', '--', '.'];
+  for (const embeddedRepoPath of stagePreparation.skippedEmbeddedRepos) {
+    addArgs.push(`:(exclude)${embeddedRepoPath}`);
+  }
+  const addResult = runGit(addArgs);
   if (!addResult.success) {
     return {
       success: false,
         message: `Failed to stage files: ${addResult.error || addResult.stderr || addResult.stdout}`,
       status,
       output: addResult.stderr || addResult.stdout,
+    };
+  }
+
+  const stagedResult = runGit(['-C', repoPath(), 'diff', '--cached', '--name-only']);
+  const stagedFiles = stagedResult.success
+    ? stagedResult.stdout.split(/\r?\n/).map((item) => item.trim()).filter(Boolean)
+    : [];
+  if (stagedFiles.length === 0) {
+    const skippedMessage = stagePreparation.skippedEmbeddedRepos.length > 0
+      ? `Only embedded Git repositories were detected and skipped: ${formatEmbeddedRepoList(stagePreparation.skippedEmbeddedRepos)}`
+      : 'No stageable local changes were found.';
+    addNotification({
+      type: 'git-sync',
+      source: 'git-sync',
+      title: 'Git sync commit skipped',
+      message: skippedMessage,
+      severity: 'warning',
+      meta: { skippedEmbeddedRepos: stagePreparation.skippedEmbeddedRepos },
+    });
+    return {
+      success: false,
+      message: skippedMessage,
+      status: buildStatus(status.state),
+      output: stagedResult.stderr || stagedResult.stdout,
     };
   }
 
@@ -742,16 +867,20 @@ export function commitGitSync(message?: string): GitSyncActionResult {
     lastError: null,
   };
   saveState(next);
+  const skippedMessage = stagePreparation.skippedEmbeddedRepos.length > 0
+    ? ` Skipped embedded Git repositories: ${formatEmbeddedRepoList(stagePreparation.skippedEmbeddedRepos)}`
+    : '';
   addNotification({
     type: 'git-sync',
     source: 'git-sync',
     title: 'Local commit succeeded',
-    message: commitResult.stdout.trim() || 'A new Git commit was created.',
+    message: `${commitResult.stdout.trim() || 'A new Git commit was created.'}${skippedMessage}`,
     severity: 'success',
+    meta: { skippedEmbeddedRepos: stagePreparation.skippedEmbeddedRepos },
   });
   return {
     success: true,
-    message: 'Local commit succeeded.',
+    message: `Local commit succeeded.${skippedMessage}`,
     status: buildStatus(next),
     output: commitResult.stdout.trim(),
   };

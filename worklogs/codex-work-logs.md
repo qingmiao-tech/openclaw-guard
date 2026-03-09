@@ -1669,3 +1669,30 @@
   1) 本轮没有接入真实 GitHub/Gitee 私有仓和真实凭证，只把 Token/OAuth/private-check 成功链路在代码与测试层完整打通，并在 UI 上给出清晰的 readiness 拆解。
   2) Cron 编辑目前优先覆盖最常用字段，像“清空 model”这类更细的 patch 语义暂未继续扩展；如果后续要做第三期，可以补“字段清空”专用开关。
   3) `web/guard-ui.js` 当前仍是大文件，虽然本轮功能已可用，但后续如果继续做第二期交互增强，仍建议拆成模块化前端文件，降低维护成本。
+
+## [2026-03-09 08:58] openclaw-guard Git Sync 提交链路修复：自动跳过嵌套仓库 [TASK-20260309-002]
+
+- 任务来源: 用户反馈 Guard 在 Windows 上对 ~/.openclaw 执行 Git Sync 本地 commit 时失败，private-check 已通过，但 workspace-nanfeng/ 等嵌套 Git 仓库导致 git add -A 报错。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成修复与自动化验证，待提交 git。
+- 问题定位:
+  1) 致命错误不是 CRLF warning，而是外层仓库里包含嵌套 Git 仓库。
+  2) 现有 commitGitSync() 直接执行 git add -A，遇到 workspace-nanfeng/ 这种“未完成初始化提交”的嵌套仓库会直接失败。
+  3) extensions/feishu-enhanced 这类目录也会触发 embedded repository warning，说明 Guard 需要原生识别并处理该场景，而不是把整个提交链路阻塞掉。
+- 实际完成:
+  1) openclaw-guard/src/git-sync.ts 已新增嵌套仓库检测逻辑，会扫描当前变更路径及其父目录，只要命中子级 .git 就自动标记为“需跳过的 embedded repo”。
+  2) commitGitSync() 已改为 git add -A -- . + :(exclude) 方式，仅提交可安全纳入外层仓库的普通文件，自动排除 workspace-nanfeng/、extensions/feishu-enhanced/ 这类嵌套仓库路径。
+  3) 当变更里只剩嵌套仓库时，Guard 现在会返回明确阻断原因，而不是继续执行空提交或抛出难理解的 Git fatal。
+  4) 本地提交成功后，返回消息与通知会附带“已跳过的嵌套仓库路径”，方便用户理解为什么还有未同步变更残留在工作区。
+  5) buildStatus() 已补强 commit/sync 前置判断：如果当前只检测到嵌套仓库变更，会把 canCommit/canSync 置为不可用，并给出嵌套仓库说明。
+  6) openclaw-guard/src/__tests__/git-sync.test.ts 已新增覆盖：外层仓库存在 workspace-nanfeng/.git 且内部尚未提交时，commitGitSync('跳过嵌套仓库提交测试') 仍可成功提交普通文件，同时保留嵌套仓库未被纳入版本控制。
+- 交付清单:
+  - openclaw-guard/src/git-sync.ts
+  - openclaw-guard/src/__tests__/git-sync.test.ts
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 pnpm --dir openclaw-guard test -- --run src/__tests__/git-sync.test.ts 通过。
+  2) 当前 git-sync 测试共 8 项全部通过，其中新增的嵌套仓库回归测试通过。
+- 风险与补充说明:
+  1) 本轮选择的是“自动跳过嵌套仓库”策略，不会把子仓库内容强行平铺纳入外层仓库；这样更安全，也更符合用户真实 .openclaw 目录可能包含独立扩展仓库的情况。
+  2) 提交成功后，如果工作区里仍有嵌套仓库变更，Guard 仍会显示“有未同步改动”，这是预期行为，不是新 bug。

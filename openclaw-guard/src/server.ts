@@ -733,11 +733,12 @@ export function startServer(port: number) {
           return;
         }
         if (pathname === '/api/git-sync/gitignore-preview' && req.method === 'GET') {
-          jsonResponse(res, previewGitIgnoreRules());
+          jsonResponse(res, previewGitIgnoreRules(undefined, url.searchParams.get('mode') === 'exact' ? 'exact' : 'smart'));
           return;
         }
         if (pathname === '/api/git-sync/gitignore-apply' && req.method === 'POST') {
-          jsonResponse(res, applyGitIgnoreRules());
+          const body = await readJsonBody(req);
+          jsonResponse(res, applyGitIgnoreRules(body.mode === 'exact' ? 'exact' : 'smart'));
           return;
         }
         if (pathname === '/api/git-sync/commit' && req.method === 'POST') {

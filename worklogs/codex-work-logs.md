@@ -1788,3 +1788,45 @@
   1) 当前“一键写入 .gitignore”采用的是“只追加缺失规则”的保守策略，不会覆盖用户已有内容，也不会自动删除用户旧规则。
   2) 预览与写入仍然聚焦嵌套仓库规则，不会顺手改动其他 Git Sync 初始化项；`git init` / 基础 `.gitignore` 仍由现有 init 流程负责。
   3) 如果后续要继续做第三阶段，可以把通知中心里的嵌套仓库提醒和 Git Sync 页面做深链接联动，例如点击通知后直接切回 Git Sync 页并定位到差异预览区。
+
+## [2026-03-09 12:23] openclaw-guard Git Sync 第三阶段补强：通知中心跳转与 .gitignore 写入策略开关 [TASK-20260309-005]
+
+- 任务来源: 用户要求继续推进上一轮建议项，我在现有 Git Sync 第二阶段基础上，继续把通知中心和 Git Sync 做联动，并补 `.gitignore` 写入策略控制。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成开发、自动化测试与真实页面回归，待提交 git。
+- 实际完成:
+  1) openclaw-guard/web/guard-ui.js 的通知中心现在会识别 Git Sync 相关通知中的“嵌套仓库提醒 / .gitignore 更新提醒”，并显示 `打开 Git Sync` 按钮。
+  2) 点击通知里的 `打开 Git Sync` 后，会自动切换到 `Git Sync` 标签页，并滚动定位到 `.gitignore` 差异预览卡片；为了避免用户跳过去后找不到位置，还加了高亮强调样式。
+  3) openclaw-guard/web/guard-ui.css 新增 `panel-focus-target` 与 `panel-highlight`，作为通知跳转后的视觉落点提示。
+  4) openclaw-guard/src/git-sync.ts 已为 `.gitignore` 预览/写入新增模式控制：
+     - `smart`：精确路径 + 常见通配符（默认）
+     - `exact`：只写当前检测到的精确路径
+  5) openclaw-guard/src/server.ts 已让以下接口支持模式参数：
+     - `GET /api/git-sync/gitignore-preview?mode=smart|exact`
+     - `POST /api/git-sync/gitignore-apply`，body 可传 `mode`
+  6) openclaw-guard/web/guard-ui.js 的 Git Sync 预览区已新增“写入策略”选择器，切换后会即时刷新预览和待写入规则，不需要手动重开页面。
+  7) 选择 `exact` 模式时，像 `workspace-*/`、`extensions/*/` 这类通配符不会进入预览或写入结果；这让用户在更谨慎的场景下可以只纳入本次命中的子仓库路径。
+- 交付清单:
+  - openclaw-guard/src/git-sync.ts
+  - openclaw-guard/src/server.ts
+  - openclaw-guard/src/__tests__/git-sync.test.ts
+  - openclaw-guard/web/guard-ui.js
+  - openclaw-guard/web/guard-ui.css
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  2) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  3) 已验证 `pnpm --dir openclaw-guard test -- --run src/__tests__/git-sync.test.ts` 通过，当前 git-sync 相关 13 项测试全部通过。
+  4) 已新增并通过测试：
+     - `supports exact-only gitignore preview mode without wildcard entries`
+     - `applies exact-only gitignore rules without wildcard entries`
+  5) 已按 `webapp-testing` 技能做真实页面回归：使用临时 `OPENCLAW_STATE_DIR` + 独立端口 `19088` 拉起 Guard Web，并用 Playwright 验证：
+     - `#gitignore-mode` 可以切到 `exact`
+     - `exact` 模式下 Git Sync 面板不再显示 `workspace-*/` 通配符规则
+     - Notifications 面板出现 `打开 Git Sync` 按钮
+     - 点击后能切回 Git Sync，并高亮 `.gitignore` 预览卡片
+  6) 已生成真实页面回归截图：`openclaw-guard/.guard-runtime/notifications-git-sync-jump-smoke.png`
+- 风险与补充说明:
+  1) 当前通知跳转是基于 Git Sync 通知内容和 meta 规则判断的，没有单独引入新的通知 schema 字段，所以兼容性风险较低。
+  2) `.gitignore` 模式目前只影响嵌套仓库建议规则，不影响 `guard/secrets/`、`guard/state/` 等基础忽略项；这些基础项仍由 `git init` 流程维护。
+  3) 如果下一轮继续推进，比较自然的方向是把 Git Sync 通知、页面状态和提交/推送结果做成“操作后自动收敛”的闭环，例如成功写入 `.gitignore` 后自动把相应嵌套仓库提醒降级或归档。

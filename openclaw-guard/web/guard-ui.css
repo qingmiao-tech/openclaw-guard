@@ -115,6 +115,8 @@ pre { max-height: 560px; overflow: auto; }
 .checkbox-field { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 4px; border: 1px solid rgba(148,163,184,.14); border-radius: 12px; background: rgba(15,23,42,.45); }
 .checkbox-field span { color: var(--text); text-transform: none; letter-spacing: normal; font-size: 14px; }
 .sub-card { background: rgba(15,23,42,.45); border: 1px solid rgba(148,163,184,.12); border-radius: 12px; padding: 14px; }
+.panel-focus-target { scroll-margin-top: 110px; }
+.panel-highlight { box-shadow: 0 0 0 1px rgba(59,130,246,.42), 0 0 0 6px rgba(59,130,246,.10), var(--shadow); border-color: rgba(96,165,250,.52); transition: box-shadow .24s ease, border-color .24s ease; }
 .guide-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .command-list { display: grid; gap: 10px; }
 .command-list code { display: block; padding: 12px 14px; border-radius: 12px; background: rgba(15,23,42,.68); border: 1px solid rgba(148,163,184,.14); color: #dbeafe; overflow: auto; }

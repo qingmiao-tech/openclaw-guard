@@ -90,6 +90,22 @@ export interface GitSyncActionResult {
   output?: string;
 }
 
+export interface GitIgnorePreview {
+  repoPath: string;
+  gitignorePath: string;
+  embeddedRepos: string[];
+  existingEntries: string[];
+  suggestedEntries: string[];
+  missingEntries: string[];
+  willChange: boolean;
+  suggestedBlock: string;
+  appendBlock: string;
+}
+
+export interface GitIgnoreApplyResult extends GitSyncActionResult {
+  preview: GitIgnorePreview;
+}
+
 export interface OAuthLoginOptions {
   provider: GitProvider;
   clientId: string;
@@ -103,6 +119,14 @@ interface ProviderRepoInfo {
   private: boolean;
   owner: string;
   repo: string;
+}
+
+interface EmbeddedGitIgnoreSuggestion {
+  embeddedRepos: string[];
+  exactEntries: string[];
+  wildcardEntries: string[];
+  suggestedEntries: string[];
+  suggestedBlock: string;
 }
 
 const DEFAULT_OAUTH_STATE: GitOAuthState = {
@@ -272,6 +296,52 @@ function findEmbeddedRepoForPath(relativePath: string): string | null {
   return null;
 }
 
+function findEmbeddedReposWithin(relativePath: string): string[] {
+  const repoRoot = path.resolve(repoPath());
+  const normalizedPath = normalizeGitPath(relativePath);
+  if (!normalizedPath) return [];
+
+  const startPath = path.resolve(repoRoot, normalizedPath);
+  if (!isRelativeToRoot(repoRoot, startPath) || !fs.existsSync(startPath)) return [];
+
+  const results = new Set<string>();
+  const stack = [startPath];
+
+  while (stack.length > 0) {
+    const currentPath = stack.pop();
+    if (!currentPath || !fs.existsSync(currentPath)) continue;
+
+    let stat: fs.Stats;
+    try {
+      stat = fs.statSync(currentPath);
+    } catch {
+      continue;
+    }
+
+    if (!stat.isDirectory()) continue;
+
+    if (fs.existsSync(path.join(currentPath, '.git'))) {
+      const embeddedRepoPath = normalizeGitPath(path.relative(repoRoot, currentPath));
+      if (embeddedRepoPath) results.add(embeddedRepoPath);
+      continue;
+    }
+
+    let entries: fs.Dirent[] = [];
+    try {
+      entries = fs.readdirSync(currentPath, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name === '.git') continue;
+      stack.push(path.join(currentPath, entry.name));
+    }
+  }
+
+  return Array.from(results).sort();
+}
+
 function isPathInsideEmbeddedRepo(relativePath: string, embeddedRepoPath: string): boolean {
   const normalizedPath = normalizeGitPath(relativePath);
   const normalizedRepoPath = normalizeGitPath(embeddedRepoPath);
@@ -282,7 +352,13 @@ function detectEmbeddedRepoPaths(changedFiles: string[]): string[] {
   const embeddedRepos = new Set<string>();
   for (const changedFile of changedFiles) {
     const embeddedRepoPath = findEmbeddedRepoForPath(changedFile);
-    if (embeddedRepoPath) embeddedRepos.add(embeddedRepoPath);
+    if (embeddedRepoPath) {
+      embeddedRepos.add(embeddedRepoPath);
+      continue;
+    }
+    for (const nestedRepoPath of findEmbeddedReposWithin(changedFile)) {
+      embeddedRepos.add(nestedRepoPath);
+    }
   }
   return Array.from(embeddedRepos).sort();
 }
@@ -309,6 +385,95 @@ function prepareStageChanges(changedFiles = getChangedFiles()): StagePreparation
 
 function formatEmbeddedRepoList(paths: string[]): string {
   return paths.map((item) => `${item}/`).join(', ');
+}
+
+function uniqueItems(values: string[]): string[] {
+  return Array.from(new Set(values.filter(Boolean)));
+}
+
+function normalizeGitIgnoreEntry(value: string): string {
+  return value
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/\/+/g, '/');
+}
+
+function buildEmbeddedGitIgnoreSuggestion(paths: string[]): EmbeddedGitIgnoreSuggestion {
+  const embeddedRepos = uniqueItems(paths.map((item) => normalizeGitPath(item)).filter(Boolean));
+  const exactEntries = embeddedRepos.map((item) => `${item}/`);
+  const wildcardEntries: string[] = [];
+  const lines = ['# Nested Git repositories managed outside the root .openclaw sync', ...exactEntries];
+
+  if (embeddedRepos.some((item) => /^workspace-[^/]+$/i.test(item))) {
+    wildcardEntries.push('workspace-*/');
+  }
+  if (embeddedRepos.some((item) => /^extensions\/[^/]+$/i.test(item))) {
+    wildcardEntries.push('extensions/*/');
+  }
+  if (embeddedRepos.some((item) => /^skills\/[^/]+$/i.test(item))) {
+    wildcardEntries.push('skills/*/');
+  }
+
+  if (wildcardEntries.length > 0) {
+    lines.push('');
+    lines.push('# Optional wildcard guards for common child repositories');
+    lines.push(...wildcardEntries);
+  }
+
+  return {
+    embeddedRepos,
+    exactEntries,
+    wildcardEntries,
+    suggestedEntries: uniqueItems([...exactEntries, ...wildcardEntries]),
+    suggestedBlock: lines.join('\n').trim(),
+  };
+}
+
+function readGitIgnoreContent(filePath: string): string {
+  return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf-8') : '';
+}
+
+function parseGitIgnoreEntries(content: string): string[] {
+  return uniqueItems(content
+    .split(/\r?\n/)
+    .map((line) => normalizeGitIgnoreEntry(line))
+    .filter((line) => line.length > 0 && !line.startsWith('#')));
+}
+
+function buildGitIgnoreAppendBlock(missingEntries: string[]): string {
+  if (missingEntries.length === 0) return '';
+  return [
+    '# Guard: embedded Git repositories managed separately',
+    ...missingEntries,
+  ].join('\n');
+}
+
+function detectLineEnding(content: string): string {
+  return content.includes('\r\n') ? '\r\n' : '\n';
+}
+
+function appendTextBlock(existingContent: string, block: string): string {
+  const trimmedBlock = block.trim();
+  if (!trimmedBlock) return existingContent;
+
+  const eol = detectLineEnding(existingContent);
+  const normalizedBlock = trimmedBlock.replace(/\r?\n/g, eol);
+  let nextContent = existingContent;
+
+  if (!nextContent) return `${normalizedBlock}${eol}`;
+
+  if (!nextContent.endsWith('\n') && !nextContent.endsWith('\r')) {
+    nextContent += eol;
+  }
+  if (!nextContent.endsWith(`${eol}${eol}`)) {
+    nextContent += eol;
+  }
+
+  return `${nextContent}${normalizedBlock}${eol}`;
+}
+
+function buildEmbeddedRepoNotificationMessage(paths: string[]): string {
+  return `Guard skipped embedded Git repositories during root sync: ${formatEmbeddedRepoList(paths)}. Add them to the root .gitignore or sync them separately.`;
 }
 
 export function parseGitRemote(remoteUrl: string): GitRepoRef | null {
@@ -434,6 +599,69 @@ function ensureGitIgnore(): string {
   return filePath;
 }
 
+export function previewGitIgnoreRules(paths?: string[]): GitIgnorePreview {
+  const gitignorePath = path.join(repoPath(), '.gitignore');
+  const stagePreparation = paths ? prepareStageChanges(paths) : prepareStageChanges();
+  const suggestion = buildEmbeddedGitIgnoreSuggestion(stagePreparation.skippedEmbeddedRepos);
+  const existingContent = readGitIgnoreContent(gitignorePath);
+  const existingEntriesSet = new Set(parseGitIgnoreEntries(existingContent));
+  const existingEntries = suggestion.suggestedEntries.filter((entry) => existingEntriesSet.has(normalizeGitIgnoreEntry(entry)));
+  const missingEntries = suggestion.suggestedEntries.filter((entry) => !existingEntriesSet.has(normalizeGitIgnoreEntry(entry)));
+
+  return {
+    repoPath: repoPath(),
+    gitignorePath,
+    embeddedRepos: suggestion.embeddedRepos,
+    existingEntries,
+    suggestedEntries: suggestion.suggestedEntries,
+    missingEntries,
+    willChange: missingEntries.length > 0,
+    suggestedBlock: suggestion.suggestedBlock,
+    appendBlock: buildGitIgnoreAppendBlock(missingEntries),
+  };
+}
+
+export function applyGitIgnoreRules(): GitIgnoreApplyResult {
+  const preview = previewGitIgnoreRules();
+  if (!preview.willChange) {
+    return {
+      success: true,
+      message: preview.embeddedRepos.length > 0
+        ? '当前 .gitignore 已覆盖这些嵌套仓库规则，无需追加。'
+        : '当前未检测到需要写入 .gitignore 的嵌套仓库规则。',
+      preview,
+      status: buildStatus(),
+    };
+  }
+
+  ensureDir(path.dirname(preview.gitignorePath));
+  const existingContent = readGitIgnoreContent(preview.gitignorePath);
+  const nextContent = appendTextBlock(existingContent, preview.appendBlock);
+  fs.writeFileSync(preview.gitignorePath, nextContent, 'utf-8');
+
+  addNotification({
+    type: 'git-sync',
+    source: 'git-sync',
+    title: '.gitignore updated for embedded repositories',
+    message: `Added ${preview.missingEntries.length} ignore rules for ${formatEmbeddedRepoList(preview.embeddedRepos)}.`,
+    severity: 'success',
+    meta: {
+      gitignorePath: preview.gitignorePath,
+      embeddedRepos: preview.embeddedRepos,
+      missingEntries: preview.missingEntries,
+    },
+  });
+
+  const nextPreview = previewGitIgnoreRules(preview.embeddedRepos);
+  return {
+    success: true,
+    message: `已将 ${preview.missingEntries.length} 条嵌套仓库忽略规则写入 .gitignore。`,
+    preview: nextPreview,
+    status: buildStatus(),
+    output: nextPreview.gitignorePath,
+  };
+}
+
 function buildStatus(stateOverride?: Partial<GitSyncState>): GitSyncStatus {
   const state = normalizeState({ ...loadGitSyncState(), ...stateOverride });
   const remoteUrl = state.remoteUrl || getRemoteUrl(state.remoteName) || null;
@@ -524,14 +752,25 @@ function buildStatus(stateOverride?: Partial<GitSyncState>): GitSyncStatus {
     oauth: normalizeOAuthState(state.oauth),
   };
 
-  if (status.hasChanges) {
+  if (status.stageableChangedFiles.length > 0) {
     addNotification({
       type: 'git-sync',
       source: 'git-sync',
       title: 'Detected unsynced .openclaw changes',
-      message: `There are ${status.changedFiles.length} changed files ready for commit and push.`,
+      message: `There are ${status.stageableChangedFiles.length} stageable root-repo changes ready for commit and push.`,
       severity: 'info',
-      meta: { changedFiles: status.changedFiles.slice(0, 20) },
+      meta: { changedFiles: status.stageableChangedFiles.slice(0, 20) },
+    });
+  }
+
+  if (status.skippedEmbeddedRepos.length > 0) {
+    addNotification({
+      type: 'git-sync',
+      source: 'git-sync',
+      title: 'Embedded Git repositories detected',
+      message: buildEmbeddedRepoNotificationMessage(status.skippedEmbeddedRepos),
+      severity: 'warning',
+      meta: { embeddedRepos: status.skippedEmbeddedRepos },
     });
   }
 

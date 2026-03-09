@@ -70,6 +70,8 @@ import {
   connectGitRemote,
   saveGitTokenAuth,
   checkGitRemotePrivate,
+  previewGitIgnoreRules,
+  applyGitIgnoreRules,
   commitGitSync,
   pushGitSync,
   syncGitSync,
@@ -728,6 +730,14 @@ export function startServer(port: number) {
         }
         if (pathname === '/api/git-sync/check-private' && req.method === 'POST') {
           jsonResponse(res, await checkGitRemotePrivate());
+          return;
+        }
+        if (pathname === '/api/git-sync/gitignore-preview' && req.method === 'GET') {
+          jsonResponse(res, previewGitIgnoreRules());
+          return;
+        }
+        if (pathname === '/api/git-sync/gitignore-apply' && req.method === 'POST') {
+          jsonResponse(res, applyGitIgnoreRules());
           return;
         }
         if (pathname === '/api/git-sync/commit' && req.method === 'POST') {

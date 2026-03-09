@@ -1739,3 +1739,52 @@
 - 风险与补充说明:
   1) 当前“忽略模板”仍是复制型动作，不会直接帮用户修改目标 .openclaw/.gitignore，这样更安全，避免误改真实用户仓库。
   2) 如果后续你希望进一步做成“一键写入 .gitignore”，建议先补一个预览差异层，避免把用户已有规则覆盖掉。
+
+## [2026-03-09 11:45] openclaw-guard Git Sync 第二阶段补强：.gitignore 一键写入与嵌套仓库通知中心同步 [TASK-20260309-004]
+
+- 任务来源: 用户确认继续执行上一轮两个建议项：
+  1) 把“复制忽略模板”升级为“差异预览 + 一键写入 .gitignore”。
+  2) 把已跳过的嵌套 Git 仓库同步进通知中心，并避免页面反复刷新时刷屏。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成开发、自动化测试与真实页面回归，待提交 git。
+- 实际完成:
+  1) openclaw-guard/src/git-sync.ts 新增 `previewGitIgnoreRules()` 与 `applyGitIgnoreRules()`，会基于当前检测到的嵌套仓库生成建议规则、比对现有 `.gitignore`、输出缺失项，并只追加真正缺少的规则。
+  2) Git Sync 新增 `.gitignore` 预览结构：
+     - `existingEntries`
+     - `suggestedEntries`
+     - `missingEntries`
+     - `suggestedBlock`
+     - `appendBlock`
+     - `willChange`
+     这样前端可以直接显示“已存在 / 将新增 / 实际写入片段”。
+  3) openclaw-guard/src/server.ts 已新增两个 Web API：
+     - `GET /api/git-sync/gitignore-preview`
+     - `POST /api/git-sync/gitignore-apply`
+  4) openclaw-guard/web/guard-ui.js 的 Git Sync 页面已补齐：
+     - `.gitignore` 差异预览卡片
+     - 规则命中情况卡片
+     - `刷新 .gitignore 预览`
+     - `一键写入 .gitignore`
+     写入成功后会自动刷新状态，不需要手动重载页面。
+  5) 针对 `extensions/xxx` 这类嵌套更深的子仓库，git status 有时只会上报上层目录。为避免漏检，git-sync.ts 已补充“对子目录递归扫描 .git”的逻辑，确保嵌套仓库识别不只覆盖 `workspace-nanfeng/` 这种一级目录。
+  6) buildStatus() 现在会对 `skippedEmbeddedRepos` 单独写入 `Embedded Git repositories detected` 通知；同时 notifications.ts 的去重逻辑已从“只看最新一条”升级为“扫描时间窗内的同类通知”，避免刷新页面时同一条嵌套仓库提醒重复堆积。
+- 交付清单:
+  - openclaw-guard/src/git-sync.ts
+  - openclaw-guard/src/server.ts
+  - openclaw-guard/src/notifications.ts
+  - openclaw-guard/src/__tests__/git-sync.test.ts
+  - openclaw-guard/web/guard-ui.js
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  2) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  3) 已验证 `pnpm --dir openclaw-guard test -- --run src/__tests__/git-sync.test.ts` 通过，当前 git-sync 相关 11 项测试全部通过。
+  4) 已按 `webapp-testing` 技能做真实页面回归：通过 `with_server.py` 拉起 `pnpm --dir openclaw-guard web`，再用 Playwright 脚本验证：
+     - Git Sync 页面可正常渲染 `.gitignore` 预览区域
+     - `data-git-action="preview-gitignore"` 与 `data-git-action="apply-gitignore"` 按钮存在
+     - Notifications 标签页可点击并正常激活
+  5) 已生成真实页面回归截图：`openclaw-guard/.guard-runtime/git-sync-gitignore-preview-smoke.png`
+- 风险与补充说明:
+  1) 当前“一键写入 .gitignore”采用的是“只追加缺失规则”的保守策略，不会覆盖用户已有内容，也不会自动删除用户旧规则。
+  2) 预览与写入仍然聚焦嵌套仓库规则，不会顺手改动其他 Git Sync 初始化项；`git init` / 基础 `.gitignore` 仍由现有 init 流程负责。
+  3) 如果后续要继续做第三阶段，可以把通知中心里的嵌套仓库提醒和 Git Sync 页面做深链接联动，例如点击通知后直接切回 Git Sync 页并定位到差异预览区。

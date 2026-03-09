@@ -7,15 +7,18 @@ import { EventEmitter } from 'node:events';
 import { execFileSync } from 'node:child_process';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  applyGitIgnoreRules,
   checkGitRemotePrivate,
   commitGitSync,
   connectGitRemote,
   getGitSyncStatus,
   initGitSync,
   parseGitRemote,
+  previewGitIgnoreRules,
   saveGitTokenAuth,
   startOAuthLogin,
 } from '../git-sync.js';
+import { listNotifications } from '../notifications.js';
 
 function httpGetText(targetUrl: string): Promise<{ statusCode: number; body: string }> {
   return new Promise((resolve, reject) => {
@@ -155,6 +158,63 @@ describe('git-sync', () => {
     expect(after.skippedEmbeddedRepos).toContain('workspace-nanfeng');
     expect(after.canCommit).toBe(false);
     expect(after.commitReasons.join(' ')).toContain('embedded Git repositories');
+  });
+
+  it('previews missing .gitignore rules for embedded repositories', () => {
+    initGitSync();
+
+    const embeddedRepoPath = path.join(tempRoot, 'workspace-nanfeng');
+    fs.mkdirSync(embeddedRepoPath, { recursive: true });
+    execFileSync('git', ['-C', embeddedRepoPath, 'init'], { stdio: 'ignore' });
+    fs.writeFileSync(path.join(embeddedRepoPath, 'README.md'), '# nested repo\n', 'utf-8');
+
+    const preview = previewGitIgnoreRules();
+    expect(preview.embeddedRepos).toContain('workspace-nanfeng');
+    expect(preview.missingEntries).toContain('workspace-nanfeng/');
+    expect(preview.missingEntries).toContain('workspace-*/');
+    expect(preview.willChange).toBe(true);
+    expect(preview.appendBlock).toContain('workspace-nanfeng/');
+  });
+
+  it('applies embedded repo .gitignore rules idempotently', () => {
+    initGitSync();
+
+    const embeddedRepoPath = path.join(tempRoot, 'extensions', 'feishu-enhanced');
+    fs.mkdirSync(embeddedRepoPath, { recursive: true });
+    execFileSync('git', ['-C', embeddedRepoPath, 'init'], { stdio: 'ignore' });
+    fs.writeFileSync(path.join(embeddedRepoPath, 'README.md'), '# nested repo\n', 'utf-8');
+
+    const first = applyGitIgnoreRules();
+    expect(first.success).toBe(true);
+    expect(first.preview.willChange).toBe(false);
+
+    const gitignore = fs.readFileSync(path.join(tempRoot, '.gitignore'), 'utf-8');
+    expect(gitignore).toContain('extensions/feishu-enhanced/');
+    expect(gitignore).toContain('extensions/*/');
+
+    const second = applyGitIgnoreRules();
+    expect(second.success).toBe(true);
+    expect(second.preview.willChange).toBe(false);
+
+    const gitignoreAfter = fs.readFileSync(path.join(tempRoot, '.gitignore'), 'utf-8');
+    expect(gitignoreAfter).toBe(gitignore);
+  });
+
+  it('dedupes embedded repository notifications across repeated status refreshes', () => {
+    initGitSync();
+
+    const embeddedRepoPath = path.join(tempRoot, 'workspace-nanfeng');
+    fs.mkdirSync(embeddedRepoPath, { recursive: true });
+    execFileSync('git', ['-C', embeddedRepoPath, 'init'], { stdio: 'ignore' });
+    fs.writeFileSync(path.join(embeddedRepoPath, 'README.md'), '# nested repo\n', 'utf-8');
+
+    getGitSyncStatus();
+    getGitSyncStatus();
+    getGitSyncStatus();
+
+    const embeddedNotifications = listNotifications(0).filter((item) => item.title === 'Embedded Git repositories detected');
+    expect(embeddedNotifications).toHaveLength(1);
+    expect(embeddedNotifications[0]?.message).toContain('workspace-nanfeng/');
   });
 
   it('checks github private repo successfully and enriches status fields', async () => {

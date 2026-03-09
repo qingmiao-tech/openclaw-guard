@@ -2421,7 +2421,10 @@
 
   async function loadGitSync() {
     clearGitSyncPollTimer();
-    const status = await apiRequest('/api/git-sync/status');
+    const [status, gitignorePreview] = await Promise.all([
+      apiRequest('/api/git-sync/status'),
+      apiRequest('/api/git-sync/gitignore-preview').catch(() => null),
+    ]);
     const oauth = status.oauth || {};
 
     if (!state.gitSyncDraftMessage) state.gitSyncDraftMessage = '';
@@ -2429,7 +2432,13 @@
     const skippedEmbeddedRepos = Array.isArray(status.skippedEmbeddedRepos) ? status.skippedEmbeddedRepos : [];
     const stageableChangedFiles = Array.isArray(status.stageableChangedFiles) ? status.stageableChangedFiles : [];
     const allChangedFiles = Array.isArray(status.changedFiles) ? status.changedFiles : [];
-    const gitIgnoreTemplate = buildGitIgnoreTemplate(skippedEmbeddedRepos);
+    const gitIgnoreTemplate = typeof gitignorePreview?.suggestedBlock === 'string' && gitignorePreview.suggestedBlock.trim()
+      ? gitignorePreview.suggestedBlock
+      : buildGitIgnoreTemplate(skippedEmbeddedRepos);
+    const gitIgnoreAppendBlock = typeof gitignorePreview?.appendBlock === 'string' ? gitignorePreview.appendBlock : '';
+    const gitIgnoreExistingEntries = Array.isArray(gitignorePreview?.existingEntries) ? gitignorePreview.existingEntries : [];
+    const gitIgnoreMissingEntries = Array.isArray(gitignorePreview?.missingEntries) ? gitignorePreview.missingEntries : [];
+    const gitIgnorePath = gitignorePreview?.gitignorePath || `${status.repoPath || ''}/.gitignore`;
     const embeddedRepoGuide = buildEmbeddedRepoGuide(skippedEmbeddedRepos);
 
     const stages = [
@@ -2540,6 +2549,28 @@
           </div>
         `).join('')
       : emptyState(state.lang === 'zh' ? '当前没有检测到嵌套 Git 仓库。' : 'No embedded Git repositories detected.');
+    const gitIgnoreExistingHtml = gitIgnoreExistingEntries.length
+      ? gitIgnoreExistingEntries.map((entry) => `
+          <div class="list-item">
+            <div class="row" style="justify-content:space-between; gap:12px;">
+              <strong>${escapeHtml(entry)}</strong>
+              <span class="pill success">${escapeHtml(state.lang === 'zh' ? '已存在' : 'Already Present')}</span>
+            </div>
+          </div>
+        `).join('')
+      : emptyState(state.lang === 'zh' ? '当前 .gitignore 里还没有命中这些嵌套仓库规则。' : 'No matching embedded-repo rules are present in .gitignore yet.');
+    const gitIgnoreMissingHtml = gitIgnoreMissingEntries.length
+      ? gitIgnoreMissingEntries.map((entry) => `
+          <div class="list-item">
+            <div class="row" style="justify-content:space-between; gap:12px;">
+              <strong>${escapeHtml(entry)}</strong>
+              <span class="pill warn">${escapeHtml(state.lang === 'zh' ? '将追加' : 'Will Be Added')}</span>
+            </div>
+          </div>
+        `).join('')
+      : emptyState(skippedEmbeddedRepos.length
+        ? (state.lang === 'zh' ? '当前 .gitignore 已覆盖这些嵌套仓库规则。' : '.gitignore already covers the current embedded repositories.')
+        : (state.lang === 'zh' ? '当前没有需要生成的嵌套仓库忽略规则。' : 'No embedded repository ignore rules need to be generated right now.'));
     const rawChangeSummary = allChangedFiles.length
       ? `${formatNumber(allChangedFiles.length)} ${state.lang === 'zh' ? '项变更' : 'changed paths'}`
       : (state.lang === 'zh' ? '没有本地变更' : 'No local changes');
@@ -2640,12 +2671,40 @@
           </div>
         </div>
         <div class="command-list" style="margin-top:14px;">
-          <div class="muted small">${escapeHtml(state.lang === 'zh' ? '建议加入外层 .gitignore 的模板' : 'Suggested root .gitignore template')}</div>
+          <div class="muted small">${escapeHtml(state.lang === 'zh' ? '\u5efa\u8bae\u52a0\u5165\u5916\u5c42 .gitignore \u7684\u6a21\u677f' : 'Suggested root .gitignore template')}</div>
           <code>${escapeHtml(gitIgnoreTemplate)}</code>
         </div>
+        <div class="guide-grid" style="margin-top:14px;">
+          <div class="sub-card">
+            <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+              <div>
+                <strong>${escapeHtml(state.lang === 'zh' ? '.gitignore \u5dee\u5f02\u9884\u89c8' : '.gitignore Diff Preview')}</strong>
+                <div class="muted small" style="margin-top:8px;">${escapeHtml(gitIgnorePath)}</div>
+              </div>
+              <span class="pill ${gitIgnoreMissingEntries.length > 0 ? 'warn' : 'success'}">${escapeHtml(gitIgnoreMissingEntries.length > 0 ? (state.lang === 'zh' ? '\u6709\u5f85\u5199\u5165\u89c4\u5219' : 'Changes Pending') : (state.lang === 'zh' ? '\u65e0\u9700\u8ffd\u52a0' : 'Up To Date'))}</span>
+            </div>
+            <div class="muted small" style="margin-top:12px;">${escapeHtml(state.lang === 'zh' ? '\u4e0b\u9762\u5c55\u793a\u8fd9\u6b21\u4f1a\u8ffd\u52a0\u5230\u5916\u5c42 .gitignore \u7684\u89c4\u5219\u7247\u6bb5\u3002' : 'This is the block that would be appended to the root .gitignore.')}</div>
+            <pre style="margin-top:12px;">${escapeHtml(gitIgnoreAppendBlock || (state.lang === 'zh' ? '\u5f53\u524d\u6ca1\u6709\u65b0\u589e\u89c4\u5219\u9700\u8981\u5199\u5165\u3002' : 'No new ignore rules need to be written right now.'))}</pre>
+          </div>
+          <div class="sub-card">
+            <strong>${escapeHtml(state.lang === 'zh' ? '\u89c4\u5219\u547d\u4e2d\u60c5\u51b5' : 'Rule Coverage')}</strong>
+            <div class="stack" style="margin-top:12px;">
+              <div>
+                <div class="muted small" style="margin-bottom:8px;">${escapeHtml(state.lang === 'zh' ? '\u5df2\u5b58\u5728\u89c4\u5219' : 'Existing Rules')}</div>
+                <div class="list">${gitIgnoreExistingHtml}</div>
+              </div>
+              <div>
+                <div class="muted small" style="margin-bottom:8px;">${escapeHtml(state.lang === 'zh' ? '\u5c06\u65b0\u589e\u89c4\u5219' : 'Rules To Add')}</div>
+                <div class="list">${gitIgnoreMissingHtml}</div>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="toolbar tight" style="margin-top:12px;">
-          <button class="action-btn" type="button" data-git-action="copy-ignore-template">${state.lang === 'zh' ? '复制忽略模板' : 'Copy Ignore Template'}</button>
-          <button class="action-btn" type="button" data-git-action="copy-embedded-guide">${state.lang === 'zh' ? '复制处理说明' : 'Copy Guidance'}</button>
+          <button class="action-btn" type="button" data-git-action="copy-ignore-template">${state.lang === 'zh' ? '\u590d\u5236\u5ffd\u7565\u6a21\u677f' : 'Copy Ignore Template'}</button>
+          <button class="action-btn" type="button" data-git-action="preview-gitignore">${state.lang === 'zh' ? '\u5237\u65b0 .gitignore \u9884\u89c8' : 'Refresh .gitignore Preview'}</button>
+          <button class="action-btn primary" type="button" data-git-action="apply-gitignore" ${gitIgnoreMissingEntries.length > 0 ? '' : 'disabled'}>${state.lang === 'zh' ? '\u4e00\u952e\u5199\u5165 .gitignore' : 'Apply To .gitignore'}</button>
+          <button class="action-btn" type="button" data-git-action="copy-embedded-guide">${state.lang === 'zh' ? '\u590d\u5236\u5904\u7406\u8bf4\u660e' : 'Copy Guidance'}</button>
         </div>
       </div>
       <div class="grid" style="margin-top:14px;">
@@ -2874,6 +2933,23 @@
               successMessage: state.lang === 'zh' ? '忽略模板已复制。' : 'Ignore template copied.',
               emptyMessage: state.lang === 'zh' ? '当前没有可复制的忽略模板。' : 'No ignore template available.',
             });
+            return;
+          }
+          if (action === 'preview-gitignore') {
+            const previewResult = await apiRequest('/api/git-sync/gitignore-preview');
+            rememberGitAction({
+              success: true,
+              message: state.lang === 'zh'
+                ? (previewResult?.willChange ? '\u5df2\u5237\u65b0 .gitignore \u5dee\u5f02\u9884\u89c8\u3002' : '.gitignore \u9884\u89c8\u5df2\u5237\u65b0\uff0c\u5f53\u524d\u65e0\u9700\u8ffd\u52a0\u89c4\u5219\u3002')
+                : (previewResult?.willChange ? '.gitignore diff preview refreshed.' : '.gitignore preview refreshed, no new rules are required.'),
+            }, previewResult);
+            await loadGitSync();
+            return;
+          }
+          if (action === 'apply-gitignore') {
+            const result = await postJson('/api/git-sync/gitignore-apply', {});
+            rememberGitAction(result, result?.preview || result?.status || null);
+            await loadGitSync();
             return;
           }
           if (action === 'copy-embedded-guide') {

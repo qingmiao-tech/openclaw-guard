@@ -1924,3 +1924,50 @@
 - 风险与补充说明:
   1) 本次属于真正的物理删除，不再保留兼容入口；如果外部还有历史脚本调用 `openclaw-guard mission ...` 或 `/api/mission/*`，会直接失效。
   2) 当前 `compat` / `legacy` 页面仍然保留，它们服务的是 Guard 自己的新旧 UI 过渡，不再承担 Mission 兼容职责。
+
+## [2026-03-09 16:32] openclaw-guard 工作台收口旧入口并接入本地 Env 管理 [TASK-20260309-008]
+
+- 任务来源: 用户要求按顺序执行建议中的第 1、2 项，先清理原生工作台里的 `compat / legacy` 旧入口与文案残留，再继续推进下一批原生能力整合。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成前后端改造、构建验证、真实页面烟雾回归与待提交整理。
+- 实际完成:
+  1) `openclaw-guard/src/server.ts` 已完成后端配套收口：
+     - 删除对 `getHtmlPage()` 的依赖，`/legacy` 改为和 `/compat` 一样统一返回路由迁移说明页。
+     - `/api/info` 新增 `configPath`、`envPath` 字段，供原生工作台展示 OpenClaw 本地配置路径。
+     - `/api/env` 新增 `DELETE` 支持，允许前端直接删除本地 env 键。
+     - 启动日志不再打印 `Compatibility / Legacy` 链接，只保留主入口和 `/workbench` 别名。
+  2) `openclaw-guard/src/ui-shell.ts` 已完成外壳页收口：
+     - 删除 `window.__OPENCLAW_GUARD_UI__` 注入，不再给前端传 `compat / legacy` 跳转别名。
+     - 兼容页改写为“旧链接已迁移到原生工作台”的说明页，强调 `/` 和 `/workbench`，弱化旧版概念。
+  3) `openclaw-guard/web/guard-ui.js` 已完成旧入口清理：
+     - 删除 `shellConfig` 依赖。
+     - 删除头部 `compat / legacy` 按钮与对应点击跳转逻辑。
+     - 清理中英文 I18N 中未再使用的 `openCompat / openLegacy / compat / legacy` 文案。
+     - 英文副标题收口为当前原生工作台定位，不再提 `legacy compatibility layer`。
+  4) `openclaw-guard/web/guard-ui.js` 已重写 `loadSystem()`，把本地 Env 管理正式接入到 `System` 面板：
+     - `Promise.all` 现在会同时读取 `/api/info`、`/api/service/status`、`/api/web-background/status`、`/api/env`。
+     - 系统信息卡新增 `openclaw.json` 和 `.env` 路径展示。
+     - 新增 `本地 Env 管理` 卡片，按 key 排序展示当前 env 键值，并对敏感字段做脱敏显示。
+     - 新增 `创建 / 更新 Env 键` 卡片，支持新建、编辑、清空表单、刷新 env。
+     - 编辑已有敏感键时不回填旧值，只提示用户输入新值覆盖。
+     - 删除动作直接走 `DELETE /api/env`，与后端删除逻辑闭环。
+     - 增加 `maskSensitiveValue()` 帮助函数，用于统一处理敏感值展示。
+- 交付清单:
+  - openclaw-guard/src/server.ts
+  - openclaw-guard/src/ui-shell.ts
+  - openclaw-guard/web/guard-ui.js
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  2) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  3) 已用 Playwright 做两次真实页面烟雾回归：
+     - 在现有运行实例上确认首页能正常显示、顶部 tab 可点击、`System` 面板成功渲染新的 Env 管理区块。
+     - 在新构建实例 `http://127.0.0.1:18090` 上确认 `/api/info` 已返回 `configPath` / `envPath`，页面内对应字段与 `运行态快照` 都能正确显示。
+  4) 已额外验证交互：
+     - 点击 `系统` tab 可正常切换到 `/#system`
+     - 点击敏感 env 的 `编辑` 按钮后，模式提示、说明文案、Key/Value 占位符都会正确变化
+     - 点击 `清空表单` 后会恢复到新建模式
+- 风险与补充说明:
+  1) 当前页面烟雾回归里发现旧的 Guard Web 进程仍在 `18088` 运行，因此 `System` 面板中的“当前监听端口 / Guard Web 检测状态”展示的仍然是运行中的旧后台实例信息；这属于现有运行态事实，不是这次改动的错误。
+  2) 我临时拉起的 `18090` 新实例已经在回归完成后主动关闭，没有额外残留后台进程。
+  3) 下一批原生化任务可以继续沿着同一方向推进，例如把通知中心和 Git Sync 的操作反馈做得更强一致，再评估是否继续压缩 `compat / legacy` 的说明页存在感。

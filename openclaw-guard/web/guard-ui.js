@@ -2,7 +2,6 @@
   const app = document.getElementById('guard-app');
   if (!app) return;
 
-  const shellConfig = window.__OPENCLAW_GUARD_UI__ || {};
   const STORAGE_LANG = 'openclaw-guard.lang';
   const STORAGE_TAB = 'openclaw-guard.active-tab';
 
@@ -12,10 +11,6 @@
       appSubtitle: '自带“防弹衣”与“复活甲”。内置多档安全预设，精准隔离越权风险；结合 Git 深度同步，让你的虾进可自由折腾，退可一键重生。',
       refresh: '刷新当前页',
       stopWeb: '一键停后台服务',
-      openCompat: '\u6253\u5f00\u517c\u5bb9\u9875',
-      openLegacy: '\u6253\u5f00\u65e7\u7248\u9875',
-      compat: '兼容说明',
-      legacy: '旧版别名',
       loading: '正在加载…',
       loadFailed: '加载失败',
       noData: '暂无数据',
@@ -86,13 +81,9 @@
     },
     en: {
       appTitle: 'OpenClaw Guard Native Workbench',
-      appSubtitle: 'One maintainable shell for security, channels, AI, workbench flows, Git sync, and the legacy compatibility layer.',
+      appSubtitle: 'One maintainable shell for security, channels, AI, workbench flows, and Git sync.',
       refresh: 'Refresh',
       stopWeb: 'Stop Background Web',
-      openCompat: 'Open Compat Page',
-      openLegacy: 'Open Legacy Page',
-      compat: 'Compatibility',
-      legacy: 'Legacy Alias',
       loading: 'Loading…',
       loadFailed: 'Load failed',
       noData: 'No data',
@@ -515,6 +506,14 @@
     return /token|secret|password|apiKey|encryptKey|verificationToken|botToken|appToken/i.test(key);
   }
 
+  function maskSensitiveValue(key, value) {
+    const text = String(value ?? '');
+    if (!isSensitiveField(key)) return text;
+    if (!text) return '';
+    if (text.length <= 6) return '••••••';
+    return `${text.slice(0, 2)}••••${text.slice(-2)}`;
+  }
+
   function parseBooleanValue(value) {
     if (typeof value === 'boolean') return value;
     if (typeof value === 'string') {
@@ -717,8 +716,6 @@
                   <button type="button" data-lang="en" class="${state.lang === 'en' ? 'active' : ''}">EN</button>
                 </div>
                 <button class="action-btn" type="button" data-global-action="refresh">${escapeHtml(t('refresh'))}</button>
-                <button class="action-btn" type="button" data-global-action="compat">${escapeHtml(t('openCompat'))}</button>
-                <button class="action-btn" type="button" data-global-action="legacy">${escapeHtml(t('openLegacy'))}</button>
                 <button class="action-btn danger" type="button" data-global-action="stop-web">${escapeHtml(t('stopWeb'))}</button>
               </div>
             </div>
@@ -750,12 +747,6 @@
       });
     });
     app.querySelector('[data-global-action="refresh"]')?.addEventListener('click', () => loadActiveTab(true));
-    app.querySelector('[data-global-action="compat"]')?.addEventListener('click', () => {
-      window.location.href = shellConfig.compatUrl || '/compat';
-    });
-    app.querySelector('[data-global-action="legacy"]')?.addEventListener('click', () => {
-      window.location.href = shellConfig.legacyUrl || '/legacy';
-    });
     app.querySelector('[data-global-action="stop-web"]')?.addEventListener('click', async () => {
       if (!confirm(state.lang === 'zh' ? '\u786e\u8ba4\u505c\u6b62\u5f53\u524d Guard Web \u670d\u52a1\uff1f' : 'Stop the current Guard Web service?')) return;
       try {
@@ -842,12 +833,14 @@
   }
 
   async function loadSystem() {
-    const [info, service, webStatus] = await Promise.all([
+    const [info, service, webStatus, envMap] = await Promise.all([
       apiRequest('/api/info'),
       apiRequest('/api/service/status'),
       apiRequest('/api/web-background/status'),
+      apiRequest('/api/env').catch(() => ({})),
     ]);
 
+    const envEntries = Object.entries(envMap || {}).sort(([left], [right]) => left.localeCompare(right));
     const currentPid = Number(info.pid || 0);
     const isCurrentInstance = !!(webStatus.running && webStatus.pid && currentPid && webStatus.pid === currentPid);
     const isCurrentManaged = isCurrentInstance && webStatus.managed;
@@ -855,28 +848,66 @@
 
     let webPrimaryLabel = state.lang === 'zh' ? '后台启动 Guard Web' : 'Start Guard Web in Background';
     let webPrimaryHint = state.lang === 'zh'
-      ? '当前端口没有 Guard Web 监听时，会以 detached 模式直接在后台拉起。'
-      : 'When no Guard Web process is listening on this port, Guard will start one in detached mode.';
+      ? '当当前端口没有 Guard Web 监听时，Guard 会以 detached 模式在后台直接拉起一个工作台实例。'
+      : 'When no Guard Web process is listening on this port, Guard starts one in detached mode.';
     let webPrimaryDisabled = false;
 
     if (isCurrentManaged) {
-      webPrimaryLabel = state.lang === 'zh' ? '当前实例已托管' : 'Current Instance Managed';
+      webPrimaryLabel = state.lang === 'zh' ? '当前实例已纳入托管' : 'Current Instance Managed';
       webPrimaryHint = state.lang === 'zh'
-        ? '当前页面就是 Guard 托管实例，不需要重复纳入。'
+        ? '你现在打开的页面本身就是已被 Guard 托管的实例，不需要重复接管。'
         : 'This page is already backed by a managed Guard instance.';
       webPrimaryDisabled = true;
     } else if (isCurrentInstance) {
       webPrimaryLabel = state.lang === 'zh' ? '纳入后台托管' : 'Adopt Current Instance';
       webPrimaryHint = state.lang === 'zh'
-        ? '当前页面已经在运行，但不是由 web:bg 管理。点击后会把当前实例写入 Guard 的后台运行记录。'
+        ? '当前页面已经在运行，但还没有被 web:bg 记录。点击后会把当前实例登记进 Guard 的后台运行状态。'
         : 'This page is already running, but it is not tracked by web:bg yet. Guard will adopt it into managed background state.';
     } else if (isOtherProcess) {
       webPrimaryLabel = state.lang === 'zh' ? '已有其他 Guard Web 实例' : 'Another Guard Web Is Running';
       webPrimaryHint = state.lang === 'zh'
-        ? `端口 ${webStatus.port} 已被 PID ${webStatus.pid} 占用。请先停掉这个实例，再决定是否后台启动。`
+        ? `端口 ${webStatus.port} 已被 PID ${webStatus.pid} 占用。请先停掉这个实例，再决定是否启动新的后台实例。`
         : `Port ${webStatus.port} is already occupied by PID ${webStatus.pid}. Stop it before starting another background instance.`;
       webPrimaryDisabled = true;
     }
+
+    const envRows = envEntries.length
+      ? envEntries.map(([key, value]) => {
+        const sensitive = isSensitiveField(key);
+        const displayValue = maskSensitiveValue(key, value) || (state.lang === 'zh' ? '(空字符串)' : '(empty string)');
+        return `
+          <tr>
+            <td><strong>${escapeHtml(key)}</strong></td>
+            <td><span class="muted" style="font-family:Consolas, 'Courier New', monospace;">${escapeHtml(displayValue)}</span></td>
+            <td><span class="pill ${sensitive ? 'warn' : 'success'}">${escapeHtml(sensitive ? (state.lang === 'zh' ? '敏感' : 'Sensitive') : (state.lang === 'zh' ? '普通' : 'Standard'))}</span></td>
+            <td>
+              <div class="toolbar tight">
+                <button class="action-btn" type="button" data-env-edit="${escapeHtml(key)}">${state.lang === 'zh' ? '编辑' : 'Edit'}</button>
+                <button class="action-btn danger" type="button" data-env-delete="${escapeHtml(key)}">${state.lang === 'zh' ? '删除' : 'Delete'}</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('')
+      : `<tr><td colspan="4">${emptyState(state.lang === 'zh' ? '当前还没有本地 env 键。' : 'No local env keys yet.')}</td></tr>`;
+
+    const runtimeSnapshot = {
+      info: {
+        platform: info.platform,
+        user: info.user,
+        home: info.home,
+        openclawDir: info.openclawDir,
+        configPath: info.configPath,
+        envPath: info.envPath,
+        pid: info.pid,
+        nodeVersion: info.nodeVersion,
+        arch: info.arch,
+        openclaw: info.openclaw,
+      },
+      gateway: service,
+      web: webStatus,
+      envKeys: envEntries.map(([key]) => key),
+    };
 
     const body = `
       <div class="grid">
@@ -884,20 +915,34 @@
         ${metricCard('Guard Web', webStatus.running ? 'RUNNING' : 'STOPPED', webStatus.running ? `PID ${webStatus.pid || '-'}` : '-', webStatus.running ? 'success' : 'warn')}
         ${metricCard('Node.js', info.nodeVersion || '-', info.arch || '-')}
         ${metricCard('OpenClaw', info.openclaw?.installed ? 'INSTALLED' : 'MISSING', info.openclaw?.version || '-', info.openclaw?.installed ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '本地 Env' : 'Local Env', formatNumber(envEntries.length), info.envPath || '-')}
       </div>
       <div class="grid">
-        <div class="card">
-          <h3>${state.lang === 'zh' ? '系统信息' : 'System Info'}</h3>
+        <div class="card accent-info">
+          <h3>${state.lang === 'zh' ? '系统信息与路径' : 'System Info & Paths'}</h3>
           ${keyValueGrid([
             { label: state.lang === 'zh' ? '平台' : 'Platform', value: info.platform || '-' },
             { label: state.lang === 'zh' ? '用户' : 'User', value: info.user || '-' },
             { label: 'Home', value: info.home || '-' },
             { label: 'OpenClaw Dir', value: info.openclawDir || '-' },
+            { label: 'openclaw.json', value: info.configPath || '-' },
+            { label: '.env', value: info.envPath || '-' },
             { label: state.lang === 'zh' ? '当前页面 PID' : 'Current Page PID', value: info.pid || '-' },
             { label: state.lang === 'zh' ? '当前监听端口' : 'Current Listen Port', value: webStatus.port || '-' },
           ])}
+          <div class="sub-card" style="margin-top:14px;">
+            <div class="row" style="justify-content:space-between;">
+              <strong>${state.lang === 'zh' ? '路径用途' : 'Path Roles'}</strong>
+              <span class="pill success">${state.lang === 'zh' ? '原生工作台' : 'Native Workbench'}</span>
+            </div>
+            <div class="muted small" style="margin-top:8px; line-height:1.7;">
+              ${escapeHtml(state.lang === 'zh'
+                ? 'openclaw.json 用于保存模型、渠道和 Agent 主配置；env 文件用于保存适合本地托管的密钥和令牌，供渠道、Git 同步和后续扩展模块复用。'
+                : 'openclaw.json stores models, channels, and agent settings. The env file stores local secrets and tokens that can be reused by channels, Git sync, and future modules.')}
+            </div>
+          </div>
         </div>
-        <div class="card">
+        <div class="card accent-warn">
           <h3>${state.lang === 'zh' ? '后台服务控制' : 'Background Service Controls'}</h3>
           <div class="toolbar">
             <button class="action-btn primary" type="button" data-service-action="start">${escapeHtml(t('start'))} Gateway</button>
@@ -927,7 +972,7 @@
               <div class="muted small" style="margin-top:8px;">
                 ${escapeHtml(webStatus.managed
                   ? (state.lang === 'zh' ? '该实例已经被 Guard 写入后台运行记录。' : 'This instance is already tracked by Guard background runtime records.')
-                  : (state.lang === 'zh' ? '当前只是通过端口扫描识别到进程，尚未进入 Guard 托管。' : 'This instance is currently detected by port scan only and is not under Guard management yet.'))}
+                  : (state.lang === 'zh' ? '当前只是通过端口扫描识别到进程，还没有进入 Guard 托管。' : 'This instance is currently detected by port scan only and is not under Guard management yet.'))}
               </div>
             </div>
             <div class="list-item">
@@ -947,16 +992,80 @@
             </div>
             <div class="muted small" style="margin-top:10px;">
               ${escapeHtml(state.lang === 'zh'
-                ? '推荐优先用上面三个命令排查后台托管状态。如果页面本身已经打开，优先点击“纳入后台托管”，不要重复拉起第二个同端口实例。'
-                : 'Prefer the three commands above to inspect background runtime state. If this page is already open, adopt the current instance before trying to start a second process on the same port.')}
+                ? '如果你已经打开了当前页面，优先使用“纳入后台托管”或“一键停后台服务”，避免在同端口重复拉起第二个 Guard Web 实例。'
+                : 'If this page is already open, adopt the current instance or stop the background service first instead of spawning a second Guard Web on the same port.')}
             </div>
           </div>
-          <pre style="margin-top:14px;">${prettyJson({ info, gateway: service, web: webStatus })}</pre>
         </div>
+      </div>
+      <div class="grid">
+        <div class="card accent-success">
+          <div class="row" style="justify-content:space-between; align-items:flex-start;">
+            <div>
+              <h3>${state.lang === 'zh' ? '本地 Env 管理' : 'Local Env Management'}</h3>
+              <p>${escapeHtml(state.lang === 'zh'
+                ? '这里直接管理 Guard 使用的本地 env 键。敏感字段会在列表里脱敏显示，但不会影响实际保存值。'
+                : 'Manage local env keys used by Guard. Sensitive entries are masked in the list without changing the stored value.')}</p>
+            </div>
+            <div class="tag-list">
+              <span class="chip">${escapeHtml((state.lang === 'zh' ? 'Env 文件：' : 'Env file: ') + (info.envPath || '-'))}</span>
+              <span class="chip active">${escapeHtml((state.lang === 'zh' ? '键数量：' : 'Keys: ') + envEntries.length)}</span>
+            </div>
+          </div>
+          <div class="table-wrap" style="margin-top:14px;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>${state.lang === 'zh' ? 'Key' : 'Key'}</th>
+                  <th>${state.lang === 'zh' ? '当前值' : 'Current Value'}</th>
+                  <th>${state.lang === 'zh' ? '类型' : 'Type'}</th>
+                  <th>${state.lang === 'zh' ? '操作' : 'Actions'}</th>
+                </tr>
+              </thead>
+              <tbody>${envRows}</tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card accent-info">
+          <div class="row" style="justify-content:space-between; align-items:flex-start;">
+            <div>
+              <h3>${state.lang === 'zh' ? '创建 / 更新 Env 键' : 'Create / Update Env Key'}</h3>
+              <p id="system-env-mode">${state.lang === 'zh' ? '新建模式：填写 key 和 value 后保存。' : 'Create mode: enter a key and value, then save.'}</p>
+            </div>
+            <span class="pill success">${state.lang === 'zh' ? '本地优先' : 'Local First'}</span>
+          </div>
+          <div class="status" id="system-env-hint" style="margin-top:14px;">
+            ${escapeHtml(state.lang === 'zh'
+              ? '编辑已有敏感键时，旧值不会回填到表单。直接输入新值即可覆盖。'
+              : 'Existing sensitive values are not prefilled. Enter a new value to overwrite them.')}
+          </div>
+          <form id="system-env-form" class="stack" style="margin-top:14px;">
+            <div class="form-grid">
+              <div class="field">
+                <label for="system-env-key">${state.lang === 'zh' ? 'Env Key' : 'Env Key'}</label>
+                <input id="system-env-key" name="key" type="text" placeholder="OPENCLAW_SAMPLE_TOKEN" autocomplete="off">
+              </div>
+              <div class="field field-span">
+                <label for="system-env-value">${state.lang === 'zh' ? 'Env Value' : 'Env Value'}</label>
+                <textarea id="system-env-value" name="value" style="min-height:180px;" placeholder="${state.lang === 'zh' ? '输入要保存到本地 env 文件的值' : 'Enter the value to store in the local env file'}"></textarea>
+              </div>
+            </div>
+            <div class="toolbar tight">
+              <button class="action-btn primary" type="submit">${state.lang === 'zh' ? '保存 Env' : 'Save Env'}</button>
+              <button class="action-btn" type="button" data-env-action="clear">${state.lang === 'zh' ? '清空表单' : 'Clear Form'}</button>
+              <button class="action-btn" type="button" data-env-action="reload">${state.lang === 'zh' ? '刷新 Env' : 'Reload Env'}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="card">
+        <h3>${state.lang === 'zh' ? '运行态快照' : 'Runtime Snapshot'}</h3>
+        <pre style="margin-top:14px;">${prettyJson(runtimeSnapshot)}</pre>
       </div>
     `;
 
     setPanel(t('tabs.system'), t('desc.system'), body);
+
     document.querySelectorAll('[data-service-action]').forEach((button) => {
       button.addEventListener('click', async () => {
         const action = button.getAttribute('data-service-action');
@@ -976,6 +1085,107 @@
           showToast(error.message || String(error), 'error');
         }
       });
+    });
+
+    const envForm = document.getElementById('system-env-form');
+    const envKeyInput = document.getElementById('system-env-key');
+    const envValueInput = document.getElementById('system-env-value');
+    const envMode = document.getElementById('system-env-mode');
+    const envHint = document.getElementById('system-env-hint');
+
+    const resetEnvForm = () => {
+      if (!(envKeyInput instanceof HTMLInputElement) || !(envValueInput instanceof HTMLTextAreaElement)) return;
+      if (envMode) {
+        envMode.textContent = state.lang === 'zh'
+          ? '新建模式：填写 key 和 value 后保存。'
+          : 'Create mode: enter a key and value, then save.';
+      }
+      if (envHint) {
+        envHint.textContent = state.lang === 'zh'
+          ? '编辑已有敏感键时，旧值不会回填到表单。直接输入新值即可覆盖。'
+          : 'Existing sensitive values are not prefilled. Enter a new value to overwrite them.';
+      }
+      envKeyInput.readOnly = false;
+      envKeyInput.value = '';
+      envValueInput.value = '';
+      envValueInput.placeholder = state.lang === 'zh'
+        ? '输入要保存到本地 env 文件的值'
+        : 'Enter the value to store in the local env file';
+    };
+
+    document.querySelectorAll('[data-env-edit]').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (!(envKeyInput instanceof HTMLInputElement) || !(envValueInput instanceof HTMLTextAreaElement)) return;
+        const key = button.getAttribute('data-env-edit') || '';
+        envKeyInput.value = key;
+        envKeyInput.readOnly = true;
+        envValueInput.value = '';
+        envValueInput.placeholder = state.lang === 'zh'
+          ? `输入新的值以覆盖 ${key}`
+          : `Enter a new value to overwrite ${key}`;
+        if (envMode) {
+          envMode.textContent = state.lang === 'zh'
+            ? `编辑模式：当前正在更新 ${key}`
+            : `Edit mode: updating ${key}`;
+        }
+        if (envHint) {
+          envHint.textContent = isSensitiveField(key)
+            ? (state.lang === 'zh'
+              ? '这是一个敏感键，旧值不会展示在表单中。请直接输入新值并保存。'
+              : 'This is a sensitive key. The previous value is not shown in the form. Enter a new value and save it.')
+            : (state.lang === 'zh'
+              ? '这是一个普通键。为了避免误写，这里也不会回填旧值，保存后会直接覆盖。'
+              : 'This is a standard key. The previous value is also not prefilled to avoid accidental leakage; saving will overwrite it.');
+        }
+        envValueInput.focus();
+      });
+    });
+
+    document.querySelectorAll('[data-env-delete]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const key = button.getAttribute('data-env-delete') || '';
+        if (!key) return;
+        const confirmed = window.confirm(state.lang === 'zh'
+          ? `确认删除 ${key} 吗？这会把它从本地 env 文件里移除。`
+          : `Remove ${key}? This will delete it from the local env file.`);
+        if (!confirmed) return;
+        try {
+          const result = await apiRequest(`/api/env?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
+          const ok = result?.success !== false;
+          showToast(result?.message || 'OK', ok ? 'success' : 'error');
+          await loadSystem();
+        } catch (error) {
+          showToast(error.message || String(error), 'error');
+        }
+      });
+    });
+
+    document.querySelector('[data-env-action="clear"]')?.addEventListener('click', () => {
+      resetEnvForm();
+      envKeyInput?.focus();
+    });
+
+    document.querySelector('[data-env-action="reload"]')?.addEventListener('click', async () => {
+      await loadSystem();
+    });
+
+    envForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!(envKeyInput instanceof HTMLInputElement) || !(envValueInput instanceof HTMLTextAreaElement)) return;
+      const key = envKeyInput.value.trim();
+      const value = envValueInput.value;
+      if (!key) {
+        showToast(state.lang === 'zh' ? '请先填写 Env Key。' : 'Env key is required.', 'error');
+        return;
+      }
+      try {
+        const result = await postJson('/api/env', { key, value });
+        const ok = result?.success !== false;
+        showToast(result?.message || 'OK', ok ? 'success' : 'error');
+        await loadSystem();
+      } catch (error) {
+        showToast(error.message || String(error), 'error');
+      }
     });
   }
 
@@ -3194,4 +3404,3 @@
     }
   });
 })();
-

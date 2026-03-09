@@ -23,10 +23,16 @@ describe('cron-ui', () => {
     mocks.getCronSnapshot.mockReturnValue({
       capturedAt: '2026-03-09T00:00:00.000Z',
       jobs: [],
+      total: 0,
+      offset: 0,
+      limit: 50,
+      hasMore: false,
+      nextOffset: null,
       warnings: ['list warning'],
       status: {
         enabled: true,
         storePath: '/tmp/cron/jobs.json',
+        jobsCount: 0,
         schedulerNextWakeAt: '2026-03-09T01:00:00.000Z',
         warnings: ['status warning'],
         raw: null,
@@ -111,7 +117,10 @@ describe('cron-ui', () => {
   it('merges snapshot warnings and scheduler warnings in overview', () => {
     const overview = getCronOverview();
     expect(overview.jobs).toEqual([]);
+    expect(overview.total).toBe(0);
+    expect(overview.limit).toBe(50);
     expect(overview.warnings).toEqual(['list warning', 'status warning']);
     expect(overview.status.enabled).toBe(true);
+    expect(overview.status.jobsCount).toBe(0);
   });
 });

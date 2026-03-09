@@ -1971,3 +1971,55 @@
   1) 当前页面烟雾回归里发现旧的 Guard Web 进程仍在 `18088` 运行，因此 `System` 面板中的“当前监听端口 / Guard Web 检测状态”展示的仍然是运行中的旧后台实例信息；这属于现有运行态事实，不是这次改动的错误。
   2) 我临时拉起的 `18090` 新实例已经在回归完成后主动关闭，没有额外残留后台进程。
   3) 下一批原生化任务可以继续沿着同一方向推进，例如把通知中心和 Git Sync 的操作反馈做得更强一致，再评估是否继续压缩 `compat / legacy` 的说明页存在感。
+
+## [2026-03-10 07:23] openclaw-guard 用真实 OpenClaw 样本补强运行态与 Cron 解析 [TASK-20260310-001]
+
+- 任务来源: 用户要求继续后续工作，优先用本机真实 `openclaw status --json`、`openclaw cron list --json`、`openclaw cron status --json` 样本补强解析器，并把新增字段接入原生工作台。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成解析层、测试、前端展示与真页面回归，可提交。
+- 实际完成:
+  1) 已用本机真实命令输出完成字段对齐：
+     - `openclaw status --json`
+     - `openclaw cron list --json`
+     - `openclaw cron status --json`
+     其中确认了真实字段包括 `sessions.paths`、`sessions.byAgent`、`memory.custom.searchMode`、`gateway.self.*`、`gatewayService.*`、`nodeService.*`、`cron list` 分页字段、`cron status.jobs` 等。
+  2) `openclaw-guard/src/openclaw-runtime.ts` 已补强运行态结构：
+     - 新增 `os`、`update`、`memory`、`memoryPlugin`、`gateway.self`、`gatewayService`、`nodeService`、`sessionsMeta` 解析。
+     - `sessionsMeta` 现在包含 `paths` 与 `byAgent` 聚合，`byAgent.recent` 会继续走统一的 `SessionRecord` 归一化逻辑。
+     - `CronSnapshot` 新增 `total / offset / limit / hasMore / nextOffset`。
+     - `CronStatusSummary` 新增 `jobsCount`，直接映射真实 `openclaw cron status --json` 的 `jobs` 字段。
+  3) `openclaw-guard/src/cron-ui.ts` 与 `openclaw-guard/src/dashboard.ts` 已把新增运行态字段继续向 Web API 暴露：
+     - `CronOverview` 现已返回分页窗口与总量字段。
+     - `DashboardOverview.runtime` 现已返回 `os / update / memory / memoryPlugin / gatewayService / nodeService / sessionsMeta`。
+  4) `openclaw-guard/web/guard-ui.js` 已完成前端展示增强：
+     - `Sessions` 页新增默认上下文、会话索引路径数、排队系统事件数。
+     - `Sessions` 页新增“运行上下文”卡片，展示 OS、记忆检索模式、Gateway 自身版本、Gateway/Node 服务状态、更新通道。
+     - `Sessions` 页新增“按 Agent 聚合”卡片，直接展示 `sessions.byAgent` 的数量、路径、最近会话。
+     - 单条会话新增 `contextTokens / remainingTokens / percentUsed` 标签展示。
+     - `Cron` 页新增总量、`cron status` 任务数、分页窗口信息与 `hasMore` 提示。
+     - `renderFormField()` 的 `select` 分支已补成同时支持字符串选项和 `{ value, label }` 结构，避免 Cron 表单因为对象选项渲染异常。
+  5) 在改造 `Cron` 页过程中，曾误伤 `loadGitSync()` 函数边界；已从当前分支 `HEAD` 中完整恢复 `Git Sync` 页逻辑，并做了真页面回归确认未回归。
+- 交付清单:
+  - openclaw-guard/src/openclaw-runtime.ts
+  - openclaw-guard/src/cron-ui.ts
+  - openclaw-guard/src/dashboard.ts
+  - openclaw-guard/src/__tests__/openclaw-runtime.test.ts
+  - openclaw-guard/src/__tests__/cron-ui.test.ts
+  - openclaw-guard/web/guard-ui.js
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  2) 已验证 `pnpm --dir openclaw-guard exec vitest run src/__tests__/openclaw-runtime.test.ts src/__tests__/cron-ui.test.ts src/__tests__/costs.test.ts` 通过，当前 8 项相关测试全部通过。
+  3) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  4) 已临时启动 `node openclaw-guard/dist/index.js web --port 18090` 做真页面回归，并确认以下页签正常加载：
+     - `会话`
+     - `Cron`
+     - `Git 同步`
+  5) Playwright 回归期间未发现前端 `error` 级别控制台报错。
+- 风险与补充说明:
+  1) 当前 `nodeService.runtimeShort` 来自 OpenClaw 原始输出，Windows 下仍可能包含终端编码噪声；这属于上游命令输出事实，目前 Guard 已原样展示，不再二次“猜测纠正”。
+  2) `Cron` 当前已能正确展示真实分页元信息，但还没有做列表翻页交互；如果后续任务数显著变多，建议继续补 `offset/nextOffset` 翻页按钮。
+  3) 下一步可以继续推进三块增强项：
+     - 把 `Overview` 首页也接入这批新运行态字段
+     - 给 `Sessions` 页增加 `securityAudit` / `queuedSystemEvents` 的联动跳转
+     - 给 `Cron` 页补分页与手动刷新细节

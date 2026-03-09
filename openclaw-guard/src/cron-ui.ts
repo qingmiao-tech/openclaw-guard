@@ -34,6 +34,11 @@ export interface CronJobInput {
 export interface CronOverview {
   snapshotAt: string;
   jobs: CronJobRecord[];
+  total: number;
+  offset: number;
+  limit: number;
+  hasMore: boolean;
+  nextOffset: number | null;
   warnings: string[];
   status: CronStatusSummary;
 }
@@ -181,10 +186,16 @@ export function getCronOverview(): CronOverview {
   return {
     snapshotAt: snapshot.capturedAt,
     jobs: snapshot.jobs,
+    total: snapshot.total,
+    offset: snapshot.offset,
+    limit: snapshot.limit,
+    hasMore: snapshot.hasMore,
+    nextOffset: snapshot.nextOffset,
     warnings,
     status: snapshot.status || {
       enabled: null,
       storePath: null,
+      jobsCount: null,
       schedulerNextWakeAt: null,
       warnings: [],
       raw: null,

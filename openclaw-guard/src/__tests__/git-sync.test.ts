@@ -132,6 +132,11 @@ describe('git-sync', () => {
     execFileSync('git', ['-C', embeddedRepoPath, 'init'], { stdio: 'ignore' });
     fs.writeFileSync(path.join(embeddedRepoPath, 'README.md'), '# nested repo\n', 'utf-8');
 
+    const before = getGitSyncStatus();
+    expect(before.stageableChangedFiles).toContain('README.md');
+    expect(before.skippedEmbeddedRepos).toContain('workspace-nanfeng');
+    expect(before.canCommit).toBe(true);
+
     const result = commitGitSync('跳过嵌套仓库提交测试');
     expect(result.success).toBe(true);
     expect(result.message).toContain('workspace-nanfeng/');
@@ -146,6 +151,8 @@ describe('git-sync', () => {
     const after = getGitSyncStatus();
     expect(after.hasChanges).toBe(true);
     expect(after.changedFiles).toContain('workspace-nanfeng');
+    expect(after.stageableChangedFiles).toEqual([]);
+    expect(after.skippedEmbeddedRepos).toContain('workspace-nanfeng');
     expect(after.canCommit).toBe(false);
     expect(after.commitReasons.join(' ')).toContain('embedded Git repositories');
   });

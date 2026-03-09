@@ -1696,3 +1696,46 @@
 - 风险与补充说明:
   1) 本轮选择的是“自动跳过嵌套仓库”策略，不会把子仓库内容强行平铺纳入外层仓库；这样更安全，也更符合用户真实 .openclaw 目录可能包含独立扩展仓库的情况。
   2) 提交成功后，如果工作区里仍有嵌套仓库变更，Guard 仍会显示“有未同步改动”，这是预期行为，不是新 bug。
+
+## [2026-03-09 09:44] openclaw-guard Git Sync 工作台补强：嵌套仓库可视化与忽略建议页 [TASK-20260309-003]
+
+- 任务来源: 用户要求继续执行上一轮两个建议项：
+  1) 在 Web 的 Git Sync 页面里把“已跳过的嵌套仓库”做成可视化状态，而不是只出现在 message 文本里。
+  2) 增加 .openclaw 常见嵌套仓库的处理建议区，并提供可复制的忽略模板与处理说明。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成开发、语法检查、单测和真实页面回归，待提交 git。
+- 实际完成:
+  1) openclaw-guard/src/git-sync.ts 的状态结构新增 stageableChangedFiles 与 skippedEmbeddedRepos，前端不再需要从 commit message 里猜测哪些路径会被提交、哪些会被跳过。
+  2) openclaw-guard/src/__tests__/git-sync.test.ts 已补断言：在存在 workspace-nanfeng/.git 的场景下，提交前状态会同时暴露“可提交普通文件”和“已识别嵌套仓库”；提交后会正确保留 skippedEmbeddedRepos 并把 stageableChangedFiles 清空。
+  3) openclaw-guard/web/guard-ui.js 的 Git Sync 页面已重做关键信息分层：
+     - 顶部指标卡单独显示“全部变更 / 可提交文件 / 嵌套仓库”
+     - 中部拆成“本次会纳入提交的文件”与“已自动跳过的嵌套仓库”两块
+     - 如果检测到嵌套仓库，会出现黄色提醒条，明确说明这些路径不会进入外层 .openclaw 提交
+  4) Git Sync 页面新增“嵌套仓库处理建议”卡片，覆盖三种方案：
+     - 继续独立维护子仓库
+     - 删除子目录 .git 后并入主仓
+     - 保持子仓库独立并在子目录单独同步
+  5) 页面新增两个快捷动作：
+     - 复制忽略模板
+     - 复制处理说明
+     模板会根据当前命中的嵌套仓库路径动态生成，并自动补上 workspace-*/、extensions/*/、skills/*/ 等常见规则。
+  6) openclaw-guard/web/guard-ui.css 已补充 accent-info / accent-success / accent-warn 和 guide-grid 样式，让新的 Git Sync 区块在视觉上和旧卡片区分开，更容易一眼看清“会提交”和“被跳过”的边界。
+- 交付清单:
+  - openclaw-guard/src/git-sync.ts
+  - openclaw-guard/src/__tests__/git-sync.test.ts
+  - openclaw-guard/web/guard-ui.js
+  - openclaw-guard/web/guard-ui.css
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 node --check openclaw-guard/web/guard-ui.js 通过。
+  2) 已验证 pnpm --dir openclaw-guard build 通过。
+  3) 已验证 pnpm --dir openclaw-guard test -- --run src/__tests__/git-sync.test.ts 通过，当前 8 项测试全部通过。
+  4) 已按 webapp-testing 技能做真实页面回归：通过 with_server.py 拉起 pnpm --dir openclaw-guard web，并用 Playwright 脚本验证：
+     - data-git-action="copy-ignore-template" 按钮存在
+     - data-git-action="copy-embedded-guide" 按钮存在
+     - .guide-grid .sub-card 至少 3 张
+     - accent-warn / accent-success 卡片正常渲染
+  5) 已生成回归截图：openclaw-guard/.guard-runtime/git-sync-embedded-guidance-smoke.png
+- 风险与补充说明:
+  1) 当前“忽略模板”仍是复制型动作，不会直接帮用户修改目标 .openclaw/.gitignore，这样更安全，避免误改真实用户仓库。
+  2) 如果后续你希望进一步做成“一键写入 .gitignore”，建议先补一个预览差异层，避免把用户已有规则覆盖掉。

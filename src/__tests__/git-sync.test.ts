@@ -176,6 +176,21 @@ describe('git-sync', () => {
     expect(preview.appendBlock).toContain('workspace-nanfeng/');
   });
 
+  it('supports exact-only gitignore preview mode without wildcard entries', () => {
+    initGitSync();
+
+    const embeddedRepoPath = path.join(tempRoot, 'workspace-nanfeng');
+    fs.mkdirSync(embeddedRepoPath, { recursive: true });
+    execFileSync('git', ['-C', embeddedRepoPath, 'init'], { stdio: 'ignore' });
+    fs.writeFileSync(path.join(embeddedRepoPath, 'README.md'), '# nested repo\n', 'utf-8');
+
+    const preview = previewGitIgnoreRules(undefined, 'exact');
+    expect(preview.mode).toBe('exact');
+    expect(preview.missingEntries).toContain('workspace-nanfeng/');
+    expect(preview.missingEntries).not.toContain('workspace-*/');
+    expect(preview.suggestedBlock).not.toContain('workspace-*/');
+  });
+
   it('applies embedded repo .gitignore rules idempotently', () => {
     initGitSync();
 
@@ -198,6 +213,23 @@ describe('git-sync', () => {
 
     const gitignoreAfter = fs.readFileSync(path.join(tempRoot, '.gitignore'), 'utf-8');
     expect(gitignoreAfter).toBe(gitignore);
+  });
+
+  it('applies exact-only gitignore rules without wildcard entries', () => {
+    initGitSync();
+
+    const embeddedRepoPath = path.join(tempRoot, 'workspace-nanfeng');
+    fs.mkdirSync(embeddedRepoPath, { recursive: true });
+    execFileSync('git', ['-C', embeddedRepoPath, 'init'], { stdio: 'ignore' });
+    fs.writeFileSync(path.join(embeddedRepoPath, 'README.md'), '# nested repo\n', 'utf-8');
+
+    const result = applyGitIgnoreRules('exact');
+    expect(result.success).toBe(true);
+    expect(result.preview.mode).toBe('exact');
+
+    const gitignore = fs.readFileSync(path.join(tempRoot, '.gitignore'), 'utf-8');
+    expect(gitignore).toContain('workspace-nanfeng/');
+    expect(gitignore).not.toContain('workspace-*/');
   });
 
   it('dedupes embedded repository notifications across repeated status refreshes', () => {

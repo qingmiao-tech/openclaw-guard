@@ -12,6 +12,7 @@ import { runCommand } from './openclaw-runtime.js';
 export type GitProvider = 'github' | 'gitee';
 export type GitAuthMode = 'none' | 'token' | 'oauth';
 export type GitOAuthPhase = 'idle' | 'authorizing' | 'success' | 'error';
+export type GitIgnoreMode = 'smart' | 'exact';
 
 export interface GitOAuthState {
   phase: GitOAuthPhase;
@@ -91,6 +92,7 @@ export interface GitSyncActionResult {
 }
 
 export interface GitIgnorePreview {
+  mode: GitIgnoreMode;
   repoPath: string;
   gitignorePath: string;
   embeddedRepos: string[];
@@ -398,20 +400,22 @@ function normalizeGitIgnoreEntry(value: string): string {
     .replace(/\/+/g, '/');
 }
 
-function buildEmbeddedGitIgnoreSuggestion(paths: string[]): EmbeddedGitIgnoreSuggestion {
+function buildEmbeddedGitIgnoreSuggestion(paths: string[], mode: GitIgnoreMode = 'smart'): EmbeddedGitIgnoreSuggestion {
   const embeddedRepos = uniqueItems(paths.map((item) => normalizeGitPath(item)).filter(Boolean));
   const exactEntries = embeddedRepos.map((item) => `${item}/`);
   const wildcardEntries: string[] = [];
   const lines = ['# Nested Git repositories managed outside the root .openclaw sync', ...exactEntries];
 
-  if (embeddedRepos.some((item) => /^workspace-[^/]+$/i.test(item))) {
-    wildcardEntries.push('workspace-*/');
-  }
-  if (embeddedRepos.some((item) => /^extensions\/[^/]+$/i.test(item))) {
-    wildcardEntries.push('extensions/*/');
-  }
-  if (embeddedRepos.some((item) => /^skills\/[^/]+$/i.test(item))) {
-    wildcardEntries.push('skills/*/');
+  if (mode === 'smart') {
+    if (embeddedRepos.some((item) => /^workspace-[^/]+$/i.test(item))) {
+      wildcardEntries.push('workspace-*/');
+    }
+    if (embeddedRepos.some((item) => /^extensions\/[^/]+$/i.test(item))) {
+      wildcardEntries.push('extensions/*/');
+    }
+    if (embeddedRepos.some((item) => /^skills\/[^/]+$/i.test(item))) {
+      wildcardEntries.push('skills/*/');
+    }
   }
 
   if (wildcardEntries.length > 0) {
@@ -474,6 +478,10 @@ function appendTextBlock(existingContent: string, block: string): string {
 
 function buildEmbeddedRepoNotificationMessage(paths: string[]): string {
   return `Guard skipped embedded Git repositories during root sync: ${formatEmbeddedRepoList(paths)}. Add them to the root .gitignore or sync them separately.`;
+}
+
+function normalizeGitIgnoreMode(input?: string | null): GitIgnoreMode {
+  return input === 'exact' ? 'exact' : 'smart';
 }
 
 export function parseGitRemote(remoteUrl: string): GitRepoRef | null {
@@ -599,16 +607,18 @@ function ensureGitIgnore(): string {
   return filePath;
 }
 
-export function previewGitIgnoreRules(paths?: string[]): GitIgnorePreview {
+export function previewGitIgnoreRules(paths?: string[], mode: GitIgnoreMode = 'smart'): GitIgnorePreview {
   const gitignorePath = path.join(repoPath(), '.gitignore');
   const stagePreparation = paths ? prepareStageChanges(paths) : prepareStageChanges();
-  const suggestion = buildEmbeddedGitIgnoreSuggestion(stagePreparation.skippedEmbeddedRepos);
+  const normalizedMode = normalizeGitIgnoreMode(mode);
+  const suggestion = buildEmbeddedGitIgnoreSuggestion(stagePreparation.skippedEmbeddedRepos, normalizedMode);
   const existingContent = readGitIgnoreContent(gitignorePath);
   const existingEntriesSet = new Set(parseGitIgnoreEntries(existingContent));
   const existingEntries = suggestion.suggestedEntries.filter((entry) => existingEntriesSet.has(normalizeGitIgnoreEntry(entry)));
   const missingEntries = suggestion.suggestedEntries.filter((entry) => !existingEntriesSet.has(normalizeGitIgnoreEntry(entry)));
 
   return {
+    mode: normalizedMode,
     repoPath: repoPath(),
     gitignorePath,
     embeddedRepos: suggestion.embeddedRepos,
@@ -621,8 +631,9 @@ export function previewGitIgnoreRules(paths?: string[]): GitIgnorePreview {
   };
 }
 
-export function applyGitIgnoreRules(): GitIgnoreApplyResult {
-  const preview = previewGitIgnoreRules();
+export function applyGitIgnoreRules(mode: GitIgnoreMode = 'smart'): GitIgnoreApplyResult {
+  const normalizedMode = normalizeGitIgnoreMode(mode);
+  const preview = previewGitIgnoreRules(undefined, normalizedMode);
   if (!preview.willChange) {
     return {
       success: true,
@@ -644,15 +655,16 @@ export function applyGitIgnoreRules(): GitIgnoreApplyResult {
     source: 'git-sync',
     title: '.gitignore updated for embedded repositories',
     message: `Added ${preview.missingEntries.length} ignore rules for ${formatEmbeddedRepoList(preview.embeddedRepos)}.`,
-    severity: 'success',
-    meta: {
-      gitignorePath: preview.gitignorePath,
-      embeddedRepos: preview.embeddedRepos,
-      missingEntries: preview.missingEntries,
-    },
-  });
+      severity: 'success',
+      meta: {
+        gitignorePath: preview.gitignorePath,
+        mode: preview.mode,
+        embeddedRepos: preview.embeddedRepos,
+        missingEntries: preview.missingEntries,
+      },
+    });
 
-  const nextPreview = previewGitIgnoreRules(preview.embeddedRepos);
+  const nextPreview = previewGitIgnoreRules(preview.embeddedRepos, normalizedMode);
   return {
     success: true,
     message: `已将 ${preview.missingEntries.length} 条嵌套仓库忽略规则写入 .gitignore。`,

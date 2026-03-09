@@ -198,8 +198,10 @@
     cronEditingJobId: null,
     cronDraft: null,
     gitSyncDraftMessage: '',
+    gitSyncIgnoreMode: 'smart',
     gitSyncLastAction: null,
     gitSyncPollTimer: null,
+    pendingPanelFocus: null,
   };
 
   function t(key) {
@@ -318,6 +320,27 @@
     }
     renderShell();
     loadActiveTab();
+  }
+
+  function queuePanelFocus(tabId, selector) {
+    state.pendingPanelFocus = {
+      tabId,
+      selector,
+      at: Date.now(),
+    };
+  }
+
+  function applyPendingPanelFocus(tabId) {
+    const pending = state.pendingPanelFocus;
+    if (!pending || pending.tabId !== tabId) return;
+    state.pendingPanelFocus = null;
+    setTimeout(() => {
+      const target = document.querySelector(pending.selector);
+      if (!target) return;
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      target.classList.add('panel-highlight');
+      setTimeout(() => target.classList.remove('panel-highlight'), 1800);
+    }, 80);
   }
 
   function metricCard(title, value, detail, pillClass = '') {
@@ -1703,6 +1726,21 @@
         item.meta ? JSON.stringify(item.meta) : '',
       ], state.notificationSearchQuery);
     });
+    const getNotificationJumpTarget = (item) => {
+      const meta = item?.meta || {};
+      if (item?.source === 'git-sync' && (
+        Array.isArray(meta.embeddedRepos) ||
+        item?.title === 'Embedded Git repositories detected' ||
+        item?.title === '.gitignore updated for embedded repositories'
+      )) {
+        return {
+          tabId: 'git-sync',
+          selector: '#gitignore-preview-card',
+          label: state.lang === 'zh' ? '打开 Git Sync' : 'Open Git Sync',
+        };
+      }
+      return null;
+    };
 
     const body = `
       <div class="grid">
@@ -1733,7 +1771,9 @@
         </div>
       </div>
       <div class="list">
-        ${filtered.length ? filtered.map((item) => `
+        ${filtered.length ? filtered.map((item) => {
+          const jumpTarget = getNotificationJumpTarget(item);
+          return `
           <div class="list-item ${item.read ? '' : 'unread'}">
             <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
               <div>
@@ -1747,9 +1787,11 @@
             <div class="toolbar tight" style="margin-top:12px;">
               <button class="action-btn" type="button" data-notify-item="${escapeHtml(item.id)}" data-next-read="${item.read ? 'false' : 'true'}">${escapeHtml(item.read ? t('markUnread') : t('markRead'))}</button>
               <button class="action-btn" type="button" data-notify-copy="${escapeHtml(item.id)}">${escapeHtml(state.lang === 'zh' ? '复制详情' : 'Copy Details')}</button>
+              ${jumpTarget ? `<button class="action-btn primary" type="button" data-notify-open-tab="${escapeHtml(jumpTarget.tabId)}" data-notify-focus="${escapeHtml(jumpTarget.selector)}">${escapeHtml(jumpTarget.label)}</button>` : ''}
             </div>
           </div>
-        `).join('') : emptyState(state.lang === 'zh' ? '没有符合筛选条件的通知。' : 'No notifications match the current filters.')}
+        `;
+        }).join('') : emptyState(state.lang === 'zh' ? '没有符合筛选条件的通知。' : 'No notifications match the current filters.')}
       </div>
     `;
 
@@ -1815,6 +1857,15 @@
         await copyTextValue(JSON.stringify(item, null, 2), {
           successMessage: state.lang === 'zh' ? '通知详情已复制。' : 'Notification detail copied.',
         });
+      });
+    });
+
+    document.querySelectorAll('[data-notify-open-tab]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const tabId = button.getAttribute('data-notify-open-tab') || 'git-sync';
+        const selector = button.getAttribute('data-notify-focus') || '#gitignore-preview-card';
+        queuePanelFocus(tabId, selector);
+        setActiveTab(tabId);
       });
     });
   }
@@ -2421,9 +2472,10 @@
 
   async function loadGitSync() {
     clearGitSyncPollTimer();
+    const gitIgnoreMode = state.gitSyncIgnoreMode === 'exact' ? 'exact' : 'smart';
     const [status, gitignorePreview] = await Promise.all([
       apiRequest('/api/git-sync/status'),
-      apiRequest('/api/git-sync/gitignore-preview').catch(() => null),
+      apiRequest(`/api/git-sync/gitignore-preview?mode=${encodeURIComponent(gitIgnoreMode)}`).catch(() => null),
     ]);
     const oauth = status.oauth || {};
 
@@ -2439,6 +2491,10 @@
     const gitIgnoreExistingEntries = Array.isArray(gitignorePreview?.existingEntries) ? gitignorePreview.existingEntries : [];
     const gitIgnoreMissingEntries = Array.isArray(gitignorePreview?.missingEntries) ? gitignorePreview.missingEntries : [];
     const gitIgnorePath = gitignorePreview?.gitignorePath || `${status.repoPath || ''}/.gitignore`;
+    const gitIgnoreModeOptions = `
+      <option value="smart" ${gitIgnoreMode === 'smart' ? 'selected' : ''}>${escapeHtml(state.lang === 'zh' ? '智能模式：精确路径 + 常见通配符' : 'Smart: exact paths + common wildcards')}</option>
+      <option value="exact" ${gitIgnoreMode === 'exact' ? 'selected' : ''}>${escapeHtml(state.lang === 'zh' ? '精确模式：只写当前检测到的路径' : 'Exact: detected paths only')}</option>
+    `;
     const embeddedRepoGuide = buildEmbeddedRepoGuide(skippedEmbeddedRepos);
 
     const stages = [
@@ -2675,13 +2731,17 @@
           <code>${escapeHtml(gitIgnoreTemplate)}</code>
         </div>
         <div class="guide-grid" style="margin-top:14px;">
-          <div class="sub-card">
+          <div class="sub-card panel-focus-target" id="gitignore-preview-card">
             <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
               <div>
                 <strong>${escapeHtml(state.lang === 'zh' ? '.gitignore \u5dee\u5f02\u9884\u89c8' : '.gitignore Diff Preview')}</strong>
                 <div class="muted small" style="margin-top:8px;">${escapeHtml(gitIgnorePath)}</div>
               </div>
               <span class="pill ${gitIgnoreMissingEntries.length > 0 ? 'warn' : 'success'}">${escapeHtml(gitIgnoreMissingEntries.length > 0 ? (state.lang === 'zh' ? '\u6709\u5f85\u5199\u5165\u89c4\u5219' : 'Changes Pending') : (state.lang === 'zh' ? '\u65e0\u9700\u8ffd\u52a0' : 'Up To Date'))}</span>
+            </div>
+            <div style="margin-top:12px;">
+              <label class="field-label" for="gitignore-mode">${escapeHtml(state.lang === 'zh' ? '写入策略' : 'Write Strategy')}</label>
+              <select id="gitignore-mode">${gitIgnoreModeOptions}</select>
             </div>
             <div class="muted small" style="margin-top:12px;">${escapeHtml(state.lang === 'zh' ? '\u4e0b\u9762\u5c55\u793a\u8fd9\u6b21\u4f1a\u8ffd\u52a0\u5230\u5916\u5c42 .gitignore \u7684\u89c4\u5219\u7247\u6bb5\u3002' : 'This is the block that would be appended to the root .gitignore.')}</div>
             <pre style="margin-top:12px;">${escapeHtml(gitIgnoreAppendBlock || (state.lang === 'zh' ? '\u5f53\u524d\u6ca1\u6709\u65b0\u589e\u89c4\u5219\u9700\u8981\u5199\u5165\u3002' : 'No new ignore rules need to be written right now.'))}</pre>
@@ -2786,6 +2846,7 @@
     `;
 
     setPanel(t('tabs.git-sync'), t('desc.git-sync'), body);
+    applyPendingPanelFocus('git-sync');
 
     const rememberGitAction = (result, detail) => {
       const ok = result?.success !== false;
@@ -2798,6 +2859,11 @@
       showToast(result?.message || 'OK', ok ? 'success' : 'error');
       return ok;
     };
+
+    document.getElementById('gitignore-mode')?.addEventListener('change', (event) => {
+      state.gitSyncIgnoreMode = event.target.value === 'exact' ? 'exact' : 'smart';
+      loadGitSync();
+    });
 
     document.querySelectorAll('[data-git-action]').forEach((button) => {
       button.addEventListener('click', async () => {
@@ -2936,7 +3002,7 @@
             return;
           }
           if (action === 'preview-gitignore') {
-            const previewResult = await apiRequest('/api/git-sync/gitignore-preview');
+            const previewResult = await apiRequest(`/api/git-sync/gitignore-preview?mode=${encodeURIComponent(state.gitSyncIgnoreMode === 'exact' ? 'exact' : 'smart')}`);
             rememberGitAction({
               success: true,
               message: state.lang === 'zh'
@@ -2947,8 +3013,9 @@
             return;
           }
           if (action === 'apply-gitignore') {
-            const result = await postJson('/api/git-sync/gitignore-apply', {});
+            const result = await postJson('/api/git-sync/gitignore-apply', { mode: state.gitSyncIgnoreMode === 'exact' ? 'exact' : 'smart' });
             rememberGitAction(result, result?.preview || result?.status || null);
+            queuePanelFocus('git-sync', '#gitignore-preview-card');
             await loadGitSync();
             return;
           }

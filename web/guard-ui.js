@@ -1739,6 +1739,16 @@
           label: state.lang === 'zh' ? '打开 Git Sync' : 'Open Git Sync',
         };
       }
+      if (item?.source === 'git-sync' && (
+        item?.title === 'Local commit succeeded' ||
+        item?.title === 'Remote push succeeded'
+      )) {
+        return {
+          tabId: 'git-sync',
+          selector: item?.title === 'Local commit succeeded' ? '#git-sync-commit-card' : '#git-sync-readiness-card',
+          label: state.lang === 'zh' ? '查看同步状态' : 'View Sync Status',
+        };
+      }
       return null;
     };
 
@@ -2659,7 +2669,7 @@
       ${embeddedRepoNotice}
       <div style="margin-top:14px;">${renderActionFeedback(state.lang === 'zh' ? '最近 Git 同步操作' : 'Latest Git Sync Action', state.gitSyncLastAction, state.lang === 'zh' ? '还没有执行过 Git 同步动作。' : 'No Git sync action has been executed yet.')}</div>
       <div class="grid" style="margin-top:14px;">
-        <div class="card accent-info">
+        <div class="card accent-info panel-focus-target" id="git-sync-readiness-card">
           <h3>${state.lang === 'zh' ? '同步准备度' : 'Sync Readiness'}</h3>
           <div class="list">${stageHtml}</div>
           <div class="toolbar tight" style="margin-top:12px;">
@@ -2669,7 +2679,7 @@
             <button class="action-btn primary" type="button" data-git-action="check-sync">${state.lang === 'zh' ? '检查并同步' : 'Check + Sync'}</button>
           </div>
         </div>
-        <div class="card">
+        <div class="card panel-focus-target" id="git-sync-commit-card">
           <h3>${state.lang === 'zh' ? '阻断拆解' : 'Readiness Breakdown'}</h3>
           <div class="stack">
             <div>

@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { execFileSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   applyGitIgnoreRules,
@@ -15,10 +16,11 @@ import {
   initGitSync,
   parseGitRemote,
   previewGitIgnoreRules,
+  pushGitSync,
   saveGitTokenAuth,
   startOAuthLogin,
 } from '../git-sync.js';
-import { listNotifications } from '../notifications.js';
+import { addNotification, listNotifications } from '../notifications.js';
 
 function httpGetText(targetUrl: string): Promise<{ statusCode: number; body: string }> {
   return new Promise((resolve, reject) => {
@@ -215,6 +217,23 @@ describe('git-sync', () => {
     expect(gitignoreAfter).toBe(gitignore);
   });
 
+  it('marks embedded repository warnings as read after applying gitignore rules', () => {
+    initGitSync();
+
+    const embeddedRepoPath = path.join(tempRoot, 'workspace-nanfeng');
+    fs.mkdirSync(embeddedRepoPath, { recursive: true });
+    execFileSync('git', ['-C', embeddedRepoPath, 'init'], { stdio: 'ignore' });
+    fs.writeFileSync(path.join(embeddedRepoPath, 'README.md'), '# nested repo\n', 'utf-8');
+
+    getGitSyncStatus();
+    let embeddedWarnings = listNotifications(0).filter((item) => item.title === 'Embedded Git repositories detected');
+    expect(embeddedWarnings.some((item) => !item.read)).toBe(true);
+
+    applyGitIgnoreRules();
+    embeddedWarnings = listNotifications(0).filter((item) => item.title === 'Embedded Git repositories detected');
+    expect(embeddedWarnings.every((item) => item.read)).toBe(true);
+  });
+
   it('applies exact-only gitignore rules without wildcard entries', () => {
     initGitSync();
 
@@ -247,6 +266,84 @@ describe('git-sync', () => {
     const embeddedNotifications = listNotifications(0).filter((item) => item.title === 'Embedded Git repositories detected');
     expect(embeddedNotifications).toHaveLength(1);
     expect(embeddedNotifications[0]?.message).toContain('workspace-nanfeng/');
+  });
+
+  it('marks unsynced change notifications as read after a successful local commit', () => {
+    initGitSync();
+    execFileSync('git', ['-C', tempRoot, 'config', 'user.name', 'OpenClaw Guard Test'], { stdio: 'ignore' });
+    execFileSync('git', ['-C', tempRoot, 'config', 'user.email', 'guard@example.com'], { stdio: 'ignore' });
+    fs.writeFileSync(path.join(tempRoot, 'README.md'), '# guard\n', 'utf-8');
+
+    addNotification({
+      type: 'git-sync',
+      source: 'git-sync',
+      title: 'Detected unsynced .openclaw changes',
+      message: 'Synthetic unsynced root-repo change for notification convergence.',
+      severity: 'info',
+      meta: { changedFiles: ['README.md'] },
+    });
+    let unsyncedNotifications = listNotifications(0).filter((item) => item.title === 'Detected unsynced .openclaw changes');
+    expect(unsyncedNotifications.some((item) => !item.read)).toBe(true);
+
+    const result = commitGitSync('自动收敛测试');
+    expect(result.success).toBe(true);
+
+    unsyncedNotifications = listNotifications(0).filter((item) => item.title === 'Detected unsynced .openclaw changes');
+    expect(unsyncedNotifications.every((item) => item.read)).toBe(true);
+  });
+
+  it('marks local commit and unsynced notifications as read after a successful remote push', async () => {
+    initGitSync();
+    execFileSync('git', ['-C', tempRoot, 'config', 'user.name', 'OpenClaw Guard Test'], { stdio: 'ignore' });
+    execFileSync('git', ['-C', tempRoot, 'config', 'user.email', 'guard@example.com'], { stdio: 'ignore' });
+
+    const bareRemotePath = path.join(tempRoot, 'remote.git');
+    execFileSync('git', ['init', '--bare', bareRemotePath], { stdio: 'ignore' });
+
+    connectGitRemote({ provider: 'github', remoteUrl: 'https://github.com/acme/demo.git' });
+    saveGitTokenAuth({ provider: 'github', token: 'token-demo', username: 'octocat' });
+    const httpsSpy = mockHttpsResponses([
+      {
+        match: '/repos/acme/demo',
+        body: { private: true },
+      },
+    ]);
+    const privateCheck = await checkGitRemotePrivate();
+    expect(privateCheck.success).toBe(true);
+    expect(httpsSpy).toHaveBeenCalled();
+
+    const bareRemoteUrl = pathToFileURL(bareRemotePath).href;
+    execFileSync('git', ['-C', tempRoot, 'config', `url.${bareRemoteUrl}.insteadOf`, 'https://x-access-token:token-demo@github.com/acme/demo.git'], { stdio: 'ignore' });
+    fs.writeFileSync(path.join(tempRoot, 'README.md'), '# guard\n', 'utf-8');
+
+    const commitResult = commitGitSync('推送收敛测试');
+    expect(commitResult.success).toBe(true);
+
+    addNotification({
+      type: 'git-sync',
+      source: 'git-sync',
+      title: 'Detected unsynced .openclaw changes',
+      message: 'Synthetic stale unsynced notification before push convergence.',
+      severity: 'info',
+      meta: { changedFiles: ['README.md'] },
+    });
+
+    let commitNotifications = listNotifications(0).filter((item) => item.title === 'Local commit succeeded');
+    let unsyncedNotifications = listNotifications(0).filter((item) => item.title === 'Detected unsynced .openclaw changes');
+    expect(commitNotifications.some((item) => !item.read)).toBe(true);
+    expect(unsyncedNotifications.some((item) => !item.read)).toBe(true);
+
+    const pushResult = pushGitSync();
+    expect(pushResult.success).toBe(true);
+
+    commitNotifications = listNotifications(0).filter((item) => item.title === 'Local commit succeeded');
+    unsyncedNotifications = listNotifications(0).filter((item) => item.title === 'Detected unsynced .openclaw changes');
+    expect(commitNotifications.every((item) => item.read)).toBe(true);
+    expect(unsyncedNotifications.every((item) => item.read)).toBe(true);
+
+    const branch = execFileSync('git', ['-C', tempRoot, 'branch', '--show-current'], { encoding: 'utf-8' }).trim() || 'master';
+    const remoteHeadMessage = execFileSync('git', [`--git-dir=${bareRemotePath}`, 'log', '-1', '--pretty=%s', branch], { encoding: 'utf-8' }).trim();
+    expect(remoteHeadMessage).toBe('推送收敛测试');
   });
 
   it('checks github private repo successfully and enriches status fields', async () => {

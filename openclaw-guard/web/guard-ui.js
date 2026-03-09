@@ -56,7 +56,6 @@
         costs: '成本',
         cron: 'Cron',
         'git-sync': 'Git 同步',
-        mission: '兼容层',
         audit: '审计',
         profiles: '预设',
         harden: '加固',
@@ -79,11 +78,10 @@
         costs: '按模型、Agent、会话查看成本估算。',
         cron: '查看、启停、手动触发和删除 Cron 任务。',
         'git-sync': '管理 .openclaw 私有仓同步、Token 与 OAuth 授权。',
-        mission: '保留 mission 兼容层入口，逐步迁移但先不粗暴下线。',
         audit: '统一查看安全审计结果和风险分类。',
         profiles: '应用 Guard 的安全 Profile 预设。',
         harden: '生成对应平台的加固步骤和脚本。',
-        logs: '查看 Gateway 与 mission 的日志输出。'
+        logs: '查看 Gateway 日志输出。'
       }
     },
     en: {
@@ -135,7 +133,6 @@
         costs: 'Costs',
         cron: 'Cron',
         'git-sync': 'Git Sync',
-        mission: 'Compat',
         audit: 'Audit',
         profiles: 'Profiles',
         harden: 'Hardening',
@@ -158,11 +155,10 @@
         costs: 'Estimated cost breakdown by model, agent, and session.',
         cron: 'Inspect, enable, disable, trigger, and delete cron jobs.',
         'git-sync': 'Manage .openclaw private repo sync, token auth, and OAuth.',
-        mission: 'Keep the mission compatibility layer available while migration continues.',
         audit: 'Grouped security audit results and risk categories.',
         profiles: 'Apply Guard security profiles.',
         harden: 'Generate platform-specific hardening steps and scripts.',
-        logs: 'Inspect Gateway and mission logs.'
+        logs: 'Inspect Gateway logs.'
       }
     }
   };
@@ -170,7 +166,7 @@
   const TAB_ORDER = [
     'overview', 'system', 'openclaw', 'feishu', 'channels', 'ai', 'notifications',
     'agents', 'sessions', 'activity', 'files', 'memory', 'search', 'costs',
-    'cron', 'git-sync', 'mission', 'audit', 'profiles', 'harden', 'logs'
+    'cron', 'git-sync', 'audit', 'profiles', 'harden', 'logs'
   ];
 
   const state = {
@@ -3084,49 +3080,6 @@
     }
   }
 
-  async function loadMission() {
-    const [status, health, logs] = await Promise.all([
-      apiRequest('/api/mission/status').catch((error) => ({ error: error.message })),
-      apiRequest('/api/mission/health').catch((error) => ({ error: error.message })),
-      apiRequest('/api/mission/logs?lines=120').catch(() => ({ logs: [] })),
-    ]);
-
-    const body = `
-      <div class="status warn">${state.lang === 'zh' ? '这里是兼容层，不再作为默认入口；保留它只是为了迁移期平滑过渡。' : 'This is now a compatibility layer, kept only as a safe migration bridge.'}</div>
-      <div class="grid">
-        <div class="card">
-          <h3>${state.lang === 'zh' ? '兼容层动作' : 'Compatibility Actions'}</h3>
-          <div class="toolbar tight">
-            <button class="action-btn" data-mission-action="install">install</button>
-            <button class="action-btn" data-mission-action="sync">sync</button>
-            <button class="action-btn" data-mission-action="bootstrap">bootstrap</button>
-            <button class="action-btn primary" data-mission-action="start">start</button>
-            <button class="action-btn danger" data-mission-action="stop">stop</button>
-            <button class="action-btn" data-mission-action="restart">restart</button>
-          </div>
-          <pre style="margin-top:12px;">${prettyJson(status)}</pre>
-        </div>
-        <div class="card">
-          <h3>${state.lang === 'zh' ? '健康检查' : 'Health'}</h3>
-          <pre>${prettyJson(health)}</pre>
-        </div>
-      </div>
-      <div class="card"><h3>Mission Logs</h3><pre>${escapeHtml((logs.logs || []).join('\n'))}</pre></div>
-    `;
-    setPanel(t('tabs.mission'), t('desc.mission'), body);
-    document.querySelectorAll('[data-mission-action]').forEach((button) => {
-      button.addEventListener('click', async () => {
-        try {
-          const result = await postJson(`/api/mission/${button.getAttribute('data-mission-action')}`, {});
-          showToast(result.message || 'OK');
-          loadMission();
-        } catch (error) {
-          showToast(error.message || String(error), 'error');
-        }
-      });
-    });
-  }
-
   async function loadAudit() {
     const data = await apiRequest('/api/audit');
     const groups = {};
@@ -3185,26 +3138,15 @@
   }
 
   async function loadLogs() {
-    const [serviceLogs, missionLogs] = await Promise.all([
-      apiRequest('/api/service/logs?lines=200').catch(() => ({ logs: [] })),
-      apiRequest('/api/mission/logs?lines=200').catch(() => ({ logs: [] })),
-    ]);
-    const activeLogs = state.logsTarget === 'mission' ? missionLogs.logs || [] : serviceLogs.logs || [];
+    const serviceLogs = await apiRequest('/api/service/logs?lines=200').catch(() => ({ logs: [] }));
     const body = `
       <div class="toolbar tight">
-        <button class="chip ${state.logsTarget === 'service' ? 'active' : ''}" data-logs-target="service">Gateway</button>
-        <button class="chip ${state.logsTarget === 'mission' ? 'active' : ''}" data-logs-target="mission">Mission</button>
+        <button class="chip active" data-logs-target="service">Gateway</button>
         <button class="action-btn" data-logs-action="reload">${escapeHtml(t('reload'))}</button>
       </div>
-      <div class="card"><pre>${escapeHtml(activeLogs.join('\n'))}</pre></div>
+      <div class="card"><pre>${escapeHtml((serviceLogs.logs || []).join('\n'))}</pre></div>
     `;
     setPanel(t('tabs.logs'), t('desc.logs'), body);
-    document.querySelectorAll('[data-logs-target]').forEach((button) => {
-      button.addEventListener('click', () => {
-        state.logsTarget = button.getAttribute('data-logs-target') || 'service';
-        loadLogs();
-      });
-    });
     document.querySelector('[data-logs-action="reload"]')?.addEventListener('click', () => loadLogs());
   }
 
@@ -3230,7 +3172,6 @@
       if (active === 'costs') return await loadCosts();
       if (active === 'cron') return await loadCron();
       if (active === 'git-sync') return await loadGitSync();
-      if (active === 'mission') return await loadMission();
       if (active === 'audit') return await loadAudit();
       if (active === 'profiles') return await loadProfiles();
       if (active === 'harden') return await loadHarden();

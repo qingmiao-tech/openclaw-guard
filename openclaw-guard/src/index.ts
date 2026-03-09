@@ -11,19 +11,6 @@ import { getConfigPath, getEnvPath, readAllEnv, readEnvValue, writeEnvValue, get
 import { getChannels, getFeishuConfig, saveFeishuConfig, checkFeishuPlugin, type FeishuConfig } from './channels.js';
 import { getAIConfig, setPrimaryModel, setFallbackModels, PROVIDERS as AI_PROVIDERS } from './models.js';
 import { getServiceStatus, startService, stopService, restartService, getLogs } from './service-mgr.js';
-import {
-  getMissionStatus,
-  installMissionControl,
-  syncMissionControl,
-  bootstrapMissionControl,
-  getMissionCredentials,
-  resetMissionPassword,
-  startMissionControl,
-  stopMissionControl,
-  restartMissionControl,
-  getMissionLogs,
-  getMissionHealth,
-} from './mission-control.js';
 import { startServer } from './server.js';
 import { getDashboardOverview, captureSessionOverview, getRecentActivity } from './dashboard.js';
 import { getAgentCatalog, getManagedRoots, listManagedFiles, readManagedFile, writeManagedFile, listMemoryFiles, searchManagedFiles } from './workspace-files.js';
@@ -69,10 +56,6 @@ function buildCronInputFromCli(opts: Record<string, unknown>, jobId?: string): C
     bestEffortDeliver: typeof opts.bestEffortDeliver === 'boolean' ? opts.bestEffortDeliver : undefined,
     deleteAfterRun: typeof opts.deleteAfterRun === 'boolean' ? opts.deleteAfterRun : undefined,
   };
-}
-
-function printMissionDeprecation() {
-  console.log(chalk.yellow('提示: mission 已降级为兼容层，默认请使用根路由工作台 / 或 dashboard、agents、sessions、files、cron-ui、git-sync 等原生命令。该兼容链路将在后续版本移除。'));
 }
 
 function printAuditSummary(results: AuditResult[]) {
@@ -253,35 +236,6 @@ envCmd.command('set <key> <value>').description('写入 env').action((key: strin
   writeEnvValue(key, value);
   console.log(chalk.green(`已保存 ${key}`));
 });
-
-const missionCmd = program.command('mission').description('tenacitOS 兼容层（已弃用，建议迁移到原生工作台）');
-missionCmd.addHelpText('after', `
-兼容层说明:
-  - Web 默认入口已切换到新的 Guard 工作台: /
-  - 迁移说明页: /compat
-  - 旧版完整面板保险丝: /legacy
-  - 建议优先使用 dashboard / agents / sessions / files / cron-ui / git-sync
-`);
-missionCmd.hook('preAction', () => {
-  printMissionDeprecation();
-});
-missionCmd.command('status').description('查看 Mission Control 状态').action(() => printJson(getMissionStatus()));
-missionCmd.command('install').description('安装或更新 Mission Control').action(() => printAction(installMissionControl()));
-missionCmd.command('sync').description('同步 Mission Control').action(() => printAction(syncMissionControl()));
-missionCmd.command('bootstrap').description('初始化 Mission Control 环境').action(() => printAction(bootstrapMissionControl()));
-missionCmd.command('credentials').description('读取 Mission Control 登录信息').action(() => printJson(getMissionCredentials()));
-missionCmd.command('reset-password').description('重置 Mission Control 密码').action(() => printJson(resetMissionPassword()));
-missionCmd.command('start').description('启动 Mission Control').option('-p, --port <port>').option('--prod', '生产模式').action((opts: { port?: string; prod?: boolean }) => {
-  printAction(startMissionControl({ port: opts.port ? Number(opts.port) : undefined, prod: !!opts.prod }));
-});
-missionCmd.command('stop').description('停止 Mission Control').action(() => printAction(stopMissionControl()));
-missionCmd.command('restart').description('重启 Mission Control').option('-p, --port <port>').option('--prod', '生产模式').action((opts: { port?: string; prod?: boolean }) => {
-  printAction(restartMissionControl({ port: opts.port ? Number(opts.port) : undefined, prod: !!opts.prod }));
-});
-missionCmd.command('logs').description('查看 Mission Control 日志').option('-n, --lines <n>', '显示行数', '200').action((opts: { lines: string }) => {
-  getMissionLogs(Number(opts.lines || 200)).forEach((line) => console.log(line));
-});
-missionCmd.command('health').description('探测 Mission Control /api/health').action(async () => printJson(await getMissionHealth()));
 
 program.command('dashboard').description('查看 Guard 工作台概览').option('--json', '输出 JSON').action((opts: { json?: boolean }) => {
   const overview = getDashboardOverview();

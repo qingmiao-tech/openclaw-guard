@@ -1883,3 +1883,44 @@
 - 风险与补充说明:
   1) 当前 `mission` 的删除风险不是技术做不到，而是会直接破坏已有 CLI/API/前端兼容入口，所以更适合阶段性下线。
   2) Git Sync 通知闭环目前已覆盖 `.gitignore -> commit -> push` 主路径；如果下一轮继续增强，可以再把“通知已处理”的可视反馈做得更明显，例如成功动作后给出短暂成功高亮或统计角标刷新。
+
+## [2026-03-09 14:39] openclaw-guard 物理移除 Mission 相关内容 [TASK-20260309-007]
+
+- 任务来源: 用户确认当前已经没有人在使用 `mission`，要求直接物理删除 Mission 相关内容，并提交 git。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成物理删除、构建验证、页面回归与待提交整理。
+- 实际完成:
+  1) `openclaw-guard/src/index.ts` 已删除全部 Mission CLI 入口，包括：
+     - `mission` 根命令
+     - `status/install/sync/bootstrap/credentials/reset-password/start/stop/restart/logs/health` 子命令
+     - `printMissionDeprecation()` 兼容提示函数
+  2) `openclaw-guard/src/server.ts` 已删除全部 Mission Web API 与访问控制逻辑，包括：
+     - `mission-control.js` 相关导入
+     - `X-Mission-Token` 相关 CORS 头
+     - `getMissionToken()` / `requireMissionAccess()`
+     - `/api/mission/*` 全部路由
+  3) `openclaw-guard/web/guard-ui.js` 已彻底清理前端 Mission 入口：
+     - 删除中英文 `tabs.mission` 与 `desc.mission`
+     - 从 `TAB_ORDER` 移除 `mission`
+     - 删除 `loadMission()` 整个兼容页加载逻辑
+     - 日志页删除 `Mission` 日志切换，只保留 `Gateway` 日志
+     - 日志页文案改为只描述 `Gateway` 日志输出
+  4) `openclaw-guard/src/mission-control.ts` 已物理删除，不再作为兼容层实现保留在仓库中。
+  5) 已对源码做二次全局扫描，`openclaw-guard/src/*.ts` 与 `openclaw-guard/web/*.js` 中不再保留 `mission` / `/api/mission` / `X-Mission-Token` / `mission-control` 相关运行时代码引用。
+- 交付清单:
+  - openclaw-guard/src/index.ts
+  - openclaw-guard/src/server.ts
+  - openclaw-guard/src/mission-control.ts
+  - openclaw-guard/web/guard-ui.js
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  2) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  3) 已验证 `pnpm --dir openclaw-guard test -- --run src/__tests__/git-sync.test.ts` 通过，当前 16 项测试全部通过。
+  4) 已按 `webapp-testing` 技能做真实页面回归：
+     - 首页标签中不再出现 `mission`
+     - 直接访问 `/#logs` 时，日志页可以正常渲染，并且只保留 `Gateway` 日志入口
+  5) 已生成真实页面回归截图：`openclaw-guard/.guard-runtime/mission-removed-smoke.png`
+- 风险与补充说明:
+  1) 本次属于真正的物理删除，不再保留兼容入口；如果外部还有历史脚本调用 `openclaw-guard mission ...` 或 `/api/mission/*`，会直接失效。
+  2) 当前 `compat` / `legacy` 页面仍然保留，它们服务的是 Guard 自己的新旧 UI 过渡，不再承担 Mission 兼容职责。

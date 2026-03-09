@@ -38,17 +38,6 @@ import {
 } from './models.js';
 import { getServiceStatus, startService, stopService, restartService, getLogs } from './service-mgr.js';
 import {
-  getMissionStatus,
-  installMissionControl,
-  syncMissionControl,
-  bootstrapMissionControl,
-  startMissionControl,
-  stopMissionControl,
-  restartMissionControl,
-  getMissionLogs,
-  getMissionHealth,
-} from './mission-control.js';
-import {
   captureSessionOverview,
   getDashboardOverview,
   getRecentActivity,
@@ -115,7 +104,7 @@ function jsonResponse(res: http.ServerResponse, data: unknown, status = 200) {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-Mission-Token, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   });
   res.end(JSON.stringify(data));
 }
@@ -188,53 +177,6 @@ function parseCronJobInput(body: Record<string, unknown>, jobId?: string): CronJ
   };
 }
 
-function isLoopbackAddress(remoteAddress?: string | null): boolean {
-  if (!remoteAddress) return false;
-  const normalized = remoteAddress.split('%')[0].replace(/^::ffff:/i, '');
-  return normalized === '127.0.0.1' || normalized === '::1';
-}
-
-function getMissionToken(req: http.IncomingMessage, url: URL): string | undefined {
-  const headerToken = getHeaderValue(req.headers['x-mission-token']);
-  if (headerToken) return headerToken;
-
-  const auth = getHeaderValue(req.headers.authorization);
-  if (auth && auth.toLowerCase().startsWith('bearer ')) {
-    return auth.slice(7).trim();
-  }
-
-  const queryToken = url.searchParams.get('mission_token') || url.searchParams.get('token');
-  return queryToken?.trim() || undefined;
-}
-
-function requireMissionAccess(req: http.IncomingMessage, res: http.ServerResponse, url: URL): boolean {
-  const remote = req.socket.remoteAddress;
-  if (isLoopbackAddress(remote)) return true;
-
-  const expectedToken = process.env.OPENCLAW_GUARD_MISSION_TOKEN?.trim();
-  const providedToken = getMissionToken(req, url);
-
-  if (!expectedToken) {
-    jsonResponse(res, {
-      success: false,
-      message: 'Mission API denied: remote requests require OPENCLAW_GUARD_MISSION_TOKEN.',
-      remoteAddress: remote || 'unknown',
-    }, 403);
-    return false;
-  }
-
-  if (!providedToken || providedToken !== expectedToken) {
-    jsonResponse(res, {
-      success: false,
-      message: 'Mission API denied: invalid or missing token.',
-      remoteAddress: remote || 'unknown',
-    }, 401);
-    return false;
-  }
-
-  return true;
-}
-
 export function startServer(port: number) {
   const maxRetries = 10;
 
@@ -259,7 +201,7 @@ export function startServer(port: number) {
           res.writeHead(204, {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, X-Mission-Token, Authorization',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
           });
           res.end();
           return;
@@ -399,57 +341,6 @@ export function startServer(port: number) {
           if (result.success && result.selfExit) {
             setTimeout(() => process.exit(0), 150);
           }
-          return;
-        }
-
-        if (pathname.startsWith('/api/mission/') && !requireMissionAccess(req, res, url)) {
-          return;
-        }
-        if (pathname === '/api/mission/status' && req.method === 'GET') {
-          jsonResponse(res, getMissionStatus());
-          return;
-        }
-        if (pathname === '/api/mission/install' && req.method === 'POST') {
-          jsonResponse(res, installMissionControl());
-          return;
-        }
-        if (pathname === '/api/mission/sync' && req.method === 'POST') {
-          jsonResponse(res, syncMissionControl());
-          return;
-        }
-        if (pathname === '/api/mission/bootstrap' && req.method === 'POST') {
-          jsonResponse(res, bootstrapMissionControl());
-          return;
-        }
-        if (pathname === '/api/mission/start' && req.method === 'POST') {
-          const body = await readJsonBody(req);
-          const portValue = typeof body.port === 'number' ? body.port : (typeof body.port === 'string' ? Number(body.port) : undefined);
-          jsonResponse(res, startMissionControl({
-            port: Number.isFinite(portValue) ? portValue : undefined,
-            prod: body.prod === true,
-          }));
-          return;
-        }
-        if (pathname === '/api/mission/stop' && req.method === 'POST') {
-          jsonResponse(res, stopMissionControl());
-          return;
-        }
-        if (pathname === '/api/mission/restart' && req.method === 'POST') {
-          const body = await readJsonBody(req);
-          const portValue = typeof body.port === 'number' ? body.port : (typeof body.port === 'string' ? Number(body.port) : undefined);
-          jsonResponse(res, restartMissionControl({
-            port: Number.isFinite(portValue) ? portValue : undefined,
-            prod: body.prod === true,
-          }));
-          return;
-        }
-        if (pathname === '/api/mission/logs' && req.method === 'GET') {
-          const lines = Number(url.searchParams.get('lines') || '200');
-          jsonResponse(res, { logs: getMissionLogs(lines) });
-          return;
-        }
-        if (pathname === '/api/mission/health' && req.method === 'GET') {
-          jsonResponse(res, await getMissionHealth());
           return;
         }
 

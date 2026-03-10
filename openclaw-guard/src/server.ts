@@ -71,6 +71,7 @@ import {
 } from './git-sync.js';
 import { listNotifications, markNotificationRead, markAllNotifications, clearNotifications, clearReadNotifications, getNotificationSummary } from './notifications.js';
 import { getWebBackgroundStatus, stopWebBackgroundService, registerBackgroundProcess, startWebBackgroundService } from './web-background.js';
+import { getCachePrewarmStatus, scheduleServerCachePrewarm } from './cache-prewarm.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -248,6 +249,11 @@ export function startServer(port: number) {
             arch: process.arch,
             openclaw: detectOpenClaw(),
           });
+          return;
+        }
+
+        if (pathname === '/api/cache-prewarm/status' && req.method === 'GET') {
+          jsonResponse(res, getCachePrewarmStatus());
           return;
         }
 
@@ -726,6 +732,7 @@ export function startServer(port: number) {
       if (process.env.OPENCLAW_GUARD_BACKGROUND === '1') {
         registerBackgroundProcess(currentPort);
       }
+      scheduleServerCachePrewarm('server-start');
       console.log('\n[Guard] OpenClaw Guard web UI started.');
       console.log(`   URL: http://localhost:${currentPort}`);
       console.log(`   Alias: http://localhost:${currentPort}/workbench`);
@@ -736,9 +743,6 @@ export function startServer(port: number) {
 
   return tryListen(0);
 }
-
-
-
 
 
 

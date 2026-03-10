@@ -2107,3 +2107,45 @@
      - 把 `Overview` 首页也接入这批新运行态字段
      - 给 `Sessions` 页增加 `securityAudit` / `queuedSystemEvents` 的联动跳转
      - 给 `Cron` 页补分页与手动刷新细节
+
+## [2026-03-10 13:01] openclaw-guard 增加启动后后台预热缓存机制 [TASK-20260310-003]
+
+- 任务来源: 用户要求直接继续做“启动后后台预热缓存”，把第一次打开页面的等待时间再压一轮，并且避免因为预热过程反过来阻塞主 Web 线程。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成预热器、启动接线、状态落盘、CLI/HTTP 查询入口与构建验证，可提交。
+- 实际完成:
+  1) 新增 `openclaw-guard/src/cache-prewarm.ts` 作为独立预热模块：
+     - 预热任务覆盖 `OpenClaw 状态`、`Gateway 状态`、`驾驶舱概览`、`Cron 概览`、`Git 同步状态`。
+     - 预热状态落盘到 `~/.openclaw/guard/state/cache-prewarm.json`，记录 `phase / trigger / pid / tasks / duration / lastError / nextAllowedAt`。
+     - 增加最近 60 秒内不重复预热的节流，避免短时间内反复拉起重任务。
+  2) 预热执行方式不是在主 Web 进程里同步跑，而是通过隐藏子进程执行：
+     - `server.listen()` 成功后，300ms 延迟异步调度。
+     - Windows 下沿用隐藏执行，不弹 `CMD / PowerShell` 窗口。
+     - 预热任务即使耗时 10 秒以上，也不会卡住主 HTTP 线程和首页渲染。
+  3) `openclaw-guard/src/server.ts` 已接入启动后预热与状态查询：
+     - Web 启动成功后自动调用 `scheduleServerCachePrewarm('server-start')`
+     - 新增 `GET /api/cache-prewarm/status`，后续页面如果要显示“预热中 / 已完成 / 最近耗时”可以直接复用
+  4) `openclaw-guard/src/index.ts` 已新增 `cache-prewarm` 命令：
+     - 支持手工执行 `openclaw-guard cache-prewarm`
+     - 支持 `--json` 输出完整任务状态，便于排查某一项预热是否失败
+  5) 开发态兼容已处理：
+     - 如果 Guard 是通过 `tsx src/index.ts web` 启动，预热子进程会自动走源码入口
+     - 如果 Guard 是通过 `dist/index.js` 启动，预热子进程会自动走编译产物入口
+- 交付清单:
+  - openclaw-guard/src/cache-prewarm.ts
+  - openclaw-guard/src/server.ts
+  - openclaw-guard/src/index.ts
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  2) 已验证 `node openclaw-guard/dist/index.js cache-prewarm --trigger verify --json` 通过，整轮预热耗时约 `20788 ms`。
+  3) 本机真实预热任务耗时结果如下：
+     - `OpenClaw status`: `3921 ms`
+     - `Gateway service status`: `91 ms`
+     - `Dashboard overview`: `12270 ms`
+     - `Cron overview`: `4078 ms`
+     - `Git sync status`: `426 ms`
+     这说明最慢的页面数据现在会在启动后后台先完成，用户首次点击时可直接命中磁盘缓存。
+- 风险与补充说明:
+  1) 当前预热主要覆盖“第一次进入最慢”的核心页签数据，但 `audit` 这类仍然是按需实时执行；如果后续用户反馈审计页首次进入仍慢，可以继续给审计结果加短 TTL 缓存。
+  2) 目前预热状态 API 已准备好，但前端还没有专门展示这张状态卡；如果后续要在驾驶舱或运维页展示“缓存已预热”，可以直接接这个接口，不需要再改后端结构。

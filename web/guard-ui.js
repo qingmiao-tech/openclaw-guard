@@ -190,6 +190,7 @@
     gitSyncPollTimer: null,
     servicePollTimer: null,
     prewarmPollTimer: null,
+    openclawPollTimer: null,
     pendingPanelFocus: null,
   };
 
@@ -624,6 +625,13 @@
     }
   }
 
+  function clearOpenClawPollTimer() {
+    if (state.openclawPollTimer) {
+      clearTimeout(state.openclawPollTimer);
+      state.openclawPollTimer = null;
+    }
+  }
+
   function getServiceActionMeta(actionState) {
     const action = actionState?.action || '';
     const actionLabel = action === 'start'
@@ -683,6 +691,38 @@
     };
   }
 
+  function getOpenClawActionMeta(actionState) {
+    const mode = actionState?.mode || '';
+    const modeLabel = mode === 'install'
+      ? (state.lang === 'zh' ? '安装' : 'Install')
+      : mode === 'update'
+        ? (state.lang === 'zh' ? '更新' : 'Update')
+        : (state.lang === 'zh' ? '待命' : 'Idle');
+    const phase = actionState?.phase || 'idle';
+    const phaseLabel = phase === 'running'
+      ? (state.lang === 'zh' ? '执行中' : 'Running')
+      : phase === 'completed'
+        ? (state.lang === 'zh' ? '已完成' : 'Completed')
+        : phase === 'error'
+          ? (state.lang === 'zh' ? '失败' : 'Failed')
+          : (state.lang === 'zh' ? '空闲' : 'Idle');
+    const pillClass = phase === 'completed'
+      ? 'success'
+      : phase === 'error'
+        ? 'danger'
+        : phase === 'running'
+          ? 'warn'
+          : '';
+    return {
+      mode,
+      modeLabel,
+      phase,
+      phaseLabel,
+      pillClass,
+      message: actionState?.message || (state.lang === 'zh' ? '当前没有 OpenClaw 安装任务。' : 'No OpenClaw installation task is active.'),
+    };
+  }
+
   function scheduleServiceStatusPoll() {
     clearServicePollTimer();
     state.servicePollTimer = setTimeout(() => {
@@ -699,6 +739,15 @@
         loadActiveTab();
       }
     }, 1800);
+  }
+
+  function scheduleOpenClawStatusPoll() {
+    clearOpenClawPollTimer();
+    state.openclawPollTimer = setTimeout(() => {
+      if (state.activeTab === 'openclaw') {
+        loadActiveTab();
+      }
+    }, 2200);
   }
 
   function getDefaultCronDraft() {
@@ -1530,28 +1579,120 @@
       apiRequest('/api/gateway/dashboard').catch(() => ({})),
       apiRequest('/api/gateway/token').catch(() => ({})),
     ]);
+    const actionMeta = getOpenClawActionMeta(status.action);
+    const isRunning = actionMeta.phase === 'running';
+    const installBlockers = Array.isArray(status.installBlockers) ? status.installBlockers.filter(Boolean) : [];
+    const platformNotes = Array.isArray(status.platformNotes) ? status.platformNotes.filter(Boolean) : [];
+    const logTail = Array.isArray(status.action?.logTail) ? status.action.logTail.filter(Boolean) : [];
+    const targetPath = status.installTargetBinaryPath || status.installTargetBinDir || '-';
+    const tokenMasked = token?.token ? maskSensitiveValue('token', token.token) : '';
+    const installCommand = status.installCommand || 'npm install -g openclaw@latest';
+    const actionTimeline = state.lang === 'zh'
+      ? `开始 ${formatDate(status.action?.startedAt)} · 更新 ${formatDate(status.action?.lastUpdatedAt)} · 结束 ${formatDate(status.action?.finishedAt)}`
+      : `Started ${formatDate(status.action?.startedAt)} · Updated ${formatDate(status.action?.lastUpdatedAt)} · Finished ${formatDate(status.action?.finishedAt)}`;
+
+    const installReadyDetail = status.installReady
+      ? (status.installTargetBinDir || (state.lang === 'zh' ? '环境检查通过' : 'Environment check passed'))
+      : (installBlockers[0] || (state.lang === 'zh' ? '需要先处理安装前置条件' : 'Resolve install blockers first'));
+    const versionDetail = status.installed
+      ? (status.updateAvailable
+        ? (state.lang === 'zh'
+          ? `当前 ${status.version || '-'}，可更新到 ${status.latestVersion || '-'}`
+          : `Current ${status.version || '-'}, latest ${status.latestVersion || '-'}`)
+        : (state.lang === 'zh'
+          ? `当前 ${status.version || '-'}`
+          : `Current ${status.version || '-'}`))
+      : (state.lang === 'zh' ? '尚未检测到 OpenClaw CLI。' : 'OpenClaw CLI is not installed yet.');
 
     const body = `
       <div class="grid">
-        ${metricCard(state.lang === 'zh' ? '安装状态' : 'Install State', status.installed ? 'INSTALLED' : 'MISSING', status.version || '-')}
-        ${metricCard(state.lang === 'zh' ? '最新版本' : 'Latest Version', status.latestVersion || '-', status.installKind || '-')}
-        ${metricCard(state.lang === 'zh' ? '安装路径' : 'Binary Path', status.binPath || '-', '')}
-        ${metricCard('Dashboard', dashboard.url ? 'READY' : 'UNAVAILABLE', dashboard.url || '-')}
+        ${metricCard(state.lang === 'zh' ? '安装状态' : 'Install State', status.installed ? (state.lang === 'zh' ? '已安装' : 'Installed') : (state.lang === 'zh' ? '未安装' : 'Missing'), versionDetail, status.installed ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '安装条件' : 'Install Readiness', status.installReady ? (state.lang === 'zh' ? '可安装' : 'Ready') : (state.lang === 'zh' ? '待处理' : 'Blocked'), installReadyDetail, status.installReady ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '后台任务' : 'Background Task', actionMeta.phaseLabel, state.lang === 'zh' ? `${actionMeta.modeLabel} · ${formatRelative(status.action?.lastUpdatedAt || status.action?.startedAt)}` : `${actionMeta.modeLabel} · ${formatRelative(status.action?.lastUpdatedAt || status.action?.startedAt)}`, actionMeta.pillClass)}
+        ${metricCard('Dashboard', dashboard.url ? 'READY' : 'UNAVAILABLE', dashboard.url || (state.lang === 'zh' ? '等待 Gateway 就绪' : 'Waiting for Gateway'), dashboard.url ? 'success' : 'warn')}
       </div>
       <div class="grid">
         <div class="card">
-          <h3>${state.lang === 'zh' ? '升级与安装' : 'Install & Update'}</h3>
-          <div class="toolbar tight">
-            <button class="action-btn primary" type="button" data-openclaw-action="install">${state.lang === 'zh' ? '安装 / 修复' : 'Install / Repair'}</button>
-            <button class="action-btn" type="button" data-openclaw-action="update">${state.lang === 'zh' ? '检查更新' : 'Update'}</button>
-            <button class="action-btn" type="button" data-openclaw-action="dashboard">${state.lang === 'zh' ? '打开 Dashboard' : 'Open Dashboard'}</button>
+          <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+            <div>
+              <h3>${state.lang === 'zh' ? '安装与修复' : 'Install & Repair'}</h3>
+              <div class="muted small" style="margin-top:8px;">${escapeHtml(actionMeta.message)}</div>
+            </div>
+            <span class="pill ${actionMeta.pillClass}">${escapeHtml(actionMeta.phaseLabel)}</span>
           </div>
-          <div class="status" style="margin-top:14px;">${escapeHtml(token.token ? `${state.lang === 'zh' ? '当前 Gateway Token 已就绪：' : 'Gateway token ready:'} ${token.token}` : (state.lang === 'zh' ? '未拿到 Gateway token。' : 'Gateway token unavailable.'))}</div>
+          <div class="toolbar tight" style="margin-top:14px;">
+            <button class="action-btn primary" type="button" data-openclaw-action="install" ${isRunning ? 'disabled' : ''}>${state.lang === 'zh' ? '安装 / 修复' : 'Install / Repair'}</button>
+            <button class="action-btn" type="button" data-openclaw-action="update" ${isRunning ? 'disabled' : ''}>${state.lang === 'zh' ? '更新到最新' : 'Update'}</button>
+            <button class="action-btn" type="button" data-openclaw-action="copy-command">${state.lang === 'zh' ? '复制安装命令' : 'Copy Command'}</button>
+            <button class="action-btn" type="button" data-openclaw-action="dashboard" ${dashboard.url ? '' : 'disabled'}>${state.lang === 'zh' ? '打开 Dashboard' : 'Open Dashboard'}</button>
+          </div>
+          <div class="status" style="margin-top:14px;">
+            ${escapeHtml(state.lang === 'zh' ? `命令: ${installCommand}` : `Command: ${installCommand}`)}
+          </div>
+          <div class="list" style="margin-top:14px;">
+            <div class="list-item">
+              <div class="row" style="justify-content:space-between"><strong>${state.lang === 'zh' ? 'CLI 路径' : 'CLI Path'}</strong><span class="pill ${status.binPath ? 'success' : 'warn'}">${escapeHtml(status.binPath ? (state.lang === 'zh' ? '已定位' : 'Detected') : (state.lang === 'zh' ? '未定位' : 'Missing'))}</span></div>
+              <div class="muted small">${escapeHtml(status.binPath || '-')}</div>
+            </div>
+            <div class="list-item">
+              <div class="row" style="justify-content:space-between"><strong>${state.lang === 'zh' ? '安装目标' : 'Install Target'}</strong><span class="pill">${escapeHtml(status.installTargetBinDir ? (state.lang === 'zh' ? 'npm 全局目录' : 'Global npm bin') : '-')}</span></div>
+              <div class="muted small">${escapeHtml(targetPath)}</div>
+            </div>
+            <div class="list-item">
+              <div class="row" style="justify-content:space-between"><strong>Node / npm</strong><span class="pill ${(status.npmVersion && status.nodeVersion) ? 'success' : 'warn'}">${escapeHtml(status.npmVersion ? (state.lang === 'zh' ? '环境正常' : 'Ready') : (state.lang === 'zh' ? '缺少 npm' : 'npm missing'))}</span></div>
+              <div class="muted small">${escapeHtml(`Node ${status.nodeVersion || '-'} · npm ${status.npmVersion || '-'}`)}</div>
+              <div class="muted small">${escapeHtml(status.npmPrefix || '-')}</div>
+            </div>
+            <div class="list-item">
+              <div class="row" style="justify-content:space-between"><strong>Gateway Token</strong><span class="pill ${token?.token ? 'success' : 'warn'}">${escapeHtml(token?.token ? (state.lang === 'zh' ? '已就绪' : 'Ready') : (state.lang === 'zh' ? '未就绪' : 'Unavailable'))}</span></div>
+              <div class="muted small">${escapeHtml(tokenMasked || (state.lang === 'zh' ? '未拿到 Gateway Token。' : 'Gateway token unavailable.'))}</div>
+            </div>
+          </div>
         </div>
         <div class="card">
-          <h3>${state.lang === 'zh' ? '原始状态' : 'Raw Status'}</h3>
-          <pre>${prettyJson(status)}</pre>
+          <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+            <div>
+              <h3>${state.lang === 'zh' ? '后台执行状态' : 'Task Status'}</h3>
+              <div class="muted small" style="margin-top:8px;">${escapeHtml(actionTimeline)}</div>
+            </div>
+            <span class="pill ${actionMeta.pillClass}">${escapeHtml(actionMeta.modeLabel)}</span>
+          </div>
+          <div class="list" style="margin-top:14px;">
+            <div class="list-item">
+              <strong>${state.lang === 'zh' ? '运行说明' : 'Summary'}</strong>
+              <div style="margin-top:8px;">${escapeHtml(actionMeta.message)}</div>
+              ${status.action?.error ? `<div class="muted small" style="margin-top:8px; color:#b42318;">${escapeHtml(status.action.error)}</div>` : ''}
+            </div>
+            <div class="list-item">
+              <strong>${state.lang === 'zh' ? '日志尾部' : 'Log Tail'}</strong>
+              <div style="margin-top:8px;">${logTail.length ? `<pre>${escapeHtml(logTail.join('\n'))}</pre>` : emptyState(state.lang === 'zh' ? '当前还没有安装日志。' : 'No install log yet.')}</div>
+            </div>
+          </div>
         </div>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h3>${state.lang === 'zh' ? '安装前检查' : 'Preflight Checks'}</h3>
+          ${installBlockers.length
+            ? `<div class="list" style="margin-top:12px;">${installBlockers.map((item) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(state.lang === 'zh' ? '阻塞项' : 'Blocker')}</strong><span class="pill warn">${escapeHtml(state.lang === 'zh' ? '待处理' : 'Action Needed')}</span></div><div style="margin-top:8px;">${escapeHtml(item)}</div></div>`).join('')}</div>`
+            : `<div class="status" style="margin-top:12px;">${escapeHtml(state.lang === 'zh' ? '当前环境满足 OpenClaw 自动安装条件。' : 'This machine is ready for automated OpenClaw installation.')}</div>`}
+        </div>
+        <div class="card">
+          <h3>${state.lang === 'zh' ? '平台说明' : 'Platform Notes'}</h3>
+          ${platformNotes.length
+            ? `<div class="list" style="margin-top:12px;">${platformNotes.map((item) => `<div class="list-item">${escapeHtml(item)}</div>`).join('')}</div>`
+            : emptyState(state.lang === 'zh' ? '当前没有额外的平台说明。' : 'No platform notes.')}
+        </div>
+      </div>
+      <div class="card">
+        <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+          <div>
+            <h3>${state.lang === 'zh' ? '状态快照' : 'Status Snapshot'}</h3>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '保留原始状态，便于排查安装、PATH 与版本识别问题。' : 'Raw state is kept for troubleshooting install, PATH, and version detection issues.')}</div>
+          </div>
+          <button class="action-btn" type="button" data-openclaw-action="copy-status">${state.lang === 'zh' ? '复制状态 JSON' : 'Copy JSON'}</button>
+        </div>
+        <pre style="margin-top:14px;">${prettyJson(status)}</pre>
       </div>
     `;
 
@@ -1559,19 +1700,39 @@
     document.querySelectorAll('[data-openclaw-action]').forEach((button) => {
       button.addEventListener('click', async () => {
         const action = button.getAttribute('data-openclaw-action');
+        if (!action) return;
         try {
           if (action === 'dashboard') {
             if (dashboard.url) window.open(dashboard.url, '_blank');
             return;
           }
+          if (action === 'copy-command') {
+            await copyTextValue(installCommand, {
+              successMessage: state.lang === 'zh' ? '安装命令已复制。' : 'Install command copied.',
+            });
+            return;
+          }
+          if (action === 'copy-status') {
+            await copyTextValue(JSON.stringify(status, null, 2), {
+              successMessage: state.lang === 'zh' ? '状态 JSON 已复制。' : 'Status JSON copied.',
+            });
+            return;
+          }
           const result = await postJson(`/api/openclaw/${action}`, {});
-          showToast(result.message || 'OK');
-          loadOpenClawTab();
+          const ok = result?.success !== false;
+          showToast(result?.message || 'OK', ok ? 'success' : 'error');
+          await loadOpenClawTab();
         } catch (error) {
           showToast(error.message || String(error), 'error');
         }
       });
     });
+
+    if (isRunning) {
+      scheduleOpenClawStatusPoll();
+    } else {
+      clearOpenClawPollTimer();
+    }
   }
 
   async function loadFeishu() {
@@ -3807,6 +3968,7 @@
   async function loadActiveTab() {
     const active = state.activeTab || 'overview';
     if (active !== 'git-sync') clearGitSyncPollTimer();
+    if (active !== 'openclaw') clearOpenClawPollTimer();
     if (active !== 'overview' && active !== 'system') {
       clearServicePollTimer();
       clearPrewarmPollTimer();

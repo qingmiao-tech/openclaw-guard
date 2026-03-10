@@ -6,7 +6,7 @@ import { runFullAudit, type AuditResult } from './audit.js';
 import { applyProfile, getProfile, PROFILES } from './profiles.js';
 import { generateHardenScript, getAllHardenSteps } from './harden.js';
 import { detectPlatform, getCurrentUser, getOpenClawDir, getHomeDir } from './platform.js';
-import { detectOpenClaw } from './openclaw.js';
+import { detectOpenClaw, runOpenClawTask, type OpenClawTaskMode } from './openclaw.js';
 import { getConfigPath, getEnvPath, readAllEnv, readEnvValue, writeEnvValue, getDashboardUrl } from './config.js';
 import { getChannels, getFeishuConfig, saveFeishuConfig, checkFeishuPlugin, type FeishuConfig } from './channels.js';
 import { getAIConfig, setPrimaryModel, setFallbackModels, PROVIDERS as AI_PROVIDERS } from './models.js';
@@ -600,6 +600,43 @@ program.command('service-task')
 
     const ok = result.phase === 'completed';
     const message = result.message || (ok ? '后台任务已完成。' : '后台任务执行失败。');
+    console.log(ok ? chalk.green(message) : chalk.red(message));
+    if (result.error) {
+      console.log(chalk.dim(result.error));
+    }
+    if (!ok) process.exitCode = 1;
+  });
+
+program.command('openclaw-task')
+  .description('执行后台 OpenClaw 安装任务')
+  .requiredOption('--mode <mode>', 'install / update')
+  .option('--json', '输出 JSON 状态')
+  .action((opts: { mode: string; json?: boolean }) => {
+    const mode = opts.mode === 'install' || opts.mode === 'update'
+      ? opts.mode as OpenClawTaskMode
+      : null;
+    if (!mode) {
+      const errorResult = {
+        success: false,
+        message: `Unsupported mode: ${opts.mode}`,
+      };
+      if (opts.json) {
+        printJson(errorResult);
+        return;
+      }
+      console.log(chalk.red(errorResult.message));
+      process.exitCode = 1;
+      return;
+    }
+
+    const result = runOpenClawTask(mode);
+    if (opts.json) {
+      printJson(result);
+      return;
+    }
+
+    const ok = result.phase === 'completed';
+    const message = result.message || (ok ? '后台安装任务已完成。' : '后台安装任务执行失败。');
     console.log(ok ? chalk.green(message) : chalk.red(message));
     if (result.error) {
       console.log(chalk.dim(result.error));

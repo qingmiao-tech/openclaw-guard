@@ -6,7 +6,7 @@ import { runFullAudit } from './audit.js';
 import { applyProfile, PROFILES } from './profiles.js';
 import { generateHardenScript, getAllHardenSteps } from './harden.js';
 import { detectPlatform, getCurrentUser, getHomeDir, getOpenClawDir } from './platform.js';
-import { detectOpenClaw, installOrUpdateSync } from './openclaw.js';
+import { detectOpenClaw, scheduleOpenClawTask } from './openclaw.js';
 import { getCompatibilityPage } from './web-ui.js';
 import { getWorkbenchPage } from './workbench-ui.js';
 import {
@@ -268,11 +268,11 @@ export function startServer(port: number) {
           return;
         }
         if (pathname === '/api/openclaw/install' && req.method === 'POST') {
-          jsonResponse(res, installOrUpdateSync('install'));
+          jsonResponse(res, scheduleOpenClawTask('install'));
           return;
         }
         if (pathname === '/api/openclaw/update' && req.method === 'POST') {
-          jsonResponse(res, installOrUpdateSync('update'));
+          jsonResponse(res, scheduleOpenClawTask('update'));
           return;
         }
 

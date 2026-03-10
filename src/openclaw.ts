@@ -1,8 +1,6 @@
-/**
- * OpenClaw 检测、安装、更新模块
- */
-import { execSync, spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { detectPlatform } from './platform.js';
+import { getPersistentCachedValue, invalidatePersistentCache } from './persistent-cache.js';
 
 export interface OpenClawStatus {
   installed: boolean;
@@ -14,22 +12,47 @@ export interface OpenClawStatus {
   npmVersion: string | null;
 }
 
-/** 检测 OpenClaw 安装状态 */
-export function detectOpenClaw(): OpenClawStatus {
+export interface TaskProgress {
+  stage: string;
+  message: string;
+  done: boolean;
+  error?: string;
+}
+
+const OPENCLAW_LOCAL_CACHE_KEY = 'openclaw-status-local-v1';
+const OPENCLAW_REGISTRY_CACHE_KEY = 'openclaw-status-registry-v1';
+
+function runTextCommand(command: string, args: string[], timeout = 10_000): string {
+  const result = spawnSync(command, args, {
+    stdio: 'pipe',
+    encoding: 'utf-8',
+    timeout,
+    shell: process.platform === 'win32',
+    windowsHide: true,
+  });
+
+  if (result.error || result.status !== 0) {
+    throw new Error(result.error?.message || result.stderr || result.stdout || `exit code ${result.status}`);
+  }
+
+  return String(result.stdout || '').trim();
+}
+
+function detectLocalOpenClawState(): Omit<OpenClawStatus, 'latestVersion' | 'updateAvailable'> {
   const nodeVersion = process.version;
   let npmVersion: string | null = null;
   try {
-    npmVersion = execSync('npm --version', { stdio: 'pipe', encoding: 'utf-8' }).trim();
-  } catch { /* npm not found */ }
+    npmVersion = runTextCommand('npm', ['--version'], 8_000);
+  } catch {
+    npmVersion = null;
+  }
 
   let installed = false;
   let version: string | null = null;
   let binPath: string | null = null;
 
-  // 检测 openclaw 是否已安装
   try {
-    const versionOutput = execSync('openclaw --version', { stdio: 'pipe', encoding: 'utf-8', timeout: 10000 }).trim();
-    // 版本输出可能是 "openclaw/1.2.3" 或 "1.2.3" 等格式
+    const versionOutput = runTextCommand('openclaw', ['--version'], 10_000);
     const match = versionOutput.match(/(\d+\.\d+\.\d+[\w.-]*)/);
     if (match) {
       version = match[1];
@@ -38,57 +61,72 @@ export function detectOpenClaw(): OpenClawStatus {
       version = versionOutput;
       installed = true;
     }
-  } catch { /* not installed */ }
-
-  // 获取 bin 路径
-  if (installed) {
-    try {
-      const platform = detectPlatform();
-      const cmd = platform === 'windows' ? 'where openclaw' : 'which openclaw';
-      binPath = execSync(cmd, { stdio: 'pipe', encoding: 'utf-8', timeout: 5000 }).trim().split(/[\r\n]/)[0].trim();
-    } catch { /* ignore */ }
+  } catch {
+    installed = false;
   }
 
-  // 查询最新版本
-  let latestVersion: string | null = null;
+  if (installed) {
+    try {
+      const locatorCommand = detectPlatform() === 'windows' ? 'where' : 'which';
+      binPath = runTextCommand(locatorCommand, ['openclaw'], 5_000).split(/\r?\n/)[0]?.trim() || null;
+    } catch {
+      binPath = null;
+    }
+  }
+
+  return { installed, version, binPath, nodeVersion, npmVersion };
+}
+
+function detectLatestOpenClawVersion(): string | null {
   try {
-    const npmInfo = execSync('npm view openclaw version', { stdio: 'pipe', encoding: 'utf-8', timeout: 15000 }).trim();
-    if (npmInfo) latestVersion = npmInfo;
-  } catch { /* registry unreachable */ }
-
-  const updateAvailable = !!(installed && version && latestVersion && version !== latestVersion);
-
-  return { installed, version, latestVersion, updateAvailable, binPath, nodeVersion, npmVersion };
+    return runTextCommand('npm', ['view', 'openclaw', 'version'], 4_000) || null;
+  } catch {
+    return null;
+  }
 }
 
-export interface TaskProgress {
-  stage: string;
-  message: string;
-  done: boolean;
-  error?: string;
+export function detectOpenClaw(): OpenClawStatus {
+  const local = getPersistentCachedValue(OPENCLAW_LOCAL_CACHE_KEY, {
+    ttlMs: 15 * 60 * 1000,
+    staleIfErrorMs: 7 * 24 * 60 * 60 * 1000,
+    loader: detectLocalOpenClawState,
+  });
+  const latestVersion = getPersistentCachedValue(OPENCLAW_REGISTRY_CACHE_KEY, {
+    ttlMs: 6 * 60 * 60 * 1000,
+    staleIfErrorMs: 7 * 24 * 60 * 60 * 1000,
+    loader: detectLatestOpenClawVersion,
+  });
+
+  return {
+    ...local,
+    latestVersion,
+    updateAvailable: !!(local.installed && local.version && latestVersion && local.version !== latestVersion),
+  };
 }
 
-/** 执行安装/更新，通过回调报告进度 */
 export function installOrUpdateOpenClaw(
   mode: 'install' | 'update',
   onProgress: (p: TaskProgress) => void,
 ): void {
-  const cmd = 'npm';
-  const args = ['install', '-g', 'openclaw@latest'];
-
-  onProgress({ stage: mode, message: mode === 'install' ? '正在安装 OpenClaw...' : '正在更新 OpenClaw...', done: false });
-
-  const child = spawn(cmd, args, {
+  const child = spawn('npm', ['install', '-g', 'openclaw@latest'], {
     stdio: ['ignore', 'pipe', 'pipe'],
-    shell: true,
+    shell: process.platform === 'win32',
+    windowsHide: true,
+  });
+
+  onProgress({
+    stage: mode,
+    message: mode === 'install' ? '正在安装 OpenClaw...' : '正在更新 OpenClaw...',
+    done: false,
   });
 
   let stdout = '';
   let stderr = '';
 
   child.stdout.on('data', (data: Buffer) => {
-    stdout += data.toString();
-    onProgress({ stage: mode, message: data.toString().trim(), done: false });
+    const chunk = data.toString();
+    stdout += chunk;
+    onProgress({ stage: mode, message: chunk.trim(), done: false });
   });
 
   child.stderr.on('data', (data: Buffer) => {
@@ -96,11 +134,22 @@ export function installOrUpdateOpenClaw(
   });
 
   child.on('close', (code) => {
+    invalidatePersistentCache(OPENCLAW_LOCAL_CACHE_KEY);
+    invalidatePersistentCache(OPENCLAW_REGISTRY_CACHE_KEY);
     if (code === 0) {
-      onProgress({ stage: mode, message: mode === 'install' ? '✅ OpenClaw 安装成功' : '✅ OpenClaw 更新成功', done: true });
-    } else {
-      onProgress({ stage: mode, message: '安装失败', done: true, error: stderr || stdout || 'exit code ' + code });
+      onProgress({
+        stage: mode,
+        message: mode === 'install' ? 'OpenClaw 安装成功。' : 'OpenClaw 更新成功。',
+        done: true,
+      });
+      return;
     }
+    onProgress({
+      stage: mode,
+      message: '安装失败',
+      done: true,
+      error: stderr || stdout || `exit code ${code}`,
+    });
   });
 
   child.on('error', (err) => {
@@ -108,24 +157,23 @@ export function installOrUpdateOpenClaw(
   });
 }
 
-/** 同步执行安装/更新（用于 API） */
 export function installOrUpdateSync(mode: 'install' | 'update'): { success: boolean; message: string; output: string } {
   try {
-    const output = execSync('npm install -g openclaw@latest', {
-      stdio: 'pipe',
-      encoding: 'utf-8',
-      timeout: 120000,
-    });
-    // 验证安装结果
+    const output = runTextCommand('npm', ['install', '-g', 'openclaw@latest'], 120_000);
     let newVersion = '';
     try {
-      newVersion = execSync('openclaw --version', { stdio: 'pipe', encoding: 'utf-8', timeout: 10000 }).trim();
-    } catch { /* ignore */ }
+      newVersion = runTextCommand('openclaw', ['--version'], 10_000);
+    } catch {
+      newVersion = '';
+    }
+
+    invalidatePersistentCache(OPENCLAW_LOCAL_CACHE_KEY);
+    invalidatePersistentCache(OPENCLAW_REGISTRY_CACHE_KEY);
 
     const action = mode === 'install' ? '安装' : '更新';
     return {
       success: true,
-      message: `${action}成功${newVersion ? '，当前版本: ' + newVersion : ''}`,
+      message: `${action}成功${newVersion ? `，当前版本 ${newVersion}` : ''}`,
       output: output.trim(),
     };
   } catch (err: unknown) {

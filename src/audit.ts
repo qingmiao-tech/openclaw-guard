@@ -96,7 +96,7 @@ function auditDedicatedUser(platform: Platform): AuditResult[] {
   // 检查是否存在 openclaw-agent 用户
   try {
     if (platform === 'windows') {
-      execSync('net user openclaw-agent', { stdio: 'pipe' });
+      execSync('net user openclaw-agent', { stdio: 'pipe', windowsHide: true });
       results.push({
         category: '用户隔离',
         item: '专用用户',
@@ -104,7 +104,7 @@ function auditDedicatedUser(platform: Platform): AuditResult[] {
         message: 'openclaw-agent 用户已创建',
       });
     } else {
-      execSync('id openclaw-agent', { stdio: 'pipe' });
+      execSync('id openclaw-agent', { stdio: 'pipe', windowsHide: true });
       results.push({
         category: '用户隔离',
         item: '专用用户',

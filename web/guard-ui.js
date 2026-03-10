@@ -258,13 +258,29 @@
   }
 
   async function apiRequest(url, options = {}) {
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.headers || {}),
-      },
-      ...options,
-    });
+    const { timeoutMs = 15000, headers = {}, ...fetchOptions } = options;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let response;
+    try {
+      response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers,
+        },
+        ...fetchOptions,
+      });
+    } catch (error) {
+      clearTimeout(timer);
+      if (error?.name === 'AbortError') {
+        throw new Error(state.lang === 'zh'
+          ? '请求超时。已停止等待本次加载，请稍后重试。'
+          : 'The request timed out. Loading was cancelled, please retry.');
+      }
+      throw error;
+    }
+    clearTimeout(timer);
     const raw = await response.text();
     let data = raw;
     try {

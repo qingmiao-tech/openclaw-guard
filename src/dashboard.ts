@@ -180,18 +180,23 @@ function diffSessions(previous: SessionRecord[], current: SessionRecord[], captu
 export function captureSessionOverview(): SessionOverview {
   const snapshot = getRuntimeSnapshot();
   const previous = readStoredSessionSnapshot();
-  const events = diffSessions(previous.sessions, snapshot.sessions, snapshot.capturedAt, snapshot.warnings);
+  const isSameSnapshot = previous.capturedAt === snapshot.capturedAt;
+  const events = isSameSnapshot
+    ? []
+    : diffSessions(previous.sessions, snapshot.sessions, snapshot.capturedAt, snapshot.warnings);
 
-  writeJsonFile(getLatestSessionSnapshotFile(), {
-    capturedAt: snapshot.capturedAt,
-    sessions: snapshot.sessions,
-  } satisfies StoredSessionSnapshot);
-  appendJsonl(getSessionHistoryFile(snapshot.capturedAt), {
-    capturedAt: snapshot.capturedAt,
-    sessions: snapshot.sessions,
-  });
-  for (const event of events) {
-    appendJsonl(getActivityFile(snapshot.capturedAt), event);
+  if (!isSameSnapshot) {
+    writeJsonFile(getLatestSessionSnapshotFile(), {
+      capturedAt: snapshot.capturedAt,
+      sessions: snapshot.sessions,
+    } satisfies StoredSessionSnapshot);
+    appendJsonl(getSessionHistoryFile(snapshot.capturedAt), {
+      capturedAt: snapshot.capturedAt,
+      sessions: snapshot.sessions,
+    });
+    for (const event of events) {
+      appendJsonl(getActivityFile(snapshot.capturedAt), event);
+    }
   }
 
   const costSummary = summarizeCosts(snapshot);

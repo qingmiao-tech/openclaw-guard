@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn, spawnSync } from 'node:child_process';
 import { loadConfig, getNested } from './config.js';
+import { getOpenClawBinPath, getOpenClawCommand } from './openclaw.js';
 import { ensureGuardLayout, readJsonFile, writeJsonFile } from './guard-state.js';
 import { detectPlatform } from './platform.js';
 import { getPersistentCachedValue, invalidatePersistentCache } from './persistent-cache.js';
@@ -159,16 +160,11 @@ function checkPortListening(port: number): number | null {
 }
 
 function findOpenClawBin(): string | null {
-  try {
-    const locatorCommand = detectPlatform() === 'windows' ? 'where' : 'which';
-    return runTextCommand(locatorCommand, ['openclaw'], 5_000).split(/\r?\n/)[0]?.trim() || null;
-  } catch {
-    return null;
-  }
+  return getOpenClawBinPath();
 }
 
 function runOpenClaw(args: string[]): { success: boolean; output: string } {
-  const result = spawnSync('openclaw', args, {
+  const result = spawnSync(getOpenClawCommand(), args, {
     stdio: 'pipe',
     encoding: 'utf-8',
     timeout: 30_000,
@@ -262,7 +258,7 @@ function performStartService(): { success: boolean; message: string } {
   }
 
   try {
-    const child = spawn('openclaw', ['gateway', 'start'], {
+    const child = spawn(getOpenClawCommand(), ['gateway', 'start'], {
       stdio: 'ignore',
       detached: true,
       shell: process.platform === 'win32',

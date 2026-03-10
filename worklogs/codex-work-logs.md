@@ -2192,3 +2192,45 @@
 - 风险与补充说明:
   1) 本轮已经把 Gateway 运维动作从“阻塞主线程”改成了“后台任务 + 前端轮询”，但 `audit` 仍然是实时执行。如果后续用户反馈审计页依旧偏慢，可以继续为审计结果加短 TTL 缓存。
   2) `service-task` 当前作为内部后台入口保留在 CLI 中，主要供 Guard 自己拉起隐藏子进程时调用；如后续希望进一步收口帮助信息，可以把它改成更明显的内部命令名或在帮助文档中隐藏。
+
+## [2026-03-10 15:04] openclaw-guard 增加原生 OpenClaw 跨平台安装能力 [TASK-20260310-005]
+
+- 任务来源: 用户要求在客户电脑未安装 OpenClaw 时，也可以直接通过“虾护卫”完成安装，并兼容 macOS / Windows / Linux。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成安装探测、后台安装任务、Web 安装面板与 Gateway 运行时接线，可提交。
+- 实际完成:
+  1) `openclaw-guard/src/openclaw.ts` 已重构为跨平台安装中心:
+     - 扩展 `detectOpenClaw()` 返回 `npmVersion / npmPrefix / installReady / installBlockers / installCommand / installTargetBinDir / installTargetBinaryPath / platformNotes / action`。
+     - 新增 `OpenClawTaskState` 与状态落盘，安装任务写入 `~/.openclaw/guard/state/openclaw-install.json`。
+     - 新增 `scheduleOpenClawTask()` 与 `runOpenClawTask()`，统一通过 `npm install -g openclaw@latest` 执行安装或更新。
+     - 安装成功后会自动尝试定位 CLI、注入当前 Guard 进程 `PATH`，并设置 `OPENCLAW_GUARD_OPENCLAW_BIN`，避免“装好了但 Guard 当前进程还找不到”。
+  2) `openclaw-guard/src/service-mgr.ts` 已接入新运行时解析:
+     - Gateway 启停、状态探测不再写死调用 `openclaw`，而是优先使用 Guard 当前已定位到的真实二进制路径。
+     - 这样在 Guard 刚刚完成安装 OpenClaw 后，即使系统终端还没刷新 PATH，Guard 自己也能继续执行 `gateway start/stop/restart`。
+  3) `openclaw-guard/src/server.ts` 已切换为后台安装任务接口:
+     - `POST /api/openclaw/install`
+     - `POST /api/openclaw/update`
+     以上两个接口现在只负责“受理任务 + 返回当前状态”，不再同步阻塞 HTTP 请求。
+  4) `openclaw-guard/src/index.ts` 已补内部子命令 `openclaw-task`:
+     - 供 Guard 隐藏子进程执行真实安装动作。
+     - 支持 `--mode install|update` 与 `--json` 输出，便于后台调度和排查。
+  5) `openclaw-guard/web/guard-ui.js` 已升级 OpenClaw 页签为完整安装面板:
+     - 展示安装状态、安装条件、后台任务状态、Dashboard 可用性。
+     - 展示 CLI 路径、安装目标、Node/npm 环境、Gateway Token 状态。
+     - 展示安装阻塞项、平台说明、后台日志尾部、原始状态快照。
+     - 新增“复制安装命令”“复制状态 JSON”。
+     - 安装任务执行中会自动轮询刷新，并在执行期间禁用安装 / 更新按钮。
+- 交付清单:
+  - openclaw-guard/src/openclaw.ts
+  - openclaw-guard/src/service-mgr.ts
+  - openclaw-guard/src/server.ts
+  - openclaw-guard/src/index.ts
+  - openclaw-guard/web/guard-ui.js
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  2) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  3) 已验证 `node openclaw-guard/dist/index.js openclaw-task --mode invalid --json` 可正常命中内部命令并返回校验结果。
+- 风险与补充说明:
+  1) 当前自动安装统一依赖 `npm install -g openclaw@latest`，因此目标机器仍需要具备 `Node.js + npm`；如果后续希望做到“完全免 Node 前置”，需要再做平台安装包或自举安装器。
+  2) 本轮已解决 Guard 自身调用链的“即时识别新装 CLI”问题，但用户外部终端窗口是否立刻识别 `openclaw`，仍取决于操作系统会话何时刷新 PATH；页面里已通过平台说明给出提示。

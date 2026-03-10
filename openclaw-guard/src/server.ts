@@ -73,6 +73,7 @@ import {
     getCachedSessionOverview,
 } from './runtime-view-store.js';
 import { getLogs, getServiceActionStatus, getServiceStatus, restartService, startService, stopService } from './service-mgr.js';
+import { getGuardRestartStatus, scheduleGuardRestart } from './guard-restart.js';
 import { getWebBackgroundStatus, registerBackgroundProcess, startWebBackgroundService, stopWebBackgroundService } from './web-background.js';
 import { getCompatibilityPage } from './web-ui.js';
 import { getWorkbenchPage } from './workbench-ui.js';
@@ -439,6 +440,21 @@ export function startServer(port: number) {
           if (result.success && result.selfExit) {
             setTimeout(() => process.exit(0), 150);
           }
+          return;
+        }
+        if (pathname === '/api/guard/restart-status' && req.method === 'GET') {
+          jsonResponse(res, getGuardRestartStatus());
+          return;
+        }
+        if (pathname === '/api/guard/restart' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          const restartGateway = body.restartGateway === true;
+          const result = scheduleGuardRestart({
+            port: currentPort,
+            currentPid: process.pid,
+            restartGateway,
+          });
+          jsonResponse(res, result, result.success ? 200 : 400);
           return;
         }
 

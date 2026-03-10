@@ -2,11 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { getDashboardOverview } from './dashboard.js';
-import { getGitSyncStatus } from './git-sync.js';
+import { refreshGitIgnorePreviewSnapshot, refreshGitSyncStatusSnapshot } from './git-sync.js';
 import { ensureGuardLayout, readJsonFile, writeJsonFile } from './guard-state.js';
 import { detectOpenClaw } from './openclaw.js';
-import { getCronOverview } from './cron-ui.js';
+import { refreshCronOverviewSnapshot } from './cron-ui.js';
+import { refreshRuntimeViewSnapshot } from './runtime-view-store.js';
 import { getServiceStatus } from './service-mgr.js';
 
 type CachePrewarmPhase = 'idle' | 'scheduled' | 'running' | 'completed' | 'error';
@@ -66,23 +66,24 @@ const PREWARM_TASKS: CachePrewarmTask[] = [
   },
   {
     id: 'dashboard-overview',
-    label: 'Dashboard overview',
+    label: 'Runtime workbench snapshot',
     run: () => {
-      getDashboardOverview();
+      refreshRuntimeViewSnapshot('cache-prewarm');
     },
   },
   {
     id: 'cron-overview',
     label: 'Cron overview',
     run: () => {
-      getCronOverview();
+      refreshCronOverviewSnapshot('cache-prewarm');
     },
   },
   {
     id: 'git-sync-status',
     label: 'Git sync status',
     run: () => {
-      getGitSyncStatus();
+      refreshGitSyncStatusSnapshot('cache-prewarm');
+      refreshGitIgnorePreviewSnapshot('smart', 'cache-prewarm');
     },
   },
 ];

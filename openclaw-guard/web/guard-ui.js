@@ -11,6 +11,8 @@
       appTitle: '虾护卫',
       appSubtitle: '自带“防弹衣”与“复活甲”。内置多档安全预设，精准隔离越权风险；结合 Git 深度同步，让你的虾进可自由折腾，退可一键重生。',
       refresh: '刷新当前页',
+      restartGuard: '完整重启 Guard',
+      restartGuardWithGateway: 'Guard + Gateway 全重启',
       stopWeb: '一键停后台服务',
       loading: '正在加载…',
       loadFailed: '加载失败',
@@ -99,6 +101,8 @@
       appTitle: 'OpenClaw Guard Native Workbench',
       appSubtitle: 'One maintainable shell for security, channels, AI, workbench flows, and Git sync.',
       refresh: 'Refresh',
+      restartGuard: 'Full Guard Restart',
+      restartGuardWithGateway: 'Restart Guard + Gateway',
       stopWeb: 'Stop Background Web',
       loading: 'Loading…',
       loadFailed: 'Load failed',
@@ -206,6 +210,10 @@
     notificationFilter: 'all',
     notificationSource: 'all',
     notificationSearchQuery: '',
+    notificationDetailMode: 'summary',
+    notificationPage: 1,
+    notificationPageSize: 20,
+    notificationExpandedRawId: null,
     hardenPlatform: null,
     logsTarget: 'service',
     currentViewData: null,
@@ -226,6 +234,7 @@
     openclawPollTimer: null,
     cronPollTimer: null,
     runtimeViewPollTimer: null,
+    guardRestartPollTimer: null,
     pendingPanelFocus: null,
   };
 
@@ -281,6 +290,64 @@
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return String(value);
     return date.toLocaleString(state.lang === 'zh' ? 'zh-CN' : 'en-US');
+  }
+
+  function getLocalDayStart(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  function getNotificationDayKey(value) {
+    if (!value) return 'unknown';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'unknown';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  function formatNotificationDayLabel(value) {
+    if (!value) return state.lang === 'zh' ? '时间未知' : 'Unknown Date';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return state.lang === 'zh' ? '时间未知' : 'Unknown Date';
+    const currentDay = getLocalDayStart(new Date());
+    const targetDay = getLocalDayStart(date);
+    const diffDays = Math.round((currentDay.getTime() - targetDay.getTime()) / 86_400_000);
+    const dateLabel = date.toLocaleDateString(state.lang === 'zh' ? 'zh-CN' : 'en-US', state.lang === 'zh'
+      ? { month: 'long', day: 'numeric', weekday: 'short' }
+      : { month: 'short', day: 'numeric', weekday: 'short' });
+    if (diffDays === 0) {
+      return state.lang === 'zh' ? `今天 · ${dateLabel}` : `Today · ${dateLabel}`;
+    }
+    if (diffDays === 1) {
+      return state.lang === 'zh' ? `昨天 · ${dateLabel}` : `Yesterday · ${dateLabel}`;
+    }
+    if (diffDays > 1 && diffDays < 7) {
+      return state.lang === 'zh' ? `${diffDays} 天前 · ${dateLabel}` : `${diffDays} days ago · ${dateLabel}`;
+    }
+    const fullLabel = date.toLocaleDateString(state.lang === 'zh' ? 'zh-CN' : 'en-US', state.lang === 'zh'
+      ? { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }
+      : { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' });
+    return fullLabel;
+  }
+
+  function groupNotificationsByDay(items) {
+    const groups = [];
+    const map = new Map();
+    (items || []).forEach((item) => {
+      const key = getNotificationDayKey(item?.createdAt);
+      if (!map.has(key)) {
+        const group = {
+          key,
+          label: formatNotificationDayLabel(item?.createdAt),
+          items: [],
+        };
+        map.set(key, group);
+        groups.push(group);
+      }
+      map.get(key).items.push(item);
+    });
+    return groups;
   }
 
   function formatRelative(value) {
@@ -625,6 +692,152 @@
     return state.lang === 'zh' ? '缺失' : 'MISSING';
   }
 
+  function translateMappedLabel(value, map, fallback = '-') {
+    const text = sanitizeDisplayText(value, '').trim();
+    if (!text) return fallback;
+    const normalized = text.toLowerCase();
+    return map[normalized]?.[state.lang] || text;
+  }
+
+  function joinDisplayParts(parts, fallback = '-') {
+    const values = (parts || []).map((item) => String(item || '').trim()).filter(Boolean);
+    return values.length ? values.join(' / ') : fallback;
+  }
+
+  function getRuntimeServiceLabel(value) {
+    return translateMappedLabel(value, {
+      'scheduled task': { zh: '计划任务', en: 'Scheduled Task' },
+      launchagent: { zh: 'LaunchAgent', en: 'LaunchAgent' },
+      systemd: { zh: 'systemd', en: 'systemd' },
+      'windows service': { zh: 'Windows 服务', en: 'Windows Service' },
+      launchctl: { zh: 'launchctl', en: 'launchctl' },
+      service: { zh: '服务', en: 'Service' },
+    });
+  }
+
+  function getRuntimeLoadedStateLabel(value) {
+    return translateMappedLabel(value, {
+      registered: { zh: '已登记', en: 'Registered' },
+      missing: { zh: '缺失', en: 'Missing' },
+      unknown: { zh: '未知', en: 'Unknown' },
+      loaded: { zh: '已加载', en: 'Loaded' },
+      active: { zh: '活跃', en: 'Active' },
+      inactive: { zh: '未激活', en: 'Inactive' },
+      detected: { zh: '已检测', en: 'Detected' },
+    });
+  }
+
+  function getRuntimeShortLabel(value) {
+    const text = sanitizeDisplayText(value, '').trim();
+    if (!text) return '-';
+    const unknownMatch = text.match(/^unknown(?:\s*\((.+)\))?$/i);
+    if (unknownMatch) {
+      const detail = sanitizeDisplayText(unknownMatch[1], '').trim();
+      if (detail) {
+        return state.lang === 'zh' ? `未知（${detail}）` : `Unknown (${detail})`;
+      }
+      return state.lang === 'zh' ? '未知' : 'Unknown';
+    }
+    return translateMappedLabel(text, {
+      running: { zh: '运行中', en: 'Running' },
+      stopped: { zh: '未运行', en: 'Stopped' },
+      pending: { zh: '等待中', en: 'Pending' },
+      idle: { zh: '空闲', en: 'Idle' },
+      launchagent: { zh: 'LaunchAgent', en: 'LaunchAgent' },
+      'scheduled task': { zh: '计划任务', en: 'Scheduled Task' },
+      systemd: { zh: 'systemd', en: 'systemd' },
+      launchctl: { zh: 'launchctl', en: 'launchctl' },
+      detected: { zh: '已检测', en: 'Detected' },
+    });
+  }
+
+  function getRuntimeSourceLabel(value) {
+    return translateMappedLabel(value, {
+      'pid-file': { zh: 'PID 文件', en: 'PID File' },
+      'port-scan': { zh: '端口探测', en: 'Port Scan' },
+      none: { zh: '未记录', en: 'None' },
+    });
+  }
+
+  function getRuntimeAlertLevelLabel(value) {
+    return translateMappedLabel(value, {
+      info: { zh: '提示', en: 'Info' },
+      warning: { zh: '警告', en: 'Warning' },
+      error: { zh: '错误', en: 'Error' },
+      critical: { zh: '严重', en: 'Critical' },
+    });
+  }
+
+  function getUpdateChannelLabel(value) {
+    return translateMappedLabel(value, {
+      stable: { zh: '稳定版', en: 'Stable' },
+      beta: { zh: '测试版', en: 'Beta' },
+      nightly: { zh: '夜间版', en: 'Nightly' },
+      canary: { zh: 'Canary', en: 'Canary' },
+      default: { zh: '默认', en: 'Default' },
+    });
+  }
+
+  function getUpdateDepsStatusLabel(value) {
+    return translateMappedLabel(value, {
+      unknown: { zh: '未知', en: 'Unknown' },
+      current: { zh: '最新', en: 'Current' },
+      outdated: { zh: '可更新', en: 'Outdated' },
+      missing: { zh: '缺失', en: 'Missing' },
+      error: { zh: '异常', en: 'Error' },
+    });
+  }
+
+  function getInstallKindLabel(value) {
+    return translateMappedLabel(value, {
+      package: { zh: '包安装', en: 'Package' },
+      binary: { zh: '二进制', en: 'Binary' },
+      source: { zh: '源码', en: 'Source' },
+      portable: { zh: '便携版', en: 'Portable' },
+    });
+  }
+
+  function getMemoryBackendLabel(value) {
+    return translateMappedLabel(value, {
+      builtin: { zh: '内置', en: 'Builtin' },
+      none: { zh: '无', en: 'None' },
+      sqlite: { zh: 'SQLite', en: 'SQLite' },
+      postgres: { zh: 'Postgres', en: 'Postgres' },
+      chroma: { zh: 'Chroma', en: 'Chroma' },
+    });
+  }
+
+  function getMemorySearchModeLabel(value) {
+    return translateMappedLabel(value, {
+      'fts-only': { zh: '仅 FTS', en: 'FTS Only' },
+      hybrid: { zh: '混合检索', en: 'Hybrid' },
+      'vector-only': { zh: '仅向量', en: 'Vector Only' },
+      auto: { zh: '自动', en: 'Auto' },
+      none: { zh: '无', en: 'None' },
+    });
+  }
+
+  function getPrewarmTriggerLabel(value) {
+    return translateMappedLabel(value, {
+      'server-start': { zh: '服务启动后触发', en: 'Server Startup Trigger' },
+      startup: { zh: '启动后触发', en: 'Startup Trigger' },
+      manual: { zh: '手动触发', en: 'Manual Trigger' },
+      'web-manual': { zh: '网页手动触发', en: 'Web Manual Trigger' },
+      'cli-manual': { zh: 'CLI 手动触发', en: 'CLI Manual Trigger' },
+      api: { zh: 'API 触发', en: 'API Trigger' },
+      scheduled: { zh: '计划触发', en: 'Scheduled Trigger' },
+      boot: { zh: '启动链路', en: 'Boot Flow' },
+    });
+  }
+
+  function getLocalizedServiceSummary(service) {
+    return {
+      label: getRuntimeServiceLabel(service?.label),
+      loadedText: getRuntimeLoadedStateLabel(service?.loadedText),
+      runtimeShort: getRuntimeShortLabel(service?.runtimeShort),
+    };
+  }
+
   function getNotificationSourceLabel(source) {
     const key = String(source || '').trim();
     const map = {
@@ -868,10 +1081,263 @@
     return {
       title: title || rawTitle || '-',
       message: message || rawMessage || '-',
+      rawTitle: rawTitle || '-',
+      rawMessage: rawMessage || '-',
       sourceLabel: getNotificationSourceLabel(item?.source),
       typeLabel: getNotificationTypeLabel(item?.type),
       severityLabel: getNotificationSeverityLabel(item?.severity),
     };
+  }
+
+  function getNotificationDetailRows(item, present) {
+    const meta = item?.meta || {};
+    const rows = [
+      {
+        label: state.lang === 'zh' ? '时间' : 'Time',
+        value: formatDate(item?.createdAt),
+      },
+      {
+        label: state.lang === 'zh' ? '来源' : 'Source',
+        value: present.sourceLabel,
+      },
+      {
+        label: state.lang === 'zh' ? '类型' : 'Type',
+        value: present.typeLabel,
+      },
+      {
+        label: state.lang === 'zh' ? '严重级别' : 'Severity',
+        value: present.severityLabel,
+      },
+    ];
+    const appendRow = (labelZh, labelEn, value) => {
+      const text = String(value || '').trim();
+      if (!text) return;
+      rows.push({
+        label: state.lang === 'zh' ? labelZh : labelEn,
+        value: text,
+      });
+    };
+    appendRow('Provider', 'Provider', meta.provider);
+    appendRow('远程仓库', 'Remote', meta.remoteUrl);
+    appendRow('仓库 Owner', 'Repo Owner', meta.repoOwner);
+    appendRow('仓库名', 'Repo Name', meta.repoName);
+    appendRow('账号', 'Account', meta.username);
+    appendRow('任务 ID', 'Job ID', meta.jobId);
+    appendRow('任务名', 'Job Name', meta.jobName);
+    appendRow('动作', 'Action', meta.action);
+    appendRow('阶段', 'Phase', meta.phase);
+    return rows;
+  }
+
+  function renderNotificationSummaryDetail(item, present) {
+    const meta = item?.meta || {};
+    const metaSections = [];
+    const embeddedRepos = getNotificationMetaList(meta.embeddedRepos);
+    const missingEntries = getNotificationMetaList(meta.missingEntries);
+    const skippedRepos = getNotificationMetaList(meta.skippedEmbeddedRepos);
+    const appendSection = (titleZh, titleEn, content) => {
+      const text = String(content || '').trim();
+      if (!text) return;
+      metaSections.push(`
+        <div class="sub-card" style="margin-top:12px;">
+          <div class="muted small" style="margin-bottom:8px;">${escapeHtml(state.lang === 'zh' ? titleZh : titleEn)}</div>
+          <div>${escapeHtml(text)}</div>
+        </div>
+      `);
+    };
+    if (embeddedRepos.length) {
+      appendSection('嵌套仓库', 'Embedded Repositories', formatNotificationPathPreview(embeddedRepos, { limit: 6 }));
+    }
+    if (missingEntries.length) {
+      appendSection('待写入规则', 'Pending Ignore Rules', formatNotificationPathPreview(missingEntries, { limit: 6 }));
+    }
+    if (skippedRepos.length) {
+      appendSection('已跳过仓库', 'Skipped Repositories', formatNotificationPathPreview(skippedRepos, { limit: 6 }));
+    }
+    return `
+      <div class="sub-card" style="margin-top:12px;">
+        <div class="muted small" style="margin-bottom:8px;">${escapeHtml(state.lang === 'zh' ? '摘要详情' : 'Summary Detail')}</div>
+        ${keyValueGrid(getNotificationDetailRows(item, present))}
+        ${metaSections.join('')}
+      </div>
+    `;
+  }
+
+  function getNotificationRawFieldLabel(key) {
+    const map = {
+      id: { zh: '通知 ID', en: 'Notification ID' },
+      type: { zh: '类型', en: 'Type' },
+      source: { zh: '来源', en: 'Source' },
+      title: { zh: '原始标题', en: 'Raw Title' },
+      message: { zh: '原始消息', en: 'Raw Message' },
+      severity: { zh: '严重级别', en: 'Severity' },
+      createdAt: { zh: '创建时间', en: 'Created At' },
+      read: { zh: '已读', en: 'Read' },
+    };
+    return map[key]?.[state.lang] || key;
+  }
+
+  function getNotificationMetaKeyLabel(key) {
+    const map = {
+      embeddedRepos: { zh: '嵌套仓库', en: 'Embedded Repositories' },
+      missingEntries: { zh: '待写入规则', en: 'Pending Ignore Rules' },
+      skippedEmbeddedRepos: { zh: '已跳过仓库', en: 'Skipped Repositories' },
+      changedFiles: { zh: '变更文件', en: 'Changed Files' },
+      provider: { zh: 'Provider', en: 'Provider' },
+      remoteUrl: { zh: '远程仓库', en: 'Remote URL' },
+      repoOwner: { zh: '仓库 Owner', en: 'Repo Owner' },
+      repoName: { zh: '仓库名', en: 'Repo Name' },
+      username: { zh: '账号', en: 'Account' },
+      action: { zh: '动作', en: 'Action' },
+      phase: { zh: '阶段', en: 'Phase' },
+      jobId: { zh: '任务 ID', en: 'Job ID' },
+      jobName: { zh: '任务名', en: 'Job Name' },
+      authorizeUrl: { zh: '授权地址', en: 'Authorize URL' },
+      redirectUrl: { zh: '回调地址', en: 'Redirect URL' },
+      error: { zh: '错误详情', en: 'Error Detail' },
+      message: { zh: '原始消息', en: 'Raw Message' },
+    };
+    return map[key]?.[state.lang] || key;
+  }
+
+  function formatNotificationRawPreview(value, options = {}) {
+    if (value === null || value === undefined) return '-';
+    if (typeof value === 'boolean') {
+      return value ? (state.lang === 'zh' ? '是' : 'true') : (state.lang === 'zh' ? '否' : 'false');
+    }
+    if (typeof value === 'number') return String(value);
+    if (typeof value === 'string') {
+      const normalized = options.normalizePath ? normalizeRepoPath(value) : value;
+      const maxLength = Number.isFinite(options.maxLength) ? options.maxLength : 220;
+      if (normalized.length <= maxLength) return normalized;
+      return state.lang === 'zh'
+        ? `${normalized.slice(0, maxLength)}...（共 ${formatNumber(normalized.length)} 字符）`
+        : `${normalized.slice(0, maxLength)}... (${formatNumber(normalized.length)} chars)`;
+    }
+    if (Array.isArray(value)) {
+      return state.lang === 'zh'
+        ? `${formatNumber(value.length)} 项`
+        : `${formatNumber(value.length)} items`;
+    }
+    if (typeof value === 'object') {
+      const keyCount = Object.keys(value).length;
+      return state.lang === 'zh'
+        ? `${formatNumber(keyCount)} 个字段`
+        : `${formatNumber(keyCount)} fields`;
+    }
+    return String(value);
+  }
+
+  function renderNotificationRawArray(key, value) {
+    const items = Array.isArray(value) ? value : [];
+    const limit = 10;
+    const normalizedItems = items.map((entry) => {
+      if (typeof entry === 'string') {
+        const normalized = normalizeRepoPath(entry);
+        return normalized || entry;
+      }
+      return entry;
+    });
+    const visible = normalizedItems.slice(0, limit);
+    const hiddenCount = Math.max(0, normalizedItems.length - visible.length);
+    return `
+      <div class="sub-card" style="margin-top:12px;">
+        <div class="row" style="justify-content:space-between; align-items:center;">
+          <strong>${escapeHtml(getNotificationMetaKeyLabel(key))}</strong>
+          <span class="chip">${escapeHtml(state.lang === 'zh' ? `${formatNumber(normalizedItems.length)} 项` : `${formatNumber(normalizedItems.length)} items`)}</span>
+        </div>
+        <div class="list" style="margin-top:10px;">
+          ${visible.map((entry) => `<div class="list-item"><span class="muted" style="font-family:Consolas, 'Courier New', monospace;">${escapeHtml(formatNotificationRawPreview(entry, { maxLength: 180 }))}</span></div>`).join('')}
+        </div>
+        ${hiddenCount > 0 ? `<div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? `其余 ${formatNumber(hiddenCount)} 项已折叠；完整数据请使用“复制详情”。` : `${formatNumber(hiddenCount)} more items are folded. Use "Copy Details" for the full payload.`)}</div>` : ''}
+      </div>
+    `;
+  }
+
+  function renderNotificationRawObject(key, value) {
+    const objectValue = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    const entries = Object.entries(objectValue);
+    const limit = 8;
+    const visible = entries.slice(0, limit);
+    const hiddenCount = Math.max(0, entries.length - visible.length);
+    return `
+      <div class="sub-card" style="margin-top:12px;">
+        <div class="row" style="justify-content:space-between; align-items:center;">
+          <strong>${escapeHtml(getNotificationMetaKeyLabel(key))}</strong>
+          <span class="chip">${escapeHtml(state.lang === 'zh' ? `${formatNumber(entries.length)} 个字段` : `${formatNumber(entries.length)} fields`)}</span>
+        </div>
+        <div class="stack" style="margin-top:10px;">
+          ${visible.map(([entryKey, entryValue]) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(getNotificationMetaKeyLabel(entryKey))}</strong><span class="muted">${escapeHtml(formatNotificationRawPreview(entryValue))}</span></div></div>`).join('')}
+        </div>
+        ${hiddenCount > 0 ? `<div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? `其余 ${formatNumber(hiddenCount)} 个字段已折叠；完整数据请使用“复制详情”。` : `${formatNumber(hiddenCount)} more fields are folded. Use "Copy Details" for the full payload.`)}</div>` : ''}
+      </div>
+    `;
+  }
+
+  function renderNotificationRawDetail(item) {
+    const baseRows = [
+      { label: getNotificationRawFieldLabel('id'), value: item?.id || '-' },
+      { label: getNotificationRawFieldLabel('type'), value: item?.type || '-' },
+      { label: getNotificationRawFieldLabel('source'), value: item?.source || '-' },
+      { label: getNotificationRawFieldLabel('severity'), value: item?.severity || '-' },
+      { label: getNotificationRawFieldLabel('createdAt'), value: formatDate(item?.createdAt) },
+      { label: getNotificationRawFieldLabel('read'), value: formatNotificationRawPreview(item?.read) },
+      { label: getNotificationRawFieldLabel('title'), value: formatNotificationRawPreview(item?.title, { maxLength: 180 }) },
+      { label: getNotificationRawFieldLabel('message'), value: formatNotificationRawPreview(item?.message, { maxLength: 260 }) },
+    ];
+    const meta = item?.meta && typeof item.meta === 'object' && !Array.isArray(item.meta) ? item.meta : {};
+    const metaSections = Object.entries(meta).map(([key, value]) => {
+      if (Array.isArray(value)) return renderNotificationRawArray(key, value);
+      if (value && typeof value === 'object') return renderNotificationRawObject(key, value);
+      return `
+        <div class="sub-card" style="margin-top:12px;">
+          <div class="row" style="justify-content:space-between">
+            <strong>${escapeHtml(getNotificationMetaKeyLabel(key))}</strong>
+            <span class="muted" style="font-family:Consolas, 'Courier New', monospace;">${escapeHtml(formatNotificationRawPreview(value, { normalizePath: /path|url/i.test(key) }))}</span>
+          </div>
+        </div>
+      `;
+    });
+    return `
+      <div class="sub-card" style="margin-top:12px;">
+        <div class="muted small" style="margin-bottom:8px;">${escapeHtml(state.lang === 'zh' ? '原始通知结构' : 'Raw Notification Payload')}</div>
+        ${keyValueGrid(baseRows)}
+        ${metaSections.length ? `
+          <div class="muted small" style="margin-top:12px;">${escapeHtml(state.lang === 'zh' ? 'Meta 预览已做折叠，超长数组不会直接平铺。完整内容请使用“复制详情”。' : 'The meta preview is folded so long arrays do not render inline. Use "Copy Details" for the full payload.')}</div>
+          ${metaSections.join('')}
+        ` : ''}
+      </div>
+    `;
+  }
+
+  function getNotificationPageButtons(currentPage, totalPages) {
+    if (totalPages <= 1) return [1];
+    const pages = new Set([1, totalPages, currentPage]);
+    for (let offset = 1; offset <= 1; offset += 1) {
+      pages.add(Math.max(1, currentPage - offset));
+      pages.add(Math.min(totalPages, currentPage + offset));
+    }
+    const ordered = Array.from(pages).filter((page) => page >= 1 && page <= totalPages).sort((a, b) => a - b);
+    const result = [];
+    ordered.forEach((page, index) => {
+      if (index > 0 && page - ordered[index - 1] > 1) result.push('ellipsis');
+      result.push(page);
+    });
+    return result;
+  }
+
+  function ensureNotificationRawExpansion(items) {
+    if (state.notificationDetailMode !== 'raw') return null;
+    const visibleItems = Array.isArray(items) ? items.filter((item) => item?.id) : [];
+    if (!visibleItems.length) {
+      state.notificationExpandedRawId = null;
+      return null;
+    }
+    if (visibleItems.some((item) => item.id === state.notificationExpandedRawId)) {
+      return state.notificationExpandedRawId;
+    }
+    state.notificationExpandedRawId = visibleItems[0].id;
+    return state.notificationExpandedRawId;
   }
 
   function uniqueItems(values) {
@@ -1366,6 +1832,13 @@
     }
   }
 
+  function clearGuardRestartPollTimer() {
+    if (state.guardRestartPollTimer) {
+      clearTimeout(state.guardRestartPollTimer);
+      state.guardRestartPollTimer = null;
+    }
+  }
+
   function getServiceActionMeta(actionState) {
     const action = actionState?.action || '';
     const actionLabel = action === 'start'
@@ -1455,6 +1928,89 @@
       pillClass,
       message: actionState?.message || (state.lang === 'zh' ? '当前没有 OpenClaw 安装任务。' : 'No OpenClaw installation task is active.'),
     };
+  }
+
+  function getGuardRestartMeta(actionState) {
+    const phase = actionState?.phase || 'idle';
+    const phaseLabel = phase === 'running'
+      ? (state.lang === 'zh' ? '执行中' : 'Running')
+      : phase === 'completed'
+        ? (state.lang === 'zh' ? '已完成' : 'Completed')
+        : phase === 'error'
+          ? (state.lang === 'zh' ? '失败' : 'Failed')
+          : (state.lang === 'zh' ? '空闲' : 'Idle');
+    const pillClass = phase === 'completed'
+      ? 'success'
+      : phase === 'error'
+        ? 'danger'
+        : phase === 'running'
+          ? 'warn'
+          : '';
+    return {
+      phase,
+      phaseLabel,
+      pillClass,
+      message: actionState?.message || (state.lang === 'zh' ? '当前没有 Guard 完整重启任务。' : 'No full Guard restart task is active.'),
+    };
+  }
+
+  function scheduleGuardRestartPoll(startedAt = Date.now()) {
+    clearGuardRestartPollTimer();
+    state.guardRestartPollTimer = setTimeout(async () => {
+      try {
+        const status = await apiRequest('/api/guard/restart-status', { timeoutMs: 2200 });
+        const meta = getGuardRestartMeta(status);
+        if (meta.phase === 'completed') {
+          clearGuardRestartPollTimer();
+          showToast(status?.message || (state.lang === 'zh' ? 'Guard 已恢复。' : 'Guard is back online.'));
+          if (state.activeTab === 'overview' || state.activeTab === 'system') {
+            loadActiveTab(true);
+          }
+          return;
+        }
+        if (meta.phase === 'error') {
+          clearGuardRestartPollTimer();
+          showToast(status?.message || (state.lang === 'zh' ? 'Guard 重启失败。' : 'Guard restart failed.'), 'error');
+          if (state.activeTab === 'overview' || state.activeTab === 'system') {
+            loadActiveTab(true);
+          }
+          return;
+        }
+      } catch {
+        // Guard 进程切换期间请求失败是预期行为，继续轮询即可。
+      }
+
+      if (Date.now() - startedAt > 60_000) {
+        clearGuardRestartPollTimer();
+        showToast(state.lang === 'zh'
+          ? 'Guard 重启等待超过 60 秒，请手动刷新页面确认状态。'
+          : 'Guard restart took longer than 60s. Refresh the page to verify the state.', 'error');
+        return;
+      }
+
+      scheduleGuardRestartPoll(startedAt);
+    }, 1600);
+  }
+
+  async function triggerGuardRestart(restartGateway = false) {
+    const confirmText = restartGateway
+      ? (state.lang === 'zh'
+        ? '确认执行 Guard + Gateway 全重启？当前页面会短暂断开，然后自动恢复。'
+        : 'Restart Guard and Gateway together? This page will disconnect briefly, then recover.')
+      : (state.lang === 'zh'
+        ? '确认完整重启 Guard？当前页面会短暂断开，然后自动恢复。'
+        : 'Perform a full Guard restart? This page will disconnect briefly, then recover.');
+    if (!confirm(confirmText)) return;
+
+    try {
+      const result = await postJson('/api/guard/restart', { restartGateway });
+      const ok = result?.success !== false;
+      showToast(result?.message || (state.lang === 'zh' ? 'Guard 重启任务已调度。' : 'Guard restart has been scheduled.'), ok ? 'success' : 'error');
+      if (!ok) return;
+      scheduleGuardRestartPoll();
+    } catch (error) {
+      showToast(error.message || String(error), 'error');
+    }
   }
 
   function scheduleServiceStatusPoll() {
@@ -1660,6 +2216,7 @@
                   <button type="button" data-lang="en" class="${state.lang === 'en' ? 'active' : ''}">EN</button>
                 </div>
                 <button class="action-btn" type="button" data-global-action="refresh">${escapeHtml(t('refresh'))}</button>
+                <button class="action-btn" type="button" data-global-action="restart-guard">${escapeHtml(t('restartGuard'))}</button>
                 ${state.authToken ? `<button class="action-btn" type="button" data-global-action="change-pwd">${escapeHtml(t('changePassword'))}</button>` : ''}
                 ${state.authToken ? `<button class="action-btn danger" type="button" data-global-action="logout">${escapeHtml(t('logout'))}</button>` : ''}
                 <button class="action-btn danger" type="button" data-global-action="stop-web">${escapeHtml(t('stopWeb'))}</button>
@@ -1693,6 +2250,7 @@
       });
     });
     app.querySelector('[data-global-action="refresh"]')?.addEventListener('click', () => loadActiveTab(true));
+    app.querySelector('[data-global-action="restart-guard"]')?.addEventListener('click', () => triggerGuardRestart(false));
     app.querySelector('[data-global-action="change-pwd"]')?.addEventListener('click', () => showChangePwdDialog());
     app.querySelector('[data-global-action="logout"]')?.addEventListener('click', async () => {
       try { await postJson('/api/auth/logout', {}); } catch { /* 忽略 */ }
@@ -1762,6 +2320,8 @@
     const runtimeOs = overview.runtime?.os || {};
     const gatewayService = overview.runtime?.gatewayService || {};
     const nodeService = overview.runtime?.nodeService || {};
+    const localizedGatewayService = getLocalizedServiceSummary(gatewayService);
+    const localizedNodeService = getLocalizedServiceSummary(nodeService);
     const gatewayReachable = overview.runtime?.gateway?.reachable;
     const serviceActionMeta = getServiceActionMeta(overview.gateway?.action || {});
     const prewarmMeta = getPrewarmMeta(prewarmStatus);
@@ -1769,31 +2329,33 @@
     const runtimeSummaryRows = [
       {
         label: state.lang === 'zh' ? '记忆后端' : 'Memory Backend',
-        value: runtimeMemory.backend || '-',
+        value: getMemoryBackendLabel(runtimeMemory.backend),
         help: state.lang === 'zh'
           ? `${formatNumber(runtimeMemory.files || 0)} 个文件 / ${formatNumber(runtimeMemory.chunks || 0)} 个分片`
           : `${formatNumber(runtimeMemory.files || 0)} files / ${formatNumber(runtimeMemory.chunks || 0)} chunks`,
       },
       {
         label: state.lang === 'zh' ? '更新状态' : 'Update',
-        value: runtimeUpdate.latestVersion || runtimeUpdate.depsStatus || '-',
-        help: runtimeUpdate.installKind || runtimeUpdate.packageManager || '-',
+        value: runtimeUpdate.latestVersion || getUpdateDepsStatusLabel(runtimeUpdate.depsStatus),
+        help: getInstallKindLabel(runtimeUpdate.installKind) !== '-'
+          ? joinDisplayParts([getInstallKindLabel(runtimeUpdate.installKind), runtimeUpdate.packageManager], '-')
+          : (runtimeUpdate.packageManager || '-'),
       },
       {
         label: state.lang === 'zh' ? 'Gateway 服务' : 'Gateway Service',
-        value: sanitizeDisplayText(gatewayService.loadedText, '-'),
-        help: sanitizeDisplayText(
-          gatewayService.runtimeShort,
-          gatewayService.label || (state.lang === 'zh' ? 'Windows 服务信息暂不可可靠解码' : 'Windows service text could not be decoded reliably'),
-        ),
+        value: localizedGatewayService.loadedText,
+        help: joinDisplayParts([
+          localizedGatewayService.label,
+          localizedGatewayService.runtimeShort !== '-' ? localizedGatewayService.runtimeShort : '',
+        ], state.lang === 'zh' ? '服务信息暂不可可靠解码' : 'Service text is not available yet'),
       },
       {
         label: state.lang === 'zh' ? 'Node 服务' : 'Node Service',
-        value: sanitizeDisplayText(nodeService.loadedText, '-'),
-        help: sanitizeDisplayText(
-          nodeService.runtimeShort,
-          nodeService.label || (state.lang === 'zh' ? 'Windows 服务信息暂不可可靠解码' : 'Windows service text could not be decoded reliably'),
-        ),
+        value: localizedNodeService.loadedText,
+        help: joinDisplayParts([
+          localizedNodeService.label,
+          localizedNodeService.runtimeShort !== '-' ? localizedNodeService.runtimeShort : '',
+        ], state.lang === 'zh' ? '服务信息暂不可可靠解码' : 'Service text is not available yet'),
       },
       {
         label: state.lang === 'zh' ? '默认模型' : 'Default Model',
@@ -1863,7 +2425,7 @@
         </div>
         <div class="card">
           <h3>${state.lang === 'zh' ? '风险与告警' : 'Risk & Alerts'}</h3>
-          ${alerts.length ? `<div class="list">${alerts.map((item) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(item.code)}</strong><span class="pill ${item.level === 'critical' || item.level === 'error' ? 'danger' : item.level === 'warning' ? 'warn' : ''}">${escapeHtml(item.level)}</span></div><div>${escapeHtml(item.message)}</div></div>`).join('')}</div>` : emptyState(state.lang === 'zh' ? '当前没有新的运行态告警。' : 'No runtime alerts right now.')}
+          ${alerts.length ? `<div class="list">${alerts.map((item) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(item.code)}</strong><span class="pill ${item.level === 'critical' || item.level === 'error' ? 'danger' : item.level === 'warning' ? 'warn' : ''}">${escapeHtml(getRuntimeAlertLevelLabel(item.level))}</span></div><div>${escapeHtml(item.message)}</div></div>`).join('')}</div>` : emptyState(state.lang === 'zh' ? '当前没有新的运行态告警。' : 'No runtime alerts right now.')}
         </div>
         <div class="card">
           <h3>${state.lang === 'zh' ? '最新通知' : 'Latest Notifications'}</h3>
@@ -1958,12 +2520,14 @@
     const infoPromise = apiRequest('/api/info');
     const servicePromise = apiRequest('/api/service/status');
     const webStatusPromise = apiRequest('/api/web-background/status');
+    const guardRestartPromise = apiRequest('/api/guard/restart-status').catch(() => ({ phase: 'idle' }));
     const envPromise = apiRequest('/api/env').catch(() => ({}));
     const prewarmStatusPromise = apiRequest('/api/cache-prewarm/status').catch(() => ({ phase: 'idle', tasks: [] }));
 
-    const [service, webStatus, envMap, prewarmStatus] = await Promise.all([
+    const [service, webStatus, guardRestartStatus, envMap, prewarmStatus] = await Promise.all([
       servicePromise,
       webStatusPromise,
+      guardRestartPromise,
       envPromise,
       prewarmStatusPromise,
     ]);
@@ -1971,12 +2535,14 @@
 
     const envEntries = Object.entries(envMap || {}).sort(([left], [right]) => left.localeCompare(right));
     const quickServiceActionMeta = getServiceActionMeta(service.action || {});
+    const quickGuardRestartMeta = getGuardRestartMeta(guardRestartStatus);
     const quickPrewarmMeta = getPrewarmMeta(prewarmStatus);
 
     updatePanelSection('system-summary', `
       <div class="grid">
         ${metricCard('Gateway', getRunStateLabel(service.running), `PID ${service.pid || '-'}`, service.running ? 'success' : 'danger')}
         ${metricCard('Guard Web', getRunStateLabel(webStatus.running), webStatus.running ? `PID ${webStatus.pid || '-'}` : '-', webStatus.running ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? 'Guard 重启任务' : 'Guard Restart Task', quickGuardRestartMeta.phaseLabel, guardRestartStatus?.newPid ? `PID ${guardRestartStatus.newPid}` : '-', quickGuardRestartMeta.pillClass)}
         ${metricCard(state.lang === 'zh' ? '本地 Env' : 'Local Env', formatNumber(envEntries.length), state.lang === 'zh' ? '已读取本地键数量' : 'loaded local keys')}
         ${metricCard(state.lang === 'zh' ? '缓存预热' : 'Cache Prewarm', quickPrewarmMeta.phaseLabel, prewarmStatus?.lastDurationMs ? `${prewarmStatus.lastDurationMs} ms` : '-', quickPrewarmMeta.pillClass)}
       </div>
@@ -1986,6 +2552,7 @@
         <div class="card accent-warn">
           <h3>${state.lang === 'zh' ? '服务与后台控制' : 'Service & Background Controls'}</h3>
           <div class="status ${quickServiceActionMeta.phase === 'error' ? 'warn' : ''}">${escapeHtml(quickServiceActionMeta.message)}</div>
+          <div class="muted small" style="margin-top:10px;">${escapeHtml(quickGuardRestartMeta.message)}</div>
           <div class="muted small" style="margin-top:12px;">${escapeHtml(state.lang === 'zh' ? '正在补充路径、托管来源与详细控制面板…' : 'Loading path, tracking source, and detailed controls…')}</div>
         </div>
         ${loadingCard(state.lang === 'zh' ? '启动后缓存预热' : 'Startup Cache Prewarm', state.lang === 'zh' ? '正在读取预热任务详情…' : 'Loading prewarm task details…')}
@@ -2013,8 +2580,11 @@
     const isCurrentManaged = isCurrentInstance && webStatus.managed;
     const isOtherProcess = !!(webStatus.running && webStatus.pid && !isCurrentInstance);
     const serviceActionMeta = getServiceActionMeta(service.action || {});
+    const guardRestartMeta = getGuardRestartMeta(guardRestartStatus);
     const prewarmMeta = getPrewarmMeta(prewarmStatus);
     const serviceBusy = serviceActionMeta.phase === 'running';
+    const guardRestartBusy = guardRestartMeta.phase === 'running';
+    const trackingSourceLabel = getRuntimeSourceLabel(webStatus.source);
 
     let webPrimaryLabel = state.lang === 'zh' ? '后台启动 Guard Web' : 'Start Guard Web in Background';
     let webPrimaryHint = state.lang === 'zh'
@@ -2076,6 +2646,7 @@
       },
       gateway: service,
       web: webStatus,
+      guardRestart: guardRestartStatus,
       envKeys: envEntries.map(([key]) => key),
     };
 
@@ -2136,6 +2707,8 @@
             <button class="action-btn danger" type="button" data-service-action="stop" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('stop'))} Gateway</button>
             <button class="action-btn ${webPrimaryDisabled ? '' : 'primary'}" type="button" data-service-action="start-web" ${webPrimaryDisabled ? 'disabled' : ''}>${escapeHtml(webPrimaryLabel)}</button>
             <button class="action-btn danger" type="button" data-service-action="stop-web" ${webStatus.running ? '' : 'disabled'}>${escapeHtml(t('stopWeb'))}</button>
+            <button class="action-btn" type="button" data-service-action="restart-guard" ${guardRestartBusy ? 'disabled' : ''}>${escapeHtml(t('restartGuard'))}</button>
+            <button class="action-btn" type="button" data-service-action="restart-guard-with-gateway" ${(guardRestartBusy || serviceBusy) ? 'disabled' : ''}>${escapeHtml(t('restartGuardWithGateway'))}</button>
           </div>
           <div class="status ${webPrimaryDisabled && !isCurrentManaged ? 'warn' : ''}" style="margin-top:14px;">${escapeHtml(webPrimaryHint)}</div>
           <div class="list-item" style="margin-top:14px;">
@@ -2150,11 +2723,28 @@
                 : `Task PID ${service.action?.pid || '-'} · started ${formatDate(service.action?.startedAt)} · finished ${formatDate(service.action?.finishedAt)}`)}
             </div>
           </div>
+          <div class="list-item" style="margin-top:14px;">
+            <div class="row" style="justify-content:space-between;">
+              <strong>${state.lang === 'zh' ? 'Guard 完整重启任务' : 'Guard Full Restart Task'}</strong>
+              <span class="pill ${guardRestartMeta.pillClass}">${escapeHtml(guardRestartMeta.phaseLabel)}</span>
+            </div>
+            <div style="margin-top:8px;">${escapeHtml(guardRestartMeta.message)}</div>
+            <div class="muted small" style="margin-top:8px;">
+              ${escapeHtml(state.lang === 'zh'
+                ? `任务 PID ${guardRestartStatus?.pid || '-'} · 旧实例 ${guardRestartStatus?.targetPid || '-'} · 新实例 ${guardRestartStatus?.newPid || '-'}`
+                : `Task PID ${guardRestartStatus?.pid || '-'} · previous ${guardRestartStatus?.targetPid || '-'} · new ${guardRestartStatus?.newPid || '-'}`)}
+            </div>
+            <div class="muted small" style="margin-top:8px;">
+              ${escapeHtml(state.lang === 'zh'
+                ? `开始 ${formatDate(guardRestartStatus?.startedAt)} · 结束 ${formatDate(guardRestartStatus?.finishedAt)}`
+                : `Started ${formatDate(guardRestartStatus?.startedAt)} · Finished ${formatDate(guardRestartStatus?.finishedAt)}`)}
+            </div>
+          </div>
           <div class="grid" style="margin-top:14px;">
             <div class="list-item">
               <div class="row" style="justify-content:space-between;">
                 <strong>${state.lang === 'zh' ? '检测结果' : 'Detection Result'}</strong>
-                <span class="pill ${webStatus.running ? 'success' : 'warn'}">${escapeHtml(webStatus.running ? (state.lang === 'zh' ? '运行中' : 'running') : (state.lang === 'zh' ? '未运行' : 'stopped'))}</span>
+                <span class="pill ${webStatus.running ? 'success' : 'warn'}">${escapeHtml(getRunStateLabel(webStatus.running))}</span>
               </div>
               <div class="muted small" style="margin-top:8px;">
                 ${escapeHtml(webStatus.running
@@ -2165,7 +2755,7 @@
             <div class="list-item">
               <div class="row" style="justify-content:space-between;">
                 <strong>${state.lang === 'zh' ? '托管来源' : 'Tracking Source'}</strong>
-                <span class="pill ${webStatus.managed ? 'success' : 'warn'}">${escapeHtml(webStatus.source || '-')}</span>
+                <span class="pill ${webStatus.managed ? 'success' : 'warn'}">${escapeHtml(trackingSourceLabel)}</span>
               </div>
               <div class="muted small" style="margin-top:8px;">
                 ${escapeHtml(webStatus.managed
@@ -2212,7 +2802,7 @@
           <div class="status ${prewarmMeta.phase === 'error' ? 'warn' : ''}" style="margin-top:14px;">${escapeHtml(prewarmMeta.message)}</div>
           <div class="sub-card" style="margin-top:14px;">
             ${keyValueGrid([
-              { label: state.lang === 'zh' ? '触发来源' : 'Trigger', value: prewarmStatus.trigger || '-' },
+              { label: state.lang === 'zh' ? '触发来源' : 'Trigger', value: getPrewarmTriggerLabel(prewarmStatus.trigger) },
               { label: 'PID', value: prewarmStatus.pid || '-' },
               { label: state.lang === 'zh' ? '开始时间' : 'Started At', value: formatDate(prewarmStatus.startedAt) },
               { label: state.lang === 'zh' ? '结束时间' : 'Finished At', value: formatDate(prewarmStatus.finishedAt) },
@@ -2304,6 +2894,14 @@
         const action = button.getAttribute('data-service-action');
         try {
           let result;
+          if (action === 'restart-guard') {
+            await triggerGuardRestart(false);
+            return;
+          }
+          if (action === 'restart-guard-with-gateway') {
+            await triggerGuardRestart(true);
+            return;
+          }
           if (action === 'start-web') {
             result = await postJson('/api/web-background/start', {});
           } else if (action === 'stop-web') {
@@ -2447,6 +3045,9 @@
 
     if (serviceActionMeta.phase === 'running') {
       scheduleServiceStatusPoll();
+    }
+    if (guardRestartMeta.phase === 'running') {
+      scheduleGuardRestartPoll();
     }
     if (prewarmMeta.phase === 'running' || prewarmMeta.phase === 'scheduled') {
       schedulePrewarmStatusPoll();
@@ -3326,6 +3927,10 @@
   async function loadNotifications() {
     const summary = await apiRequest('/api/notifications?limit=200');
     const items = summary.items || [];
+    const pageSizeOptions = [10, 20, 50];
+    if (!pageSizeOptions.includes(state.notificationPageSize)) {
+      state.notificationPageSize = 20;
+    }
     const warningCount = items.filter((item) => item.severity === 'warning' || item.severity === 'error').length;
     const successCount = items.filter((item) => item.severity === 'success').length;
     const sources = Array.from(new Set(items.map((item) => item.source).filter(Boolean))).sort();
@@ -3349,6 +3954,16 @@
         present.severityLabel,
       ], state.notificationSearchQuery);
     });
+    const totalFiltered = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalFiltered / state.notificationPageSize));
+    if (state.notificationPage > totalPages) state.notificationPage = totalPages;
+    if (state.notificationPage < 1) state.notificationPage = 1;
+    const pageStart = (state.notificationPage - 1) * state.notificationPageSize;
+    const pagedItems = filtered.slice(pageStart, pageStart + state.notificationPageSize);
+    const pageEnd = pageStart + pagedItems.length;
+    const pageButtons = getNotificationPageButtons(state.notificationPage, totalPages);
+    const expandedRawId = ensureNotificationRawExpansion(pagedItems);
+    const pagedGroups = groupNotificationsByDay(pagedItems);
     const getNotificationJumpTarget = (item) => {
       const meta = item?.meta || {};
       if (item?.source === 'git-sync' && (
@@ -3402,11 +4017,59 @@
           <button class="action-btn" type="button" data-notify-bulk="clear-read">${escapeHtml(t('clearRead'))}</button>
           <button class="action-btn danger" type="button" data-notify-bulk="clear-all">${escapeHtml(t('clearAll'))}</button>
         </div>
+        <div class="toolbar tight" style="margin-top:12px;">
+          <span class="muted small">${escapeHtml(state.lang === 'zh' ? '详情视图' : 'Detail View')}</span>
+          <button class="chip ${state.notificationDetailMode === 'summary' ? 'active' : ''}" type="button" data-notify-detail-mode="summary">${escapeHtml(state.lang === 'zh' ? '摘要详情' : 'Summary Detail')}</button>
+          <button class="chip ${state.notificationDetailMode === 'raw' ? 'active' : ''}" type="button" data-notify-detail-mode="raw">${escapeHtml(state.lang === 'zh' ? '原始详情' : 'Raw Detail')}</button>
+        </div>
+        <div class="toolbar tight" style="margin-top:12px; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+          <div class="muted small">
+            ${escapeHtml(totalFiltered
+              ? (state.lang === 'zh'
+                ? `当前仅渲染第 ${formatNumber(state.notificationPage)} / ${formatNumber(totalPages)} 页，显示 ${formatNumber(pageStart + 1)}-${formatNumber(pageEnd)} / ${formatNumber(totalFiltered)} 条通知。`
+                : `Rendering page ${formatNumber(state.notificationPage)} of ${formatNumber(totalPages)} with ${formatNumber(pageStart + 1)}-${formatNumber(pageEnd)} of ${formatNumber(totalFiltered)} notifications.`)
+              : (state.lang === 'zh' ? '当前没有符合筛选条件的通知。' : 'No notifications match the current filters.'))}
+          </div>
+          <div class="toolbar tight" style="margin:0;">
+            <span class="muted small">${escapeHtml(state.lang === 'zh' ? '每页显示' : 'Per page')}</span>
+            <select id="notify-page-size">
+              ${pageSizeOptions.map((size) => `<option value="${size}" ${size === state.notificationPageSize ? 'selected' : ''}>${escapeHtml(state.lang === 'zh' ? `${formatNumber(size)} 条` : `${formatNumber(size)}`)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        ${state.notificationDetailMode === 'raw' ? `
+          <div class="sub-card" style="margin-top:12px;">
+            <div class="muted small">${escapeHtml(state.lang === 'zh'
+              ? '为降低页面负担，原始详情改为按需展开，当前页只渲染 1 条通知的原始负载。点击卡片里的“查看原始详情”可切换。'
+              : 'To keep the page light, raw payloads are rendered on demand and only one notification on the current page expands at a time. Use "View Raw Detail" inside a card to switch.')}</div>
+          </div>
+        ` : ''}
+        ${totalPages > 1 ? `
+          <div class="notify-page-shell" style="margin-top:12px;">
+            <div class="notify-page-strip">
+              <button class="action-btn notify-page-nav" type="button" data-notify-page-nav="prev" ${state.notificationPage <= 1 ? 'disabled' : ''}>${escapeHtml(state.lang === 'zh' ? '上一页' : 'Previous')}</button>
+              <div class="notify-page-folders" role="tablist" aria-label="${escapeHtml(state.lang === 'zh' ? '通知分页' : 'Notification pages')}">
+                ${pageButtons.map((page) => page === 'ellipsis'
+                  ? `<span class="notify-page-gap" aria-hidden="true">...</span>`
+                  : `<button class="notify-page-folder ${page === state.notificationPage ? 'active' : ''}" type="button" role="tab" aria-selected="${page === state.notificationPage ? 'true' : 'false'}" data-notify-page="${page}"><span class="notify-page-folder-tab"></span><span class="notify-page-folder-label">${escapeHtml(state.lang === 'zh' ? `第 ${formatNumber(page)} 页` : `Page ${formatNumber(page)}`)}</span></button>`).join('')}
+              </div>
+              <button class="action-btn notify-page-nav" type="button" data-notify-page-nav="next" ${state.notificationPage >= totalPages ? 'disabled' : ''}>${escapeHtml(state.lang === 'zh' ? '下一页' : 'Next')}</button>
+            </div>
+          </div>
+        ` : ''}
       </div>
-      <div class="list">
-        ${filtered.length ? filtered.map((item) => {
+      <div class="notify-day-stack">
+        ${pagedGroups.length ? pagedGroups.map((group) => `
+          <section class="notify-day-group">
+            <div class="notify-day-header">
+              <div class="notify-day-label">${escapeHtml(group.label)}</div>
+              <div class="notify-day-meta">${escapeHtml(state.lang === 'zh' ? `${formatNumber(group.items.length)} 条通知` : `${formatNumber(group.items.length)} notifications`)}</div>
+            </div>
+            <div class="notify-day-list">
+              ${group.items.map((item) => {
           const present = getNotificationPresentation(item);
           const jumpTarget = getNotificationJumpTarget(item);
+          const isRawExpanded = state.notificationDetailMode === 'raw' && expandedRawId === item.id;
           return `
           <div class="list-item ${item.read ? '' : 'unread'}">
             <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
@@ -3417,15 +4080,23 @@
               <span class="pill ${item.severity === 'success' ? 'success' : item.severity === 'warning' ? 'warn' : item.severity === 'error' ? 'danger' : ''}">${escapeHtml(present.severityLabel)}</span>
             </div>
             <p style="margin-top:10px;">${escapeHtml(present.message)}</p>
-            ${item.meta ? `<pre style="margin-top:12px;">${prettyJson(item.meta)}</pre>` : ''}
+            ${state.notificationDetailMode === 'raw'
+              ? (isRawExpanded ? renderNotificationRawDetail(item) : '')
+              : renderNotificationSummaryDetail(item, present)}
             <div class="toolbar tight" style="margin-top:12px;">
               <button class="action-btn" type="button" data-notify-item="${escapeHtml(item.id)}" data-next-read="${item.read ? 'false' : 'true'}">${escapeHtml(item.read ? t('markUnread') : t('markRead'))}</button>
+              ${state.notificationDetailMode === 'raw'
+                ? `<button class="action-btn ${isRawExpanded ? 'primary' : ''}" type="button" data-notify-raw-item="${escapeHtml(item.id)}" ${isRawExpanded ? 'disabled' : ''}>${escapeHtml(isRawExpanded ? (state.lang === 'zh' ? '当前原始详情' : 'Current Raw Detail') : (state.lang === 'zh' ? '查看原始详情' : 'View Raw Detail'))}</button>`
+                : ''}
               <button class="action-btn" type="button" data-notify-copy="${escapeHtml(item.id)}">${escapeHtml(state.lang === 'zh' ? '复制详情' : 'Copy Details')}</button>
               ${jumpTarget ? `<button class="action-btn primary" type="button" data-notify-open-tab="${escapeHtml(jumpTarget.tabId)}" data-notify-focus="${escapeHtml(jumpTarget.selector)}">${escapeHtml(jumpTarget.label)}</button>` : ''}
             </div>
           </div>
         `;
-        }).join('') : emptyState(state.lang === 'zh' ? '没有符合筛选条件的通知。' : 'No notifications match the current filters.')}
+        }).join('')}
+            </div>
+          </section>
+        `).join('') : emptyState(state.lang === 'zh' ? '没有符合筛选条件的通知。' : 'No notifications match the current filters.')}
       </div>
     `;
 
@@ -3433,16 +4104,62 @@
 
     document.getElementById('notify-search')?.addEventListener('input', (event) => {
       state.notificationSearchQuery = event.target.value;
+      state.notificationPage = 1;
       loadNotifications();
     });
     document.getElementById('notify-source')?.addEventListener('change', (event) => {
       state.notificationSource = event.target.value || 'all';
+      state.notificationPage = 1;
+      loadNotifications();
+    });
+    document.getElementById('notify-page-size')?.addEventListener('change', (event) => {
+      const nextSize = Number(event.target.value) || 20;
+      state.notificationPageSize = pageSizeOptions.includes(nextSize) ? nextSize : 20;
+      state.notificationPage = 1;
+      state.notificationExpandedRawId = null;
       loadNotifications();
     });
 
     document.querySelectorAll('[data-notify-filter]').forEach((button) => {
       button.addEventListener('click', () => {
         state.notificationFilter = button.getAttribute('data-notify-filter') || 'all';
+        state.notificationPage = 1;
+        loadNotifications();
+      });
+    });
+
+    document.querySelectorAll('[data-notify-detail-mode]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.notificationDetailMode = button.getAttribute('data-notify-detail-mode') || 'summary';
+        state.notificationPage = 1;
+        state.notificationExpandedRawId = null;
+        loadNotifications();
+      });
+    });
+
+    document.querySelectorAll('[data-notify-page]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.notificationPage = Number(button.getAttribute('data-notify-page')) || 1;
+        state.notificationExpandedRawId = null;
+        loadNotifications();
+      });
+    });
+
+    document.querySelectorAll('[data-notify-page-nav]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const direction = button.getAttribute('data-notify-page-nav');
+        const nextPage = direction === 'prev' ? state.notificationPage - 1 : state.notificationPage + 1;
+        state.notificationPage = Math.min(Math.max(nextPage, 1), totalPages);
+        state.notificationExpandedRawId = null;
+        loadNotifications();
+      });
+    });
+
+    document.querySelectorAll('[data-notify-raw-item]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const nextId = button.getAttribute('data-notify-raw-item');
+        if (!nextId || nextId === state.notificationExpandedRawId) return;
+        state.notificationExpandedRawId = nextId;
         loadNotifications();
       });
     });
@@ -3523,6 +4240,8 @@
     const nodeService = snapshot.nodeService || {};
     const runtimeOs = snapshot.os || {};
     const runtimeUpdate = snapshot.update || {};
+    const localizedGatewayService = getLocalizedServiceSummary(gatewayService);
+    const localizedNodeService = getLocalizedServiceSummary(nodeService);
     const body = `
       ${renderCacheSummaryCard(data.cache, state.lang === 'zh' ? '会话共享快照' : 'Session Shared Snapshot')}
       <div class="grid">
@@ -3545,7 +4264,10 @@
             },
             {
               label: state.lang === 'zh' ? '记忆检索' : 'Memory Search',
-              value: [runtimeMemory.provider || runtimeMemory.backend || '-', runtimeMemory.searchMode || '-'].join(' / '),
+              value: joinDisplayParts([
+                getMemoryBackendLabel(runtimeMemory.provider || runtimeMemory.backend),
+                getMemorySearchModeLabel(runtimeMemory.searchMode),
+              ]),
               help: runtimeMemory.dbPath || runtimeMemory.workspaceDir || '-',
             },
             {
@@ -3555,18 +4277,22 @@
             },
             {
               label: state.lang === 'zh' ? 'Gateway 服务' : 'Gateway Service',
-              value: gatewayService.label || '-',
-              help: [gatewayService.loadedText, gatewayService.runtimeShort].filter(Boolean).join(' / '),
+              value: localizedGatewayService.label,
+              help: joinDisplayParts([localizedGatewayService.loadedText, localizedGatewayService.runtimeShort]),
             },
             {
               label: state.lang === 'zh' ? 'Node 服务' : 'Node Service',
-              value: nodeService.label || '-',
-              help: [nodeService.loadedText, nodeService.runtimeShort].filter(Boolean).join(' / '),
+              value: localizedNodeService.label,
+              help: joinDisplayParts([localizedNodeService.loadedText, localizedNodeService.runtimeShort]),
             },
             {
               label: state.lang === 'zh' ? '更新通道' : 'Update Channel',
-              value: [runtimeUpdate.channel || '-', runtimeUpdate.latestVersion || '-'].join(' / '),
-              help: [runtimeUpdate.packageManager, runtimeUpdate.installKind, runtimeUpdate.depsStatus].filter(Boolean).join(' / '),
+              value: joinDisplayParts([getUpdateChannelLabel(runtimeUpdate.channel), runtimeUpdate.latestVersion || '-']),
+              help: joinDisplayParts([
+                runtimeUpdate.packageManager,
+                getInstallKindLabel(runtimeUpdate.installKind),
+                getUpdateDepsStatusLabel(runtimeUpdate.depsStatus),
+              ]),
             },
           ])}
         </div>

@@ -18,6 +18,7 @@ import { getCronOverview, enableCronJob, disableCronJob, runCronJob, removeCronJ
 import { getGitSyncStatus, initGitSync, connectGitRemote, saveGitTokenAuth, checkGitRemotePrivate, commitGitSync, pushGitSync, syncGitSync, startOAuthLogin } from './git-sync.js';
 import { summarizeCosts } from './costs.js';
 import { getCachePrewarmStatus, runCachePrewarm } from './cache-prewarm.js';
+import { getGuardRestartStatus, runGuardRestartTask, scheduleGuardRestart } from './guard-restart.js';
 
 const program = new Command();
 
@@ -538,6 +539,24 @@ program.command('web').description('启动 Web 管理界面').option('-p, --port
   startServer(Number(opts.port || 18088));
 });
 
+const guardCmd = program.command('guard').description('Guard Web 运行管理');
+guardCmd.command('status').description('查看 Guard 完整重启状态').action(() => {
+  printJson(getGuardRestartStatus());
+});
+guardCmd.command('restart')
+  .description('完整重启 Guard Web，可选联动 Gateway')
+  .option('-p, --port <port>', 'Guard Web 端口', '18088')
+  .option('--current-pid <pid>', '指定要接管的 Guard Web PID')
+  .option('--restart-gateway', '同时重启 Gateway')
+  .action((opts: { port?: string; currentPid?: string; restartGateway?: boolean }) => {
+    const result = scheduleGuardRestart({
+      port: Number(opts.port || 18088),
+      currentPid: parseOptionalNumber(opts.currentPid),
+      restartGateway: opts.restartGateway === true,
+    });
+    printAction(result);
+  });
+
 program.command('cache-prewarm')
   .description('执行 Guard 缓存预热')
   .option('--trigger <trigger>', '预热触发来源', 'manual')
@@ -637,6 +656,48 @@ program.command('openclaw-task')
 
     const ok = result.phase === 'completed';
     const message = result.message || (ok ? '后台安装任务已完成。' : '后台安装任务执行失败。');
+    console.log(ok ? chalk.green(message) : chalk.red(message));
+    if (result.error) {
+      console.log(chalk.dim(result.error));
+    }
+    if (!ok) process.exitCode = 1;
+  });
+
+program.command('guard-task')
+  .description('执行后台 Guard 完整重启任务')
+  .requiredOption('--port <port>', 'Guard Web 端口')
+  .option('--current-pid <pid>', '当前 Guard Web PID')
+  .option('--restart-gateway', '同时重启 Gateway')
+  .option('--json', '输出 JSON 状态')
+  .action(async (opts: { port: string; currentPid?: string; restartGateway?: boolean; json?: boolean }) => {
+    const port = Number(opts.port);
+    if (!Number.isFinite(port) || port <= 0) {
+      const errorResult = {
+        success: false,
+        message: `Unsupported port: ${opts.port}`,
+      };
+      if (opts.json) {
+        printJson(errorResult);
+        return;
+      }
+      console.log(chalk.red(errorResult.message));
+      process.exitCode = 1;
+      return;
+    }
+
+    const result = await runGuardRestartTask({
+      port,
+      currentPid: parseOptionalNumber(opts.currentPid),
+      restartGateway: opts.restartGateway === true,
+    });
+
+    if (opts.json) {
+      printJson(result);
+      return;
+    }
+
+    const ok = result.phase === 'completed';
+    const message = result.message || (ok ? 'Guard 重启任务已完成。' : 'Guard 重启任务执行失败。');
     console.log(ok ? chalk.green(message) : chalk.red(message));
     if (result.error) {
       console.log(chalk.dim(result.error));

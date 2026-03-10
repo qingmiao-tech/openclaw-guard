@@ -1,4 +1,7 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { addNotification } from './notifications.js';
+import { ensureGuardLayout, isoNow, readJsonFile, writeJsonFile } from './guard-state.js';
 import { getCronSnapshot, runOpenClawCommand, type CronJobRecord, type CronStatusSummary } from './openclaw-runtime.js';
 
 export interface CronActionResult {
@@ -43,9 +46,94 @@ export interface CronOverview {
   status: CronStatusSummary;
 }
 
+export interface CronOverviewCacheMeta {
+  generatedAt: string | null;
+  ageMs: number | null;
+  freshForMs: number;
+  stale: boolean;
+  refreshing: boolean;
+  source: 'bootstrap' | 'cache' | 'stale';
+  lastStartedAt: string | null;
+  lastFinishedAt: string | null;
+  lastSuccessAt: string | null;
+  lastReason: string | null;
+  lastError: string | null;
+}
+
+export interface CronOverviewWithCache extends CronOverview {
+  cache: CronOverviewCacheMeta;
+}
+
+interface StoredCronOverviewSnapshot {
+  generatedAt: string;
+  overview: CronOverview;
+}
+
+interface CronRefreshState {
+  refreshing: boolean;
+  queued: boolean;
+  lastStartedAt: string | null;
+  lastFinishedAt: string | null;
+  lastSuccessAt: string | null;
+  lastReason: string | null;
+  lastError: string | null;
+}
+
+const CRON_OVERVIEW_CACHE_FILE = path.join(ensureGuardLayout().stateDir, 'cron-overview-latest.json');
+const CRON_OVERVIEW_FRESH_MS = 30_000;
+
+const cronRefreshState: CronRefreshState = {
+  refreshing: false,
+  queued: false,
+  lastStartedAt: null,
+  lastFinishedAt: null,
+  lastSuccessAt: null,
+  lastReason: null,
+  lastError: null,
+};
+
+function readStoredCronOverviewSnapshot(): StoredCronOverviewSnapshot | null {
+  const snapshot = readJsonFile<StoredCronOverviewSnapshot | null>(CRON_OVERVIEW_CACHE_FILE, null);
+  if (!snapshot || typeof snapshot.generatedAt !== 'string' || !snapshot.overview) return null;
+  return snapshot;
+}
+
+function saveStoredCronOverviewSnapshot(snapshot: StoredCronOverviewSnapshot): StoredCronOverviewSnapshot {
+  writeJsonFile(CRON_OVERVIEW_CACHE_FILE, snapshot);
+  return snapshot;
+}
+
+function buildCronCacheMeta(
+  snapshot: StoredCronOverviewSnapshot,
+  source: CronOverviewCacheMeta['source'],
+  freshForMs: number,
+): CronOverviewCacheMeta {
+  const generatedAtMs = Date.parse(snapshot.generatedAt);
+  const ageMs = Number.isFinite(generatedAtMs) ? Math.max(0, Date.now() - generatedAtMs) : null;
+  const stale = ageMs === null || ageMs > freshForMs;
+  return {
+    generatedAt: snapshot.generatedAt,
+    ageMs,
+    freshForMs,
+    stale,
+    refreshing: cronRefreshState.refreshing || cronRefreshState.queued,
+    source,
+    lastStartedAt: cronRefreshState.lastStartedAt,
+    lastFinishedAt: cronRefreshState.lastFinishedAt,
+    lastSuccessAt: cronRefreshState.lastSuccessAt,
+    lastReason: cronRefreshState.lastReason,
+    lastError: cronRefreshState.lastError,
+  };
+}
+
 function runCronAction(args: string[], successMessage: string, failureMessage: string): CronActionResult {
   const result = runOpenClawCommand(['cron', ...args]);
   if (result.success) {
+    try {
+      refreshCronOverviewSnapshot('cron-action');
+    } catch {
+      invalidateCronOverviewSnapshot();
+    }
     addNotification({
       type: 'cron',
       source: 'cron-ui',
@@ -178,7 +266,7 @@ function buildCronMutationArgs(input: CronJobInput, mode: 'create' | 'update'): 
   return args;
 }
 
-export function getCronOverview(): CronOverview {
+export function buildCronOverview(): CronOverview {
   const snapshot = getCronSnapshot();
   const warnings = [...snapshot.warnings, ...(snapshot.status?.warnings || [])]
     .map((item) => item.trim())
@@ -201,6 +289,77 @@ export function getCronOverview(): CronOverview {
       raw: null,
     },
   };
+}
+
+function scheduleCronOverviewRefresh(reason: string): void {
+  if (cronRefreshState.refreshing || cronRefreshState.queued) return;
+  cronRefreshState.queued = true;
+  setTimeout(() => {
+    cronRefreshState.queued = false;
+    try {
+      refreshCronOverviewSnapshot(reason);
+    } catch {
+      // Keep serving the last good snapshot.
+    }
+  }, 0);
+}
+
+export function refreshCronOverviewSnapshot(reason = 'manual'): StoredCronOverviewSnapshot {
+  cronRefreshState.refreshing = true;
+  cronRefreshState.lastStartedAt = isoNow();
+  cronRefreshState.lastReason = reason;
+  cronRefreshState.lastError = null;
+
+  try {
+    const snapshot = saveStoredCronOverviewSnapshot({
+      generatedAt: isoNow(),
+      overview: buildCronOverview(),
+    });
+    cronRefreshState.lastFinishedAt = isoNow();
+    cronRefreshState.lastSuccessAt = cronRefreshState.lastFinishedAt;
+    return snapshot;
+  } catch (error) {
+    cronRefreshState.lastFinishedAt = isoNow();
+    cronRefreshState.lastError = error instanceof Error ? error.message : String(error);
+    throw error;
+  } finally {
+    cronRefreshState.refreshing = false;
+  }
+}
+
+export function getCachedCronOverview(freshForMs = CRON_OVERVIEW_FRESH_MS): CronOverviewWithCache {
+  const existing = readStoredCronOverviewSnapshot();
+  if (!existing) {
+    const snapshot = refreshCronOverviewSnapshot('bootstrap');
+    return {
+      ...snapshot.overview,
+      cache: buildCronCacheMeta(snapshot, 'bootstrap', freshForMs),
+    };
+  }
+
+  const generatedAtMs = Date.parse(existing.generatedAt);
+  const ageMs = Number.isFinite(generatedAtMs) ? Math.max(0, Date.now() - generatedAtMs) : Number.POSITIVE_INFINITY;
+  const stale = !Number.isFinite(ageMs) || ageMs > freshForMs;
+  if (stale) scheduleCronOverviewRefresh('stale-read');
+
+  return {
+    ...existing.overview,
+    cache: buildCronCacheMeta(existing, stale ? 'stale' : 'cache', freshForMs),
+  };
+}
+
+export function getCronOverview(): CronOverview {
+  return buildCronOverview();
+}
+
+export function invalidateCronOverviewSnapshot(): void {
+  try {
+    if (fs.existsSync(CRON_OVERVIEW_CACHE_FILE)) {
+      fs.unlinkSync(CRON_OVERVIEW_CACHE_FILE);
+    }
+  } catch {
+    // ignore cache cleanup failures
+  }
 }
 
 export function enableCronJob(jobId: string): CronActionResult {

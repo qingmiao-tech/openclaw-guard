@@ -177,8 +177,7 @@ function diffSessions(previous: SessionRecord[], current: SessionRecord[], captu
   return events;
 }
 
-export function captureSessionOverview(): SessionOverview {
-  const snapshot = getRuntimeSnapshot();
+export function buildSessionOverview(snapshot = getRuntimeSnapshot()): SessionOverview {
   const previous = readStoredSessionSnapshot();
   const isSameSnapshot = previous.capturedAt === snapshot.capturedAt;
   const events = isSameSnapshot
@@ -207,6 +206,10 @@ export function captureSessionOverview(): SessionOverview {
     costSummary,
     recentActivity: getRecentActivity(50),
   };
+}
+
+export function captureSessionOverview(): SessionOverview {
+  return buildSessionOverview();
 }
 
 export function getRecentActivity(limit = 50): ActivityEvent[] {
@@ -243,8 +246,7 @@ function getDiskStats(targetPath: string): { totalBytes: number | null; freeByte
   }
 }
 
-export function getDashboardOverview(): DashboardOverview {
-  const sessionOverview = captureSessionOverview();
+export function buildDashboardOverview(sessionOverview: SessionOverview): DashboardOverview {
   const agents = getAgentCatalog();
   const memoryFiles = listMemoryFiles();
   const cpuInfo = os.cpus();
@@ -252,7 +254,7 @@ export function getDashboardOverview(): DashboardOverview {
   const defaultAgent = agents.find((agent) => agent.isDefault) || agents[0] || null;
 
   return {
-    capturedAt: new Date().toISOString(),
+    capturedAt: sessionOverview.snapshot.capturedAt,
     platform: detectPlatform(),
     user: getCurrentUser(),
     homeDir: getHomeDir(),
@@ -303,4 +305,8 @@ export function getDashboardOverview(): DashboardOverview {
       sessionsMeta: sessionOverview.snapshot.sessionsMeta,
     },
   };
+}
+
+export function getDashboardOverview(): DashboardOverview {
+  return buildDashboardOverview(captureSessionOverview());
 }

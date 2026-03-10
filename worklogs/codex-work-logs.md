@@ -2234,3 +2234,387 @@
 - 风险与补充说明:
   1) 当前自动安装统一依赖 `npm install -g openclaw@latest`，因此目标机器仍需要具备 `Node.js + npm`；如果后续希望做到“完全免 Node 前置”，需要再做平台安装包或自举安装器。
   2) 本轮已解决 Guard 自身调用链的“即时识别新装 CLI”问题，但用户外部终端窗口是否立刻识别 `openclaw`，仍取决于操作系统会话何时刷新 PATH；页面里已通过平台说明给出提示。
+
+## [2026-03-10 17:57] openclaw-guard 增加共享运行态快照缓存并补充性能决策文档 [TASK-20260310-006]
+
+- 任务来源: 用户要求先整理“是否换框架与性能优化路线”的正式文档，然后直接开工，把重型运行态链路从用户点击路径里剥离。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成文档、共享快照缓存、API 接线、前端状态提示与验证。
+- 实际完成:
+  1) 在 `worklogs/openclaw-guard-performance-remediation-plan-20260310.md` 新增正式技术文档:
+     - 说明为什么当前不建议直接更换前后端框架。
+     - 对比“换前端框架 / 换后端框架 / 当前架构内优化 / 直接读 OpenClaw 文件 / OpenClaw 暴露本地 API”等路线。
+     - 明确当前优先路线为“共享聚合快照缓存 + 分块渲染 + 后台持续刷新”，并拆解了实施方式、成本、风险与预期效果。
+  2) `openclaw-guard/src/dashboard.ts` 已重构出可复用构建函数:
+     - 新增 `buildSessionOverview()`，把会话快照落盘、活动 diff、成本汇总逻辑抽出来供高层缓存复用。
+     - 新增 `buildDashboardOverview()`，让驾驶舱聚合可以直接复用同一份会话概览，不再重复触发采集。
+  3) 新增 `openclaw-guard/src/runtime-view-store.ts` 作为高层共享运行态快照层:
+     - 维护 `~/.openclaw/guard/state/runtime-view-latest.json`。
+     - 统一产出 `dashboardOverview / sessionOverview / costSummary` 共享结果。
+     - 采用 `stale-while-revalidate` 策略: 首次无快照时同步生成；已有旧快照时先返回旧值并后台刷新。
+     - 增加单飞控制，避免多个页签同时命中冷缓存时重复重跑同一条重链路。
+     - 返回统一 `cache` 元数据，包含 `generatedAt / ageMs / stale / refreshing / lastReason / lastError`。
+  4) `openclaw-guard/src/server.ts` 已切换以下接口到共享快照层:
+     - `GET /api/dashboard/overview`
+     - `GET /api/sessions`
+     - `GET /api/costs`
+     以上接口现在共用同一份运行态视图缓存，不再各自直接调用 `captureSessionOverview()`。
+  5) `openclaw-guard/src/cache-prewarm.ts` 已改为预热共享运行态快照:
+     - 原 `Dashboard overview` 预热任务改为 `Runtime workbench snapshot`。
+     - 服务启动后会优先准备新的高层快照，而不是只做旧版驾驶舱聚合。
+  6) `openclaw-guard/web/guard-ui.js` 已补前端可见状态:
+     - 驾驶舱、会话、成本页新增“共享快照”卡片，显示快照时间、快照年龄、最近刷新动作、后台刷新状态。
+     - 当命中旧快照并触发后台刷新时，这三页会自动短轮询刷新，直到快照回到热状态。
+- 交付清单:
+  - worklogs/openclaw-guard-performance-remediation-plan-20260310.md
+  - openclaw-guard/src/dashboard.ts
+  - openclaw-guard/src/runtime-view-store.ts
+  - openclaw-guard/src/server.ts
+  - openclaw-guard/src/cache-prewarm.ts
+  - openclaw-guard/web/guard-ui.js
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  2) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  3) 已用本机真实运行态实测共享快照链路:
+     - `getCachedDashboardOverview()` 首轮约 `7513 ms`，属于首次 bootstrap。
+     - 紧接着 `getCachedSessionOverview()` 约 `1 ms`。
+     - 紧接着 `getCachedCostSummary()` 约 `1 ms`。
+     说明驾驶舱、会话、成本三页已经共享同一份高层快照，不再重复触发完整运行态采集。
+  4) 已验证 stale-while-revalidate 行为:
+     - 强制按 `freshForMs=0` 读取时，接口会返回 `stale=true` 且 `refreshing=true`。
+     - 后台刷新完成后再次读取恢复为 `stale=false` 且 `refreshing=false`。
+- 风险与补充说明:
+  1) 本轮只先解决了 `驾驶舱 / 会话 / 成本` 共用的重链路，`Cron` 和 `Git Sync` 仍然各自维护自己的缓存与采集逻辑，后续可以按同样思路继续收口。
+  2) 当前首次完全没有快照时仍需同步生成一次，因此服务冷启动后的第一次访问不会完全消失等待；但首次之后的重复访问已经显著降低。
+  3) 这轮仍保留现有原生 Web 架构，没有引入 React / Vue；如果后续继续做分块渲染和后台持续刷新，前端体感还能再压一轮。
+
+## [2026-03-10 19:10] openclaw-guard 完成 Cron/Git 高层缓存接线并验证分块渲染效果 [TASK-20260310-007]
+
+- 任务来源: 用户要求按顺序继续完成三项工作: `浏览器层验证`、`补充框架评估结论`、`写入工作日志`。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成 Cron/Git 高层缓存接线验证、页面切换验证、框架结论补记与日志归档。
+- 实际完成:
+  1) `openclaw-guard/src/cron-ui.ts` 已补高层共享快照能力:
+     - 新增 `buildCronOverview()`、`refreshCronOverviewSnapshot()`、`getCachedCronOverview()`、`invalidateCronOverviewSnapshot()`。
+     - `Cron` 页面读取 `~/.openclaw/guard/state/cron-overview-latest.json`，命中过期快照时先回旧值，再后台刷新。
+     - `create / update / enable / disable / run / remove` 成功后会主动刷新或失效 `Cron` 高层快照。
+  2) `openclaw-guard/src/git-sync.ts` 已补 Git 工作台高层快照:
+     - 新增 `refreshGitSyncStatusSnapshot()`、`getCachedGitSyncStatus()`。
+     - 新增 `refreshGitIgnorePreviewSnapshot()`、`getCachedGitIgnorePreview()`。
+     - 新增 `refreshGitWorkbenchCaches()` 与失效逻辑，保证 `init / connect / auth / check / apply-gitignore / commit / push / sync` 后高层视图能同步更新。
+  3) `openclaw-guard/src/server.ts` 与 `openclaw-guard/src/cache-prewarm.ts` 已完成接线:
+     - `/api/cron-ui`、`/api/git-sync/status`、`/api/git-sync/gitignore-preview` 已改为走高层视图缓存。
+     - 启动预热现在会直接预热 `Cron overview`、`Git sync status`、`.gitignore preview` 高层快照。
+  4) `openclaw-guard/web/guard-ui.js` 已接入分块渲染与缓存态提示:
+     - `Cron` 顶部新增缓存状态卡，并在快照过期且后台刷新时自动短轮询。
+     - `OpenClaw` 页改为先出摘要块，再补 Gateway Dashboard 与 Token。
+     - `Git 同步` 页改为先出同步准备度，再补 `.gitignore` 预览与完整详情，避免整页一直空白。
+     - 修复了 `Git 同步` 页的两个前端初始化顺序问题，消除了此前的 TDZ 报错。
+  5) 已补性能决策文档结论:
+     - `worklogs/openclaw-guard-performance-remediation-plan-20260310.md` 已新增实施进展、浏览器验证结果、当前框架结论与下一阶段优先项。
+     - 明确结论为: 当前不需要切换到更重的前后端框架，优先继续做缓存、分块渲染、超长列表治理与后台续热。
+- 交付清单:
+  - openclaw-guard/src/cron-ui.ts
+  - openclaw-guard/src/git-sync.ts
+  - openclaw-guard/src/server.ts
+  - openclaw-guard/src/cache-prewarm.ts
+  - openclaw-guard/web/guard-ui.js
+  - worklogs/openclaw-guard-performance-remediation-plan-20260310.md
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  2) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  3) 已完成函数级测速:
+     - `Cron` 高层快照首次约 `4169 ms`，第二次约 `0 ms`
+     - `Git Sync status` 首次约 `440 ms`，第二次约 `1 ms`
+     - `.gitignore preview` 首次约 `206 ms`，第二次约 `1 ms`
+  4) 已完成浏览器实测:
+     - `Cron / OpenClaw / Git 同步 / 驾驶舱` 都能正常打开
+     - 页面切换未再出现新的前端报错或整页白屏
+     - `Git 同步` 页此前的初始化异常已消失
+- 风险与补充说明:
+  1) `Git 同步` 页虽然已经能稳定打开，但因为本机 `.openclaw` 有 500+ 项变更，长列表渲染仍然偏重，下一步更适合按目录聚合、默认折叠或做分页/虚拟化。
+  2) `驾驶舱` 中仍有少量 Windows 文案乱码，属于存量体验问题，不是本轮引入的新问题，后续应顺手清理。
+  3) 本轮浏览器验证使用本地 Guard 页面实例完成，重点证明“缓存链路 + 分块渲染”的方向有效；下一阶段更值得继续做的是 `驾驶舱 / 运维` 局部化刷新和启动后后台续热。
+
+## [2026-03-10 19:40] openclaw-guard 完成 Git 同步目录树收口并验证驾驶舱/运维分段加载 [TASK-20260310-008]
+
+- 任务来源: 用户要求继续按顺序完成三项前端体验优化:
+  1) 先处理 `Git 同步` 页的长列表聚合/折叠
+  2) 再压低 `驾驶舱 / 运维` 的首屏等待
+  3) 最后顺手清理 `驾驶舱` 的 Windows 乱码和少量文案问题
+- 仓库范围: openclaw-course
+- 当前状态: 已完成目录树聚合收口、局部化加载实测、文案与状态标签修正，并补充工作日志。
+- 实际完成:
+  1) `openclaw-guard/web/guard-ui.js` 已补 Git 路径归一化清洗:
+     - `normalizeRepoPath()` 现在会剥掉 Git 在 Windows 下返回的外层引号，例如 `"browser-profiles/openclaw/Default/Account Web Data"`。
+     - 解决了目录树里出现 `\"browser`、`\"media` 这类伪目录的问题。
+  2) `Git 同步` 页的目录树进一步减重:
+     - 一级目录默认改为折叠，避免首次渲染时把大目录内容全部展开进 DOM。
+     - 子目录预览数从 12 下调到 8，继续控制首屏节点量。
+     - 仓库状态卡改为中文 `就绪 / 缺失`，减轻混杂英文状态感。
+  3) `驾驶舱 / 运维` 的首屏分段加载已做真实页面验证:
+     - 首次进入 `#overview` 会先显示 4 个 section skeleton，而不是整页空白等待。
+     - 首次进入 `#system` 会先显示 4 个 section skeleton，再补完整运维内容。
+     - 切页后旧请求不会再覆盖当前页，局部刷新链路保持正常。
+  4) `驾驶舱 / 运维` 文案补修:
+     - `驾驶舱` 中 `Dashboard` 按钮改为 `OpenClaw 面板`。
+     - `驾驶舱 / 运维` 的 `Gateway / Guard Web / OpenClaw` 运行状态改为中文显示，如 `运行中 / 未运行 / 已安装`。
+     - 先前新增的 Windows 乱码兜底继续生效，没有再显示明显 `�` 替代字符。
+- 交付清单:
+  - openclaw-guard/web/guard-ui.js
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  2) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  3) 已用本地实例 `http://127.0.0.1:18091` 做浏览器实测:
+     - `Git 同步` 页已真实渲染为目录树，不再出现带引号伪目录。
+     - 一级目录默认折叠，首屏改为“根目录直系预览 + 目录摘要”模式。
+     - `驾驶舱` 首屏先出 skeleton，再在约 5 秒内补齐完整内容。
+     - `运维` 首屏先出 skeleton，再在约 4 秒内补齐完整内容。
+     - `驾驶舱` 的按钮文案与状态文案已更新为当前版本。
+- 风险与补充说明:
+  1) 这轮主要解决的是“能打开但内容太重”的问题，`Git 同步` 页在展开极大目录时仍可能较重；如果后续还要继续压，可以再做按层级懒加载或虚拟列表。
+  2) `驾驶舱` 中的通知内容和部分运行态字段仍来自后端原始数据，因此仍存在英文消息，不属于本轮前端文案修正范围。
+  3) Playwright 的无障碍快照里仍会看到一些 `▸` 文本噪音，这是 `<details>/<summary>` 在快照层的表现，不代表页面真实会平铺渲染所有子项。
+
+## [2026-03-10 20:12] openclaw-guard 增加通知前端双语摘要层并接入语言切换 [TASK-20260310-009]
+
+- 任务来源: 用户要求把“驾驶舱通知消息做一层前端摘要翻译”扩展为真正的双语方案，且需要跟随右上角 `中文 / EN` 设置实时切换。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成通知摘要层、通知页/驾驶舱接线、搜索兼容和双语实测。
+- 实际完成:
+  1) `openclaw-guard/web/guard-ui.js` 已新增统一通知展示层:
+     - 新增 `getNotificationPresentation()`，负责根据 `state.lang` 生成展示用 `title / message / sourceLabel / typeLabel / severityLabel`。
+     - 不改后端通知原始结构，保持跳转逻辑、复制详情和去重逻辑继续使用原始 `title/message/meta`。
+  2) 已覆盖当前高频通知类型的双语摘要:
+     - Git Sync: 未同步改动、嵌套仓库、`.gitignore` 更新、远程连接、认证保存、private 校验、commit/push 结果、OAuth 各阶段。
+     - Cron: 成功 / 失败标题。
+     - 旧版 Git Sync 历史通知文案也已兼容，例如 `There are 34 changed files ready for commit and push.` 这种早期消息格式。
+  3) 驾驶舱与通知页已统一接入:
+     - `驾驶舱 -> 最新通知` 现在显示本地化标题、本地化摘要，以及本地化来源/严重级别。
+     - `通知` 页现在显示本地化标题、本地化来源、本地化类型、本地化严重级别和本地化摘要。
+  4) 搜索与筛选也已兼容双语:
+     - 搜索不再只匹配后端原始英文，还会同时匹配前端本地化后的标题/摘要/来源/严重级别。
+     - 来源下拉框已改为显示本地化标签，但内部 value 仍然使用原始 source，保证筛选逻辑不回归。
+- 交付清单:
+  - openclaw-guard/web/guard-ui.js
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  2) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  3) 已用本地实例 `http://127.0.0.1:18091` 做浏览器实测:
+     - 中文界面下，驾驶舱“最新通知”已显示中文摘要，如“检测到嵌套 Git 仓库”“检测到 .openclaw 有未同步改动”。
+     - 中文界面下，完整“通知”页的标题、来源、类型、严重级别和摘要均已本地化。
+     - 切到 `EN` 后，同一批通知会切回英文展示，确认随右上角语言设置生效。
+- 风险与补充说明:
+  1) 本轮是前端展示层本地化，不会改写已落盘的原始通知 JSON；因此复制详情仍然拿到原始结构，这是刻意保留的可追溯性。
+  2) 未命中映射的低频通知仍会回退到原始 `title/message`，后续可以继续按实际出现的通知类型补齐。
+
+## [2026-03-10 20:29] openclaw-guard 完成通知双视图与运行态字段双语本地化补强 [TASK-20260310-010]
+
+- 任务来源: 用户要求继续完成两项体验优化:
+  1) `通知详情` 从单一原始结构展示升级为 `摘要详情 / 原始详情` 双模式
+  2) `驾驶舱 / 运维` 里剩余的运行态原始英文字段继续做前端双语本地化，并跟随右上角语言切换
+- 仓库范围: openclaw-course
+- 当前状态: 已完成通知详情双视图、运行态状态词本地化、真实样本校准与页面实测。
+- 实际完成:
+  1) `openclaw-guard/web/guard-ui.js` 已给通知页新增双视图模式:
+     - 新增 `state.notificationDetailMode`，默认使用 `summary` 模式。
+     - 通知页顶部增加 `摘要详情 / 原始详情` 切换按钮，和当前语言一起联动。
+     - `摘要详情` 现在只展示本地化后的结构信息，例如时间、来源、类型、严重级别、嵌套仓库等，不再把原始英文直接塞回摘要区。
+     - `原始详情` 单独展示完整原始通知 JSON，保留排障、复制和追溯能力。
+  2) 已补一组运行态字段本地化 helper:
+     - `getRuntimeServiceLabel()`
+     - `getRuntimeLoadedStateLabel()`
+     - `getRuntimeShortLabel()`
+     - `getRuntimeSourceLabel()`
+     - `getRuntimeAlertLevelLabel()`
+     - `getUpdateChannelLabel()`
+     - `getUpdateDepsStatusLabel()`
+     - `getInstallKindLabel()`
+     - `getMemoryBackendLabel()`
+     - `getMemorySearchModeLabel()`
+     - `getPrewarmTriggerLabel()`
+  3) `驾驶舱` 已接入新的运行态本地化:
+     - `builtin / unknown / registered / missing / Scheduled Task / unknown` 这类值会在中文下显示为 `内置 / 未知 / 已登记 / 缺失 / 计划任务 / 未知`。
+     - 风险告警级别 `critical / warning / error / info` 也会跟随语言切换展示。
+  4) `运维` 已接入新的运行态本地化:
+     - `Tracking Source` 中的 `pid-file / port-scan / none` 已做本地化。
+     - 缓存预热触发来源已补 `server-start / manual / web-manual / cli-manual / api / scheduled / boot` 的前端映射。
+     - 本轮专门根据本机真实 `openclaw status --json` 输出补了 `Scheduled Task / registered / missing / unknown` 这些 Windows 高频值，避免只按猜测映射。
+  5) `会话` 页里的运行上下文也顺手接上了相同 helper:
+     - 记忆检索、Gateway/Node 服务、更新通道等区域不会再混杂一批未翻译的状态词。
+- 交付清单:
+  - openclaw-guard/web/guard-ui.js
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  2) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  3) 已使用本机真实命令校准运行态字段:
+     - `openclaw status --json`
+     - 输出中确认存在 `gatewayService.label = "Scheduled Task"`、`loadedText = "registered"`、`nodeService.loadedText = "missing"`、`runtimeShort = "unknown"` 等真实值，本轮映射已覆盖。
+  4) 已在本地实例 `http://127.0.0.1:18091` 做浏览器实测:
+     - 中文下，驾驶舱运行摘要已显示 `内置 / 未知 / 已登记 / 计划任务 / 严重` 等本地化状态词。
+     - 英文下，运维页 `Tracking Source` 已显示 `PID File`，缓存预热触发来源已显示 `Server Startup Trigger`。
+     - 通知页 `摘要详情 / 原始详情` 两种模式都已可切换，且会跟随 `中文 / EN` 同步切换。
+- 风险与补充说明:
+  1) 当前 `原始详情` 会完整展示原始 JSON，像 `changedFiles` 这种大数组仍然会很长；这是刻意保留给排障场景的“重视图”，不再用于默认摘要模式。
+  2) 仍有少量低频通知标题未命中前端映射时会保持原始文本，但这时也已经被限制在摘要区最小范围内，后续可按真实出现频次继续补齐。
+
+## [2026-03-10 20:51] openclaw-guard 继续压缩通知原始详情渲染负担并核对真实低频标题 [TASK-20260310-011]
+
+- 任务来源: 用户要求继续推进我上一轮建议的两项:
+  1) 继续把 `Git 同步 / 通知` 页的长内容减重，重点处理 `原始详情` 里超长数组/超长 JSON 的渲染压力
+  2) 继续评估并补齐低频通知的双语映射，但要基于真实样本，而不是靠猜测继续堆规则
+- 仓库范围: openclaw-course
+- 当前状态: 已完成原始详情结构化预览减重，并完成真实通知样本核对与双语回归验证。
+- 实际完成:
+  1) `openclaw-guard/web/guard-ui.js` 已继续收口 `原始详情` 的渲染方式:
+     - 不再直接把整段 `prettyJson(item)` 用大块 `<pre>` 平铺到页面上。
+     - 顶层字段改为结构化 `key-value` 网格展示，例如 `通知 ID / 类型 / 来源 / 严重级别 / 创建时间 / 已读 / 原始标题 / 原始消息`。
+     - `meta` 里的长数组改为预览模式，例如 `changedFiles / embeddedRepos / missingEntries / skippedEmbeddedRepos` 会只渲染前若干项，并附带总数与折叠提示。
+     - 完整原始负载仍然保留在“复制详情”里，兼顾排障与页面性能。
+  2) 已完成真实通知样本核对:
+     - 本机通知文件 `%USERPROFILE%\\.openclaw\\guard\\state\\notifications.json` 当前唯一标题共 8 类。
+     - 真实标题分布为:
+       - `Detected unsynced .openclaw changes`
+       - `Embedded Git repositories detected`
+       - `Git sync repository initialized`
+       - `Remote repository connected`
+       - `OAuth timed out`
+       - `OAuth started`
+       - `Private repository check passed`
+       - `Git authentication saved`
+     - 核对结果: 这 8 类标题当前都已经被 `getNotificationPresentation()` 覆盖，因此这一轮没有再新增盲目映射规则。
+  3) 已完成中英双语回归验证:
+     - 英文下，`Raw Detail` 已显示为结构化原始预览，并且 `Changed Files` 只展示部分预览项，底部提示使用 `Copy Details` 获取完整内容。
+     - 中文下，`原始详情` 同样显示为结构化原始预览，提示文案和折叠提示已切换为中文，如 `Meta 预览已做折叠，超长数组不会直接平铺。完整内容请使用“复制详情”。`
+- 交付清单:
+  - openclaw-guard/web/guard-ui.js
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  2) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  3) 已在本地实例 `http://127.0.0.1:18091/#notifications` 做浏览器实测:
+     - `Raw Detail / 原始详情` 已不再出现整段巨型 JSON `<pre>` 平铺。
+     - `changedFiles` 等长数组当前只展示预览项和“其余 N 项已折叠”的提示。
+     - 英文与中文界面下，详情提示词都能随右上角语言设置联动切换。
+- 风险与补充说明:
+  1) 当前 `原始详情` 仍会一次性渲染所有通知卡片，只是每张卡片已经从“整段 JSON”收口成“结构化预览”；如果后续通知总量继续扩大，下一步更有效的优化会是“列表分页 / 虚拟化”或“只渲染当前展开卡片”。
+  2) 低频通知映射目前是按真实样本覆盖，不排除未来出现新的标题；到时继续按样本补齐会比现在先把规则写满更稳。
+
+## [2026-03-10 21:00] openclaw-guard 完成通知列表分页与原始详情单卡片按需渲染 [TASK-20260310-012]
+
+- 任务来源: 用户确认继续做两项通知页性能优化:
+  1) 给通知列表加分页，先解决“页面能打开但内容太重”的问题
+  2) 把 `原始详情` 收口成当前页只展开 1 条，避免同时渲染多份原始结构
+- 仓库范围: openclaw-course
+- 当前状态: 已完成通知分页、单卡片原始详情切换、浏览器隔离上下文实测与服务端资源校验。
+- 实际完成:
+  1) `openclaw-guard/web/guard-ui.js` 已新增通知分页状态:
+     - 新增 `state.notificationPage`
+     - 新增 `state.notificationPageSize`
+     - 默认每页 20 条，可切换为 10 / 20 / 50 条
+     - 搜索、来源筛选、标签筛选、详情模式切换时都会自动回到第一页，避免空页和错页
+  2) 已新增分页工具条和结果摘要:
+     - 通知页顶部会显示 `当前仅渲染第 X / Y 页，显示 A-B / N 条通知`
+     - 增加 `上一页 / 下一页 / 页码按钮`
+     - 页码较多时使用省略号折叠，避免按钮本身又变成长条
+  3) 已把 `原始详情` 改成“当前页只渲染 1 条”:
+     - 新增 `state.notificationExpandedRawId`
+     - 进入 `原始详情` 模式后，只对当前选中的通知卡片执行 `renderNotificationRawDetail(item)`
+     - 其它通知卡片不再渲染任何 raw payload，只保留 `查看原始详情` 按钮
+     - 点击别的通知时，原始详情在当前页内切换到新的卡片，旧卡片立即回收原始 DOM
+  4) 已增加模式提示，明确告诉用户当前策略:
+     - 中文: `为降低页面负担，原始详情改为按需展开，当前页只渲染 1 条通知的原始负载。点击卡片里的“查看原始详情”可切换。`
+     - 英文同步提供等价提示
+  5) 已确认在线服务端资源已更新:
+     - 直接请求 `http://127.0.0.1:18091/ui/guard-ui.js`，已能拿到新字符串 `当前仅渲染第`
+     - 说明这轮代码不是只改了本地文件，运行中的 Guard Web 也已经在返回最新脚本
+- 交付清单:
+  - openclaw-guard/web/guard-ui.js
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  2) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  3) 已用新的隔离浏览器上下文对 `http://127.0.0.1:18091/#notifications` 做真实 UI 回归:
+     - 中文通知页已出现分页摘要 `当前仅渲染第 1 / 5 页，显示 1-20 / 100 条通知`
+     - 分页控件已出现 `上一页 / 下一页 / 页码`
+     - 切到 `原始详情` 后，顶部已出现“当前页只渲染 1 条”的提示
+     - 初始只有第一条通知展开原始详情，其余卡片仅显示 `查看原始详情`
+     - 点击第二条通知的 `查看原始详情` 后，原始详情成功切换到第二条，第一条 raw DOM 已被回收
+- 风险与补充说明:
+  1) 本轮先用分页 + 单卡片展开解决最重的 DOM 压力，属于低风险快速减载；如果通知量后续继续增长到几百上千条，下一阶段再做虚拟列表会更合适。
+  2) 当前分页仍然是前端基于 `/api/notifications?limit=200` 的结果做分页；如果未来通知总量明显超过 200，后端再补真正的分页接口会更稳，但这不影响当前这一轮的前端减重收益。
+
+## [2026-03-10 21:08] openclaw-guard 完成通知分页条文件夹化与按日期分组展示 [TASK-20260310-013]
+
+- 任务来源: 用户同意继续做通知页的两项可读性优化:
+  1) 把分页条从普通按钮改成更接近“文件夹/页签切换”的呈现方式
+  2) 把当前页通知按日期分组，降低扫读和定位成本
+- 仓库范围: openclaw-course
+- 当前状态: 已完成通知日期分组、分页页签样式增强，并通过多页浏览器回归验证。
+- 实际完成:
+  1) `openclaw-guard/web/guard-ui.js` 已新增通知日期分组 helper:
+     - `getNotificationDayKey()`
+     - `formatNotificationDayLabel()`
+     - `groupNotificationsByDay()`
+     - 会在当前分页结果内按本地日期聚合通知
+  2) 日期分组标签已支持相对时间 + 日期组合:
+     - 中文示例: `今天 · 3月10日周二`、`昨天 · 3月9日周一`、`2 天前 · 3月8日周日`
+     - 英文界面会显示等价标签，例如 `Today · Tue, Mar 10`
+  3) 通知列表渲染结构已改为“分页后分组”:
+     - 先按筛选结果分页
+     - 再对当前页 `pagedItems` 做日期分组
+     - 每组显示日期标题与 `N 条通知 / N notifications`
+  4) `openclaw-guard/web/guard-ui.css` 已补通知页专用样式:
+     - 新增 `notify-page-folder`、`notify-page-folder-tab` 等样式，把页码条改成文件夹式页签
+     - 新增 `notify-day-group`、`notify-day-label` 等样式，让日期分组更像章节分隔，而不是普通文本
+     - 已补移动端收口规则，避免窄屏下分页页签挤压失真
+- 交付清单:
+  - openclaw-guard/web/guard-ui.js
+  - openclaw-guard/web/guard-ui.css
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  2) 已在隔离浏览器上下文中重新加载 `http://127.0.0.1:18091/#notifications` 验证:
+     - 第一页显示了日期分组头 `今天 · 3月10日周二`
+     - 页码在可访问性树中已呈现为 `tab`，确认分页结构已切成页签语义
+     - 最后一页显示了 `2 天前 · 3月8日周日`，说明老日期分组也正常
+  3) 已确认在线服务端返回的是本轮新脚本和新样式，而不是本地未加载版本
+- 风险与补充说明:
+  1) 当前日期分组是“对当前页做分组”，不是全量时间轴；这是为了保持分页结果稳定，避免同一组跨页造成认知混乱。
+  2) 当前第一页恰好全是 3 月 10 日通知，因此只显示一组；这是数据分布导致，不是分组失效。翻到最后一页已验证 older day label 正常展示。
+
+## [2026-03-11 10:32] openclaw-guard 补齐完整重启 Guard 文档与工作日志并整理提交范围 [TASK-20260311-001]
+
+- 任务来源: 用户要求把“完整重启 Guard”功能接进“虾护卫”的安装/运维文档和工作日志，并顺手提交 Git。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成 README 运维文档重写、完整重启说明接入、工作日志补记，并整理出可直接提交的 Guard 相关文件集合。
+- 实际完成:
+  1) `openclaw-guard/README.md` 已重写为当前 Guard 原生工作台版本文档:
+     - 去掉旧的 Mission Control 侧挂叙述，改为当前 `虾护卫` 原生工作台定位。
+     - 补齐 `安装 / 启动 / 常用 CLI / Web 工作台入口 / OpenClaw 未安装时的处理 / 完整重启 Guard / 运维建议 / 常见排障 / 验证建议`。
+     - 明确区分 `完整重启 Guard`、`重启 Gateway`、`一键停后台服务` 三类动作的适用场景。
+  2) 文档中已接入完整重启 Guard 的三种使用入口:
+     - 右上角全局按钮 `完整重启 Guard`
+     - 运维页 `完整重启 Guard`
+     - 运维页 `Guard + Gateway 全重启`
+  3) 文档中已补齐完整重启的 CLI 和 API:
+     - `npx tsx src/index.ts guard status`
+     - `npx tsx src/index.ts guard restart --port 18088`
+     - `npx tsx src/index.ts guard restart --port 18088 --restart-gateway`
+     - `GET /api/guard/restart-status`
+     - `POST /api/guard/restart`
+  4) 已把本轮实现补记到 `worklogs/codex-work-logs.md`，与前面缓存、分块渲染、通知减重等工作保持连续记录。
+- 交付清单:
+  - openclaw-guard/README.md
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 文档已按当前代码能力对齐，不再把 Mission Control 作为主入口描述。
+  2) 完整重启 Guard 的 Web / CLI / API 三条入口都已写入文档，便于后续客户机安装与运维使用。
+- 风险与补充说明:
+  1) 当前仓库里仍有其他未提交工作项，本次提交会聚焦 Guard 原生工作台与文档相关文件，避免把不在本轮范围内的内容混在一起。
+  2) 全量测试仍存在既有失败项，主要在 `git-sync` 和 `openclaw-runtime`；本轮完整重启 Guard 的定向构建与测试已单独验证通过。

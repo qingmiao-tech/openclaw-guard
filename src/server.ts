@@ -39,7 +39,7 @@ import {
   setFallbackModels,
   PROVIDERS as AI_PROVIDERS,
 } from './models.js';
-import { getServiceStatus, startService, stopService, restartService, getLogs } from './service-mgr.js';
+import { getServiceStatus, getServiceActionStatus, startService, stopService, restartService, getLogs } from './service-mgr.js';
 import {
   captureSessionOverview,
   getDashboardOverview,
@@ -71,7 +71,7 @@ import {
 } from './git-sync.js';
 import { listNotifications, markNotificationRead, markAllNotifications, clearNotifications, clearReadNotifications, getNotificationSummary } from './notifications.js';
 import { getWebBackgroundStatus, stopWebBackgroundService, registerBackgroundProcess, startWebBackgroundService } from './web-background.js';
-import { getCachePrewarmStatus, scheduleServerCachePrewarm } from './cache-prewarm.js';
+import { getCachePrewarmStatus, scheduleServerCachePrewarm, spawnCachePrewarm } from './cache-prewarm.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -256,6 +256,12 @@ export function startServer(port: number) {
           jsonResponse(res, getCachePrewarmStatus());
           return;
         }
+        if (pathname === '/api/cache-prewarm/trigger' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          const trigger = typeof body.trigger === 'string' && body.trigger.trim() ? body.trigger.trim() : 'web-manual';
+          jsonResponse(res, spawnCachePrewarm(trigger));
+          return;
+        }
 
         if (pathname === '/api/openclaw/status') {
           jsonResponse(res, detectOpenClaw());
@@ -312,6 +318,10 @@ export function startServer(port: number) {
 
         if (pathname === '/api/service/status') {
           jsonResponse(res, getServiceStatus());
+          return;
+        }
+        if (pathname === '/api/service/action-status') {
+          jsonResponse(res, getServiceActionStatus());
           return;
         }
         if (pathname === '/api/service/start' && req.method === 'POST') {
@@ -743,6 +753,3 @@ export function startServer(port: number) {
 
   return tryListen(0);
 }
-
-
-

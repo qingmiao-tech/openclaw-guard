@@ -1,18 +1,107 @@
+﻿import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawn, spawnSync } from 'node:child_process';
-import { detectPlatform } from './platform.js';
 import { loadConfig, getNested } from './config.js';
+import { ensureGuardLayout, readJsonFile, writeJsonFile } from './guard-state.js';
+import { detectPlatform } from './platform.js';
 import { getPersistentCachedValue, invalidatePersistentCache } from './persistent-cache.js';
 
+export type ServiceActionName = 'start' | 'stop' | 'restart';
+export type ServiceActionPhase = 'idle' | 'running' | 'completed' | 'error';
+
+export interface ServiceActionState {
+  action: ServiceActionName | null;
+  phase: ServiceActionPhase;
+  pid: number | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  lastUpdatedAt: string | null;
+  message: string | null;
+  error: string | null;
+}
+
 export interface ServiceStatus {
+  running: boolean;
+  pid: number | null;
+  port: number;
+  action: ServiceActionState;
+}
+
+export interface ServiceActionResult {
+  success: boolean;
+  scheduled?: boolean;
+  message: string;
+  action: ServiceActionState;
+  status: ServiceStatus;
+}
+
+interface ServiceStatusSnapshot {
   running: boolean;
   pid: number | null;
   port: number;
 }
 
 const SERVICE_STATUS_CACHE_KEY = 'gateway-service-status-v1';
+const DEFAULT_ACTION_STATE: ServiceActionState = {
+  action: null,
+  phase: 'idle',
+  pid: null,
+  startedAt: null,
+  finishedAt: null,
+  lastUpdatedAt: null,
+  message: null,
+  error: null,
+};
+
+function nowIso(): string {
+  return new Date().toISOString();
+}
 
 function sleepMs(ms: number) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function getActionStateFile(): string {
+  return path.join(ensureGuardLayout().stateDir, 'service-action.json');
+}
+
+function normalizeActionState(input?: Partial<ServiceActionState> | null): ServiceActionState {
+  const phase = input?.phase;
+  return {
+    action: input?.action === 'start' || input?.action === 'stop' || input?.action === 'restart' ? input.action : null,
+    phase: phase === 'running' || phase === 'completed' || phase === 'error' ? phase : 'idle',
+    pid: typeof input?.pid === 'number' && Number.isInteger(input.pid) && input.pid > 0 ? input.pid : null,
+    startedAt: typeof input?.startedAt === 'string' ? input.startedAt : null,
+    finishedAt: typeof input?.finishedAt === 'string' ? input.finishedAt : null,
+    lastUpdatedAt: typeof input?.lastUpdatedAt === 'string' ? input.lastUpdatedAt : null,
+    message: typeof input?.message === 'string' && input.message.trim() ? input.message : null,
+    error: typeof input?.error === 'string' && input.error.trim() ? input.error : null,
+  };
+}
+
+function saveActionState(next: Partial<ServiceActionState>): ServiceActionState {
+  const merged = normalizeActionState({
+    ...loadActionState(),
+    ...next,
+    lastUpdatedAt: next.lastUpdatedAt || nowIso(),
+  });
+  writeJsonFile(getActionStateFile(), merged);
+  return merged;
+}
+
+function loadActionState(): ServiceActionState {
+  return normalizeActionState(readJsonFile<ServiceActionState | null>(getActionStateFile(), DEFAULT_ACTION_STATE));
+}
+
+function isPidAlive(pid: number | null | undefined): boolean {
+  if (!Number.isInteger(pid) || !pid || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function runTextCommand(command: string, args: string[], timeout = 10_000): string {
@@ -31,6 +120,14 @@ function runTextCommand(command: string, args: string[], timeout = 10_000): stri
 
 function invalidateServiceStatusCache(): void {
   invalidatePersistentCache(SERVICE_STATUS_CACHE_KEY);
+}
+
+function getBaseServiceStatus(): ServiceStatusSnapshot {
+  return getPersistentCachedValue(SERVICE_STATUS_CACHE_KEY, {
+    ttlMs: 2_500,
+    staleIfErrorMs: 10_000,
+    loader: computeServiceStatusSnapshot,
+  });
 }
 
 export function getGatewayPort(): number {
@@ -85,24 +182,78 @@ function runOpenClaw(args: string[]): { success: boolean; output: string } {
   return { success: true, output: String(result.stdout || '').trim() };
 }
 
-function computeServiceStatus(): ServiceStatus {
+function computeServiceStatusSnapshot(): ServiceStatusSnapshot {
   const port = getGatewayPort();
   const pid = checkPortListening(port);
   return { running: pid !== null, pid, port };
 }
 
-export function getServiceStatus(): ServiceStatus {
-  return getPersistentCachedValue(SERVICE_STATUS_CACHE_KEY, {
-    ttlMs: 2_500,
-    staleIfErrorMs: 10_000,
-    loader: computeServiceStatus,
-  });
+function resolveProjectRoot(): string {
+  const modulePath = fileURLToPath(import.meta.url);
+  return path.resolve(path.dirname(modulePath), '..');
 }
 
-export function startService(): { success: boolean; message: string } {
-  const status = computeServiceStatus();
+function resolveServiceTaskCommand(action: ServiceActionName): { command: string; args: string[]; cwd: string } | null {
+  const rootDir = resolveProjectRoot();
+  const argvEntry = process.argv[1] ? path.resolve(process.argv[1]) : null;
+  const distEntry = path.join(rootDir, 'dist', 'index.js');
+  const srcEntry = path.join(rootDir, 'src', 'index.ts');
+  const tsxCli = path.join(rootDir, 'node_modules', 'tsx', 'dist', 'cli.mjs');
+
+  if (argvEntry && argvEntry.endsWith('.ts') && fs.existsSync(tsxCli) && fs.existsSync(srcEntry)) {
+    return {
+      command: process.execPath,
+      args: [tsxCli, srcEntry, 'service-task', '--action', action, '--json'],
+      cwd: rootDir,
+    };
+  }
+
+  if (argvEntry && argvEntry.endsWith('.js') && fs.existsSync(argvEntry)) {
+    return {
+      command: process.execPath,
+      args: [argvEntry, 'service-task', '--action', action, '--json'],
+      cwd: rootDir,
+    };
+  }
+
+  if (fs.existsSync(distEntry)) {
+    return {
+      command: process.execPath,
+      args: [distEntry, 'service-task', '--action', action, '--json'],
+      cwd: rootDir,
+    };
+  }
+
+  if (fs.existsSync(tsxCli) && fs.existsSync(srcEntry)) {
+    return {
+      command: process.execPath,
+      args: [tsxCli, srcEntry, 'service-task', '--action', action, '--json'],
+      cwd: rootDir,
+    };
+  }
+
+  return null;
+}
+
+function waitForGatewayState(expectedRunning: boolean, timeoutMs = 15_000, intervalMs = 1_000): ServiceStatusSnapshot {
+  const deadline = Date.now() + timeoutMs;
+  let latest = computeServiceStatusSnapshot();
+  while (Date.now() < deadline) {
+    latest = computeServiceStatusSnapshot();
+    if (latest.running === expectedRunning) {
+      invalidateServiceStatusCache();
+      return latest;
+    }
+    sleepMs(intervalMs);
+  }
+  invalidateServiceStatusCache();
+  return latest;
+}
+
+function performStartService(): { success: boolean; message: string } {
+  const status = computeServiceStatusSnapshot();
   if (status.running) {
-    return { success: false, message: `Gateway 已在运行中 (PID: ${status.pid})。` };
+    return { success: false, message: `Gateway 已在运行中（PID: ${status.pid}）。` };
   }
 
   const bin = findOpenClawBin();
@@ -119,56 +270,218 @@ export function startService(): { success: boolean; message: string } {
     });
     child.unref();
   } catch (error) {
-    return { success: false, message: `启动失败: ${error}` };
+    return { success: false, message: `启动失败: ${error instanceof Error ? error.message : String(error)}` };
   }
 
-  for (let index = 0; index < 15; index += 1) {
-    sleepMs(1000);
-    const pid = checkPortListening(getGatewayPort());
-    if (pid) {
-      invalidateServiceStatusCache();
-      return { success: true, message: `Gateway 已启动 (PID: ${pid})。` };
-    }
+  const started = waitForGatewayState(true, 20_000);
+  if (started.running) {
+    return { success: true, message: `Gateway 已启动（PID: ${started.pid}）。` };
   }
 
-  invalidateServiceStatusCache();
   return { success: false, message: 'Gateway 启动超时，请检查 openclaw gateway 日志。' };
 }
 
-export function stopService(): { success: boolean; message: string } {
+function performStopService(): { success: boolean; message: string } {
+  const before = computeServiceStatusSnapshot();
+  if (!before.running) {
+    return { success: true, message: 'Gateway 当前未运行。' };
+  }
+
   const result = runOpenClaw(['gateway', 'stop']);
   if (!result.success) {
     runOpenClaw(['gateway', 'stop', '--force']);
   }
 
-  invalidateServiceStatusCache();
-  const status = computeServiceStatus();
-  if (!status.running) {
+  const stopped = waitForGatewayState(false, 15_000);
+  if (!stopped.running) {
     return { success: true, message: 'Gateway 已停止。' };
   }
 
-  return { success: false, message: `Gateway 停止失败，当前 PID: ${status.pid}` };
+  return { success: false, message: `Gateway 停止失败，当前 PID: ${stopped.pid}` };
 }
 
-export function restartService(): { success: boolean; message: string } {
+function performRestartService(): { success: boolean; message: string } {
   const result = runOpenClaw(['gateway', 'restart']);
-  sleepMs(2000);
-
-  invalidateServiceStatusCache();
-  const status = computeServiceStatus();
-  if (status.running) {
-    return { success: true, message: `Gateway 已重启 (PID: ${status.pid})。` };
+  const restarted = waitForGatewayState(true, 20_000);
+  if (restarted.running) {
+    return { success: true, message: `Gateway 已重启（PID: ${restarted.pid}）。` };
   }
 
   if (!result.success) {
-    stopService();
-    sleepMs(1000);
-    return startService();
+    const stopped = performStopService();
+    if (!stopped.success) return stopped;
+    return performStartService();
   }
 
-  stopService();
-  sleepMs(1000);
-  return startService();
+  return { success: false, message: 'Gateway 重启后未在预期时间内恢复监听，请检查日志。' };
+}
+
+export function getServiceActionStatus(): ServiceActionState {
+  const state = loadActionState();
+  if (state.phase === 'running' && state.pid && !isPidAlive(state.pid) && !state.finishedAt) {
+    return saveActionState({
+      ...state,
+      phase: 'error',
+      finishedAt: nowIso(),
+      message: '后台任务意外结束，请重新获取状态。',
+      error: state.error || '后台任务进程已退出。',
+    });
+  }
+  return state;
+}
+
+export function getServiceStatus(): ServiceStatus {
+  const snapshot = getBaseServiceStatus();
+  return {
+    ...snapshot,
+    action: getServiceActionStatus(),
+  };
+}
+
+function scheduleServiceAction(action: ServiceActionName): ServiceActionResult {
+  const currentAction = getServiceActionStatus();
+  if (currentAction.phase === 'running' && currentAction.pid && isPidAlive(currentAction.pid)) {
+    return {
+      success: false,
+      scheduled: false,
+      message: '当前已有 Gateway 后台任务正在执行，请稍后再试。',
+      action: currentAction,
+      status: getServiceStatus(),
+    };
+  }
+
+  if (!findOpenClawBin()) {
+    const failed = saveActionState({
+      action,
+      phase: 'error',
+      pid: null,
+      startedAt: null,
+      finishedAt: nowIso(),
+      message: '未检测到 openclaw 命令，请先完成安装。',
+      error: 'openclaw command not found',
+    });
+    return {
+      success: false,
+      scheduled: false,
+      message: failed.message || '未检测到 openclaw 命令，请先完成安装。',
+      action: failed,
+      status: getServiceStatus(),
+    };
+  }
+
+  const command = resolveServiceTaskCommand(action);
+  if (!command) {
+    const failed = saveActionState({
+      action,
+      phase: 'error',
+      pid: null,
+      startedAt: null,
+      finishedAt: nowIso(),
+      message: '无法解析 Gateway 后台任务入口。',
+      error: 'Unable to resolve service task command.',
+    });
+    return {
+      success: false,
+      scheduled: false,
+      message: failed.message || '无法解析 Gateway 后台任务入口。',
+      action: failed,
+      status: getServiceStatus(),
+    };
+  }
+
+  try {
+    const child = spawn(command.command, command.args, {
+      cwd: command.cwd,
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+      env: {
+        ...process.env,
+        OPENCLAW_GUARD_SERVICE_CHILD: '1',
+      },
+    });
+    child.unref();
+
+    const scheduled = saveActionState({
+      action,
+      phase: 'running',
+      pid: typeof child.pid === 'number' ? child.pid : null,
+      startedAt: nowIso(),
+      finishedAt: null,
+      message: `已在后台发起 Gateway ${action === 'start' ? '启动' : action === 'stop' ? '停止' : '重启'}，请稍候。`,
+      error: null,
+    });
+    invalidateServiceStatusCache();
+    return {
+      success: true,
+      scheduled: true,
+      message: scheduled.message || '后台任务已发起。',
+      action: scheduled,
+      status: getServiceStatus(),
+    };
+  } catch (error) {
+    const failed = saveActionState({
+      action,
+      phase: 'error',
+      pid: null,
+      startedAt: null,
+      finishedAt: nowIso(),
+      message: `无法发起 Gateway ${action === 'start' ? '启动' : action === 'stop' ? '停止' : '重启'}任务。`,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      success: false,
+      scheduled: false,
+      message: failed.message || '无法发起后台任务。',
+      action: failed,
+      status: getServiceStatus(),
+    };
+  }
+}
+
+export function runServiceActionTask(action: ServiceActionName): ServiceActionState {
+  const startedAt = nowIso();
+  saveActionState({
+    action,
+    phase: 'running',
+    pid: process.pid,
+    startedAt,
+    finishedAt: null,
+    message: `正在执行 Gateway ${action === 'start' ? '启动' : action === 'stop' ? '停止' : '重启'}任务。`,
+    error: null,
+  });
+
+  invalidateServiceStatusCache();
+
+  const result = action === 'start'
+    ? performStartService()
+    : action === 'stop'
+      ? performStopService()
+      : performRestartService();
+
+  invalidateServiceStatusCache();
+
+  return saveActionState({
+    action,
+    phase: result.success ? 'completed' : 'error',
+    pid: process.pid,
+    startedAt,
+    finishedAt: nowIso(),
+    message: result.message,
+    error: result.success ? null : result.message,
+  });
+}
+
+export function startService(): ServiceActionResult {
+  return scheduleServiceAction('start');
+}
+
+export function stopService(): ServiceActionResult {
+  return scheduleServiceAction('stop');
+}
+
+export function restartService(): ServiceActionResult {
+  return scheduleServiceAction('restart');
 }
 
 export function getLogs(lines = 100): string[] {

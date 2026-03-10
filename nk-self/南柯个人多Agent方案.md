@@ -351,3 +351,28 @@ nk-self/
 
 
 
+
+---
+
+## 十一、落地文件与一键初始化
+
+本目录现已补齐以下落地文件：
+
+- 正式版个人配置：`nk-self/openclaw.personal.final.json`
+- 初始化脚本：`nk-self/scripts/init-nk-self.ps1`
+- 配置合并器：`nk-self/scripts/init-nk-self.mjs`
+- 脚本说明：`nk-self/scripts/README.md`
+
+### 推荐用法
+
+先只生成本地正式版配置：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\nk-self\scripts\init-nk-self.ps1
+```
+
+如果确认没问题，再直接合并到当前主配置：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\nk-self\scripts\init-nk-self.ps1 -ApplyToMainConfig
+```

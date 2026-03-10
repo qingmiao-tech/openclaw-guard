@@ -1,0 +1,112 @@
+﻿{
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "REPLACE_WITH_PRIMARY_MODEL"
+      },
+      "workspace": "~/.openclaw/nk-self/workspace",
+      "compaction": {
+        "mode": "safeguard"
+      },
+      "maxConcurrent": 4,
+      "subagents": {
+        "maxConcurrent": 8
+      }
+    },
+    "list": [
+      {
+        "id": "nk-nanxin",
+        "default": true,
+        "name": "南心-总管（人生中枢 / 任务总控）",
+        "workspace": "~/.openclaw/nk-self/workspaces/nk-nanxin",
+        "subagents": {
+          "allowAgents": [
+            "*"
+          ]
+        }
+      },
+      {
+        "id": "nk-nangong",
+        "name": "南工-研造（产品开发 / AI 培训）",
+        "workspace": "~/.openclaw/nk-self/workspaces/nk-nangong"
+      },
+      {
+        "id": "nk-nanmo",
+        "name": "南墨-文枢（内容创作 / 多端分发）",
+        "workspace": "~/.openclaw/nk-self/workspaces/nk-nanmo"
+      },
+      {
+        "id": "nk-nanchou",
+        "name": "南筹-经营（项目推进 / 业务节奏）",
+        "workspace": "~/.openclaw/nk-self/workspaces/nk-nanchou"
+      },
+      {
+        "id": "nk-nanqi",
+        "name": "南岐-杏林（中医学习 / 经典研读）",
+        "workspace": "~/.openclaw/nk-self/workspaces/nk-nanqi"
+      },
+      {
+        "id": "nk-nanhe",
+        "name": "南和-家宁（备孕支持 / 家庭健康）",
+        "workspace": "~/.openclaw/nk-self/workspaces/nk-nanhe"
+      },
+      {
+        "id": "nk-nanchuang",
+        "name": "南窗-读伴（读书导师 / 知识沉淀）",
+        "workspace": "~/.openclaw/nk-self/workspaces/nk-nanchuang"
+      }
+    ]
+  },
+  "tools": {
+    "profile": "messaging",
+    "agentToAgent": {
+      "enabled": true,
+      "allow": [
+        "nk-nanxin",
+        "nk-nangong",
+        "nk-nanmo",
+        "nk-nanchou",
+        "nk-nanqi",
+        "nk-nanhe",
+        "nk-nanchuang"
+      ]
+    },
+    "sessions": {
+      "visibility": "all"
+    }
+  },
+  "messages": {
+    "ackReactionScope": "group-mentions"
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "boot-md": {
+          "enabled": true
+        },
+        "bootstrap-extra-files": {
+          "enabled": true
+        },
+        "command-logger": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "bindings": [],
+  "meta": {
+    "template": "nk-self-personal-multi-agent-final",
+    "createdAt": "2026-03-10",
+    "notes": "Standalone personal config skeleton. Replace agents.defaults.model.primary or merge into existing openclaw.json via scripts/init-nk-self.ps1."
+  }
+}

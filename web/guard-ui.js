@@ -238,6 +238,8 @@
     pendingPanelFocus: null,
   };
 
+  let activeDialog = null;
+
   function t(key) {
     const parts = key.split('.');
     let value = I18N[state.lang] || I18N.zh;
@@ -254,6 +256,14 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  function escapeMultilineHtml(value) {
+    return escapeHtml(value).replace(/\n/g, '<br />');
+  }
+
+  function normalizeEditorText(value) {
+    return String(value ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   }
 
   function prettyJson(value) {
@@ -443,6 +453,235 @@
     });
   }
 
+  function dialogText(key) {
+    const zh = {
+      confirm: '确认',
+      close: '关闭',
+      cancel: '取消',
+      manualCopy: '手动复制',
+      continue: '继续',
+      create: '创建',
+      inputPlaceholder: '请输入内容',
+      inputLabel: '内容',
+      confirmTitle: '请确认操作',
+      inputTitle: '请输入',
+    };
+    const en = {
+      confirm: 'Confirm',
+      close: 'Close',
+      cancel: 'Cancel',
+      manualCopy: 'Copy Manually',
+      continue: 'Continue',
+      create: 'Create',
+      inputPlaceholder: 'Enter a value',
+      inputLabel: 'Value',
+      confirmTitle: 'Please confirm',
+      inputTitle: 'Enter a value',
+    };
+    const dict = state.lang === 'zh' ? zh : en;
+    return dict[key] || key;
+  }
+
+  function closeActiveDialog(result = false) {
+    if (!activeDialog?.close) return;
+    activeDialog.close(result);
+  }
+
+  function showModalDialog(options = {}) {
+    if (activeDialog?.close) {
+      activeDialog.close(options.replaceResult ?? false);
+    }
+
+    return new Promise((resolve) => {
+      const tone = options.tone || 'info';
+      const showCancel = options.showCancel !== false;
+      const allowBackdropClose = options.allowBackdropClose !== false;
+      const showCloseButton = options.showCloseButton !== false;
+      const inputMode = options.inputMode || 'none';
+      const title = options.title || dialogText(inputMode === 'input' ? 'inputTitle' : 'confirmTitle');
+      const message = options.message ? `<div class="guard-modal-message">${escapeMultilineHtml(options.message)}</div>` : '';
+      const description = options.description ? `<div class="guard-modal-description">${escapeMultilineHtml(options.description)}</div>` : '';
+      const inputLabel = options.inputLabel
+        ? `<label class="guard-modal-label" for="guard-modal-input">${escapeHtml(options.inputLabel)}</label>`
+        : '';
+      const promptValue = String(options.value ?? '');
+      const promptPlaceholder = escapeHtml(options.placeholder || dialogText('inputPlaceholder'));
+      const promptField = inputMode === 'input'
+        ? `
+          <div class="guard-modal-field">
+            ${inputLabel}
+            ${options.multiline
+              ? `<textarea id="guard-modal-input" class="guard-modal-input" placeholder="${promptPlaceholder}">${escapeHtml(promptValue)}</textarea>`
+              : `<input id="guard-modal-input" class="guard-modal-input" type="text" placeholder="${promptPlaceholder}" value="${escapeHtml(promptValue)}" />`}
+          </div>
+        `
+        : '';
+      const valueField = inputMode === 'value'
+        ? `
+          <div class="guard-modal-field">
+            ${options.valueLabel ? `<div class="guard-modal-label">${escapeHtml(options.valueLabel)}</div>` : ''}
+            <textarea id="guard-modal-value" class="guard-modal-value" readonly>${escapeHtml(promptValue)}</textarea>
+          </div>
+        `
+        : '';
+      const cancelText = options.cancelText || dialogText('cancel');
+      const confirmText = options.confirmText || dialogText(showCancel ? 'confirm' : 'close');
+      const overlay = document.createElement('div');
+      overlay.className = 'guard-modal-overlay';
+      overlay.innerHTML = `
+        <div class="guard-modal-card guard-modal-${escapeHtml(tone)}" role="dialog" aria-modal="true" aria-labelledby="guard-modal-title">
+          <div class="guard-modal-head">
+            <div class="guard-modal-head-text">
+              <div class="guard-modal-kicker">${escapeHtml(options.kicker || dialogText(tone === 'danger' ? 'confirm' : 'continue'))}</div>
+              <h3 id="guard-modal-title">${escapeHtml(title)}</h3>
+            </div>
+            ${showCloseButton ? `<button type="button" class="guard-modal-close" data-dialog-close aria-label="${escapeHtml(dialogText('close'))}">×</button>` : ''}
+          </div>
+          ${message}
+          ${description}
+          ${promptField}
+          ${valueField}
+          <div class="guard-modal-actions">
+            ${showCancel ? `<button type="button" class="action-btn" data-dialog-cancel>${escapeHtml(cancelText)}</button>` : ''}
+            <button type="button" class="action-btn ${tone === 'danger' ? 'danger' : 'primary'}" data-dialog-confirm>${escapeHtml(confirmText)}</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+      document.body.classList.add('guard-modal-open');
+
+      const dialog = {
+        overlay,
+        resolve,
+        closed: false,
+        close(result) {
+          if (dialog.closed) return;
+          dialog.closed = true;
+          document.removeEventListener('keydown', handleKeydown);
+          overlay.remove();
+          document.body.classList.remove('guard-modal-open');
+          if (activeDialog === dialog) activeDialog = null;
+          resolve(result);
+        },
+      };
+      activeDialog = dialog;
+
+      const confirmButton = overlay.querySelector('[data-dialog-confirm]');
+      const cancelButton = overlay.querySelector('[data-dialog-cancel]');
+      const closeButton = overlay.querySelector('[data-dialog-close]');
+      const inputElement = overlay.querySelector('#guard-modal-input');
+      const valueElement = overlay.querySelector('#guard-modal-value');
+
+      const confirmDialog = () => {
+        if (inputMode === 'input') {
+          dialog.close(inputElement ? inputElement.value : '');
+          return;
+        }
+        dialog.close(true);
+      };
+
+      const cancelDialog = () => {
+        if (inputMode === 'input') {
+          dialog.close(null);
+          return;
+        }
+        dialog.close(false);
+      };
+
+      function handleKeydown(event) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          cancelDialog();
+          return;
+        }
+        if (event.key !== 'Enter') return;
+        if (inputMode === 'input' && options.multiline) {
+          if (!(event.ctrlKey || event.metaKey)) return;
+        }
+        if (document.activeElement === cancelButton || document.activeElement === closeButton) return;
+        event.preventDefault();
+        confirmDialog();
+      }
+
+      document.addEventListener('keydown', handleKeydown);
+      overlay.addEventListener('click', (event) => {
+        if (event.target === overlay && allowBackdropClose) {
+          cancelDialog();
+        }
+      });
+      confirmButton?.addEventListener('click', confirmDialog);
+      cancelButton?.addEventListener('click', cancelDialog);
+      closeButton?.addEventListener('click', cancelDialog);
+
+      setTimeout(() => {
+        if (inputElement) {
+          inputElement.focus();
+          inputElement.select?.();
+          return;
+        }
+        if (valueElement) {
+          valueElement.focus();
+          valueElement.select?.();
+          return;
+        }
+        confirmButton?.focus();
+      }, 0);
+    });
+  }
+
+  async function showConfirmDialog(options = {}) {
+    return showModalDialog({
+      title: options.title,
+      message: options.message,
+      description: options.description,
+      confirmText: options.confirmText || dialogText('confirm'),
+      cancelText: options.cancelText || dialogText('cancel'),
+      tone: options.tone || 'warn',
+      showCancel: true,
+      showCloseButton: options.showCloseButton,
+      allowBackdropClose: options.allowBackdropClose,
+      kicker: options.kicker,
+    });
+  }
+
+  async function showPromptDialog(options = {}) {
+    return showModalDialog({
+      title: options.title,
+      message: options.message,
+      description: options.description,
+      value: options.value || '',
+      inputMode: 'input',
+      multiline: !!options.multiline,
+      placeholder: options.placeholder,
+      inputLabel: options.inputLabel || dialogText('inputLabel'),
+      confirmText: options.confirmText || dialogText('confirm'),
+      cancelText: options.cancelText || dialogText('cancel'),
+      tone: options.tone || 'info',
+      showCancel: true,
+      showCloseButton: options.showCloseButton,
+      allowBackdropClose: options.allowBackdropClose,
+      kicker: options.kicker,
+    });
+  }
+
+  async function showValueDialog(options = {}) {
+    return showModalDialog({
+      title: options.title,
+      message: options.message,
+      description: options.description,
+      value: options.value || '',
+      valueLabel: options.valueLabel,
+      inputMode: 'value',
+      confirmText: options.confirmText || dialogText('close'),
+      tone: options.tone || 'info',
+      showCancel: false,
+      showCloseButton: true,
+      allowBackdropClose: true,
+      kicker: options.kicker,
+    });
+  }
+
   function showToast(message, type = 'success') {
     const toast = document.getElementById('guard-toast');
     if (!toast) return;
@@ -506,18 +745,39 @@
       btn.textContent = t('loginLoading');
       if (errDiv) errDiv.style.display = 'none';
       try {
-        const result = await fetch('/api/auth/login', {
+        const resp = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ password }),
-        }).then((r) => r.json());
+        });
+        const result = await resp.json();
         if (result.success && result.token) {
           state.authToken = result.token;
           localStorage.setItem(STORAGE_TOKEN, result.token);
           renderShell();
           loadActiveTab();
+        } else if (resp.status === 429 && result.retryAfter) {
+          // 速率限制：显示倒计时
+          let remaining = result.retryAfter;
+          const rateLimitMsg = () => state.lang === 'zh'
+            ? `尝试过于频繁，请 ${remaining} 秒后重试`
+            : `Too many attempts, retry in ${remaining}s`;
+          if (errDiv) { errDiv.textContent = rateLimitMsg(); errDiv.style.display = ''; }
+          btn.disabled = true;
+          const countdown = setInterval(() => {
+            remaining -= 1;
+            if (remaining <= 0) {
+              clearInterval(countdown);
+              btn.disabled = false;
+              btn.textContent = t('loginBtn');
+              if (errDiv) errDiv.style.display = 'none';
+            } else {
+              if (errDiv) errDiv.textContent = rateLimitMsg();
+              btn.textContent = `${remaining}s`;
+            }
+          }, 1000);
         } else {
-          if (errDiv) { errDiv.textContent = t('loginError'); errDiv.style.display = ''; }
+          if (errDiv) { errDiv.textContent = result.error || t('loginError'); errDiv.style.display = ''; }
           btn.disabled = false;
           btn.textContent = t('loginBtn');
           pwdInput?.focus();
@@ -531,6 +791,7 @@
   }
 
   function showChangePwdDialog() {
+    closeActiveDialog(false);
     const overlay = document.createElement('div');
     overlay.id = 'guard-changepwd-overlay';
     overlay.innerHTML = `
@@ -592,7 +853,10 @@
     if (updateHash) {
       history.replaceState(null, '', `#${state.activeTab}`);
     }
-    renderShell();
+    document.querySelectorAll('[data-tab]').forEach((button) => {
+      const isActive = button.getAttribute('data-tab') === state.activeTab;
+      button.classList.toggle('active', isActive);
+    });
     loadActiveTab();
   }
 
@@ -1089,9 +1353,8 @@
     };
   }
 
-  function getNotificationDetailRows(item, present) {
-    const meta = item?.meta || {};
-    const rows = [
+  function getNotificationSummaryMetaItems(item, present) {
+    return [
       {
         label: state.lang === 'zh' ? '时间' : 'Time',
         value: formatDate(item?.createdAt),
@@ -1107,8 +1370,34 @@
       {
         label: state.lang === 'zh' ? '严重级别' : 'Severity',
         value: present.severityLabel,
+        tone: item?.severity === 'success'
+          ? 'success'
+          : item?.severity === 'warning'
+            ? 'warn'
+            : item?.severity === 'error'
+              ? 'danger'
+              : '',
       },
     ];
+  }
+
+  function renderNotificationSummaryMetaStrip(item, present) {
+    const items = getNotificationSummaryMetaItems(item, present);
+    return `
+      <div class="notify-detail-strip">
+        ${items.map((entry) => `
+          <div class="notify-detail-pill ${entry.tone || ''}">
+            <span class="notify-detail-pill-label">${escapeHtml(entry.label)}</span>
+            <span class="notify-detail-pill-value">${escapeHtml(entry.value)}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function getNotificationDetailRows(item, present) {
+    const meta = item?.meta || {};
+    const rows = [];
     const appendRow = (labelZh, labelEn, value) => {
       const text = String(value || '').trim();
       if (!text) return;
@@ -1132,6 +1421,7 @@
   function renderNotificationSummaryDetail(item, present) {
     const meta = item?.meta || {};
     const metaSections = [];
+    const detailRows = getNotificationDetailRows(item, present);
     const embeddedRepos = getNotificationMetaList(meta.embeddedRepos);
     const missingEntries = getNotificationMetaList(meta.missingEntries);
     const skippedRepos = getNotificationMetaList(meta.skippedEmbeddedRepos);
@@ -1157,7 +1447,12 @@
     return `
       <div class="sub-card" style="margin-top:12px;">
         <div class="muted small" style="margin-bottom:8px;">${escapeHtml(state.lang === 'zh' ? '摘要详情' : 'Summary Detail')}</div>
-        ${keyValueGrid(getNotificationDetailRows(item, present))}
+        ${renderNotificationSummaryMetaStrip(item, present)}
+        ${detailRows.length ? `
+          <div style="margin-top:12px;">
+            ${keyValueGrid(detailRows)}
+          </div>
+        ` : ''}
         ${metaSections.join('')}
       </div>
     `;
@@ -1635,7 +1930,15 @@
       // Fallback to prompt below.
     }
 
-    window.prompt(options.promptLabel || (state.lang === 'zh' ? '请手动复制以下内容' : 'Copy the value below'), value);
+    await showValueDialog({
+      title: options.title || dialogText('manualCopy'),
+      message: options.promptLabel || (state.lang === 'zh' ? '系统剪贴板不可用，请手动复制下面的内容。' : 'Clipboard access is unavailable. Copy the value below manually.'),
+      value,
+      valueLabel: state.lang === 'zh' ? '待复制内容' : 'Value to copy',
+      confirmText: dialogText('close'),
+      tone: 'info',
+      kicker: dialogText('manualCopy'),
+    });
     return true;
   }
 
@@ -2000,7 +2303,15 @@
       : (state.lang === 'zh'
         ? '确认完整重启 Guard？当前页面会短暂断开，然后自动恢复。'
         : 'Perform a full Guard restart? This page will disconnect briefly, then recover.');
-    if (!confirm(confirmText)) return;
+    const confirmed = await showConfirmDialog({
+      title: restartGateway
+        ? (state.lang === 'zh' ? '执行全重启' : 'Restart Guard + Gateway')
+        : (state.lang === 'zh' ? '重启 Guard' : 'Restart Guard'),
+      message: confirmText,
+      confirmText: state.lang === 'zh' ? '立即重启' : 'Restart now',
+      tone: 'warn',
+    });
+    if (!confirmed) return;
 
     try {
       const result = await postJson('/api/guard/restart', { restartGateway });
@@ -2175,8 +2486,64 @@
       `;
   }
 
+  function skeletonLine(width = '100%', height = '14px', className = '') {
+    return `<span class="guard-skeleton-line ${className}" style="width:${width};height:${height};"></span>`;
+  }
+
+  function skeletonButton(width = '120px') {
+    return `<span class="guard-skeleton-chip" style="width:${width};"></span>`;
+  }
+
+  function loadingMetricCard(title) {
+    return `
+      <div class="card guard-loading-card">
+        <div class="row" style="justify-content:space-between; align-items:flex-start;">
+          <h3>${escapeHtml(title)}</h3>
+          <span class="pill">${escapeHtml(t('loading'))}</span>
+        </div>
+        <div class="guard-skeleton-stack" style="margin-top:10px;">
+          ${skeletonLine('42%', '34px')}
+          ${skeletonLine('68%', '12px')}
+        </div>
+      </div>
+    `;
+  }
+
+  function loadingListBlock(itemCount = 4) {
+    return `
+      <div class="list">
+        ${Array.from({ length: itemCount }, (_, index) => `
+          <div class="list-item guard-loading-card">
+            <div class="row" style="justify-content:space-between; align-items:center;">
+              ${skeletonLine(index % 2 === 0 ? '46%' : '58%', '16px')}
+              ${skeletonLine('92px', '26px', 'guard-skeleton-pill')}
+            </div>
+            <div class="guard-skeleton-stack" style="margin-top:12px;">
+              ${skeletonLine('92%')}
+              ${skeletonLine('76%')}
+              ${skeletonLine('38%', '12px')}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
   function loadingCard(title, message = '') {
-    return `<div class="card"><h3>${escapeHtml(title)}</h3><div class="empty">${escapeHtml(message || t('loading'))}</div></div>`;
+    return `
+      <div class="card guard-loading-card">
+        <div class="row" style="justify-content:space-between; align-items:flex-start;">
+          <h3>${escapeHtml(title)}</h3>
+          <span class="pill">${escapeHtml(t('loading'))}</span>
+        </div>
+        <div class="guard-skeleton-stack" style="margin-top:12px;">
+          ${skeletonLine('96%')}
+          ${skeletonLine('84%')}
+          ${skeletonLine('64%')}
+        </div>
+        ${message ? `<div class="muted small" style="margin-top:12px;">${escapeHtml(message)}</div>` : ''}
+      </div>
+    `;
   }
 
   function setPanelSections(title, description, sections, actionsHtml = '') {
@@ -2192,6 +2559,123 @@
     const target = document.querySelector(`[data-panel-section="${sectionId}"]`);
     if (!target) return;
     target.innerHTML = html;
+  }
+
+  function renderTabLoadingState(tabId) {
+    const loadingLabel = state.lang === 'zh' ? '正在准备页面结构与数据区域…' : 'Preparing the layout and data slots…';
+    if (tabId === 'search') return;
+    if (tabId === 'files') {
+      setPanel(t('tabs.files'), t('desc.files'), `
+        <div class="toolbar">
+          ${skeletonButton('148px')}
+          ${skeletonButton('84px')}
+          ${skeletonButton('104px')}
+          ${skeletonButton('120px')}
+          ${skeletonButton('120px')}
+        </div>
+        <div class="two-col">
+          <div class="card guard-loading-card">
+            <h3>${escapeHtml(state.lang === 'zh' ? '文件列表' : 'Files')}</h3>
+            <div class="split-list" style="margin-top:12px;">
+              ${Array.from({ length: 7 }, (_, index) => `
+                <div class="guard-skeleton-entry">
+                  ${skeletonLine(index % 2 === 0 ? '54%' : '64%', '16px')}
+                  ${skeletonLine('86%', '12px')}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          ${loadingCard(state.lang === 'zh' ? '文件编辑器' : 'Editor', loadingLabel)}
+        </div>
+      `);
+      return;
+    }
+    if (tabId === 'memory') {
+      setPanel(t('tabs.memory'), t('desc.memory'), `
+        <div class="two-col">
+          <div class="card guard-loading-card">
+            <h3>${escapeHtml(state.lang === 'zh' ? '记忆文件' : 'Memory Files')}</h3>
+            <div class="split-list" style="margin-top:12px;">
+              ${Array.from({ length: 6 }, (_, index) => `
+                <div class="guard-skeleton-entry">
+                  ${skeletonLine(index % 2 === 0 ? '44%' : '52%', '16px')}
+                  ${skeletonLine('90%', '12px')}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          ${loadingCard(state.lang === 'zh' ? '记忆编辑器' : 'Memory Editor', loadingLabel)}
+        </div>
+      `);
+      return;
+    }
+    if (tabId === 'channels' || tabId === 'ai' || tabId === 'cron') {
+      setPanel(t(`tabs.${tabId}`), t(`desc.${tabId}`), `
+        <div class="toolbar">
+          ${skeletonButton('112px')}
+          ${skeletonButton('112px')}
+          ${skeletonButton('140px')}
+        </div>
+        <div class="two-col">
+          <div class="card guard-loading-card">
+            <h3>${escapeHtml(state.lang === 'zh' ? '列表区域' : 'List Area')}</h3>
+            <div style="margin-top:12px;">${loadingListBlock(5)}</div>
+          </div>
+          ${loadingCard(state.lang === 'zh' ? '详情区域' : 'Detail Area', loadingLabel)}
+        </div>
+      `);
+      return;
+    }
+    if (tabId === 'notifications') {
+      setPanel(t('tabs.notifications'), t('desc.notifications'), `
+        <div class="toolbar">
+          ${skeletonButton('120px')}
+          ${skeletonButton('136px')}
+          ${skeletonButton('180px')}
+          ${skeletonButton('108px')}
+          ${skeletonButton('120px')}
+        </div>
+        ${loadingListBlock(6)}
+      `);
+      return;
+    }
+    if (tabId === 'costs') {
+      setPanel(t('tabs.costs'), t('desc.costs'), `
+        <div class="grid">
+          ${loadingMetricCard(state.lang === 'zh' ? '总成本' : 'Total Cost')}
+          ${loadingMetricCard(state.lang === 'zh' ? '总 Tokens' : 'Total Tokens')}
+          ${loadingMetricCard(state.lang === 'zh' ? '会话数' : 'Sessions')}
+        </div>
+        <div class="grid">
+          <div class="card guard-loading-card">
+            <h3>${escapeHtml(state.lang === 'zh' ? '按模型' : 'By Model')}</h3>
+            <div style="margin-top:12px;">${loadingListBlock(4)}</div>
+          </div>
+          <div class="card guard-loading-card">
+            <h3>${escapeHtml(state.lang === 'zh' ? '按 Agent' : 'By Agent')}</h3>
+            <div style="margin-top:12px;">${loadingListBlock(4)}</div>
+          </div>
+        </div>
+      `);
+      return;
+    }
+    if (tabId === 'agents' || tabId === 'sessions' || tabId === 'activity' || tabId === 'audit' || tabId === 'profiles' || tabId === 'harden' || tabId === 'logs' || tabId === 'feishu') {
+      setPanel(t(`tabs.${tabId}`), t(`desc.${tabId}`), `
+        <div class="grid">
+          ${loadingMetricCard(state.lang === 'zh' ? '摘要 1' : 'Summary 1')}
+          ${loadingMetricCard(state.lang === 'zh' ? '摘要 2' : 'Summary 2')}
+          ${loadingMetricCard(state.lang === 'zh' ? '摘要 3' : 'Summary 3')}
+        </div>
+        ${loadingListBlock(tabId === 'activity' ? 7 : 5)}
+      `);
+      return;
+    }
+    setPanel(t(`tabs.${tabId}`), t(`desc.${tabId}`), `
+      <div class="grid">
+        ${loadingCard(state.lang === 'zh' ? '内容摘要' : 'Summary', loadingLabel)}
+        ${loadingCard(state.lang === 'zh' ? '明细区域' : 'Details', loadingLabel)}
+      </div>
+    `);
   }
 
   function renderShell() {
@@ -2259,7 +2743,16 @@
       renderLoginPage();
     });
     app.querySelector('[data-global-action="stop-web"]')?.addEventListener('click', async () => {
-      if (!confirm(state.lang === 'zh' ? '确认停止当前 Guard Web 服务？' : 'Stop the current Guard Web service?')) return;
+      const confirmed = await showConfirmDialog({
+        title: state.lang === 'zh' ? '停止后台服务' : 'Stop Background Service',
+        message: state.lang === 'zh' ? '确认停止当前 Guard Web 服务？' : 'Stop the current Guard Web service?',
+        description: state.lang === 'zh'
+          ? '停止后当前页面会失去连接，需要你重新启动 Guard Web 才能恢复。'
+          : 'The page will disconnect until Guard Web is started again.',
+        confirmText: state.lang === 'zh' ? '确认停止' : 'Stop service',
+        tone: 'danger',
+      });
+      if (!confirmed) return;
       try {
         const result = await postJson('/api/web-background/stop', {});
         showToast(result.message || (state.lang === 'zh' ? '停止命令已发送。' : 'Stop command sent.'));
@@ -3000,9 +3493,14 @@
       button.addEventListener('click', async () => {
         const key = button.getAttribute('data-env-delete') || '';
         if (!key) return;
-        const confirmed = window.confirm(state.lang === 'zh'
-          ? `确认删除 ${key} 吗？这会把它从本地 env 文件里移除。`
-          : `Remove ${key}? This will delete it from the local env file.`);
+        const confirmed = await showConfirmDialog({
+          title: state.lang === 'zh' ? '删除环境变量' : 'Delete Environment Variable',
+          message: state.lang === 'zh'
+            ? `确认删除 ${key} 吗？这会把它从本地 env 文件里移除。`
+            : `Remove ${key}? This will delete it from the local env file.`,
+          confirmText: state.lang === 'zh' ? '确认删除' : 'Delete',
+          tone: 'danger',
+        });
         if (!confirmed) return;
         try {
           const result = await apiRequest(`/api/env?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
@@ -3508,7 +4006,15 @@
       }
     });
     document.querySelector('[data-channel-action="clear"]')?.addEventListener('click', async () => {
-      if (!confirm(state.lang === 'zh' ? `确认清空 ${selected.name || selected.id} 的配置？` : `Clear ${selected.name || selected.id} configuration?`)) return;
+      const confirmed = await showConfirmDialog({
+        title: state.lang === 'zh' ? '清空渠道配置' : 'Clear Channel Configuration',
+        message: state.lang === 'zh'
+          ? `确认清空 ${selected.name || selected.id} 的配置？`
+          : `Clear ${selected.name || selected.id} configuration?`,
+        confirmText: state.lang === 'zh' ? '确认清空' : 'Clear configuration',
+        tone: 'danger',
+      });
+      if (!confirmed) return;
       try {
         const result = await apiRequest(`/api/channels/${encodeURIComponent(selected.id)}`, { method: 'DELETE' });
         showToast(result.message || 'OK');
@@ -3889,7 +4395,15 @@
 
     document.querySelector('[data-ai-action="delete-provider"]')?.addEventListener('click', async () => {
       if (!providerDraft.canDelete) return;
-      if (!confirm(state.lang === 'zh' ? `确认删除 Provider ${providerDraft.name}？` : `Delete provider ${providerDraft.name}?`)) return;
+      const confirmed = await showConfirmDialog({
+        title: state.lang === 'zh' ? '删除 Provider' : 'Delete Provider',
+        message: state.lang === 'zh'
+          ? `确认删除 Provider ${providerDraft.name}？`
+          : `Delete provider ${providerDraft.name}?`,
+        confirmText: state.lang === 'zh' ? '确认删除' : 'Delete provider',
+        tone: 'danger',
+      });
+      if (!confirmed) return;
       try {
         const result = await apiRequest(`/api/ai/provider/${encodeURIComponent(providerDraft.name)}`, { method: 'DELETE' });
         state.aiSelectedProvider = '__new__';
@@ -4168,7 +4682,12 @@
       button.addEventListener('click', async () => {
         const action = button.getAttribute('data-notify-bulk');
         if (action === 'clear-all') {
-          const confirmed = confirm(state.lang === 'zh' ? '确认清空所有通知吗？这个操作不可撤销。' : 'Clear all notifications? This cannot be undone.');
+          const confirmed = await showConfirmDialog({
+            title: state.lang === 'zh' ? '清空通知' : 'Clear Notifications',
+            message: state.lang === 'zh' ? '确认清空所有通知吗？这个操作不可撤销。' : 'Clear all notifications? This cannot be undone.',
+            confirmText: state.lang === 'zh' ? '确认清空' : 'Clear all',
+            tone: 'danger',
+          });
           if (!confirmed) return;
         }
         try {
@@ -4346,17 +4865,35 @@
     const data = await apiRequest(`/api/files/content?path=${encodeURIComponent(targetPath)}`);
     if (mode === 'memory') {
       state.memoryFile = data;
-      state.memoryOriginal = data.content || '';
+      state.memoryOriginal = normalizeEditorText(data.content || '');
     } else {
       state.currentFile = data;
-      state.fileOriginal = data.content || '';
+      state.fileOriginal = normalizeEditorText(data.content || '');
     }
   }
 
   function hasDirtyEditor(mode) {
     const element = document.getElementById(mode === 'memory' ? 'memory-editor' : 'file-editor');
     const original = mode === 'memory' ? state.memoryOriginal : state.fileOriginal;
-    return !!element && element.value !== original;
+    return !!element && normalizeEditorText(element.value) !== original;
+  }
+
+  async function confirmEditorSwitch(mode) {
+    if (!hasDirtyEditor(mode)) return true;
+    const isMemory = mode === 'memory';
+    return showConfirmDialog({
+      title: isMemory
+        ? (state.lang === 'zh' ? '切换记忆文件' : 'Switch Memory File')
+        : (state.lang === 'zh' ? '切换文件' : 'Switch File'),
+      message: isMemory
+        ? (state.lang === 'zh' ? '当前记忆编辑器有未保存修改，确认切换？' : 'Unsaved memory changes detected. Continue?')
+        : (state.lang === 'zh' ? '当前编辑器有未保存修改，确认切换？' : 'Unsaved changes detected. Continue?'),
+      description: state.lang === 'zh'
+        ? '如果继续切换，当前未保存内容将被放弃。'
+        : 'Continuing will discard the unsaved content in the current editor.',
+      confirmText: state.lang === 'zh' ? '继续切换' : 'Discard and continue',
+      tone: 'warn',
+    });
   }
 
   async function loadFiles() {
@@ -4405,28 +4942,30 @@
     setPanel(t('tabs.files'), t('desc.files'), body);
 
     document.querySelectorAll('[data-root-path]').forEach((button) => {
-      button.addEventListener('click', () => {
-        if (hasDirtyEditor('file') && !confirm(state.lang === 'zh' ? '当前编辑器有未保存修改，确认切换？' : 'Unsaved changes detected. Continue?')) return;
+      button.addEventListener('click', async () => {
+        const confirmed = await confirmEditorSwitch('file');
+        if (!confirmed) return;
         state.filesPath = button.getAttribute('data-root-path') || '';
         state.currentFile = null;
-        loadFiles();
+        await loadFiles();
       });
     });
 
     document.querySelectorAll('[data-file-entry]').forEach((button) => {
       button.addEventListener('click', async () => {
-        if (hasDirtyEditor('file') && !confirm(state.lang === 'zh' ? '当前编辑器有未保存修改，确认切换？' : 'Unsaved changes detected. Continue?')) return;
+        const confirmed = await confirmEditorSwitch('file');
+        if (!confirmed) return;
         const targetPath = button.getAttribute('data-file-entry');
         const type = button.getAttribute('data-entry-type');
         if (type === 'dir') {
           state.filesPath = targetPath || state.filesPath;
           state.currentFile = null;
-          loadFiles();
+          await loadFiles();
           return;
         }
         try {
           await openManagedFile(targetPath, 'file');
-          loadFiles();
+          await loadFiles();
         } catch (error) {
           showToast(error.message || String(error), 'error');
         }
@@ -4440,35 +4979,61 @@
           if (action === 'go-up' && data.parentPath) {
             state.filesPath = data.parentPath;
             state.currentFile = null;
-            loadFiles();
+            await loadFiles();
             return;
           }
           if (action === 'reload-list') {
-            loadFiles();
+            await loadFiles();
             return;
           }
           if (action === 'reload-current' && state.currentFile?.path) {
             await openManagedFile(state.currentFile.path, 'file');
-            loadFiles();
+            await loadFiles();
             return;
           }
           if (action === 'save-current' && state.currentFile?.path) {
             const content = document.getElementById('file-editor').value;
             const result = await postJson('/api/files/content', { path: state.currentFile.path, content });
-            state.fileOriginal = content;
+            state.currentFile.content = content;
+            state.fileOriginal = normalizeEditorText(content);
             showToast(result.message || 'OK');
             return;
           }
           if (action === 'new-file' || action === 'new-dir') {
-            const name = prompt(action === 'new-file' ? (state.lang === 'zh' ? '请输入新文件名' : 'New file name') : (state.lang === 'zh' ? '请输入新目录名' : 'New folder name'));
-            if (!name) return;
+            const name = await showPromptDialog({
+              title: action === 'new-file'
+                ? (state.lang === 'zh' ? '新建文件' : 'Create New File')
+                : (state.lang === 'zh' ? '新建目录' : 'Create New Folder'),
+              message: action === 'new-file'
+                ? (state.lang === 'zh' ? '请输入新文件名。' : 'Enter the new file name.')
+                : (state.lang === 'zh' ? '请输入新目录名。' : 'Enter the new folder name.'),
+              inputLabel: action === 'new-file'
+                ? (state.lang === 'zh' ? '文件名' : 'File name')
+                : (state.lang === 'zh' ? '目录名' : 'Folder name'),
+              placeholder: action === 'new-file'
+                ? (state.lang === 'zh' ? '例如：README-local.md' : 'Example: README-local.md')
+                : (state.lang === 'zh' ? '例如：drafts' : 'Example: drafts'),
+              confirmText: action === 'new-file'
+                ? (state.lang === 'zh' ? '创建文件' : 'Create file')
+                : (state.lang === 'zh' ? '创建目录' : 'Create folder'),
+              tone: 'info',
+              kicker: action === 'new-file'
+                ? (state.lang === 'zh' ? '文件' : 'File')
+                : (state.lang === 'zh' ? '目录' : 'Folder'),
+            });
+            if (name === null) return;
+            const normalizedName = name.trim();
+            if (!normalizedName) {
+              showToast(state.lang === 'zh' ? '名称不能为空。' : 'Name is required.', 'error');
+              return;
+            }
             const result = await postJson('/api/files/create', {
               parentPath: state.filesPath,
-              name,
+              name: normalizedName,
               kind: action === 'new-dir' ? 'directory' : 'file',
             });
             showToast(result.message || 'OK');
-            loadFiles();
+            await loadFiles();
           }
         } catch (error) {
           showToast(error.message || String(error), 'error');
@@ -4501,10 +5066,11 @@
 
     document.querySelectorAll('[data-memory-file]').forEach((button) => {
       button.addEventListener('click', async () => {
-        if (hasDirtyEditor('memory') && !confirm(state.lang === 'zh' ? '当前记忆编辑器有未保存修改，确认切换？' : 'Unsaved memory changes detected. Continue?')) return;
+        const confirmed = await confirmEditorSwitch('memory');
+        if (!confirmed) return;
         try {
           await openManagedFile(button.getAttribute('data-memory-file'), 'memory');
-          loadMemory();
+          await loadMemory();
         } catch (error) {
           showToast(error.message || String(error), 'error');
         }
@@ -4513,14 +5079,15 @@
     document.querySelector('[data-memory-action="reload"]')?.addEventListener('click', async () => {
       if (!state.memoryFile?.path) return;
       await openManagedFile(state.memoryFile.path, 'memory');
-      loadMemory();
+      await loadMemory();
     });
     document.querySelector('[data-memory-action="save"]')?.addEventListener('click', async () => {
       if (!state.memoryFile?.path) return;
       try {
         const content = document.getElementById('memory-editor').value;
         const result = await postJson('/api/files/content', { path: state.memoryFile.path, content });
-        state.memoryOriginal = content;
+        state.memoryFile.content = content;
+        state.memoryOriginal = normalizeEditorText(content);
         showToast(result.message || 'OK');
       } catch (error) {
         showToast(error.message || String(error), 'error');
@@ -4915,7 +5482,13 @@
           } else if (action === 'run' && jobId) {
             result = await postJson('/api/cron-ui/run', { jobId });
           } else if (action === 'remove' && jobId) {
-            if (!confirm(state.lang === 'zh' ? `确认删除任务 ${jobId}？` : `Remove cron job ${jobId}?`)) return;
+            const confirmed = await showConfirmDialog({
+              title: state.lang === 'zh' ? '删除 Cron 任务' : 'Delete Cron Job',
+              message: state.lang === 'zh' ? `确认删除任务 ${jobId}？` : `Remove cron job ${jobId}?`,
+              confirmText: state.lang === 'zh' ? '确认删除' : 'Delete job',
+              tone: 'danger',
+            });
+            if (!confirmed) return;
             result = await postJson('/api/cron-ui/remove', { jobId });
           }
 
@@ -5719,8 +6292,9 @@
       clearServicePollTimer();
       clearPrewarmPollTimer();
     }
-    const panel = document.getElementById('guard-panel');
-    if (panel) panel.innerHTML = `<div class="empty">${escapeHtml(t('loading'))}</div>`;
+    if (!['overview', 'system', 'openclaw', 'git-sync', 'search'].includes(active)) {
+      renderTabLoadingState(active);
+    }
     try {
       if (active === 'overview') return await loadOverview();
       if (active === 'system') return await loadSystem();

@@ -2149,3 +2149,46 @@
 - 风险与补充说明:
   1) 当前预热主要覆盖“第一次进入最慢”的核心页签数据，但 `audit` 这类仍然是按需实时执行；如果后续用户反馈审计页首次进入仍慢，可以继续给审计结果加短 TTL 缓存。
   2) 目前预热状态 API 已准备好，但前端还没有专门展示这张状态卡；如果后续要在驾驶舱或运维页展示“缓存已预热”，可以直接接这个接口，不需要再改后端结构。
+
+## [2026-03-10 14:30] openclaw-guard 收口 Gateway 后台任务、中文乱码与预热状态展示 [TASK-20260310-004]
+
+- 任务来源: 用户要求继续优化当前原生工作台，对剩余可见问题进行收口；本轮按既定优先级处理 Gateway 运维阻塞、用户可见中文乱码，以及缓存预热状态在驾驶舱 / 运维页中的可见性。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成后端后台任务化、中文文案修复、前端联动与日志补充，可提交。
+- 实际完成:
+  1) `openclaw-guard/src/service-mgr.ts` 已重构为“后台运维任务”模型：
+     - 新增 `ServiceActionState`，记录 `action / phase / pid / startedAt / finishedAt / message / error`。
+     - `start / stop / restart` 不再在 Web 主进程里同步 `sleep + 轮询`，而是提交一个隐藏子进程去执行。
+     - `getServiceStatus()` 现在同时返回 Gateway 当前监听状态和后台运维任务状态，供驾驶舱与运维页直接消费。
+     - 新增 CLI 内部入口 `service-task`，专门供后台子进程执行真实运维动作。
+  2) `openclaw-guard/src/server.ts` 已补后台任务与预热接口：
+     - 新增 `GET /api/service/action-status`
+     - 新增 `POST /api/cache-prewarm/trigger`
+     - 现有 `POST /api/service/start|stop|restart` 继续保留，但现在返回的是“已受理 / 已在后台执行”的结果，不再阻塞 HTTP 请求。
+  3) `openclaw-guard/web/guard-ui.js` 已接入两类状态轮询：
+     - 当 Gateway 后台任务处于 `running` 时，驾驶舱与运维页会自动轮询刷新，不需要用户手动反复点刷新。
+     - 当缓存预热处于 `scheduled / running` 时，同样自动轮询刷新，直到状态收敛。
+     - 运维页新增“启动后缓存预热”卡片，支持直接手动触发预热，并展示每个预热任务的开始 / 结束 / 耗时 / 异常。
+     - 驾驶舱新增“后台任务状态”与“缓存预热”摘要，让用户第一次打开页面时能直接看到系统是否还在后台准备数据。
+     - Gateway 后台任务执行期间，运维页的 Gateway 启停按钮会自动禁用，避免重复提交第二个任务。
+  4) 已统一修复用户可见中文乱码：
+     - `openclaw-guard/src/service-mgr.ts`
+     - `openclaw-guard/src/audit.ts`
+     - `openclaw-guard/src/openclaw.ts`
+     这三处原先存在明显 mojibake 的中文提示已恢复为正常可读文案。
+- 交付清单:
+  - openclaw-guard/src/service-mgr.ts
+  - openclaw-guard/src/server.ts
+  - openclaw-guard/src/index.ts
+  - openclaw-guard/src/audit.ts
+  - openclaw-guard/src/openclaw.ts
+  - openclaw-guard/web/guard-ui.js
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  2) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  3) 已验证 `node openclaw-guard/dist/index.js service status` 能正常返回包含 `action` 字段的最新服务状态。
+  4) 已验证 `node openclaw-guard/dist/index.js cache-prewarm --json` 能正常执行并输出完整预热状态，最新一轮耗时约 `17689 ms`。
+- 风险与补充说明:
+  1) 本轮已经把 Gateway 运维动作从“阻塞主线程”改成了“后台任务 + 前端轮询”，但 `audit` 仍然是实时执行。如果后续用户反馈审计页依旧偏慢，可以继续为审计结果加短 TTL 缓存。
+  2) `service-task` 当前作为内部后台入口保留在 CLI 中，主要供 Guard 自己拉起隐藏子进程时调用；如后续希望进一步收口帮助信息，可以把它改成更明显的内部命令名或在帮助文档中隐藏。

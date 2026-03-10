@@ -188,6 +188,8 @@
     gitSyncIgnoreMode: 'smart',
     gitSyncLastAction: null,
     gitSyncPollTimer: null,
+    servicePollTimer: null,
+    prewarmPollTimer: null,
     pendingPanelFocus: null,
   };
 
@@ -608,6 +610,97 @@
     }
   }
 
+  function clearServicePollTimer() {
+    if (state.servicePollTimer) {
+      clearTimeout(state.servicePollTimer);
+      state.servicePollTimer = null;
+    }
+  }
+
+  function clearPrewarmPollTimer() {
+    if (state.prewarmPollTimer) {
+      clearTimeout(state.prewarmPollTimer);
+      state.prewarmPollTimer = null;
+    }
+  }
+
+  function getServiceActionMeta(actionState) {
+    const action = actionState?.action || '';
+    const actionLabel = action === 'start'
+      ? (state.lang === 'zh' ? '启动' : 'Start')
+      : action === 'stop'
+        ? (state.lang === 'zh' ? '停止' : 'Stop')
+        : action === 'restart'
+          ? (state.lang === 'zh' ? '重启' : 'Restart')
+          : (state.lang === 'zh' ? '待命' : 'Idle');
+    const phase = actionState?.phase || 'idle';
+    const phaseLabel = phase === 'running'
+      ? (state.lang === 'zh' ? '执行中' : 'Running')
+      : phase === 'completed'
+        ? (state.lang === 'zh' ? '已完成' : 'Completed')
+        : phase === 'error'
+          ? (state.lang === 'zh' ? '失败' : 'Failed')
+          : (state.lang === 'zh' ? '空闲' : 'Idle');
+    const pillClass = phase === 'completed'
+      ? 'success'
+      : phase === 'error'
+        ? 'danger'
+        : phase === 'running'
+          ? 'warn'
+          : '';
+    return {
+      actionLabel,
+      phase,
+      phaseLabel,
+      pillClass,
+      message: actionState?.message || (state.lang === 'zh' ? '当前没有后台运维任务。' : 'No background service task is active.'),
+    };
+  }
+
+  function getPrewarmMeta(prewarmStatus) {
+    const phase = prewarmStatus?.phase || 'idle';
+    const phaseLabel = phase === 'running'
+      ? (state.lang === 'zh' ? '预热中' : 'Prewarming')
+      : phase === 'scheduled'
+        ? (state.lang === 'zh' ? '已调度' : 'Scheduled')
+        : phase === 'completed'
+          ? (state.lang === 'zh' ? '已完成' : 'Completed')
+          : phase === 'error'
+            ? (state.lang === 'zh' ? '异常' : 'Error')
+            : (state.lang === 'zh' ? '空闲' : 'Idle');
+    const pillClass = phase === 'completed'
+      ? 'success'
+      : phase === 'error'
+        ? 'danger'
+        : phase === 'running' || phase === 'scheduled'
+          ? 'warn'
+          : '';
+    return {
+      phase,
+      phaseLabel,
+      pillClass,
+      message: prewarmStatus?.lastError || (state.lang === 'zh' ? '缓存预热状态正常。' : 'Cache prewarm state is healthy.'),
+    };
+  }
+
+  function scheduleServiceStatusPoll() {
+    clearServicePollTimer();
+    state.servicePollTimer = setTimeout(() => {
+      if (state.activeTab === 'overview' || state.activeTab === 'system') {
+        loadActiveTab();
+      }
+    }, 1800);
+  }
+
+  function schedulePrewarmStatusPoll() {
+    clearPrewarmPollTimer();
+    state.prewarmPollTimer = setTimeout(() => {
+      if (state.activeTab === 'overview' || state.activeTab === 'system') {
+        loadActiveTab();
+      }
+    }, 1800);
+  }
+
   function getDefaultCronDraft() {
     return {
       name: '',
@@ -790,9 +883,10 @@
   }
 
   async function loadOverview() {
-    const [overview, webStatus] = await Promise.all([
+    const [overview, webStatus, prewarmStatus] = await Promise.all([
       apiRequest('/api/dashboard/overview'),
       apiRequest('/api/web-background/status'),
+      apiRequest('/api/cache-prewarm/status').catch(() => ({ phase: 'idle', tasks: [] })),
     ]);
 
     const alerts = overview.runtime?.alerts || [];
@@ -804,6 +898,8 @@
     const gatewayService = overview.runtime?.gatewayService || {};
     const nodeService = overview.runtime?.nodeService || {};
     const gatewayReachable = overview.runtime?.gateway?.reachable;
+    const serviceActionMeta = getServiceActionMeta(overview.gateway?.action || {});
+    const prewarmMeta = getPrewarmMeta(prewarmStatus);
     const showQuickRestart = !overview.gateway?.running || gatewayReachable === false;
     const runtimeSummaryRows = [
       {
@@ -850,6 +946,7 @@
       <div class="grid">
         ${metricCard(state.lang === 'zh' ? 'Gateway' : 'Gateway', overview.gateway?.running ? 'RUNNING' : 'STOPPED', `port ${overview.gateway?.port || '-'}`, overview.gateway?.running ? 'success' : 'danger')}
         ${metricCard(state.lang === 'zh' ? 'Guard Web' : 'Guard Web', webStatus.running ? 'RUNNING' : 'STOPPED', webStatus.running ? `PID ${webStatus.pid}` : (state.lang === 'zh' ? '未检测到后台进程' : 'No managed background process'), webStatus.running ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '缓存预热' : 'Cache Prewarm', prewarmMeta.phaseLabel, prewarmStatus?.lastDurationMs ? `${prewarmStatus.lastDurationMs} ms` : (state.lang === 'zh' ? '等待首次结果' : 'Waiting for first result'), prewarmMeta.pillClass)}
         ${metricCard(state.lang === 'zh' ? 'Agent' : 'Agents', formatNumber(overview.agents?.total || 0), `${overview.agents?.workspacesReady || 0} ${state.lang === 'zh' ? '个工作区就绪' : 'workspaces ready'}`)}
         ${metricCard(state.lang === 'zh' ? '会话' : 'Sessions', `${formatNumber(overview.sessions?.active || 0)} / ${formatNumber(overview.sessions?.total || 0)}`, state.lang === 'zh' ? '活跃 / 总数' : 'active / total')}
         ${metricCard(state.lang === 'zh' ? '通知' : 'Notifications', formatNumber(overview.notifications?.unread || 0), state.lang === 'zh' ? '未读通知' : 'unread')}
@@ -877,6 +974,21 @@
         </div>
       </div>
       <div class="grid">
+        <div class="card">
+          <h3>${state.lang === 'zh' ? '后台任务状态' : 'Background Task Status'}</h3>
+          <div class="list-item">
+            <div class="row" style="justify-content:space-between">
+              <strong>${escapeHtml(serviceActionMeta.actionLabel)}</strong>
+              <span class="pill ${serviceActionMeta.pillClass}">${escapeHtml(serviceActionMeta.phaseLabel)}</span>
+            </div>
+            <div style="margin-top:8px;">${escapeHtml(serviceActionMeta.message)}</div>
+            <div class="muted small" style="margin-top:8px;">
+              ${escapeHtml(state.lang === 'zh'
+                ? `PID ${overview.gateway?.action?.pid || '-'} · 开始 ${formatDate(overview.gateway?.action?.startedAt)}`
+                : `PID ${overview.gateway?.action?.pid || '-'} · started ${formatDate(overview.gateway?.action?.startedAt)}`)}
+            </div>
+          </div>
+        </div>
         <div class="card">
           <h3>${state.lang === 'zh' ? '风险与告警' : 'Risk & Alerts'}</h3>
           ${alerts.length ? `<div class="list">${alerts.map((item) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(item.code)}</strong><span class="pill ${item.level === 'critical' || item.level === 'error' ? 'danger' : item.level === 'warning' ? 'warn' : ''}">${escapeHtml(item.level)}</span></div><div>${escapeHtml(item.message)}</div></div>`).join('')}</div>` : emptyState(state.lang === 'zh' ? '当前没有新的运行态告警。' : 'No runtime alerts right now.')}
@@ -911,8 +1023,12 @@
     document.querySelector('[data-overview-action="gateway-restart"]')?.addEventListener('click', async () => {
       try {
         const result = await postJson('/api/service/restart', {});
-        showToast(result.message || 'OK');
+        const ok = result?.success !== false;
+        showToast(result.message || 'OK', ok ? 'success' : 'error');
         await loadOverview();
+        if (result?.action?.phase === 'running') {
+          scheduleServiceStatusPoll();
+        }
       } catch (error) {
         showToast(error.message || String(error), 'error');
       }
@@ -944,14 +1060,22 @@
         setActiveTab(next.tabId);
       });
     });
+
+    if (serviceActionMeta.phase === 'running') {
+      scheduleServiceStatusPoll();
+    }
+    if (prewarmMeta.phase === 'running' || prewarmMeta.phase === 'scheduled') {
+      schedulePrewarmStatusPoll();
+    }
   }
 
   async function loadSystem() {
-    const [info, service, webStatus, envMap] = await Promise.all([
+    const [info, service, webStatus, envMap, prewarmStatus] = await Promise.all([
       apiRequest('/api/info'),
       apiRequest('/api/service/status'),
       apiRequest('/api/web-background/status'),
       apiRequest('/api/env').catch(() => ({})),
+      apiRequest('/api/cache-prewarm/status').catch(() => ({ phase: 'idle', tasks: [] })),
     ]);
 
     const envEntries = Object.entries(envMap || {}).sort(([left], [right]) => left.localeCompare(right));
@@ -959,6 +1083,9 @@
     const isCurrentInstance = !!(webStatus.running && webStatus.pid && currentPid && webStatus.pid === currentPid);
     const isCurrentManaged = isCurrentInstance && webStatus.managed;
     const isOtherProcess = !!(webStatus.running && webStatus.pid && !isCurrentInstance);
+    const serviceActionMeta = getServiceActionMeta(service.action || {});
+    const prewarmMeta = getPrewarmMeta(prewarmStatus);
+    const serviceBusy = serviceActionMeta.phase === 'running';
 
     let webPrimaryLabel = state.lang === 'zh' ? '后台启动 Guard Web' : 'Start Guard Web in Background';
     let webPrimaryHint = state.lang === 'zh'
@@ -1075,13 +1202,25 @@
         <div class="card accent-warn panel-focus-target" id="system-service-card">
           <h3>${state.lang === 'zh' ? '服务与后台控制' : 'Service & Background Controls'}</h3>
           <div class="toolbar">
-            <button class="action-btn primary" type="button" data-service-action="start">${escapeHtml(t('start'))} Gateway</button>
-            <button class="action-btn" type="button" data-service-action="restart">${escapeHtml(t('restart'))} Gateway</button>
-            <button class="action-btn danger" type="button" data-service-action="stop">${escapeHtml(t('stop'))} Gateway</button>
+            <button class="action-btn primary" type="button" data-service-action="start" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('start'))} Gateway</button>
+            <button class="action-btn" type="button" data-service-action="restart" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('restart'))} Gateway</button>
+            <button class="action-btn danger" type="button" data-service-action="stop" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('stop'))} Gateway</button>
             <button class="action-btn ${webPrimaryDisabled ? '' : 'primary'}" type="button" data-service-action="start-web" ${webPrimaryDisabled ? 'disabled' : ''}>${escapeHtml(webPrimaryLabel)}</button>
             <button class="action-btn danger" type="button" data-service-action="stop-web" ${webStatus.running ? '' : 'disabled'}>${escapeHtml(t('stopWeb'))}</button>
           </div>
           <div class="status ${webPrimaryDisabled && !isCurrentManaged ? 'warn' : ''}" style="margin-top:14px;">${escapeHtml(webPrimaryHint)}</div>
+          <div class="list-item" style="margin-top:14px;">
+            <div class="row" style="justify-content:space-between;">
+              <strong>${state.lang === 'zh' ? 'Gateway 后台任务' : 'Gateway Background Task'}</strong>
+              <span class="pill ${serviceActionMeta.pillClass}">${escapeHtml(serviceActionMeta.phaseLabel)}</span>
+            </div>
+            <div style="margin-top:8px;">${escapeHtml(serviceActionMeta.message)}</div>
+            <div class="muted small" style="margin-top:8px;">
+              ${escapeHtml(state.lang === 'zh'
+                ? `任务 PID ${service.action?.pid || '-'} · 开始 ${formatDate(service.action?.startedAt)} · 结束 ${formatDate(service.action?.finishedAt)}`
+                : `Task PID ${service.action?.pid || '-'} · started ${formatDate(service.action?.startedAt)} · finished ${formatDate(service.action?.finishedAt)}`)}
+            </div>
+          </div>
           <div class="grid" style="margin-top:14px;">
             <div class="list-item">
               <div class="row" style="justify-content:space-between;">
@@ -1125,6 +1264,40 @@
                 ? '如果你已经打开了当前页面，优先使用“纳入后台托管”或“一键停后台服务”，避免在同端口重复拉起第二个 Guard Web 实例。'
                 : 'If this page is already open, adopt the current instance or stop the background service first instead of spawning a second Guard Web on the same port.')}
             </div>
+          </div>
+        </div>
+        <div class="card accent-info panel-focus-target" id="system-prewarm-card">
+          <div class="row" style="justify-content:space-between; align-items:flex-start;">
+            <div>
+              <h3>${state.lang === 'zh' ? '启动后缓存预热' : 'Startup Cache Prewarm'}</h3>
+              <p>${escapeHtml(state.lang === 'zh'
+                ? '首次打开慢页签时，Guard 会在启动后后台预热核心缓存。这里可以看到最近结果，也可以手动再跑一轮。'
+                : 'Guard prewarms core caches after startup so the first visit to heavy tabs is faster. You can inspect the last run and trigger it manually here.')}</p>
+            </div>
+            <span class="pill ${prewarmMeta.pillClass}">${escapeHtml(prewarmMeta.phaseLabel)}</span>
+          </div>
+          <div class="toolbar tight" style="margin-top:12px;">
+            <button class="action-btn primary" type="button" data-prewarm-action="trigger" ${(prewarmMeta.phase === 'running' || prewarmMeta.phase === 'scheduled') ? 'disabled' : ''}>${state.lang === 'zh' ? '手动预热缓存' : 'Run Prewarm'}</button>
+            <button class="action-btn" type="button" data-prewarm-action="reload">${escapeHtml(t('reload'))}</button>
+          </div>
+          <div class="status ${prewarmMeta.phase === 'error' ? 'warn' : ''}" style="margin-top:14px;">${escapeHtml(prewarmMeta.message)}</div>
+          <div class="sub-card" style="margin-top:14px;">
+            ${keyValueGrid([
+              { label: state.lang === 'zh' ? '触发来源' : 'Trigger', value: prewarmStatus.trigger || '-' },
+              { label: 'PID', value: prewarmStatus.pid || '-' },
+              { label: state.lang === 'zh' ? '开始时间' : 'Started At', value: formatDate(prewarmStatus.startedAt) },
+              { label: state.lang === 'zh' ? '结束时间' : 'Finished At', value: formatDate(prewarmStatus.finishedAt) },
+              { label: state.lang === 'zh' ? '最近耗时' : 'Last Duration', value: prewarmStatus.lastDurationMs ? `${prewarmStatus.lastDurationMs} ms` : '-' },
+              { label: state.lang === 'zh' ? '下次允许时间' : 'Next Allowed At', value: formatDate(prewarmStatus.nextAllowedAt) },
+            ])}
+          </div>
+          <div class="list" style="margin-top:14px;">
+            ${(prewarmStatus.tasks || []).length
+              ? prewarmStatus.tasks.map((task) => {
+                  const taskMeta = getPrewarmMeta({ phase: task.success === true ? 'completed' : task.success === false ? 'error' : 'idle', lastError: task.error });
+                  return `<div class="list-item"><div class="row" style="justify-content:space-between;"><strong>${escapeHtml(task.label)}</strong><span class="pill ${taskMeta.pillClass}">${escapeHtml(task.success === true ? (state.lang === 'zh' ? '完成' : 'Done') : task.success === false ? (state.lang === 'zh' ? '失败' : 'Failed') : (state.lang === 'zh' ? '待执行' : 'Pending'))}</span></div><div class="muted small">${escapeHtml(state.lang === 'zh' ? `开始 ${formatDate(task.startedAt)} · 结束 ${formatDate(task.finishedAt)} · 耗时 ${task.durationMs ?? '-'} ms` : `Started ${formatDate(task.startedAt)} · Finished ${formatDate(task.finishedAt)} · Duration ${task.durationMs ?? '-'} ms`)}</div>${task.error ? `<div style="margin-top:8px;">${escapeHtml(task.error)}</div>` : ''}</div>`;
+                }).join('')
+              : emptyState(state.lang === 'zh' ? '当前还没有预热任务记录。' : 'No prewarm task history yet.')}
           </div>
         </div>
       </div>
@@ -1212,6 +1385,30 @@
           const ok = result?.success !== false;
           showToast(result?.message || 'OK', ok ? 'success' : 'error');
           await loadSystem();
+          if (result?.action?.phase === 'running') {
+            scheduleServiceStatusPoll();
+          }
+        } catch (error) {
+          showToast(error.message || String(error), 'error');
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-prewarm-action]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const action = button.getAttribute('data-prewarm-action');
+        try {
+          if (action === 'reload') {
+            await loadSystem();
+            return;
+          }
+          const result = await postJson('/api/cache-prewarm/trigger', { trigger: 'web-manual' });
+          const ok = result?.scheduled !== false;
+          showToast(result?.message || 'OK', ok ? 'success' : 'error');
+          await loadSystem();
+          if (result?.status?.phase === 'running' || result?.status?.phase === 'scheduled') {
+            schedulePrewarmStatusPoll();
+          }
         } catch (error) {
           showToast(error.message || String(error), 'error');
         }
@@ -1318,6 +1515,13 @@
         showToast(error.message || String(error), 'error');
       }
     });
+
+    if (serviceActionMeta.phase === 'running') {
+      scheduleServiceStatusPoll();
+    }
+    if (prewarmMeta.phase === 'running' || prewarmMeta.phase === 'scheduled') {
+      schedulePrewarmStatusPoll();
+    }
   }
 
   async function loadOpenClawTab() {
@@ -3603,6 +3807,10 @@
   async function loadActiveTab() {
     const active = state.activeTab || 'overview';
     if (active !== 'git-sync') clearGitSyncPollTimer();
+    if (active !== 'overview' && active !== 'system') {
+      clearServicePollTimer();
+      clearPrewarmPollTimer();
+    }
     const panel = document.getElementById('guard-panel');
     if (panel) panel.innerHTML = `<div class="empty">${escapeHtml(t('loading'))}</div>`;
     try {

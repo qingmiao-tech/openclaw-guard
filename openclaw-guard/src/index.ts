@@ -10,7 +10,7 @@ import { detectOpenClaw } from './openclaw.js';
 import { getConfigPath, getEnvPath, readAllEnv, readEnvValue, writeEnvValue, getDashboardUrl } from './config.js';
 import { getChannels, getFeishuConfig, saveFeishuConfig, checkFeishuPlugin, type FeishuConfig } from './channels.js';
 import { getAIConfig, setPrimaryModel, setFallbackModels, PROVIDERS as AI_PROVIDERS } from './models.js';
-import { getServiceStatus, startService, stopService, restartService, getLogs } from './service-mgr.js';
+import { getServiceStatus, startService, stopService, restartService, getLogs, runServiceActionTask, type ServiceActionName } from './service-mgr.js';
 import { startServer } from './server.js';
 import { getDashboardOverview, captureSessionOverview, getRecentActivity } from './dashboard.js';
 import { getAgentCatalog, getManagedRoots, listManagedFiles, readManagedFile, writeManagedFile, listMemoryFiles, searchManagedFiles } from './workspace-files.js';
@@ -568,6 +568,43 @@ program.command('cache-prewarm')
         console.log(chalk.dim(`    ${task.error}`));
       }
     }
+  });
+
+program.command('service-task')
+  .description('执行后台 Gateway 运维任务')
+  .requiredOption('--action <action>', 'start / stop / restart')
+  .option('--json', '输出 JSON 状态')
+  .action((opts: { action: string; json?: boolean }) => {
+    const action = opts.action === 'start' || opts.action === 'stop' || opts.action === 'restart'
+      ? opts.action as ServiceActionName
+      : null;
+    if (!action) {
+      const errorResult = {
+        success: false,
+        message: `Unsupported action: ${opts.action}`,
+      };
+      if (opts.json) {
+        printJson(errorResult);
+        return;
+      }
+      console.log(chalk.red(errorResult.message));
+      process.exitCode = 1;
+      return;
+    }
+
+    const result = runServiceActionTask(action);
+    if (opts.json) {
+      printJson(result);
+      return;
+    }
+
+    const ok = result.phase === 'completed';
+    const message = result.message || (ok ? '后台任务已完成。' : '后台任务执行失败。');
+    console.log(ok ? chalk.green(message) : chalk.red(message));
+    if (result.error) {
+      console.log(chalk.dim(result.error));
+    }
+    if (!ok) process.exitCode = 1;
   });
 
 program.parse();

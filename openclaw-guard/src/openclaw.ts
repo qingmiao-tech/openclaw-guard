@@ -1,4 +1,4 @@
-import { spawn, spawnSync } from 'node:child_process';
+﻿import { spawn, spawnSync } from 'node:child_process';
 import { detectPlatform } from './platform.js';
 import { getPersistentCachedValue, invalidatePersistentCache } from './persistent-cache.js';
 
@@ -146,14 +146,14 @@ export function installOrUpdateOpenClaw(
     }
     onProgress({
       stage: mode,
-      message: '安装失败',
+      message: mode === 'install' ? 'OpenClaw 安装失败。' : 'OpenClaw 更新失败。',
       done: true,
       error: stderr || stdout || `exit code ${code}`,
     });
   });
 
   child.on('error', (err) => {
-    onProgress({ stage: mode, message: '执行失败', done: true, error: err.message });
+    onProgress({ stage: mode, message: '执行失败。', done: true, error: err.message });
   });
 }
 

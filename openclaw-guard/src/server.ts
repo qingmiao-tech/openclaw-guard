@@ -3,75 +3,89 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runFullAudit } from './audit.js';
-import { applyProfile, PROFILES } from './profiles.js';
+import {
+    changePassword,
+    createSession,
+    extractBearerToken,
+    hasAuthConfigured,
+    initAuth,
+    isAuthEnabled,
+    revokeSession,
+    validatePassword,
+    validateSession,
+} from './auth.js';
+import { getCachePrewarmStatus, scheduleServerCachePrewarm, spawnCachePrewarm } from './cache-prewarm.js';
+import {
+    checkFeishuPlugin,
+    clearChannel,
+    getChannel,
+    getChannelDefinitions,
+    getChannels,
+    getFeishuConfig,
+    saveChannel,
+    saveFeishuConfig,
+} from './channels.js';
+import {
+    getConfigPath,
+    getDashboardUrl,
+    getEnvPath,
+    getNested,
+    getOrCreateGatewayToken,
+    loadConfig,
+    readAllEnv,
+    removeEnvValue,
+    saveConfig,
+    writeEnvValue,
+} from './config.js';
+import { createCronJob, disableCronJob, enableCronJob, getCachedCronOverview, removeCronJob, runCronJob, updateCronJob, type CronJobInput } from './cron-ui.js';
+import {
+    getRecentActivity,
+} from './dashboard.js';
+import {
+    applyGitIgnoreRules,
+    checkGitRemotePrivate,
+    commitGitSync,
+    connectGitRemote,
+    getCachedGitIgnorePreview,
+    getCachedGitSyncStatus,
+    initGitSync,
+    pushGitSync,
+    saveGitTokenAuth,
+    startOAuthLogin,
+    syncGitSync
+} from './git-sync.js';
 import { generateHardenScript, getAllHardenSteps } from './harden.js';
-import { detectPlatform, getCurrentUser, getHomeDir, getOpenClawDir } from './platform.js';
+import {
+    PROVIDERS as AI_PROVIDERS,
+    deleteProvider,
+    getAIConfig,
+    saveProvider,
+    setFallbackModels,
+    setPrimaryModel,
+} from './models.js';
+import { clearNotifications, clearReadNotifications, getNotificationSummary, markAllNotifications, markNotificationRead } from './notifications.js';
 import { detectOpenClaw, scheduleOpenClawTask } from './openclaw.js';
+import { detectPlatform, getCurrentUser, getHomeDir, getOpenClawDir } from './platform.js';
+import { applyProfile, PROFILES } from './profiles.js';
+import {
+    getCachedCostSummary,
+    getCachedDashboardOverview,
+    getCachedSessionOverview,
+} from './runtime-view-store.js';
+import { getLogs, getServiceActionStatus, getServiceStatus, restartService, startService, stopService } from './service-mgr.js';
+import { getWebBackgroundStatus, registerBackgroundProcess, startWebBackgroundService, stopWebBackgroundService } from './web-background.js';
 import { getCompatibilityPage } from './web-ui.js';
 import { getWorkbenchPage } from './workbench-ui.js';
 import {
-  loadConfig,
-  saveConfig,
-  getNested,
-  getConfigPath,
-  getEnvPath,
-  readAllEnv,
-  removeEnvValue,
-  writeEnvValue,
-  getOrCreateGatewayToken,
-  getDashboardUrl,
-} from './config.js';
-import {
-  getChannels,
-  getChannelDefinitions,
-  getChannel,
-  saveChannel,
-  clearChannel,
-  getFeishuConfig,
-  saveFeishuConfig,
-  checkFeishuPlugin,
-} from './channels.js';
-import {
-  getAIConfig,
-  saveProvider,
-  deleteProvider,
-  setPrimaryModel,
-  setFallbackModels,
-  PROVIDERS as AI_PROVIDERS,
-} from './models.js';
-import { getServiceStatus, getServiceActionStatus, startService, stopService, restartService, getLogs } from './service-mgr.js';
-import {
-  captureSessionOverview,
-  getDashboardOverview,
-  getRecentActivity,
-} from './dashboard.js';
-import {
-  getAgentCatalog,
-  getManagedRoots,
-  listManagedFiles,
-  readManagedFile,
-  writeManagedFile,
-  createManagedEntry,
-  listMemoryFiles,
-  searchManagedFiles,
+    createManagedEntry,
+    getAgentCatalog,
+    getManagedRoots,
+    listManagedFiles,
+    listMemoryFiles,
+    readManagedFile,
+    searchManagedFiles,
+    writeManagedFile,
 } from './workspace-files.js';
-import { getCronOverview, enableCronJob, disableCronJob, runCronJob, removeCronJob, createCronJob, updateCronJob, type CronJobInput } from './cron-ui.js';
-import {
-  getGitSyncStatus,
-  initGitSync,
-  connectGitRemote,
-  saveGitTokenAuth,
-  checkGitRemotePrivate,
-  previewGitIgnoreRules,
-  applyGitIgnoreRules,
-  commitGitSync,
-  pushGitSync,
-  syncGitSync,
-  startOAuthLogin,
-} from './git-sync.js';
-import { listNotifications, markNotificationRead, markAllNotifications, clearNotifications, clearReadNotifications, getNotificationSummary } from './notifications.js';
-import { getWebBackgroundStatus, stopWebBackgroundService, registerBackgroundProcess, startWebBackgroundService } from './web-background.js';
-import { getCachePrewarmStatus, scheduleServerCachePrewarm, spawnCachePrewarm } from './cache-prewarm.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -235,6 +249,69 @@ export function startServer(port: number) {
           htmlResponse(res, getCompatibilityPage());
           return;
         }
+
+        // ── 鉴权中间件：保护所有 /api/* 路由（/api/auth/* 除外）──────────────────
+        if (isAuthEnabled()) {
+          const isPublicPath =
+            pathname === '/api/auth/login' ||
+            pathname === '/api/auth/status' ||
+            pathname.startsWith('/ui/') ||
+            pathname === '/favicon.ico' ||
+            pathname === '/' ||
+            pathname === '/index.html' ||
+            pathname === '/workbench' ||
+            pathname === '/compat' ||
+            pathname === '/legacy';
+
+          if (!isPublicPath) {
+            const token = extractBearerToken(req);
+            if (!token || !validateSession(token)) {
+              jsonResponse(res, { error: 'Unauthorized', message: '请先登录' }, 401);
+              return;
+            }
+          }
+        }
+
+        // ── 鉴权 API 路由（公开可访问）─────────────────────────────────────────
+        if (pathname === '/api/auth/status' && req.method === 'GET') {
+          jsonResponse(res, { enabled: isAuthEnabled(), configured: hasAuthConfigured() });
+          return;
+        }
+
+        if (pathname === '/api/auth/login' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          const password = typeof body.password === 'string' ? body.password : '';
+          if (!password) {
+            jsonResponse(res, { success: false, error: '请输入密码' }, 400);
+            return;
+          }
+          if (validatePassword(password)) {
+            const token = createSession();
+            jsonResponse(res, { success: true, token, expiresIn: 8 * 3600 });
+          } else {
+            // 小延迟，防止暴力破解
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            jsonResponse(res, { success: false, error: '密码错误' }, 401);
+          }
+          return;
+        }
+
+        if (pathname === '/api/auth/logout' && req.method === 'POST') {
+          const token = extractBearerToken(req);
+          if (token) revokeSession(token);
+          jsonResponse(res, { success: true });
+          return;
+        }
+
+        if (pathname === '/api/auth/change-password' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : '';
+          const newPassword = typeof body.newPassword === 'string' ? body.newPassword : '';
+          const result = changePassword(currentPassword, newPassword);
+          jsonResponse(res, result, result.success ? 200 : 400);
+          return;
+        }
+        // ── End Auth ───────────────────────────────────────────────────────────
 
         if (pathname === '/api/info') {
           jsonResponse(res, {
@@ -495,7 +572,7 @@ export function startServer(port: number) {
         }
 
         if (pathname === '/api/dashboard/overview' && req.method === 'GET') {
-          jsonResponse(res, getDashboardOverview());
+          jsonResponse(res, getCachedDashboardOverview());
           return;
         }
         if (pathname === '/api/agents' && req.method === 'GET') {
@@ -503,7 +580,7 @@ export function startServer(port: number) {
           return;
         }
         if (pathname === '/api/sessions' && req.method === 'GET') {
-          jsonResponse(res, captureSessionOverview());
+          jsonResponse(res, getCachedSessionOverview());
           return;
         }
         if (pathname === '/api/activity' && req.method === 'GET') {
@@ -566,11 +643,11 @@ export function startServer(port: number) {
           return;
         }
         if (pathname === '/api/costs' && req.method === 'GET') {
-          jsonResponse(res, captureSessionOverview().costSummary);
+          jsonResponse(res, getCachedCostSummary());
           return;
         }
         if (pathname === '/api/cron-ui' && req.method === 'GET') {
-          jsonResponse(res, getCronOverview());
+          jsonResponse(res, getCachedCronOverview());
           return;
         }
         if (pathname === '/api/cron-ui/create' && req.method === 'POST') {
@@ -609,7 +686,7 @@ export function startServer(port: number) {
         }
 
         if (pathname === '/api/git-sync/status' && req.method === 'GET') {
-          jsonResponse(res, getGitSyncStatus());
+          jsonResponse(res, getCachedGitSyncStatus());
           return;
         }
         if (pathname === '/api/git-sync/init' && req.method === 'POST') {
@@ -655,7 +732,7 @@ export function startServer(port: number) {
           return;
         }
         if (pathname === '/api/git-sync/gitignore-preview' && req.method === 'GET') {
-          jsonResponse(res, previewGitIgnoreRules(undefined, url.searchParams.get('mode') === 'exact' ? 'exact' : 'smart'));
+          jsonResponse(res, getCachedGitIgnorePreview(url.searchParams.get('mode') === 'exact' ? 'exact' : 'smart'));
           return;
         }
         if (pathname === '/api/git-sync/gitignore-apply' && req.method === 'POST') {
@@ -746,9 +823,22 @@ export function startServer(port: number) {
       console.log('\n[Guard] OpenClaw Guard web UI started.');
       console.log(`   URL: http://localhost:${currentPort}`);
       console.log(`   Alias: http://localhost:${currentPort}/workbench`);
+      if (!isAuthEnabled()) {
+        console.log('   Auth: DISABLED (GUARD_NO_AUTH=1)');
+      }
       console.log('   Press Ctrl+C to stop.\n');
     });
     return server;
+  }
+
+  // 初始化密码鉴权（首次启动自动生成初始密码）
+  if (isAuthEnabled()) {
+    const authInit = initAuth();
+    if (authInit.isNew && authInit.password) {
+      console.log('\n[Guard] ⚠️  首次启动，已自动生成访问密码：');
+      console.log(`   密码: ${authInit.password}`);
+      console.log('   请妥善保存此密码，也可在登录后通过「修改密码」功能更换。\n');
+    }
   }
 
   return tryListen(0);

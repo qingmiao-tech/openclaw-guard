@@ -4,6 +4,7 @@
 
   const STORAGE_LANG = 'openclaw-guard.lang';
   const STORAGE_TAB = 'openclaw-guard.active-tab';
+  const STORAGE_TOKEN = 'openclaw-guard.token';
 
   const I18N = {
     zh: {
@@ -34,6 +35,21 @@
       clearRead: '清空已读',
       clearAll: '清空全部',
       search: '搜索',
+      login: '登录',
+      logout: '退出登录',
+      loginTitle: 'OpenClaw Guard 登录',
+      loginPasswordLabel: '访问密码',
+      loginPasswordPlaceholder: '请输入密码',
+      loginBtn: '登录',
+      loginLoading: '验证中…',
+      loginError: '密码错误，请重试',
+      changePassword: '修改密码',
+      changePwdCurrentLabel: '当前密码',
+      changePwdNewLabel: '新密码',
+      changePwdConfirmLabel: '确认新密码',
+      changePwdMismatch: '两次密码输入不一致',
+      changePwdSuccess: '密码已修改，请重新登录',
+      changePwdBtn: '确认修改',
       tabs: {
         overview: '驾驶舱',
         system: '运维',
@@ -107,6 +123,21 @@
       clearRead: 'Clear read',
       clearAll: 'Clear all',
       search: 'Search',
+      login: 'Login',
+      logout: 'Logout',
+      loginTitle: 'OpenClaw Guard Login',
+      loginPasswordLabel: 'Access Password',
+      loginPasswordPlaceholder: 'Enter password',
+      loginBtn: 'Login',
+      loginLoading: 'Verifying…',
+      loginError: 'Incorrect password, please retry',
+      changePassword: 'Change Password',
+      changePwdCurrentLabel: 'Current Password',
+      changePwdNewLabel: 'New Password',
+      changePwdConfirmLabel: 'Confirm New Password',
+      changePwdMismatch: 'Passwords do not match',
+      changePwdSuccess: 'Password changed, please log in again',
+      changePwdBtn: 'Confirm Change',
       tabs: {
         overview: 'Cockpit',
         system: 'Operations',
@@ -163,6 +194,8 @@
   const state = {
     lang: localStorage.getItem(STORAGE_LANG) || 'zh',
     activeTab: null,
+    authToken: localStorage.getItem(STORAGE_TOKEN) || null,
+    authEnabled: null, // null = 尚未检测
     filesPath: '',
     currentFile: null,
     fileOriginal: '',
@@ -191,6 +224,8 @@
     servicePollTimer: null,
     prewarmPollTimer: null,
     openclawPollTimer: null,
+    cronPollTimer: null,
+    runtimeViewPollTimer: null,
     pendingPanelFocus: null,
   };
 
@@ -260,8 +295,34 @@
     return `${Math.round(abs / 86_400_000)} ${state.lang === 'zh' ? '天前' : 'd ago'}`;
   }
 
+  function formatAgeMs(value) {
+    const ms = Number(value);
+    if (!Number.isFinite(ms) || ms < 0) return '-';
+    if (ms < 1000) return `${Math.round(ms)} ms`;
+    if (ms < 60_000) return `${Math.round(ms / 1000)} s`;
+    if (ms < 3_600_000) return `${Math.round(ms / 60_000)} ${state.lang === 'zh' ? '分钟' : 'min'}`;
+    return `${Math.round(ms / 3_600_000)} ${state.lang === 'zh' ? '小时' : 'h'}`;
+  }
+
+  function looksLikeGarbledText(value) {
+    const text = String(value || '').trim();
+    if (!text) return false;
+    const replacementCount = (text.match(/�/g) || []).length;
+    return replacementCount >= 2;
+  }
+
+  function sanitizeDisplayText(value, fallback = '-') {
+    const text = String(value || '').trim();
+    if (!text) return fallback;
+    if (looksLikeGarbledText(text)) {
+      return fallback;
+    }
+    return text;
+  }
+
   async function apiRequest(url, options = {}) {
     const { timeoutMs = 15000, headers = {}, ...fetchOptions } = options;
+    const authHeaders = state.authToken ? { Authorization: `Bearer ${state.authToken}` } : {};
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     let response;
@@ -270,6 +331,7 @@
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
+          ...authHeaders,
           ...headers,
         },
         ...fetchOptions,
@@ -290,6 +352,13 @@
       data = raw ? JSON.parse(raw) : null;
     } catch {
       data = raw;
+    }
+    if (response.status === 401) {
+      // 令牌失效，清除本地 token 并触发重新登录
+      state.authToken = null;
+      localStorage.removeItem(STORAGE_TOKEN);
+      renderLoginPage();
+      throw new Error(state.lang === 'zh' ? '会话已过期，请重新登录' : 'Session expired, please log in again');
     }
     if (!response.ok) {
       const message = typeof data === 'string'
@@ -316,6 +385,138 @@
     showToast.timer = setTimeout(() => {
       toast.className = 'toast';
     }, 2600);
+  }
+
+  // ── 登录页面 ─────────────────────────────────────────────────────────────────
+
+  function renderLoginPage() {
+    app.innerHTML = `
+      <div id="guard-login-wrap">
+        <div id="guard-login-card">
+          <div class="guard-login-logo">
+            <img src="/ui/logo.png" alt="OpenClaw Guard" />
+          </div>
+          <h1>${escapeHtml(t('loginTitle'))}</h1>
+          <form id="guard-login-form" autocomplete="on">
+            <label for="guard-login-pwd">${escapeHtml(t('loginPasswordLabel'))}</label>
+            <input
+              id="guard-login-pwd"
+              type="password"
+              autocomplete="current-password"
+              placeholder="${escapeHtml(t('loginPasswordPlaceholder'))}"
+              autofocus
+            />
+            <div id="guard-login-error" class="guard-login-error" style="display:none"></div>
+            <button type="submit" id="guard-login-btn">${escapeHtml(t('loginBtn'))}</button>
+          </form>
+          <div class="guard-login-hint">
+            <div class="lang-switch" style="justify-content:center">
+              <button type="button" data-lang="zh" class="${state.lang === 'zh' ? 'active' : ''}">中文</button>
+              <button type="button" data-lang="en" class="${state.lang === 'en' ? 'active' : ''}">EN</button>
+            </div>
+          </div>
+        </div>
+        <div id="guard-toast" class="toast"></div>
+      </div>
+    `;
+
+    app.querySelectorAll('[data-lang]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.lang = btn.getAttribute('data-lang') || 'zh';
+        localStorage.setItem(STORAGE_LANG, state.lang);
+        renderLoginPage();
+      });
+    });
+
+    const form = document.getElementById('guard-login-form');
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pwdInput = document.getElementById('guard-login-pwd');
+      const errDiv = document.getElementById('guard-login-error');
+      const btn = document.getElementById('guard-login-btn');
+      const password = pwdInput?.value || '';
+      btn.disabled = true;
+      btn.textContent = t('loginLoading');
+      if (errDiv) errDiv.style.display = 'none';
+      try {
+        const result = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password }),
+        }).then((r) => r.json());
+        if (result.success && result.token) {
+          state.authToken = result.token;
+          localStorage.setItem(STORAGE_TOKEN, result.token);
+          renderShell();
+          loadActiveTab();
+        } else {
+          if (errDiv) { errDiv.textContent = t('loginError'); errDiv.style.display = ''; }
+          btn.disabled = false;
+          btn.textContent = t('loginBtn');
+          pwdInput?.focus();
+        }
+      } catch {
+        if (errDiv) { errDiv.textContent = t('loginError'); errDiv.style.display = ''; }
+        btn.disabled = false;
+        btn.textContent = t('loginBtn');
+      }
+    });
+  }
+
+  function showChangePwdDialog() {
+    const overlay = document.createElement('div');
+    overlay.id = 'guard-changepwd-overlay';
+    overlay.innerHTML = `
+      <div id="guard-changepwd-card">
+        <h2>${escapeHtml(t('changePassword'))}</h2>
+        <label>${escapeHtml(t('changePwdCurrentLabel'))}</label>
+        <input id="cpwd-current" type="password" autocomplete="current-password" />
+        <label>${escapeHtml(t('changePwdNewLabel'))}</label>
+        <input id="cpwd-new" type="password" autocomplete="new-password" />
+        <label>${escapeHtml(t('changePwdConfirmLabel'))}</label>
+        <input id="cpwd-confirm" type="password" autocomplete="new-password" />
+        <div id="cpwd-error" class="guard-login-error" style="display:none"></div>
+        <div class="guard-changepwd-actions">
+          <button id="cpwd-cancel" type="button" class="action-btn">${escapeHtml(t('cancel'))}</button>
+          <button id="cpwd-submit" type="button" class="action-btn primary">${escapeHtml(t('changePwdBtn'))}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    document.getElementById('cpwd-cancel')?.addEventListener('click', close);
+    document.getElementById('cpwd-submit')?.addEventListener('click', async () => {
+      const current = document.getElementById('cpwd-current')?.value || '';
+      const newPwd = document.getElementById('cpwd-new')?.value || '';
+      const confirm = document.getElementById('cpwd-confirm')?.value || '';
+      const errDiv = document.getElementById('cpwd-error');
+      if (newPwd !== confirm) {
+        if (errDiv) { errDiv.textContent = t('changePwdMismatch'); errDiv.style.display = ''; }
+        return;
+      }
+      try {
+        const result = await apiRequest('/api/auth/change-password', {
+          method: 'POST',
+          body: JSON.stringify({ currentPassword: current, newPassword: newPwd }),
+        });
+        if (result.success) {
+          close();
+          showToast(t('changePwdSuccess'));
+          // 修改密码后服务端使所有 session 失效，本地也清除
+          setTimeout(() => {
+            state.authToken = null;
+            localStorage.removeItem(STORAGE_TOKEN);
+            renderLoginPage();
+          }, 1200);
+        } else {
+          if (errDiv) { errDiv.textContent = result.error || t('loginError'); errDiv.style.display = ''; }
+        }
+      } catch (err) {
+        if (errDiv) { errDiv.textContent = err.message || t('loginError'); errDiv.style.display = ''; }
+      }
+    });
   }
 
   function setActiveTab(tabId, updateHash = true) {
@@ -364,13 +565,313 @@
     return `<div class="card"><div class="row" style="justify-content:space-between"><h3>${escapeHtml(title)}</h3>${pillClass ? `<span class="pill ${pillClass}">${escapeHtml(detail || '')}</span>` : ''}</div><div class="metric">${escapeHtml(value)}</div>${pillClass ? '' : `<p>${escapeHtml(detail || '')}</p>`}</div>`;
   }
 
+  function renderCacheSummaryCard(cache, title) {
+    if (!cache) return '';
+    const statusLabel = cache.refreshing
+      ? (state.lang === 'zh' ? '后台刷新中' : 'Refreshing in background')
+      : cache.stale
+        ? (state.lang === 'zh' ? '使用旧快照' : 'Serving stale snapshot')
+        : (state.lang === 'zh' ? '热快照' : 'Hot snapshot');
+    const pillClass = cache.refreshing || cache.stale ? 'warn' : 'success';
+    const details = [
+      `${state.lang === 'zh' ? '快照时间' : 'Snapshot'}: ${formatDate(cache.generatedAt)}`,
+      `${state.lang === 'zh' ? '快照年龄' : 'Age'}: ${formatAgeMs(cache.ageMs)}`,
+      `${state.lang === 'zh' ? '最近动作' : 'Last action'}: ${cache.lastReason || '-'}`,
+    ];
+    return `
+      <div class="card accent-info">
+        <div class="row" style="justify-content:space-between; align-items:center;">
+          <h3>${escapeHtml(title)}</h3>
+          <span class="pill ${pillClass}">${escapeHtml(statusLabel)}</span>
+        </div>
+        <div class="muted small" style="margin-top:8px;">${escapeHtml(details.join(' · '))}</div>
+        ${cache.lastError ? `<div class="status warn" style="margin-top:12px;">${escapeHtml(cache.lastError)}</div>` : ''}
+      </div>
+    `;
+  }
+
   function normalizeRepoPath(value) {
-    return String(value || '')
-      .trim()
+    let text = String(value || '')
+      .trim();
+    if ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith('\'') && text.endsWith('\''))) {
+      text = text.slice(1, -1);
+    }
+    return text
+      .replace(/\\"/g, '"')
       .replace(/\\/g, '/')
-      .replace(/^\.\//, '')
+      .replace(/^\.[/\\]/, '')
       .replace(/\/+/g, '/')
       .replace(/\/$/, '');
+  }
+
+  function getRunStateLabel(running) {
+    if (running) {
+      return state.lang === 'zh' ? '运行中' : 'RUNNING';
+    }
+    return state.lang === 'zh' ? '未运行' : 'STOPPED';
+  }
+
+  function getInstallStateLabel(installed) {
+    if (installed) {
+      return state.lang === 'zh' ? '已安装' : 'INSTALLED';
+    }
+    return state.lang === 'zh' ? '未安装' : 'MISSING';
+  }
+
+  function getReadyStateLabel(ready) {
+    if (ready) {
+      return state.lang === 'zh' ? '就绪' : 'READY';
+    }
+    return state.lang === 'zh' ? '缺失' : 'MISSING';
+  }
+
+  function getNotificationSourceLabel(source) {
+    const key = String(source || '').trim();
+    const map = {
+      'git-sync': { zh: 'Git 同步', en: 'Git Sync' },
+      'cron-ui': { zh: 'Cron', en: 'Cron' },
+      'runtime': { zh: '运行态', en: 'Runtime' },
+      'service': { zh: '服务', en: 'Service' },
+    };
+    return map[key]?.[state.lang] || key || '-';
+  }
+
+  function getNotificationTypeLabel(type) {
+    const key = String(type || '').trim();
+    const map = {
+      'git-sync': { zh: '同步事件', en: 'Sync Event' },
+      'cron': { zh: 'Cron 事件', en: 'Cron Event' },
+      'service': { zh: '服务事件', en: 'Service Event' },
+      'runtime-warning': { zh: '运行告警', en: 'Runtime Warning' },
+    };
+    return map[key]?.[state.lang] || key || '-';
+  }
+
+  function getNotificationSeverityLabel(severity) {
+    const key = String(severity || '').trim();
+    const map = {
+      info: { zh: '提示', en: 'Info' },
+      success: { zh: '成功', en: 'Success' },
+      warning: { zh: '警告', en: 'Warning' },
+      error: { zh: '错误', en: 'Error' },
+    };
+    return map[key]?.[state.lang] || key || '-';
+  }
+
+  function getNotificationMetaList(metaValue) {
+    if (!Array.isArray(metaValue)) return [];
+    return uniqueItems(metaValue.map((item) => normalizeRepoPath(item)).filter(Boolean));
+  }
+
+  function getNotificationCountFromMessage(message, pattern) {
+    const match = String(message || '').match(pattern);
+    const count = Number(match?.[1] || NaN);
+    return Number.isFinite(count) ? count : null;
+  }
+
+  function formatNotificationPathPreview(paths, options = {}) {
+    const items = uniqueItems((paths || []).map((item) => normalizeRepoPath(item)).filter(Boolean));
+    if (!items.length) {
+      return options.emptyText || (state.lang === 'zh' ? '未提供路径详情。' : 'No path details were provided.');
+    }
+    const limit = Number.isFinite(options.limit) ? options.limit : 3;
+    const visible = items.slice(0, limit);
+    if (items.length <= limit) return visible.join(', ');
+    return state.lang === 'zh'
+      ? `${visible.join('、')} 等 ${items.length} 项`
+      : `${visible.join(', ')} and ${items.length} total`;
+  }
+
+  function getNotificationPresentation(item) {
+    const rawTitle = String(item?.title || '').trim();
+    const rawMessage = String(item?.message || '').trim();
+    const meta = item?.meta || {};
+    const embeddedRepos = getNotificationMetaList(meta.embeddedRepos);
+    const missingEntries = getNotificationMetaList(meta.missingEntries);
+    const changedCount = getNotificationCountFromMessage(rawMessage, /There are\s+(\d+)\s+(?:stageable\s+root-repo\s+)?(?:changed files|changes?)\s+ready/i);
+    const oauthAccountMatch = rawMessage.match(/^(github|gitee)\s+account:\s+(.+)$/i);
+    const titleMap = {
+      'Git sync repository initialized': {
+        zh: 'Git 同步仓库已初始化',
+        en: 'Git sync repository initialized',
+      },
+      'Remote repository connected': {
+        zh: '远程仓库已连接',
+        en: 'Remote repository connected',
+      },
+      'Git authentication saved': {
+        zh: 'Git 认证已保存',
+        en: 'Git authentication saved',
+      },
+      'Private repository check passed': {
+        zh: '私有仓校验通过',
+        en: 'Private repository check passed',
+      },
+      'Private repository check failed': {
+        zh: '私有仓校验失败',
+        en: 'Private repository check failed',
+      },
+      'Git sync commit skipped': {
+        zh: '本次 Git 提交已跳过',
+        en: 'Git sync commit skipped',
+      },
+      'Local commit succeeded': {
+        zh: '本地提交成功',
+        en: 'Local commit succeeded',
+      },
+      'Remote push failed': {
+        zh: '远程推送失败',
+        en: 'Remote push failed',
+      },
+      'Remote push succeeded': {
+        zh: '远程推送成功',
+        en: 'Remote push succeeded',
+      },
+      'OAuth callback verification failed': {
+        zh: 'OAuth 回调校验失败',
+        en: 'OAuth callback verification failed',
+      },
+      'OAuth completed successfully': {
+        zh: 'OAuth 已完成',
+        en: 'OAuth completed successfully',
+      },
+      'OAuth failed': {
+        zh: 'OAuth 失败',
+        en: 'OAuth failed',
+      },
+      'OAuth startup failed': {
+        zh: 'OAuth 启动失败',
+        en: 'OAuth startup failed',
+      },
+      'OAuth timed out': {
+        zh: 'OAuth 已超时',
+        en: 'OAuth timed out',
+      },
+      'OAuth started': {
+        zh: '已启动 OAuth 授权',
+        en: 'OAuth started',
+      },
+      'Cron action succeeded': {
+        zh: 'Cron 操作成功',
+        en: 'Cron action succeeded',
+      },
+      'Cron action failed': {
+        zh: 'Cron 操作失败',
+        en: 'Cron action failed',
+      },
+      'Runtime warning': {
+        zh: '运行态告警',
+        en: 'Runtime warning',
+      },
+    };
+
+    let title = titleMap[rawTitle]?.[state.lang] || rawTitle;
+    let message = rawMessage;
+
+    if (rawTitle === 'Detected unsynced .openclaw changes') {
+      title = state.lang === 'zh' ? '检测到 .openclaw 有未同步改动' : rawTitle;
+      if (changedCount !== null) {
+        message = state.lang === 'zh'
+          ? `当前有 ${formatNumber(changedCount)} 项可纳入外层仓库的变更，已经可以提交并推送。`
+          : `There are ${formatNumber(changedCount)} stageable root-repo changes ready to commit and push.`;
+      }
+    } else if (rawTitle === 'Embedded Git repositories detected') {
+      title = state.lang === 'zh' ? '检测到嵌套 Git 仓库' : rawTitle;
+      if (embeddedRepos.length) {
+        message = state.lang === 'zh'
+          ? `发现 ${formatNumber(embeddedRepos.length)} 个嵌套仓库：${formatNotificationPathPreview(embeddedRepos)}。请单独同步，或加入外层 .gitignore。`
+          : `Detected ${formatNumber(embeddedRepos.length)} embedded repositories: ${formatNotificationPathPreview(embeddedRepos)}. Sync them separately or add them to the root .gitignore.`;
+      }
+    } else if (rawTitle === '.gitignore updated for embedded repositories') {
+      const ignoreCount = missingEntries.length || getNotificationCountFromMessage(rawMessage, /Added\s+(\d+)\s+ignore rules/i);
+      title = state.lang === 'zh' ? '已更新嵌套仓库忽略规则' : rawTitle;
+      if (ignoreCount || embeddedRepos.length) {
+        message = state.lang === 'zh'
+          ? `已将 ${formatNumber(ignoreCount || 0)} 条 .gitignore 规则写入外层仓库，覆盖 ${formatNumber(embeddedRepos.length)} 个嵌套仓库。`
+          : `Added ${formatNumber(ignoreCount || 0)} .gitignore rules for ${formatNumber(embeddedRepos.length)} embedded repositories in the root repo.`;
+      }
+    } else if (rawTitle === 'Remote repository connected') {
+      message = state.lang === 'zh'
+        ? `已绑定远程仓库：${rawMessage || '-'}`
+        : rawMessage;
+    } else if (rawTitle === 'Git sync repository initialized') {
+      const updatedPath = rawMessage.match(/updated\s+(.+)$/i)?.[1] || '';
+      message = state.lang === 'zh'
+        ? `已经准备好 Git 同步仓库${updatedPath ? `，并更新 ${updatedPath}` : ''}。`
+        : rawMessage;
+    } else if (rawTitle === 'Git authentication saved') {
+      message = state.lang === 'zh'
+        ? 'Git 凭证已保存，可以继续执行 private 检查或直接同步。'
+        : 'Git credentials were saved. Continue with private-check or sync.';
+    } else if (rawTitle === 'Private repository check passed') {
+      message = state.lang === 'zh'
+        ? '远程仓库已确认为 private，可以继续执行提交和推送。'
+        : 'The remote repository is confirmed as private and ready to sync.';
+    } else if (rawTitle === 'Private repository check failed') {
+      message = state.lang === 'zh'
+        ? `私有仓校验失败：${rawMessage || '请检查仓库权限与认证状态。'}`
+        : rawMessage;
+    } else if (rawTitle === 'Git sync commit skipped') {
+      const skippedRepos = getNotificationMetaList(meta.skippedEmbeddedRepos);
+      if (skippedRepos.length) {
+        message = state.lang === 'zh'
+          ? `当前只有嵌套仓库变更被跳过：${formatNotificationPathPreview(skippedRepos)}。外层仓库没有可提交文件。`
+          : `Only embedded repositories were skipped: ${formatNotificationPathPreview(skippedRepos)}. No stageable files remained in the root repository.`;
+      } else {
+        message = state.lang === 'zh' ? '当前没有可提交的外层仓库变更。' : 'No stageable root-repo changes were found.';
+      }
+    } else if (rawTitle === 'Local commit succeeded') {
+      const skippedRepos = getNotificationMetaList(meta.skippedEmbeddedRepos);
+      message = state.lang === 'zh'
+        ? `外层仓库已经创建新的本地提交。${skippedRepos.length ? ` 已跳过 ${formatNumber(skippedRepos.length)} 个嵌套仓库。` : ''}`
+        : `A new local commit was created for the root repository.${skippedRepos.length ? ` ${formatNumber(skippedRepos.length)} embedded repositories were skipped.` : ''}`;
+    } else if (rawTitle === 'Remote push succeeded') {
+      message = state.lang === 'zh'
+        ? '外层仓库变更已经推送到私有远程仓库。'
+        : 'Changes were pushed to the private remote repository.';
+    } else if (rawTitle === 'Remote push failed') {
+      message = state.lang === 'zh'
+        ? `远程推送失败：${rawMessage || '请检查权限、网络或远程配置。'}`
+        : rawMessage;
+    } else if (rawTitle === 'OAuth started') {
+      message = state.lang === 'zh'
+        ? '浏览器授权流程已启动，请在浏览器中完成登录并返回 Guard。'
+        : 'Browser authorization started. Finish the login in your browser and return to Guard.';
+    } else if (rawTitle === 'OAuth timed out') {
+      message = state.lang === 'zh'
+        ? '浏览器授权在 180 秒内没有完成，请重新发起 OAuth。'
+        : 'The browser authorization was not completed within 180 seconds.';
+    } else if (rawTitle === 'OAuth completed successfully') {
+      message = oauthAccountMatch
+        ? (state.lang === 'zh'
+          ? `${oauthAccountMatch[1]} 账号已完成授权：${oauthAccountMatch[2]}`
+          : `${oauthAccountMatch[1]} account: ${oauthAccountMatch[2]}`)
+        : (state.lang === 'zh' ? 'OAuth 已完成，可以继续 private 检查或同步。' : 'OAuth completed. Continue with private-check or sync.');
+    } else if (rawTitle === 'OAuth callback verification failed') {
+      message = state.lang === 'zh'
+        ? '回调里的 code/state 校验失败，请重新发起 OAuth。'
+        : 'The callback did not include a valid code/state pair. Please start OAuth again.';
+    } else if (rawTitle === 'OAuth startup failed') {
+      message = state.lang === 'zh'
+        ? `OAuth 回调服务启动失败：${rawMessage || '请检查端口占用。'}`
+        : rawMessage;
+    } else if (rawTitle === 'OAuth failed') {
+      message = state.lang === 'zh'
+        ? `OAuth 执行失败：${rawMessage || '请检查网络、Client ID、Client Secret 和回调设置。'}`
+        : rawMessage;
+    } else if (rawTitle === 'Cron action succeeded' && state.lang === 'zh') {
+      message = rawMessage || 'Cron 操作已成功执行。';
+    } else if (rawTitle === 'Cron action failed' && state.lang === 'zh') {
+      message = rawMessage || 'Cron 操作执行失败。';
+    }
+
+    return {
+      title: title || rawTitle || '-',
+      message: message || rawMessage || '-',
+      sourceLabel: getNotificationSourceLabel(item?.source),
+      typeLabel: getNotificationTypeLabel(item?.type),
+      severityLabel: getNotificationSeverityLabel(item?.severity),
+    };
   }
 
   function uniqueItems(values) {
@@ -422,6 +923,225 @@
       state.lang === 'zh' ? '方案 3：继续单独同步' : 'Option 3: Sync separately',
       state.lang === 'zh' ? '保留子仓库不动，但请在对应子目录里单独执行它自己的 Git 提交与推送。' : 'Leave the child repository intact and commit/push from inside that child directory.',
     ].join('\n');
+  }
+
+  function detectGitPathStatus(pathValue, stageableSet, skippedEmbeddedRepos) {
+    if (stageableSet?.has(pathValue)) return 'stageable';
+    if ((skippedEmbeddedRepos || []).some((repoPath) => pathValue === repoPath || pathValue.startsWith(`${repoPath}/`))) {
+      return 'embedded';
+    }
+    return 'pending';
+  }
+
+  function createGitTreeNode(name, pathValue, depth) {
+    return {
+      name,
+      path: pathValue,
+      depth,
+      totalCount: 0,
+      stageableCount: 0,
+      embeddedCount: 0,
+      pendingCount: 0,
+      directFiles: [],
+      children: new Map(),
+      containerLeaf: false,
+    };
+  }
+
+  function incrementGitTreeNodeCount(node, status) {
+    node.totalCount += 1;
+    if (status === 'stageable') node.stageableCount += 1;
+    else if (status === 'embedded') node.embeddedCount += 1;
+    else node.pendingCount += 1;
+  }
+
+  function buildGitPathTree(paths, options = {}) {
+    const normalizedPaths = uniqueItems((paths || []).map((item) => normalizeRepoPath(item)).filter(Boolean)).sort();
+    const stageableSet = new Set(uniqueItems((options.stageablePaths || []).map((item) => normalizeRepoPath(item)).filter(Boolean)));
+    const skippedEmbeddedRepos = uniqueItems((options.skippedEmbeddedRepos || []).map((item) => normalizeRepoPath(item)).filter(Boolean));
+    const containerSet = new Set(skippedEmbeddedRepos);
+
+    normalizedPaths.forEach((pathValue) => {
+      const segments = pathValue.split('/').filter(Boolean);
+      let current = '';
+      for (let index = 0; index < segments.length - 1; index += 1) {
+        current = current ? `${current}/${segments[index]}` : segments[index];
+        containerSet.add(current);
+      }
+    });
+
+    const root = createGitTreeNode('', '', 0);
+
+    normalizedPaths.forEach((pathValue) => {
+      const segments = pathValue.split('/').filter(Boolean);
+      if (!segments.length) return;
+      const status = detectGitPathStatus(pathValue, stageableSet, skippedEmbeddedRepos);
+      const isContainer = containerSet.has(pathValue);
+
+      incrementGitTreeNodeCount(root, status);
+
+      let currentNode = root;
+      let currentPath = '';
+
+      for (let index = 0; index < segments.length; index += 1) {
+        const segment = segments[index];
+        currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+        const isLast = index === segments.length - 1;
+
+        if (isLast && !isContainer) {
+          currentNode.directFiles.push({
+            name: segment,
+            path: currentPath,
+            status,
+          });
+          break;
+        }
+
+        if (!currentNode.children.has(segment)) {
+          currentNode.children.set(segment, createGitTreeNode(segment, currentPath, index + 1));
+        }
+        const childNode = currentNode.children.get(segment);
+        incrementGitTreeNodeCount(childNode, status);
+
+        if (isLast) {
+          childNode.containerLeaf = true;
+        }
+
+        currentNode = childNode;
+      }
+    });
+
+    return root;
+  }
+
+  function getGitTreeStatusPill(status) {
+    if (status === 'stageable') {
+      return {
+        label: state.lang === 'zh' ? '可提交' : 'Stageable',
+        className: 'success',
+      };
+    }
+    if (status === 'embedded') {
+      return {
+        label: state.lang === 'zh' ? '嵌套仓库' : 'Embedded Repo',
+        className: 'warn',
+      };
+    }
+    return {
+      label: state.lang === 'zh' ? '待确认' : 'Pending',
+      className: '',
+    };
+  }
+
+  function renderGitTreeFilePreview(file, compact = false) {
+    const pill = getGitTreeStatusPill(file.status);
+    return `
+      <div class="git-tree-file${compact ? ' compact' : ''}">
+        <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+          <strong>${escapeHtml(file.name)}</strong>
+          <span class="pill ${pill.className}">${escapeHtml(pill.label)}</span>
+        </div>
+        <div class="muted small" style="margin-top:6px;">${escapeHtml(file.path)}</div>
+      </div>
+    `;
+  }
+
+  function renderGitTreeNode(node, options = {}) {
+    const childNodes = Array.from(node.children.values())
+      .sort((left, right) => {
+        if (right.totalCount !== left.totalCount) return right.totalCount - left.totalCount;
+        return left.name.localeCompare(right.name);
+      });
+    const directFiles = node.directFiles
+      .slice()
+      .sort((left, right) => left.name.localeCompare(right.name));
+    const previewLimit = Number.isFinite(options.previewLimit) ? options.previewLimit : 4;
+    const childPreviewLimit = Number.isFinite(options.childPreviewLimit) ? options.childPreviewLimit : 10;
+    const visibleChildren = childNodes.slice(0, childPreviewLimit);
+    const hiddenChildCount = Math.max(0, childNodes.length - visibleChildren.length);
+    const visibleFiles = directFiles.slice(0, previewLimit);
+    const hiddenFileCount = Math.max(0, directFiles.length - visibleFiles.length);
+    const isInitiallyOpen = options.expandDepth === undefined
+      ? node.depth <= 1
+      : node.depth <= options.expandDepth;
+    const descriptorParts = [];
+    if (childNodes.length > 0) {
+      descriptorParts.push(state.lang === 'zh'
+        ? `${formatNumber(childNodes.length)} 个子目录`
+        : `${formatNumber(childNodes.length)} folders`);
+    }
+    if (directFiles.length > 0) {
+      descriptorParts.push(state.lang === 'zh'
+        ? `${formatNumber(directFiles.length)} 个直系文件`
+        : `${formatNumber(directFiles.length)} direct files`);
+    }
+    if (node.containerLeaf && childNodes.length === 0 && directFiles.length === 0) {
+      descriptorParts.push(state.lang === 'zh' ? '独立仓库根路径' : 'Repository root marker');
+    }
+
+    return `
+      <details class="git-tree-node depth-${node.depth}" ${isInitiallyOpen ? 'open' : ''}>
+        <summary class="git-tree-summary">
+          <div class="git-tree-summary-main">
+            <strong>${escapeHtml(node.name || (state.lang === 'zh' ? '根目录' : 'Root'))}</strong>
+            <div class="muted small">${escapeHtml(descriptorParts.join(' · ') || (state.lang === 'zh' ? '暂无明细' : 'No details'))}</div>
+          </div>
+          <div class="git-tree-summary-pills">
+            <span class="pill">${escapeHtml(`${formatNumber(node.totalCount)} ${state.lang === 'zh' ? '项' : 'items'}`)}</span>
+            ${node.stageableCount > 0 ? `<span class="pill success">${escapeHtml(`${formatNumber(node.stageableCount)} ${state.lang === 'zh' ? '可提交' : 'stageable'}`)}</span>` : ''}
+            ${node.embeddedCount > 0 ? `<span class="pill warn">${escapeHtml(`${formatNumber(node.embeddedCount)} ${state.lang === 'zh' ? '嵌套仓' : 'embedded'}`)}</span>` : ''}
+          </div>
+        </summary>
+        <div class="git-tree-content">
+          ${visibleFiles.length ? `<div class="git-tree-files">${visibleFiles.map((file) => renderGitTreeFilePreview(file, true)).join('')}</div>` : ''}
+          ${hiddenFileCount > 0 ? `<div class="muted small git-tree-more">${escapeHtml(state.lang === 'zh' ? `还有 ${formatNumber(hiddenFileCount)} 个文件未展开，已用目录摘要收纳。` : `${formatNumber(hiddenFileCount)} more files are folded into the folder summary.`)}</div>` : ''}
+          ${visibleChildren.length ? `<div class="git-tree-children">${visibleChildren.map((child) => renderGitTreeNode(child, options)).join('')}</div>` : ''}
+          ${hiddenChildCount > 0 ? `<div class="muted small git-tree-more">${escapeHtml(state.lang === 'zh' ? `还有 ${formatNumber(hiddenChildCount)} 个子目录未直接展开。` : `${formatNumber(hiddenChildCount)} more folders are folded.`)}</div>` : ''}
+        </div>
+      </details>
+    `;
+  }
+
+  function renderGitPathTreePanel(title, tree, options = {}) {
+    const topFolders = Array.from(tree.children.values())
+      .sort((left, right) => {
+        if (right.totalCount !== left.totalCount) return right.totalCount - left.totalCount;
+        return left.name.localeCompare(right.name);
+      });
+    const rootDirectFiles = tree.directFiles
+      .slice()
+      .sort((left, right) => left.name.localeCompare(right.name));
+    const rootFilePreview = rootDirectFiles.slice(0, options.rootFilePreviewLimit || 6);
+    const hiddenRootFileCount = Math.max(0, rootDirectFiles.length - rootFilePreview.length);
+
+    if (!topFolders.length && !rootDirectFiles.length) {
+      return emptyState(options.emptyMessage || (state.lang === 'zh' ? '当前没有路径可展示。' : 'No paths to display.'));
+    }
+
+    return `
+      <div class="git-tree-panel">
+        <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px;">
+          <div>
+            <strong>${escapeHtml(title)}</strong>
+            <div class="muted small" style="margin-top:6px;">${escapeHtml(options.description || '')}</div>
+          </div>
+          <div class="tag-list" style="margin-top:0;">
+            <span class="chip active">${escapeHtml(`${formatNumber(topFolders.length)} ${state.lang === 'zh' ? '个一级目录' : 'top folders'}`)}</span>
+            <span class="chip">${escapeHtml(`${formatNumber(tree.totalCount)} ${state.lang === 'zh' ? '项路径' : 'paths'}`)}</span>
+          </div>
+        </div>
+        ${rootFilePreview.length ? `
+          <div class="sub-card" style="margin-bottom:12px;">
+            <div class="muted small" style="margin-bottom:10px;">${escapeHtml(state.lang === 'zh' ? '根目录直系路径预览' : 'Root-level path preview')}</div>
+            <div class="git-tree-files">${rootFilePreview.map((file) => renderGitTreeFilePreview(file, true)).join('')}</div>
+            ${hiddenRootFileCount > 0 ? `<div class="muted small git-tree-more">${escapeHtml(state.lang === 'zh' ? `根目录下还有 ${formatNumber(hiddenRootFileCount)} 项未直接展示。` : `${formatNumber(hiddenRootFileCount)} more root-level items are folded.`)}</div>` : ''}
+          </div>
+        ` : ''}
+        <div class="git-tree-root">
+          ${topFolders.map((node) => renderGitTreeNode(node, options)).join('')}
+        </div>
+      </div>
+    `;
   }
 
   function keyValueGrid(items) {
@@ -632,6 +1352,20 @@
     }
   }
 
+  function clearCronPollTimer() {
+    if (state.cronPollTimer) {
+      clearTimeout(state.cronPollTimer);
+      state.cronPollTimer = null;
+    }
+  }
+
+  function clearRuntimeViewPollTimer() {
+    if (state.runtimeViewPollTimer) {
+      clearTimeout(state.runtimeViewPollTimer);
+      state.runtimeViewPollTimer = null;
+    }
+  }
+
   function getServiceActionMeta(actionState) {
     const action = actionState?.action || '';
     const actionLabel = action === 'start'
@@ -750,6 +1484,24 @@
     }, 2200);
   }
 
+  function scheduleCronStatusPoll() {
+    clearCronPollTimer();
+    state.cronPollTimer = setTimeout(() => {
+      if (state.activeTab === 'cron') {
+        loadActiveTab();
+      }
+    }, 1800);
+  }
+
+  function scheduleRuntimeViewPoll() {
+    clearRuntimeViewPollTimer();
+    state.runtimeViewPollTimer = setTimeout(() => {
+      if (state.activeTab === 'overview' || state.activeTab === 'sessions' || state.activeTab === 'costs') {
+        loadActiveTab();
+      }
+    }, 1800);
+  }
+
   function getDefaultCronDraft() {
     return {
       name: '',
@@ -864,7 +1616,26 @@
         ${actionsHtml ? `<div class="toolbar tight">${actionsHtml}</div>` : ''}
       </section>
       <section class="panel-body">${bodyHtml}</section>
-    `;
+      `;
+  }
+
+  function loadingCard(title, message = '') {
+    return `<div class="card"><h3>${escapeHtml(title)}</h3><div class="empty">${escapeHtml(message || t('loading'))}</div></div>`;
+  }
+
+  function setPanelSections(title, description, sections, actionsHtml = '') {
+    const bodyHtml = sections.map((section) => `
+      <div data-panel-section="${escapeHtml(section.id)}">
+        ${section.html || loadingCard(section.title || '')}
+      </div>
+    `).join('');
+    setPanel(title, description, bodyHtml, actionsHtml);
+  }
+
+  function updatePanelSection(sectionId, html) {
+    const target = document.querySelector(`[data-panel-section="${sectionId}"]`);
+    if (!target) return;
+    target.innerHTML = html;
   }
 
   function renderShell() {
@@ -885,10 +1656,12 @@
               </div>
               <div class="guard-actions">
                 <div class="lang-switch">
-                  <button type="button" data-lang="zh" class="${state.lang === 'zh' ? 'active' : ''}">\u4e2d\u6587</button>
+                  <button type="button" data-lang="zh" class="${state.lang === 'zh' ? 'active' : ''}">中文</button>
                   <button type="button" data-lang="en" class="${state.lang === 'en' ? 'active' : ''}">EN</button>
                 </div>
                 <button class="action-btn" type="button" data-global-action="refresh">${escapeHtml(t('refresh'))}</button>
+                ${state.authToken ? `<button class="action-btn" type="button" data-global-action="change-pwd">${escapeHtml(t('changePassword'))}</button>` : ''}
+                ${state.authToken ? `<button class="action-btn danger" type="button" data-global-action="logout">${escapeHtml(t('logout'))}</button>` : ''}
                 <button class="action-btn danger" type="button" data-global-action="stop-web">${escapeHtml(t('stopWeb'))}</button>
               </div>
             </div>
@@ -920,11 +1693,18 @@
       });
     });
     app.querySelector('[data-global-action="refresh"]')?.addEventListener('click', () => loadActiveTab(true));
+    app.querySelector('[data-global-action="change-pwd"]')?.addEventListener('click', () => showChangePwdDialog());
+    app.querySelector('[data-global-action="logout"]')?.addEventListener('click', async () => {
+      try { await postJson('/api/auth/logout', {}); } catch { /* 忽略 */ }
+      state.authToken = null;
+      localStorage.removeItem(STORAGE_TOKEN);
+      renderLoginPage();
+    });
     app.querySelector('[data-global-action="stop-web"]')?.addEventListener('click', async () => {
-      if (!confirm(state.lang === 'zh' ? '\u786e\u8ba4\u505c\u6b62\u5f53\u524d Guard Web \u670d\u52a1\uff1f' : 'Stop the current Guard Web service?')) return;
+      if (!confirm(state.lang === 'zh' ? '确认停止当前 Guard Web 服务？' : 'Stop the current Guard Web service?')) return;
       try {
         const result = await postJson('/api/web-background/stop', {});
-        showToast(result.message || (state.lang === 'zh' ? '\u505c\u6b62\u547d\u4ee4\u5df2\u53d1\u9001\u3002' : 'Stop command sent.'));
+        showToast(result.message || (state.lang === 'zh' ? '停止命令已发送。' : 'Stop command sent.'));
       } catch (error) {
         showToast(error.message || String(error), 'error');
       }
@@ -932,11 +1712,47 @@
   }
 
   async function loadOverview() {
-    const [overview, webStatus, prewarmStatus] = await Promise.all([
-      apiRequest('/api/dashboard/overview'),
-      apiRequest('/api/web-background/status'),
-      apiRequest('/api/cache-prewarm/status').catch(() => ({ phase: 'idle', tasks: [] })),
+    const viewTabId = 'overview';
+    setPanelSections(t('tabs.overview'), t('desc.overview'), [
+      { id: 'overview-summary', title: state.lang === 'zh' ? '驾驶舱摘要' : 'Cockpit Summary' },
+      { id: 'overview-runtime', title: state.lang === 'zh' ? '运行摘要' : 'Runtime Summary' },
+      { id: 'overview-signals', title: state.lang === 'zh' ? '风险与信号' : 'Signals' },
+      { id: 'overview-actions', title: state.lang === 'zh' ? '下一步处理' : 'Next Actions' },
     ]);
+
+    const overviewPromise = apiRequest('/api/dashboard/overview');
+    const webStatusPromise = apiRequest('/api/web-background/status');
+    const prewarmStatusPromise = apiRequest('/api/cache-prewarm/status').catch(() => ({ phase: 'idle', tasks: [] }));
+
+    const [webStatus, prewarmStatus] = await Promise.all([webStatusPromise, prewarmStatusPromise]);
+    if (state.activeTab !== viewTabId) return;
+    const quickPrewarmMeta = getPrewarmMeta(prewarmStatus);
+
+    updatePanelSection('overview-summary', `
+      <div class="grid">
+        ${metricCard(state.lang === 'zh' ? 'Guard Web' : 'Guard Web', getRunStateLabel(webStatus.running), webStatus.running ? `PID ${webStatus.pid}` : (state.lang === 'zh' ? '未检测到后台进程' : 'No managed background process'), webStatus.running ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '缓存预热' : 'Cache Prewarm', quickPrewarmMeta.phaseLabel, prewarmStatus?.lastDurationMs ? `${prewarmStatus.lastDurationMs} ms` : (state.lang === 'zh' ? '等待首次结果' : 'Waiting for first result'), quickPrewarmMeta.pillClass)}
+        ${loadingCard(state.lang === 'zh' ? '运行态总览' : 'Runtime Overview', state.lang === 'zh' ? '正在读取驾驶舱共享快照…' : 'Loading cockpit shared snapshot…')}
+      </div>
+    `);
+    updatePanelSection('overview-runtime', loadingCard(state.lang === 'zh' ? '运行摘要' : 'Runtime Summary', state.lang === 'zh' ? '正在补充运行摘要与系统资源…' : 'Loading runtime summary and system resources…'));
+    updatePanelSection('overview-signals', `
+      <div class="grid">
+        ${loadingCard(state.lang === 'zh' ? '风险与告警' : 'Risk & Alerts', state.lang === 'zh' ? '正在读取风险信号…' : 'Loading alerts…')}
+        ${loadingCard(state.lang === 'zh' ? '最新通知' : 'Latest Notifications', state.lang === 'zh' ? '正在读取通知摘要…' : 'Loading notifications…')}
+      </div>
+    `);
+    updatePanelSection('overview-actions', `
+      <div class="card">
+        <h3>${state.lang === 'zh' ? '下一步处理' : 'Next Actions'}</h3>
+        <div class="status ${webStatus.running ? '' : 'warn'}">${escapeHtml(webStatus.running
+          ? (state.lang === 'zh' ? `Guard Web 已在运行，PID ${webStatus.pid}。正在继续加载运行态摘要。` : `Guard Web is running with PID ${webStatus.pid}. Runtime summary is loading.`)
+          : (state.lang === 'zh' ? '当前未检测到 Guard Web 后台进程，正在继续加载详细状态。' : 'No Guard Web background process detected. Detailed state is still loading.'))}</div>
+      </div>
+    `);
+
+    const overview = await overviewPromise;
+    if (state.activeTab !== viewTabId) return;
 
     const alerts = overview.runtime?.alerts || [];
     const latestNotifications = overview.notifications?.latest || [];
@@ -965,13 +1781,19 @@
       },
       {
         label: state.lang === 'zh' ? 'Gateway 服务' : 'Gateway Service',
-        value: gatewayService.loadedText || '-',
-        help: gatewayService.runtimeShort || gatewayService.label || '-',
+        value: sanitizeDisplayText(gatewayService.loadedText, '-'),
+        help: sanitizeDisplayText(
+          gatewayService.runtimeShort,
+          gatewayService.label || (state.lang === 'zh' ? 'Windows 服务信息暂不可可靠解码' : 'Windows service text could not be decoded reliably'),
+        ),
       },
       {
         label: state.lang === 'zh' ? 'Node 服务' : 'Node Service',
-        value: nodeService.loadedText || '-',
-        help: nodeService.runtimeShort || nodeService.label || '-',
+        value: sanitizeDisplayText(nodeService.loadedText, '-'),
+        help: sanitizeDisplayText(
+          nodeService.runtimeShort,
+          nodeService.label || (state.lang === 'zh' ? 'Windows 服务信息暂不可可靠解码' : 'Windows service text could not be decoded reliably'),
+        ),
       },
       {
         label: state.lang === 'zh' ? '默认模型' : 'Default Model',
@@ -989,12 +1811,13 @@
     const cockpitActions = [
       `<button class="action-btn primary" type="button" data-overview-action="enter-operations">${state.lang === 'zh' ? '进入运维' : 'Open Operations'}</button>`,
       showQuickRestart ? `<button class="action-btn" type="button" data-overview-action="gateway-restart">${state.lang === 'zh' ? '快速重启 Gateway' : 'Quick Restart Gateway'}</button>` : '',
-      `<button class="action-btn" type="button" data-overview-action="open-dashboard">Dashboard</button>`,
+      `<button class="action-btn" type="button" data-overview-action="open-dashboard">${state.lang === 'zh' ? 'OpenClaw 面板' : 'Open Dashboard'}</button>`,
     ].filter(Boolean).join('');
     const body = `
+      ${renderCacheSummaryCard(overview.cache, state.lang === 'zh' ? '驾驶舱共享快照' : 'Cockpit Shared Snapshot')}
       <div class="grid">
-        ${metricCard(state.lang === 'zh' ? 'Gateway' : 'Gateway', overview.gateway?.running ? 'RUNNING' : 'STOPPED', `port ${overview.gateway?.port || '-'}`, overview.gateway?.running ? 'success' : 'danger')}
-        ${metricCard(state.lang === 'zh' ? 'Guard Web' : 'Guard Web', webStatus.running ? 'RUNNING' : 'STOPPED', webStatus.running ? `PID ${webStatus.pid}` : (state.lang === 'zh' ? '未检测到后台进程' : 'No managed background process'), webStatus.running ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? 'Gateway' : 'Gateway', getRunStateLabel(overview.gateway?.running), `port ${overview.gateway?.port || '-'}`, overview.gateway?.running ? 'success' : 'danger')}
+        ${metricCard(state.lang === 'zh' ? 'Guard Web' : 'Guard Web', getRunStateLabel(webStatus.running), webStatus.running ? `PID ${webStatus.pid}` : (state.lang === 'zh' ? '未检测到后台进程' : 'No managed background process'), webStatus.running ? 'success' : 'warn')}
         ${metricCard(state.lang === 'zh' ? '缓存预热' : 'Cache Prewarm', prewarmMeta.phaseLabel, prewarmStatus?.lastDurationMs ? `${prewarmStatus.lastDurationMs} ms` : (state.lang === 'zh' ? '等待首次结果' : 'Waiting for first result'), prewarmMeta.pillClass)}
         ${metricCard(state.lang === 'zh' ? 'Agent' : 'Agents', formatNumber(overview.agents?.total || 0), `${overview.agents?.workspacesReady || 0} ${state.lang === 'zh' ? '个工作区就绪' : 'workspaces ready'}`)}
         ${metricCard(state.lang === 'zh' ? '会话' : 'Sessions', `${formatNumber(overview.sessions?.active || 0)} / ${formatNumber(overview.sessions?.total || 0)}`, state.lang === 'zh' ? '活跃 / 总数' : 'active / total')}
@@ -1044,7 +1867,10 @@
         </div>
         <div class="card">
           <h3>${state.lang === 'zh' ? '最新通知' : 'Latest Notifications'}</h3>
-          ${latestNotifications.length ? `<div class="list">${latestNotifications.map((item) => `<div class="list-item ${item.read ? '' : 'unread'}"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(item.title)}</strong><span class="muted">${escapeHtml(formatRelative(item.createdAt))}</span></div><div>${escapeHtml(item.message)}</div></div>`).join('')}</div>` : emptyState(state.lang === 'zh' ? '暂无通知。' : 'No notifications yet.')}
+          ${latestNotifications.length ? `<div class="list">${latestNotifications.map((item) => {
+            const view = getNotificationPresentation(item);
+            return `<div class="list-item ${item.read ? '' : 'unread'}"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(view.title)}</strong><span class="muted">${escapeHtml(formatRelative(item.createdAt))}</span></div><div class="muted small" style="margin-top:6px;">${escapeHtml(view.sourceLabel)} · ${escapeHtml(view.severityLabel)}</div><div style="margin-top:8px;">${escapeHtml(view.message)}</div></div>`;
+          }).join('')}</div>` : emptyState(state.lang === 'zh' ? '暂无通知。' : 'No notifications yet.')}
         </div>
       </div>
       <div class="grid">
@@ -1064,6 +1890,8 @@
     `;
 
     setPanel(t('tabs.overview'), t('desc.overview'), body, cockpitActions);
+    if (overview.cache?.refreshing) scheduleRuntimeViewPoll();
+    else clearRuntimeViewPollTimer();
 
     document.querySelector('[data-overview-action="enter-operations"]')?.addEventListener('click', () => {
       queuePanelFocus('system', '#system-service-card');
@@ -1119,15 +1947,67 @@
   }
 
   async function loadSystem() {
-    const [info, service, webStatus, envMap, prewarmStatus] = await Promise.all([
-      apiRequest('/api/info'),
-      apiRequest('/api/service/status'),
-      apiRequest('/api/web-background/status'),
-      apiRequest('/api/env').catch(() => ({})),
-      apiRequest('/api/cache-prewarm/status').catch(() => ({ phase: 'idle', tasks: [] })),
+    const viewTabId = 'system';
+    setPanelSections(t('tabs.system'), t('desc.system'), [
+      { id: 'system-summary', title: state.lang === 'zh' ? '运维摘要' : 'Operations Summary' },
+      { id: 'system-services', title: state.lang === 'zh' ? '服务与后台控制' : 'Service & Background Controls' },
+      { id: 'system-env', title: state.lang === 'zh' ? '本地 Env 管理' : 'Local Env Management' },
+      { id: 'system-runtime', title: state.lang === 'zh' ? '运行路径与快照' : 'Runtime Paths & Snapshot' },
     ]);
 
+    const infoPromise = apiRequest('/api/info');
+    const servicePromise = apiRequest('/api/service/status');
+    const webStatusPromise = apiRequest('/api/web-background/status');
+    const envPromise = apiRequest('/api/env').catch(() => ({}));
+    const prewarmStatusPromise = apiRequest('/api/cache-prewarm/status').catch(() => ({ phase: 'idle', tasks: [] }));
+
+    const [service, webStatus, envMap, prewarmStatus] = await Promise.all([
+      servicePromise,
+      webStatusPromise,
+      envPromise,
+      prewarmStatusPromise,
+    ]);
+    if (state.activeTab !== viewTabId) return;
+
     const envEntries = Object.entries(envMap || {}).sort(([left], [right]) => left.localeCompare(right));
+    const quickServiceActionMeta = getServiceActionMeta(service.action || {});
+    const quickPrewarmMeta = getPrewarmMeta(prewarmStatus);
+
+    updatePanelSection('system-summary', `
+      <div class="grid">
+        ${metricCard('Gateway', getRunStateLabel(service.running), `PID ${service.pid || '-'}`, service.running ? 'success' : 'danger')}
+        ${metricCard('Guard Web', getRunStateLabel(webStatus.running), webStatus.running ? `PID ${webStatus.pid || '-'}` : '-', webStatus.running ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '本地 Env' : 'Local Env', formatNumber(envEntries.length), state.lang === 'zh' ? '已读取本地键数量' : 'loaded local keys')}
+        ${metricCard(state.lang === 'zh' ? '缓存预热' : 'Cache Prewarm', quickPrewarmMeta.phaseLabel, prewarmStatus?.lastDurationMs ? `${prewarmStatus.lastDurationMs} ms` : '-', quickPrewarmMeta.pillClass)}
+      </div>
+    `);
+    updatePanelSection('system-services', `
+      <div class="grid">
+        <div class="card accent-warn">
+          <h3>${state.lang === 'zh' ? '服务与后台控制' : 'Service & Background Controls'}</h3>
+          <div class="status ${quickServiceActionMeta.phase === 'error' ? 'warn' : ''}">${escapeHtml(quickServiceActionMeta.message)}</div>
+          <div class="muted small" style="margin-top:12px;">${escapeHtml(state.lang === 'zh' ? '正在补充路径、托管来源与详细控制面板…' : 'Loading path, tracking source, and detailed controls…')}</div>
+        </div>
+        ${loadingCard(state.lang === 'zh' ? '启动后缓存预热' : 'Startup Cache Prewarm', state.lang === 'zh' ? '正在读取预热任务详情…' : 'Loading prewarm task details…')}
+      </div>
+    `);
+    updatePanelSection('system-env', `
+      <div class="card accent-success">
+        <div class="row" style="justify-content:space-between; align-items:flex-start;">
+          <div>
+            <h3>${state.lang === 'zh' ? '本地 Env 管理' : 'Local Env Management'}</h3>
+            <p>${escapeHtml(state.lang === 'zh' ? 'Env 键已经读取完成，正在补充路径和编辑器区域。' : 'Env keys are loaded. Path details and the editor area are loading now.')}</p>
+          </div>
+          <div class="tag-list">
+            <span class="chip active">${escapeHtml((state.lang === 'zh' ? '键数量：' : 'Keys: ') + envEntries.length)}</span>
+          </div>
+        </div>
+      </div>
+    `);
+    updatePanelSection('system-runtime', loadingCard(state.lang === 'zh' ? '运行路径与快照' : 'Runtime Paths & Snapshot', state.lang === 'zh' ? '正在读取 OpenClaw 检测结果和本机路径信息…' : 'Loading OpenClaw detection and local path details…'));
+
+    const info = await infoPromise;
+    if (state.activeTab !== viewTabId) return;
     const currentPid = Number(info.pid || 0);
     const isCurrentInstance = !!(webStatus.running && webStatus.pid && currentPid && webStatus.pid === currentPid);
     const isCurrentManaged = isCurrentInstance && webStatus.managed;
@@ -1201,10 +2081,10 @@
 
     const body = `
       <div class="grid">
-        ${metricCard('Gateway', service.running ? 'RUNNING' : 'STOPPED', `PID ${service.pid || '-'}`, service.running ? 'success' : 'danger')}
-        ${metricCard('Guard Web', webStatus.running ? 'RUNNING' : 'STOPPED', webStatus.running ? `PID ${webStatus.pid || '-'}` : '-', webStatus.running ? 'success' : 'warn')}
+        ${metricCard('Gateway', getRunStateLabel(service.running), `PID ${service.pid || '-'}`, service.running ? 'success' : 'danger')}
+        ${metricCard('Guard Web', getRunStateLabel(webStatus.running), webStatus.running ? `PID ${webStatus.pid || '-'}` : '-', webStatus.running ? 'success' : 'warn')}
         ${metricCard('Node.js', info.nodeVersion || '-', info.arch || '-')}
-        ${metricCard('OpenClaw', info.openclaw?.installed ? 'INSTALLED' : 'MISSING', info.openclaw?.version || '-', info.openclaw?.installed ? 'success' : 'warn')}
+        ${metricCard('OpenClaw', getInstallStateLabel(info.openclaw?.installed), info.openclaw?.version || '-', info.openclaw?.installed ? 'success' : 'warn')}
         ${metricCard(state.lang === 'zh' ? '本地 Env' : 'Local Env', formatNumber(envEntries.length), info.envPath || '-')}
       </div>
       <div class="grid">
@@ -1574,23 +2454,24 @@
   }
 
   async function loadOpenClawTab() {
-    const [status, dashboard, token] = await Promise.all([
-      apiRequest('/api/openclaw/status'),
-      apiRequest('/api/gateway/dashboard').catch(() => ({})),
-      apiRequest('/api/gateway/token').catch(() => ({})),
+    setPanelSections(t('tabs.openclaw'), t('desc.openclaw'), [
+      { id: 'openclaw-summary', title: state.lang === 'zh' ? 'OpenClaw 摘要' : 'OpenClaw Summary' },
+      { id: 'openclaw-install', title: state.lang === 'zh' ? '安装与修复' : 'Install & Repair' },
+      { id: 'openclaw-runtime', title: state.lang === 'zh' ? '后台执行状态' : 'Task Status' },
+      { id: 'openclaw-notes', title: state.lang === 'zh' ? '安装前检查与平台说明' : 'Checks & Notes' },
+      { id: 'openclaw-snapshot', title: state.lang === 'zh' ? '状态快照' : 'Status Snapshot' },
     ]);
+
+    const status = await apiRequest('/api/openclaw/status');
+    const dashboardPromise = apiRequest('/api/gateway/dashboard').catch(() => ({}));
+    const tokenPromise = apiRequest('/api/gateway/token').catch(() => ({}));
     const actionMeta = getOpenClawActionMeta(status.action);
     const isRunning = actionMeta.phase === 'running';
     const installBlockers = Array.isArray(status.installBlockers) ? status.installBlockers.filter(Boolean) : [];
     const platformNotes = Array.isArray(status.platformNotes) ? status.platformNotes.filter(Boolean) : [];
     const logTail = Array.isArray(status.action?.logTail) ? status.action.logTail.filter(Boolean) : [];
     const targetPath = status.installTargetBinaryPath || status.installTargetBinDir || '-';
-    const tokenMasked = token?.token ? maskSensitiveValue('token', token.token) : '';
     const installCommand = status.installCommand || 'npm install -g openclaw@latest';
-    const actionTimeline = state.lang === 'zh'
-      ? `开始 ${formatDate(status.action?.startedAt)} · 更新 ${formatDate(status.action?.lastUpdatedAt)} · 结束 ${formatDate(status.action?.finishedAt)}`
-      : `Started ${formatDate(status.action?.startedAt)} · Updated ${formatDate(status.action?.lastUpdatedAt)} · Finished ${formatDate(status.action?.finishedAt)}`;
-
     const installReadyDetail = status.installReady
       ? (status.installTargetBinDir || (state.lang === 'zh' ? '环境检查通过' : 'Environment check passed'))
       : (installBlockers[0] || (state.lang === 'zh' ? '需要先处理安装前置条件' : 'Resolve install blockers first'));
@@ -1603,6 +2484,40 @@
           ? `当前 ${status.version || '-'}`
           : `Current ${status.version || '-'}`))
       : (state.lang === 'zh' ? '尚未检测到 OpenClaw CLI。' : 'OpenClaw CLI is not installed yet.');
+
+    const partialBody = `
+      <div class="grid">
+        ${metricCard(state.lang === 'zh' ? '安装状态' : 'Install State', status.installed ? (state.lang === 'zh' ? '已安装' : 'Installed') : (state.lang === 'zh' ? '未安装' : 'Missing'), versionDetail, status.installed ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '安装条件' : 'Install Readiness', status.installReady ? (state.lang === 'zh' ? '可安装' : 'Ready') : (state.lang === 'zh' ? '待处理' : 'Blocked'), installReadyDetail, status.installReady ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '后台任务' : 'Background Task', actionMeta.phaseLabel, `${actionMeta.modeLabel} · ${formatRelative(status.action?.lastUpdatedAt || status.action?.startedAt)}`, actionMeta.pillClass)}
+        ${metricCard('Dashboard', state.lang === 'zh' ? '加载中' : 'Loading', state.lang === 'zh' ? '正在读取 Gateway 信息' : 'Reading gateway details', 'warn')}
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h3>${state.lang === 'zh' ? '安装与修复' : 'Install & Repair'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(actionMeta.message)}</div>
+          <div class="toolbar tight" style="margin-top:14px;">
+            <button class="action-btn primary" type="button" data-openclaw-action="install" ${isRunning ? 'disabled' : ''}>${state.lang === 'zh' ? '安装 / 修复' : 'Install / Repair'}</button>
+            <button class="action-btn" type="button" data-openclaw-action="update" ${isRunning ? 'disabled' : ''}>${state.lang === 'zh' ? '更新到最新' : 'Update'}</button>
+            <button class="action-btn" type="button" data-openclaw-action="copy-command">${state.lang === 'zh' ? '复制安装命令' : 'Copy Command'}</button>
+          </div>
+          <div class="status" style="margin-top:14px;">${escapeHtml(state.lang === 'zh' ? `命令: ${installCommand}` : `Command: ${installCommand}`)}</div>
+        </div>
+        <div class="card">
+          <h3>${state.lang === 'zh' ? '快速检查' : 'Quick Checks'}</h3>
+          ${installBlockers.length
+            ? `<div class="list" style="margin-top:12px;">${installBlockers.map((item) => `<div class="list-item">${escapeHtml(item)}</div>`).join('')}</div>`
+            : `<div class="status" style="margin-top:12px;">${escapeHtml(state.lang === 'zh' ? '环境已满足自动安装前置条件。' : 'This machine is ready for automated installation.')}</div>`}
+        </div>
+      </div>
+    `;
+    setPanel(t('tabs.openclaw'), t('desc.openclaw'), partialBody);
+
+    const [dashboard, token] = await Promise.all([dashboardPromise, tokenPromise]);
+    const tokenMasked = token?.token ? maskSensitiveValue('token', token.token) : '';
+    const actionTimeline = state.lang === 'zh'
+      ? `开始 ${formatDate(status.action?.startedAt)} · 更新 ${formatDate(status.action?.lastUpdatedAt)} · 结束 ${formatDate(status.action?.finishedAt)}`
+      : `Started ${formatDate(status.action?.startedAt)} · Updated ${formatDate(status.action?.lastUpdatedAt)} · Finished ${formatDate(status.action?.finishedAt)}`;
 
     const body = `
       <div class="grid">
@@ -2415,6 +3330,7 @@
     const successCount = items.filter((item) => item.severity === 'success').length;
     const sources = Array.from(new Set(items.map((item) => item.source).filter(Boolean))).sort();
     const filtered = items.filter((item) => {
+      const present = getNotificationPresentation(item);
       if (state.notificationFilter === 'unread' && item.read) return false;
       if (state.notificationFilter === 'warning' && item.severity !== 'warning' && item.severity !== 'error') return false;
       if (state.notificationFilter === 'success' && item.severity !== 'success') return false;
@@ -2426,6 +3342,11 @@
         item.source,
         item.severity,
         item.meta ? JSON.stringify(item.meta) : '',
+        present.title,
+        present.message,
+        present.typeLabel,
+        present.sourceLabel,
+        present.severityLabel,
       ], state.notificationSearchQuery);
     });
     const getNotificationJumpTarget = (item) => {
@@ -2466,7 +3387,7 @@
           <input id="notify-search" value="${escapeHtml(state.notificationSearchQuery || '')}" placeholder="${escapeHtml(state.lang === 'zh' ? '搜索标题 / 消息 / 来源' : 'Search title / message / source')}" />
           <select id="notify-source">
             <option value="all">${escapeHtml(state.lang === 'zh' ? '全部来源' : 'All sources')}</option>
-            ${sources.map((source) => `<option value="${escapeHtml(source)}" ${state.notificationSource === source ? 'selected' : ''}>${escapeHtml(source)}</option>`).join('')}
+            ${sources.map((source) => `<option value="${escapeHtml(source)}" ${state.notificationSource === source ? 'selected' : ''}>${escapeHtml(getNotificationSourceLabel(source))}</option>`).join('')}
           </select>
         </div>
         <div class="toolbar tight" style="margin-top:12px;">
@@ -2484,17 +3405,18 @@
       </div>
       <div class="list">
         ${filtered.length ? filtered.map((item) => {
+          const present = getNotificationPresentation(item);
           const jumpTarget = getNotificationJumpTarget(item);
           return `
           <div class="list-item ${item.read ? '' : 'unread'}">
             <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
               <div>
-                <strong>${escapeHtml(item.title)}</strong>
-                <div class="muted small">${escapeHtml(item.type)} · ${escapeHtml(item.source)} · ${escapeHtml(formatDate(item.createdAt))}</div>
+                <strong>${escapeHtml(present.title)}</strong>
+                <div class="muted small">${escapeHtml(present.typeLabel)} · ${escapeHtml(present.sourceLabel)} · ${escapeHtml(formatDate(item.createdAt))}</div>
               </div>
-              <span class="pill ${item.severity === 'success' ? 'success' : item.severity === 'warning' ? 'warn' : item.severity === 'error' ? 'danger' : ''}">${escapeHtml(item.severity)}</span>
+              <span class="pill ${item.severity === 'success' ? 'success' : item.severity === 'warning' ? 'warn' : item.severity === 'error' ? 'danger' : ''}">${escapeHtml(present.severityLabel)}</span>
             </div>
-            <p style="margin-top:10px;">${escapeHtml(item.message)}</p>
+            <p style="margin-top:10px;">${escapeHtml(present.message)}</p>
             ${item.meta ? `<pre style="margin-top:12px;">${prettyJson(item.meta)}</pre>` : ''}
             <div class="toolbar tight" style="margin-top:12px;">
               <button class="action-btn" type="button" data-notify-item="${escapeHtml(item.id)}" data-next-read="${item.read ? 'false' : 'true'}">${escapeHtml(item.read ? t('markUnread') : t('markRead'))}</button>
@@ -2602,6 +3524,7 @@
     const runtimeOs = snapshot.os || {};
     const runtimeUpdate = snapshot.update || {};
     const body = `
+      ${renderCacheSummaryCard(data.cache, state.lang === 'zh' ? '会话共享快照' : 'Session Shared Snapshot')}
       <div class="grid">
         ${metricCard(state.lang === 'zh' ? '会话总数' : 'Sessions', formatNumber(summary.sessionCount ?? sessions.length), summary.defaultModel || '-')}
         ${metricCard(state.lang === 'zh' ? '默认上下文' : 'Default Context', summary.defaultContextTokens ? formatNumber(summary.defaultContextTokens) : '-', state.lang === 'zh' ? 'tokens' : 'tokens')}
@@ -2683,6 +3606,8 @@
       </div>`).join('') : emptyState(state.lang === 'zh' ? '当前没有运行态会话。' : 'No runtime sessions.')}</div>
     `;
     setPanel(t('tabs.sessions'), t('desc.sessions'), body);
+    if (data.cache?.refreshing) scheduleRuntimeViewPoll();
+    else clearRuntimeViewPollTimer();
   }
 
   async function loadActivity() {
@@ -2920,6 +3845,7 @@
   async function loadCosts() {
     const summary = await apiRequest('/api/costs');
     const body = `
+      ${renderCacheSummaryCard(summary.cache, state.lang === 'zh' ? '成本共享快照' : 'Cost Shared Snapshot')}
       <div class="grid">
         ${metricCard(state.lang === 'zh' ? '总成本' : 'Total Cost', formatCost(summary.totalEstimatedCost || 0), summary.pricingUnit || '-')}
         ${metricCard(state.lang === 'zh' ? '总 Tokens' : 'Total Tokens', formatNumber(summary.totalTokens || 0), '')}
@@ -2931,6 +3857,8 @@
       </div>
     `;
     setPanel(t('tabs.costs'), t('desc.costs'), body);
+    if (summary.cache?.refreshing) scheduleRuntimeViewPoll();
+    else clearRuntimeViewPollTimer();
   }
 
   async function loadCron() {
@@ -2969,6 +3897,7 @@
       : (state.lang === 'zh' ? '新建 Cron 任务' : 'Create Cron Job');
 
     const body = `
+      ${renderCacheSummaryCard(data.cache, state.lang === 'zh' ? 'Cron 共享快照' : 'Cron Shared Snapshot')}
       <div class="grid">
         ${metricCard(state.lang === 'zh' ? '任务总量' : 'Jobs', `${formatNumber(jobs.length)} / ${formatNumber(data.total ?? jobs.length)}`, state.lang === 'zh' ? '当前加载 / 实际总量' : 'loaded / total')}
         ${metricCard(state.lang === 'zh' ? '启用中' : 'Enabled', formatNumber(enabledJobs.length), state.lang === 'zh' ? '正在调度' : 'active schedule', enabledJobs.length > 0 ? 'success' : '')}
@@ -3163,6 +4092,8 @@
       </div>
     `;
     setPanel(t('tabs.cron'), t('desc.cron'), body);
+    if (data.cache?.refreshing) scheduleCronStatusPoll();
+    else clearCronPollTimer();
 
     document.querySelectorAll('[data-cron-filter]').forEach((button) => {
       button.addEventListener('click', () => {
@@ -3294,10 +4225,14 @@
   async function loadGitSync() {
     clearGitSyncPollTimer();
     const gitIgnoreMode = state.gitSyncIgnoreMode === 'exact' ? 'exact' : 'smart';
-    const [status, gitignorePreview] = await Promise.all([
-      apiRequest('/api/git-sync/status'),
-      apiRequest(`/api/git-sync/gitignore-preview?mode=${encodeURIComponent(gitIgnoreMode)}`).catch(() => null),
+    setPanelSections(t('tabs.git-sync'), t('desc.git-sync'), [
+      { id: 'git-sync-summary', title: state.lang === 'zh' ? 'Git 同步摘要' : 'Git Sync Summary' },
+      { id: 'git-sync-main', title: state.lang === 'zh' ? '同步准备度' : 'Sync Readiness' },
+      { id: 'git-sync-ignore', title: state.lang === 'zh' ? '.gitignore 预览' : '.gitignore Preview' },
+      { id: 'git-sync-auth', title: state.lang === 'zh' ? '认证与提交' : 'Auth & Commit' },
     ]);
+    const status = await apiRequest('/api/git-sync/status');
+    const gitignorePreviewPromise = apiRequest(`/api/git-sync/gitignore-preview?mode=${encodeURIComponent(gitIgnoreMode)}`).catch(() => null);
     const oauth = status.oauth || {};
 
     if (!state.gitSyncDraftMessage) state.gitSyncDraftMessage = '';
@@ -3305,18 +4240,6 @@
     const skippedEmbeddedRepos = Array.isArray(status.skippedEmbeddedRepos) ? status.skippedEmbeddedRepos : [];
     const stageableChangedFiles = Array.isArray(status.stageableChangedFiles) ? status.stageableChangedFiles : [];
     const allChangedFiles = Array.isArray(status.changedFiles) ? status.changedFiles : [];
-    const gitIgnoreTemplate = typeof gitignorePreview?.suggestedBlock === 'string' && gitignorePreview.suggestedBlock.trim()
-      ? gitignorePreview.suggestedBlock
-      : buildGitIgnoreTemplate(skippedEmbeddedRepos);
-    const gitIgnoreAppendBlock = typeof gitignorePreview?.appendBlock === 'string' ? gitignorePreview.appendBlock : '';
-    const gitIgnoreExistingEntries = Array.isArray(gitignorePreview?.existingEntries) ? gitignorePreview.existingEntries : [];
-    const gitIgnoreMissingEntries = Array.isArray(gitignorePreview?.missingEntries) ? gitignorePreview.missingEntries : [];
-    const gitIgnorePath = gitignorePreview?.gitignorePath || `${status.repoPath || ''}/.gitignore`;
-    const gitIgnoreModeOptions = `
-      <option value="smart" ${gitIgnoreMode === 'smart' ? 'selected' : ''}>${escapeHtml(state.lang === 'zh' ? '智能模式：精确路径 + 常见通配符' : 'Smart: exact paths + common wildcards')}</option>
-      <option value="exact" ${gitIgnoreMode === 'exact' ? 'selected' : ''}>${escapeHtml(state.lang === 'zh' ? '精确模式：只写当前检测到的路径' : 'Exact: detected paths only')}</option>
-    `;
-    const embeddedRepoGuide = buildEmbeddedRepoGuide(skippedEmbeddedRepos);
 
     const stages = [
       {
@@ -3405,16 +4328,6 @@
         <div class="muted small">${escapeHtml(stage.detail)}</div>
       </div>
     `).join('');
-    const stageableFilesHtml = stageableChangedFiles.length
-      ? stageableChangedFiles.map((file) => `
-          <div class="list-item">
-            <div class="row" style="justify-content:space-between; gap:12px;">
-              <strong>${escapeHtml(file)}</strong>
-              <span class="pill success">${escapeHtml(state.lang === 'zh' ? '会纳入本次提交' : 'Will be committed')}</span>
-            </div>
-          </div>
-        `).join('')
-      : emptyState(state.lang === 'zh' ? '当前没有可直接提交的普通文件。' : 'No stageable root-repo files detected.');
     const skippedReposHtml = skippedEmbeddedRepos.length
       ? skippedEmbeddedRepos.map((repoPath) => `
           <div class="list-item">
@@ -3426,6 +4339,103 @@
           </div>
         `).join('')
       : emptyState(state.lang === 'zh' ? '当前没有检测到嵌套 Git 仓库。' : 'No embedded Git repositories detected.');
+    const rawChangeSummary = allChangedFiles.length
+      ? `${formatNumber(allChangedFiles.length)} ${state.lang === 'zh' ? '项变更' : 'changed paths'}`
+      : (state.lang === 'zh' ? '没有本地变更' : 'No local changes');
+    const allChangesTree = buildGitPathTree(allChangedFiles, {
+      stageablePaths: stageableChangedFiles,
+      skippedEmbeddedRepos,
+    });
+    const stageableChangesTree = buildGitPathTree(stageableChangedFiles, {
+      stageablePaths: stageableChangedFiles,
+      skippedEmbeddedRepos,
+    });
+    const allChangesTreeHtml = renderGitPathTreePanel(
+      state.lang === 'zh' ? '目录树视图' : 'Folder Tree View',
+      allChangesTree,
+      {
+        description: state.lang === 'zh'
+          ? '按目录聚合全部变更，默认折叠，避免一次性把数百条路径平铺到页面上。'
+          : 'All changed paths grouped by folder and folded by default to avoid rendering hundreds of rows at once.',
+        emptyMessage: state.lang === 'zh' ? '当前没有本地变更。' : 'No local changes.',
+        expandDepth: 0,
+        previewLimit: 4,
+        childPreviewLimit: 8,
+      },
+    );
+    const stageableTreeHtml = renderGitPathTreePanel(
+      state.lang === 'zh' ? '待提交目录树' : 'Stageable Folder Tree',
+      stageableChangesTree,
+      {
+        description: state.lang === 'zh'
+          ? '这里只展示会纳入外层 .openclaw commit 的路径结构。'
+          : 'Only the paths that will enter the root .openclaw commit are shown here.',
+        emptyMessage: state.lang === 'zh' ? '当前没有可直接提交的普通文件。' : 'No stageable root-repo files detected.',
+        expandDepth: 0,
+        previewLimit: 5,
+        childPreviewLimit: 8,
+      },
+    );
+    const embeddedRepoNotice = skippedEmbeddedRepos.length
+      ? `<div class="status warn" style="margin-top:14px;">${escapeHtml(state.lang === 'zh'
+          ? `Guard 已检测到 ${skippedEmbeddedRepos.length} 个嵌套 Git 仓库。它们不会被纳入外层 .openclaw 的本次提交，请按下方建议单独处理。`
+          : `Guard detected ${skippedEmbeddedRepos.length} embedded Git repositories. They will stay outside the root .openclaw commit and should be handled separately using the guidance below.`)}</div>`
+      : '';
+    const guidanceTitle = skippedEmbeddedRepos.length
+      ? (state.lang === 'zh' ? '嵌套仓库处理建议' : 'Embedded Repository Guidance')
+      : (state.lang === 'zh' ? '常见嵌套仓库建议' : 'Common Embedded Repository Guidance');
+    const guidanceStatus = skippedEmbeddedRepos.length
+      ? (state.lang === 'zh'
+        ? '下面的建议基于当前检测到的嵌套仓库生成，可以直接复制忽略模板。'
+        : 'These recommendations are generated from the embedded repositories detected right now. You can copy the ignore template directly.')
+      : (state.lang === 'zh'
+        ? '当 .openclaw 里包含 workspace-*、extensions/* 这类独立 Git 仓库时，可以提前按这里的规则规划同步边界。'
+        : 'When .openclaw contains independent child repositories such as workspace-* or extensions/*, use these rules to plan the sync boundary ahead of time.');
+
+    const partialBody = `
+      ${renderCacheSummaryCard(status.cache, state.lang === 'zh' ? 'Git 状态快照' : 'Git Status Snapshot')}
+      <div class="grid">
+        ${metricCard(state.lang === 'zh' ? '仓库状态' : 'Repository', getReadyStateLabel(status.repoInitialized), status.repoPath || '-', status.repoInitialized ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '远程仓库' : 'Remote', status.remoteRepo || status.remoteUrl || '-', status.remoteWebUrl || status.provider || '-', status.remoteUrl ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '认证' : 'Auth', status.authConfigured ? (status.accountUsername || status.authMode || 'configured') : 'missing', status.authConfigured ? (state.lang === 'zh' ? '凭证已配置' : 'credentials ready') : (state.lang === 'zh' ? '尚未配置' : 'not configured'), status.authConfigured ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '全部变更' : 'All Changes', formatNumber(allChangedFiles.length), `${status.currentBranch || '-'} · ${rawChangeSummary}`, allChangedFiles.length > 0 ? 'warn' : 'success')}
+        ${metricCard(state.lang === 'zh' ? '可提交文件' : 'Stageable', formatNumber(stageableChangedFiles.length), stageableChangedFiles.length > 0 ? (state.lang === 'zh' ? '将纳入外层 commit' : 'Will be staged in the root repo') : (state.lang === 'zh' ? '当前没有可提交普通文件' : 'No stageable root-repo files'), stageableChangedFiles.length > 0 ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '嵌套仓库' : 'Embedded Repos', formatNumber(skippedEmbeddedRepos.length), skippedEmbeddedRepos.length > 0 ? (state.lang === 'zh' ? '已自动跳过，需单独处理' : 'Skipped automatically, requires separate handling') : (state.lang === 'zh' ? '当前未发现' : 'No embedded repos detected'), skippedEmbeddedRepos.length > 0 ? 'warn' : 'success')}
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h3>${state.lang === 'zh' ? '同步准备度' : 'Sync Readiness'}</h3>
+          <div class="list">${stageHtml}</div>
+        </div>
+        <div class="card">
+          <h3>${state.lang === 'zh' ? '.gitignore 预览' : '.gitignore Preview'}</h3>
+          <div class="empty">${escapeHtml(state.lang === 'zh' ? '正在加载嵌套仓库预览…' : 'Loading embedded repository preview…')}</div>
+        </div>
+      </div>
+    `;
+    setPanel(t('tabs.git-sync'), t('desc.git-sync'), partialBody);
+    applyPendingPanelFocus('git-sync');
+    if (oauth.phase === 'authorizing' || status.cache?.refreshing) {
+      state.gitSyncPollTimer = setTimeout(() => {
+        if (state.activeTab === 'git-sync') {
+          loadGitSync();
+        }
+      }, 3000);
+    }
+
+    const gitignorePreview = await gitignorePreviewPromise;
+    const gitIgnoreTemplate = typeof gitignorePreview?.suggestedBlock === 'string' && gitignorePreview.suggestedBlock.trim()
+      ? gitignorePreview.suggestedBlock
+      : buildGitIgnoreTemplate(skippedEmbeddedRepos);
+    const gitIgnoreAppendBlock = typeof gitignorePreview?.appendBlock === 'string' ? gitignorePreview.appendBlock : '';
+    const gitIgnoreExistingEntries = Array.isArray(gitignorePreview?.existingEntries) ? gitignorePreview.existingEntries : [];
+    const gitIgnoreMissingEntries = Array.isArray(gitignorePreview?.missingEntries) ? gitignorePreview.missingEntries : [];
+    const gitIgnorePath = gitignorePreview?.gitignorePath || `${status.repoPath || ''}/.gitignore`;
+    const gitIgnoreModeOptions = `
+      <option value="smart" ${gitIgnoreMode === 'smart' ? 'selected' : ''}>${escapeHtml(state.lang === 'zh' ? '智能模式：精确路径 + 常见通配符' : 'Smart: exact paths + common wildcards')}</option>
+      <option value="exact" ${gitIgnoreMode === 'exact' ? 'selected' : ''}>${escapeHtml(state.lang === 'zh' ? '精确模式：只写当前检测到的路径' : 'Exact: detected paths only')}</option>
+    `;
+    const embeddedRepoGuide = buildEmbeddedRepoGuide(skippedEmbeddedRepos);
     const gitIgnoreExistingHtml = gitIgnoreExistingEntries.length
       ? gitIgnoreExistingEntries.map((entry) => `
           <div class="list-item">
@@ -3448,28 +4458,12 @@
       : emptyState(skippedEmbeddedRepos.length
         ? (state.lang === 'zh' ? '当前 .gitignore 已覆盖这些嵌套仓库规则。' : '.gitignore already covers the current embedded repositories.')
         : (state.lang === 'zh' ? '当前没有需要生成的嵌套仓库忽略规则。' : 'No embedded repository ignore rules need to be generated right now.'));
-    const rawChangeSummary = allChangedFiles.length
-      ? `${formatNumber(allChangedFiles.length)} ${state.lang === 'zh' ? '项变更' : 'changed paths'}`
-      : (state.lang === 'zh' ? '没有本地变更' : 'No local changes');
-    const embeddedRepoNotice = skippedEmbeddedRepos.length
-      ? `<div class="status warn" style="margin-top:14px;">${escapeHtml(state.lang === 'zh'
-          ? `Guard 已检测到 ${skippedEmbeddedRepos.length} 个嵌套 Git 仓库。它们不会被纳入外层 .openclaw 的本次提交，请按下方建议单独处理。`
-          : `Guard detected ${skippedEmbeddedRepos.length} embedded Git repositories. They will stay outside the root .openclaw commit and should be handled separately using the guidance below.`)}</div>`
-      : '';
-    const guidanceTitle = skippedEmbeddedRepos.length
-      ? (state.lang === 'zh' ? '嵌套仓库处理建议' : 'Embedded Repository Guidance')
-      : (state.lang === 'zh' ? '常见嵌套仓库建议' : 'Common Embedded Repository Guidance');
-    const guidanceStatus = skippedEmbeddedRepos.length
-      ? (state.lang === 'zh'
-        ? '下面的建议基于当前检测到的嵌套仓库生成，可以直接复制忽略模板。'
-        : 'These recommendations are generated from the embedded repositories detected right now. You can copy the ignore template directly.')
-      : (state.lang === 'zh'
-        ? '当 .openclaw 里包含 workspace-*、extensions/* 这类独立 Git 仓库时，可以提前按这里的规则规划同步边界。'
-        : 'When .openclaw contains independent child repositories such as workspace-* or extensions/*, use these rules to plan the sync boundary ahead of time.');
 
     const body = `
+      ${renderCacheSummaryCard(status.cache, state.lang === 'zh' ? 'Git 状态快照' : 'Git Status Snapshot')}
+      ${renderCacheSummaryCard(gitignorePreview?.cache, state.lang === 'zh' ? '.gitignore 预览快照' : '.gitignore Preview Snapshot')}
       <div class="grid">
-        ${metricCard(state.lang === 'zh' ? '仓库状态' : 'Repository', status.repoInitialized ? 'READY' : 'MISSING', status.repoPath || '-', status.repoInitialized ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '仓库状态' : 'Repository', getReadyStateLabel(status.repoInitialized), status.repoPath || '-', status.repoInitialized ? 'success' : 'warn')}
         ${metricCard(state.lang === 'zh' ? '远程仓库' : 'Remote', status.remoteRepo || status.remoteUrl || '-', status.remoteWebUrl || status.provider || '-', status.remoteUrl ? 'success' : 'warn')}
         ${metricCard(state.lang === 'zh' ? '认证' : 'Auth', status.authConfigured ? (status.accountUsername || status.authMode || 'configured') : 'missing', status.authConfigured ? (state.lang === 'zh' ? '凭证已配置' : 'credentials ready') : (state.lang === 'zh' ? '尚未配置' : 'not configured'), status.authConfigured ? 'success' : 'warn')}
         ${metricCard(state.lang === 'zh' ? '全部变更' : 'All Changes', formatNumber(allChangedFiles.length), `${status.currentBranch || '-'} · ${rawChangeSummary}`, allChangedFiles.length > 0 ? 'warn' : 'success')}
@@ -3515,13 +4509,23 @@
       </div>
       <div class="grid" style="margin-top:14px;">
         <div class="card accent-success">
-          <h3>${state.lang === 'zh' ? '本次会纳入提交的文件' : 'Stageable Files For This Commit'}</h3>
-          <div class="muted small" style="margin-bottom:12px;">${escapeHtml(state.lang === 'zh' ? '这些路径属于外层 .openclaw 仓库，可直接纳入本次提交。' : 'These paths belong to the root .openclaw repository and will be staged normally.')}</div>
-          <div class="list">${stageableFilesHtml}</div>
+          <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+            <div>
+              <h3>${state.lang === 'zh' ? '本次会纳入提交的路径' : 'Stageable Paths For This Commit'}</h3>
+              <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '改成目录树展示，既能看清结构，也不会被超长平铺列表拖慢。' : 'Rendered as a folder tree so the structure stays visible without the cost of a huge flat list.')}</div>
+            </div>
+            <button class="action-btn" type="button" data-git-action="copy-stageable-list" ${stageableChangedFiles.length ? '' : 'disabled'}>${state.lang === 'zh' ? '复制完整清单' : 'Copy Full List'}</button>
+          </div>
+          <div style="margin-top:12px;">${stageableTreeHtml}</div>
         </div>
         <div class="card accent-warn">
-          <h3>${state.lang === 'zh' ? '已自动跳过的嵌套仓库' : 'Skipped Embedded Repositories'}</h3>
-          <div class="muted small" style="margin-bottom:12px;">${escapeHtml(state.lang === 'zh' ? '这些路径带有自己的 .git，不会被外层 Git Sync 纳入 commit。' : 'These paths contain their own .git directories and will stay outside the root Git Sync commit.')}</div>
+          <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+            <div>
+              <h3>${state.lang === 'zh' ? '已自动跳过的嵌套仓库' : 'Skipped Embedded Repositories'}</h3>
+              <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这些路径带有自己的 .git，不会被外层 Git Sync 纳入 commit。' : 'These paths contain their own .git directories and will stay outside the root Git Sync commit.')}</div>
+            </div>
+            <button class="action-btn" type="button" data-git-action="copy-skipped-list" ${skippedEmbeddedRepos.length ? '' : 'disabled'}>${state.lang === 'zh' ? '复制仓库列表' : 'Copy Repo List'}</button>
+          </div>
           <div class="list">${skippedReposHtml}</div>
         </div>
       </div>
@@ -3649,19 +4653,9 @@
             <button class="action-btn" type="button" data-git-action="push" ${status.canPush ? '' : 'disabled'}>push</button>
             <button class="action-btn" type="button" data-git-action="check-sync">${state.lang === 'zh' ? '检查并同步' : 'Check + Sync'}</button>
             <button class="action-btn primary" type="button" data-git-action="sync" ${status.canSync ? '' : 'disabled'}>sync</button>
+            <button class="action-btn" type="button" data-git-action="copy-change-list" ${allChangedFiles.length ? '' : 'disabled'}>${state.lang === 'zh' ? '复制全部路径' : 'Copy All Paths'}</button>
           </div>
-          <div class="list" style="margin-top:12px;">
-            ${allChangedFiles.length
-              ? allChangedFiles.map((file) => `
-                  <div class="list-item">
-                    <div class="row" style="justify-content:space-between; gap:12px;">
-                      <strong>${escapeHtml(file)}</strong>
-                      <span class="muted small">${escapeHtml(skippedEmbeddedRepos.includes(file) ? (state.lang === 'zh' ? '嵌套仓库' : 'embedded repo') : (stageableChangedFiles.includes(file) ? (state.lang === 'zh' ? '可提交' : 'stageable') : (state.lang === 'zh' ? '待确认' : 'pending')))}</span>
-                    </div>
-                  </div>
-                `).join('')
-              : emptyState(state.lang === 'zh' ? '当前没有待同步的本地变更。' : 'No local changes to sync.')}
-          </div>
+          <div style="margin-top:12px;">${allChangesTreeHtml}</div>
         </div>
       </div>
     `;
@@ -3704,6 +4698,27 @@
             await copyTextValue(status.remoteUrl || '', {
               successMessage: state.lang === 'zh' ? '远程地址已复制。' : 'Remote URL copied.',
               emptyMessage: state.lang === 'zh' ? '当前还没有远程地址可复制。' : 'No remote URL to copy yet.',
+            });
+            return;
+          }
+          if (action === 'copy-change-list') {
+            await copyTextValue(allChangedFiles.join('\n'), {
+              successMessage: state.lang === 'zh' ? '全部变更路径已复制。' : 'All changed paths copied.',
+              emptyMessage: state.lang === 'zh' ? '当前没有待复制的变更路径。' : 'There are no changed paths to copy.',
+            });
+            return;
+          }
+          if (action === 'copy-stageable-list') {
+            await copyTextValue(stageableChangedFiles.join('\n'), {
+              successMessage: state.lang === 'zh' ? '可提交路径清单已复制。' : 'Stageable path list copied.',
+              emptyMessage: state.lang === 'zh' ? '当前没有可提交路径。' : 'There are no stageable paths.',
+            });
+            return;
+          }
+          if (action === 'copy-skipped-list') {
+            await copyTextValue(skippedEmbeddedRepos.map((repoPath) => `${repoPath}/`).join('\n'), {
+              successMessage: state.lang === 'zh' ? '嵌套仓库列表已复制。' : 'Embedded repository list copied.',
+              emptyMessage: state.lang === 'zh' ? '当前没有嵌套仓库路径。' : 'There are no embedded repositories.',
             });
             return;
           }
@@ -3886,7 +4901,8 @@
       state.gitSyncDraftMessage = event.target.value;
     });
 
-    if (oauth.phase === 'authorizing' && state.activeTab === 'git-sync') {
+    clearGitSyncPollTimer();
+    if ((oauth.phase === 'authorizing' || status.cache?.refreshing || gitignorePreview?.cache?.refreshing) && state.activeTab === 'git-sync') {
       state.gitSyncPollTimer = setTimeout(() => {
         if (state.activeTab === 'git-sync') {
           loadGitSync();
@@ -3969,6 +4985,10 @@
     const active = state.activeTab || 'overview';
     if (active !== 'git-sync') clearGitSyncPollTimer();
     if (active !== 'openclaw') clearOpenClawPollTimer();
+    if (active !== 'cron') clearCronPollTimer();
+    if (active !== 'overview' && active !== 'sessions' && active !== 'costs') {
+      clearRuntimeViewPollTimer();
+    }
     if (active !== 'overview' && active !== 'system') {
       clearServicePollTimer();
       clearPrewarmPollTimer();
@@ -4005,13 +5025,36 @@
   const initialHash = (location.hash || '').replace(/^#/, '');
   state.activeTab = TAB_ORDER.includes(initialHash) ? initialHash : (localStorage.getItem(STORAGE_TAB) || 'overview');
   if (!TAB_ORDER.includes(state.activeTab)) state.activeTab = 'overview';
-  renderShell();
-  loadActiveTab();
+
   window.addEventListener('hashchange', () => {
     const next = (location.hash || '').replace(/^#/, '');
     if (TAB_ORDER.includes(next) && next !== state.activeTab) {
       setActiveTab(next, false);
     }
   });
-})();
 
+  // 启动时先检测鉴权状态，再决定显示登录页还是主界面
+  (async function bootstrap() {
+    try {
+      const authStatus = await fetch('/api/auth/status').then((r) => r.json());
+      state.authEnabled = authStatus.enabled;
+      if (!authStatus.enabled) {
+        // 鉴权关闭（GUARD_NO_AUTH=1），直接进入主界面
+        renderShell();
+        loadActiveTab();
+        return;
+      }
+    } catch {
+      // 无法检测时，降级为假设已启用鉴权
+      state.authEnabled = true;
+    }
+    // 有 token 时先进入，如果 token 无效 apiRequest 会捕获 401 并重新触发 renderLoginPage
+    if (state.authToken) {
+      renderShell();
+      loadActiveTab();
+    } else {
+      renderLoginPage();
+    }
+  })();
+
+})();

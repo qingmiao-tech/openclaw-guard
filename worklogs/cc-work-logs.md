@@ -45,6 +45,50 @@
 
 ## 交付记录
 
+## [2026-03-10 14:30] Guard Web 密码鉴权机制实现 [TASK-20260310-001]
+
+- 任务来源: 主人要求"优先处理安全问题——目前项目安装后直接使用，若部署在服务器上链接泄露存在安全隐患，需要增加密码鉴权机制：初始密码可在安装控制台等方式自动生成，且用户登录后支持修改密码"。同事 CC 因 502 未能完成，由本人接续推进。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-10 14:00
+- 开始时间: 2026-03-10 14:05
+- 提交时间: 2026-03-10 14:30
+- 任务目标:
+  1) 为 Guard Web UI 增加密码鉴权，防止未授权访问。
+  2) 首次启动自动生成随机初始密码，打印到控制台，无需手动配置。
+  3) 登录后支持在界面中修改密码，修改后所有会话立即失效。
+  4) 提供逃生门（GUARD_NO_AUTH=1 禁用鉴权），供本地开发调试使用。
+- 执行过程:
+  1) 读取现有 server.ts、guard-ui.js、guard-ui.css、guard-state.ts，全面了解架构。
+  2) 新建 `openclaw-guard/src/auth.ts`：实现 PBKDF2-SHA256 密码哈希、会话令牌管理（8 小时 TTL、内存存储、最多 20 个会话）、initAuth/validatePassword/createSession/revokeSession/changePassword 等核心函数。
+  3) 修改 `openclaw-guard/src/server.ts`：导入 auth 模块、在 tryListen 前调用 initAuth（首次启动打印初始密码）、在路由处理器中添加鉴权中间件（放行 /api/auth/* 和静态资源，保护所有其他 API）、新增 /api/auth/status、/api/auth/login、/api/auth/logout、/api/auth/change-password 四个公开路由。
+  4) 修改 `openclaw-guard/web/guard-ui.js`：添加 STORAGE_TOKEN 常量、authToken/authEnabled state 字段、apiRequest 携带 Bearer token 并处理 401 自动跳转登录页、renderLoginPage 登录页面函数、showChangePwdDialog 修改密码对话框、header 区域添加"修改密码"和"退出登录"按钮、bootstrap 入口函数（先检测 /api/auth/status，再决定显示登录页还是主界面）。
+  5) 修改 `openclaw-guard/web/guard-ui.css`：新增登录页面样式（#guard-login-wrap、#guard-login-card）和修改密码对话框样式（#guard-changepwd-overlay）。
+  6) 执行 `pnpm build` 和 `node --check` 双重验证，全部通过。
+- 交付成果:
+  1) `openclaw-guard/src/auth.ts` 新建，提供完整鉴权能力。
+  2) Guard Web 首次启动自动打印初始密码，无需手动配置。
+  3) 前端自动跳转登录页，登录后 Token 存入 localStorage 并随每个请求携带。
+  4) 会话过期或 Token 无效时自动清除并重定向登录。
+  5) 主界面右上角新增"修改密码"和"退出登录"按钮。
+  6) GUARD_NO_AUTH=1 环境变量可完全跳过鉴权，用于本地开发。
+- 变更清单:
+  - `openclaw-guard/src/auth.ts`（新建）
+  - `openclaw-guard/src/server.ts`（修改）
+  - `openclaw-guard/web/guard-ui.js`（修改）
+  - `openclaw-guard/web/guard-ui.css`（修改）
+  - `worklogs/cc-work-logs.md`（本条目）
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`2586023`; ahead/behind=`ahead 34, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`ad464c3`; ahead/behind=`ahead 2, behind 0`
+- 验证结果:
+  1) `pnpm --dir openclaw-guard build` 通过，无 TypeScript 错误。
+  2) `node --check openclaw-guard/web/guard-ui.js` 通过，无 JavaScript 语法错误。
+  3) 代码审查：auth.ts PBKDF2 参数 100_000 轮、32 字节密钥，安全强度符合行业标准。
+  4) 代码审查：登录失败添加 500ms 延迟防暴力枚举；初始密码使用 crypto.randomBytes 生成，不含易混淆字符。
+- 后续建议:
+  1) 可考虑为 /api/auth/login 添加 IP 级速率限制（如每分钟最多 10 次），进一步防止暴力破解。
+  2) 当前 Token 仅存内存，重启 Guard 后所有 Token 失效，用户需重新登录；如需跨重启保持会话，可将 Token 持久化到 secrets 目录。
+  3) 后续可在"运维"页添加"重置密码"功能（命令行方式，删除 auth.json 即可重置）。
+
 ## [2026-03-04 08:00] 消除 feishu 插件 duplicate 警告 [TASK-20260304-003]
 
 - 任务来源: 主人反馈 OpenClaw Gateway 启动时仍有 `duplicate plugin id detected` 警告，要求彻底消除该警告。

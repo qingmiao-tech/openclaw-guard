@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   const app = document.getElementById('guard-app');
   if (!app) return;
 
@@ -35,8 +35,8 @@
       clearAll: '清空全部',
       search: '搜索',
       tabs: {
-        overview: '概览',
-        system: '系统',
+        overview: '驾驶舱',
+        system: '运维',
         openclaw: 'OpenClaw',
         feishu: '飞书',
         channels: '渠道',
@@ -57,8 +57,8 @@
         logs: '日志'
       },
       desc: {
-        overview: '统一总览当前机器、Gateway、Agent、通知和运行风险。',
-        system: '查看当前系统信息、Gateway 服务状态，以及 Guard Web 后台进程控制。',
+        overview: '第一屏驾驶舱，集中判断运行健康度、风险与下一步处理入口。',
+        system: '集中处理 Gateway、Guard Web、路径、Env 与运行维护细节。',
         openclaw: '检查 OpenClaw 安装状态、版本、升级信息和 Dashboard 入口。',
         feishu: '维护飞书核心配置，确认插件是否安装、配置是否完整。',
         channels: '查看当前渠道开关、配置摘要和敏感字段挂载情况。',
@@ -108,8 +108,8 @@
       clearAll: 'Clear all',
       search: 'Search',
       tabs: {
-        overview: 'Overview',
-        system: 'System',
+        overview: 'Cockpit',
+        system: 'Operations',
         openclaw: 'OpenClaw',
         feishu: 'Feishu',
         channels: 'Channels',
@@ -130,8 +130,8 @@
         logs: 'Logs'
       },
       desc: {
-        overview: 'Unified view of the machine, Gateway, agents, notifications, and runtime risk.',
-        system: 'Host details, Gateway controls, and Guard Web background process status.',
+        overview: 'First-screen cockpit for health, risk, and next-step navigation.',
+        system: 'Operations center for Gateway, Guard Web, paths, env, and maintenance details.',
         openclaw: 'Installation, version, update information, and Dashboard entry.',
         feishu: 'Maintain core Feishu config and verify plugin readiness.',
         channels: 'Review channel enablement, summaries, and secrets footprint.',
@@ -320,13 +320,24 @@
   function applyPendingPanelFocus(tabId) {
     const pending = state.pendingPanelFocus;
     if (!pending || pending.tabId !== tabId) return;
-    state.pendingPanelFocus = null;
-    setTimeout(() => {
+    const attemptFocus = (remaining = 8) => {
       const target = document.querySelector(pending.selector);
-      if (!target) return;
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      target.classList.add('panel-highlight');
-      setTimeout(() => target.classList.remove('panel-highlight'), 1800);
+      if (target) {
+        state.pendingPanelFocus = null;
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        target.classList.add('panel-highlight');
+        setTimeout(() => target.classList.remove('panel-highlight'), 1800);
+        return;
+      }
+      if (remaining <= 0) {
+        state.pendingPanelFocus = null;
+        return;
+      }
+      setTimeout(() => attemptFocus(remaining - 1), 120);
+    };
+    setTimeout(() => {
+      if (!state.pendingPanelFocus || state.pendingPanelFocus !== pending) return;
+      attemptFocus();
     }, 80);
   }
 
@@ -770,6 +781,55 @@
 
     const alerts = overview.runtime?.alerts || [];
     const latestNotifications = overview.notifications?.latest || [];
+    const runtimeSummary = overview.runtime?.summary || {};
+    const runtimeMemory = overview.runtime?.memory || {};
+    const runtimeUpdate = overview.runtime?.update || {};
+    const runtimeOs = overview.runtime?.os || {};
+    const gatewayService = overview.runtime?.gatewayService || {};
+    const nodeService = overview.runtime?.nodeService || {};
+    const gatewayReachable = overview.runtime?.gateway?.reachable;
+    const showQuickRestart = !overview.gateway?.running || gatewayReachable === false;
+    const runtimeSummaryRows = [
+      {
+        label: state.lang === 'zh' ? '记忆后端' : 'Memory Backend',
+        value: runtimeMemory.backend || '-',
+        help: state.lang === 'zh'
+          ? `${formatNumber(runtimeMemory.files || 0)} 个文件 / ${formatNumber(runtimeMemory.chunks || 0)} 个分片`
+          : `${formatNumber(runtimeMemory.files || 0)} files / ${formatNumber(runtimeMemory.chunks || 0)} chunks`,
+      },
+      {
+        label: state.lang === 'zh' ? '更新状态' : 'Update',
+        value: runtimeUpdate.latestVersion || runtimeUpdate.depsStatus || '-',
+        help: runtimeUpdate.installKind || runtimeUpdate.packageManager || '-',
+      },
+      {
+        label: state.lang === 'zh' ? 'Gateway 服务' : 'Gateway Service',
+        value: gatewayService.loadedText || '-',
+        help: gatewayService.runtimeShort || gatewayService.label || '-',
+      },
+      {
+        label: state.lang === 'zh' ? 'Node 服务' : 'Node Service',
+        value: nodeService.loadedText || '-',
+        help: nodeService.runtimeShort || nodeService.label || '-',
+      },
+      {
+        label: state.lang === 'zh' ? '默认模型' : 'Default Model',
+        value: runtimeSummary.defaultModel || '-',
+        help: state.lang === 'zh'
+          ? `${formatNumber(runtimeSummary.sessionCount || 0)} 个会话`
+          : `${formatNumber(runtimeSummary.sessionCount || 0)} sessions`,
+      },
+      {
+        label: state.lang === 'zh' ? '运行平台' : 'Runtime Platform',
+        value: runtimeOs.label || overview.platform || '-',
+        help: runtimeOs.release || runtimeOs.arch || '-',
+      },
+    ];
+    const cockpitActions = [
+      `<button class="action-btn primary" type="button" data-overview-action="enter-operations">${state.lang === 'zh' ? '进入运维' : 'Open Operations'}</button>`,
+      showQuickRestart ? `<button class="action-btn" type="button" data-overview-action="gateway-restart">${state.lang === 'zh' ? '快速重启 Gateway' : 'Quick Restart Gateway'}</button>` : '',
+      `<button class="action-btn" type="button" data-overview-action="open-dashboard">Dashboard</button>`,
+    ].filter(Boolean).join('');
     const body = `
       <div class="grid">
         ${metricCard(state.lang === 'zh' ? 'Gateway' : 'Gateway', overview.gateway?.running ? 'RUNNING' : 'STOPPED', `port ${overview.gateway?.port || '-'}`, overview.gateway?.running ? 'success' : 'danger')}
@@ -780,6 +840,16 @@
         ${metricCard(state.lang === 'zh' ? '记忆文件' : 'Memory Files', formatNumber(overview.memoryFiles || 0), overview.openclawDir || '-')}
       </div>
       <div class="grid">
+        <div class="card accent-info">
+          <h3>${state.lang === 'zh' ? '驾驶舱提示' : 'Cockpit Guidance'}</h3>
+          <div class="status">${escapeHtml(state.lang === 'zh'
+            ? '这里保留摘要、风险判断与下一步入口；涉及 Gateway、Guard Web、路径、Env 的具体操作，统一收敛到“运维”页。'
+            : 'This page stays focused on summaries, risk signals, and next-step routing. Detailed Gateway, Guard Web, path, and env operations now live in Operations.')}</div>
+          <div class="sub-card" style="margin-top:14px;">
+            <h3 style="margin-bottom:10px;">${state.lang === 'zh' ? '运行摘要' : 'Runtime Summary'}</h3>
+            ${keyValueGrid(runtimeSummaryRows)}
+          </div>
+        </div>
         <div class="card">
           <h3>${state.lang === 'zh' ? '系统资源' : 'System Resources'}</h3>
           ${keyValueGrid([
@@ -789,39 +859,44 @@
             { label: state.lang === 'zh' ? '平台' : 'Platform', value: overview.platform || '-', help: `${overview.user || '-'} @ ${overview.homeDir || '-'}` },
           ])}
         </div>
-        <div class="card">
-          <h3>${state.lang === 'zh' ? '运行态风险' : 'Runtime Alerts'}</h3>
-          ${alerts.length ? `<div class="list">${alerts.map((item) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(item.code)}</strong><span class="pill ${item.level === 'critical' || item.level === 'error' ? 'danger' : item.level === 'warning' ? 'warn' : ''}">${escapeHtml(item.level)}</span></div><div>${escapeHtml(item.message)}</div></div>`).join('')}</div>` : emptyState(state.lang === 'zh' ? '当前没有新的运行态告警。' : 'No runtime alerts right now.')}
-        </div>
       </div>
       <div class="grid">
+        <div class="card">
+          <h3>${state.lang === 'zh' ? '风险与告警' : 'Risk & Alerts'}</h3>
+          ${alerts.length ? `<div class="list">${alerts.map((item) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(item.code)}</strong><span class="pill ${item.level === 'critical' || item.level === 'error' ? 'danger' : item.level === 'warning' ? 'warn' : ''}">${escapeHtml(item.level)}</span></div><div>${escapeHtml(item.message)}</div></div>`).join('')}</div>` : emptyState(state.lang === 'zh' ? '当前没有新的运行态告警。' : 'No runtime alerts right now.')}
+        </div>
         <div class="card">
           <h3>${state.lang === 'zh' ? '最新通知' : 'Latest Notifications'}</h3>
           ${latestNotifications.length ? `<div class="list">${latestNotifications.map((item) => `<div class="list-item ${item.read ? '' : 'unread'}"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(item.title)}</strong><span class="muted">${escapeHtml(formatRelative(item.createdAt))}</span></div><div>${escapeHtml(item.message)}</div></div>`).join('')}</div>` : emptyState(state.lang === 'zh' ? '暂无通知。' : 'No notifications yet.')}
         </div>
+      </div>
+      <div class="grid">
         <div class="card">
-          <h3>${state.lang === 'zh' ? '快速入口' : 'Quick Links'}</h3>
-          <div class="quick-links">
-            <a href="#system">${state.lang === 'zh' ? '系统与服务' : 'System & Service'}</a>
-            <a href="#files">${state.lang === 'zh' ? '文件工作台' : 'File Workbench'}</a>
-            <a href="#git-sync">${state.lang === 'zh' ? 'Git 同步' : 'Git Sync'}</a>
-            <a href="#audit">${state.lang === 'zh' ? '安全审计' : 'Security Audit'}</a>
+          <h3>${state.lang === 'zh' ? '下一步处理' : 'Next Actions'}</h3>
+          <div class="toolbar" style="flex-wrap:wrap;">
+            <button class="action-btn primary" type="button" data-overview-link="service">${state.lang === 'zh' ? '运维服务区' : 'Operations Service'}</button>
+            <button class="action-btn" type="button" data-overview-link="paths">${state.lang === 'zh' ? '查看路径' : 'View Paths'}</button>
+            <button class="action-btn" type="button" data-overview-link="env">${state.lang === 'zh' ? 'Env 管理' : 'Env Management'}</button>
+            <button class="action-btn" type="button" data-overview-link="audit">${state.lang === 'zh' ? '安全审计' : 'Security Audit'}</button>
+            <button class="action-btn" type="button" data-overview-link="sessions">${state.lang === 'zh' ? '会话面板' : 'Sessions'}</button>
+            <button class="action-btn" type="button" data-overview-link="git-sync">${state.lang === 'zh' ? 'Git 同步' : 'Git Sync'}</button>
           </div>
-          <div class="status ${webStatus.running ? '' : 'warn'}" style="margin-top:14px;">${escapeHtml(webStatus.running ? (state.lang === 'zh' ? `当前 Guard Web 正在运行，PID ${webStatus.pid}` : `Guard Web is running with PID ${webStatus.pid}`) : (state.lang === 'zh' ? '当前未检测到 Guard Web 后台进程。' : 'No Guard Web background process detected.'))}</div>
+          <div class="status ${webStatus.running ? '' : 'warn'}" style="margin-top:14px;">${escapeHtml(webStatus.running ? (state.lang === 'zh' ? `当前 Guard Web 正在运行，PID ${webStatus.pid}。如需处理服务细节，直接进入“运维”。` : `Guard Web is running with PID ${webStatus.pid}. Use Operations for service-level actions.`) : (state.lang === 'zh' ? '当前未检测到 Guard Web 后台进程。建议先进入“运维”确认服务状态。' : 'No Guard Web background process detected. Open Operations to inspect service state.'))}</div>
         </div>
       </div>
     `;
 
-    setPanel(t('tabs.overview'), t('desc.overview'), body, `
-      <button class="action-btn" type="button" data-overview-action="gateway-restart">${escapeHtml(t('restart'))} Gateway</button>
-      <button class="action-btn" type="button" data-overview-action="open-dashboard">Dashboard</button>
-    `);
+    setPanel(t('tabs.overview'), t('desc.overview'), body, cockpitActions);
 
+    document.querySelector('[data-overview-action="enter-operations"]')?.addEventListener('click', () => {
+      queuePanelFocus('system', '#system-service-card');
+      setActiveTab('system');
+    });
     document.querySelector('[data-overview-action="gateway-restart"]')?.addEventListener('click', async () => {
       try {
         const result = await postJson('/api/service/restart', {});
         showToast(result.message || 'OK');
-        loadOverview();
+        await loadOverview();
       } catch (error) {
         showToast(error.message || String(error), 'error');
       }
@@ -833,6 +908,25 @@
       } catch (error) {
         showToast(error.message || String(error), 'error');
       }
+    });
+    document.querySelectorAll('[data-overview-link]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const target = button.getAttribute('data-overview-link');
+        const routeMap = {
+          service: { tabId: 'system', selector: '#system-service-card' },
+          paths: { tabId: 'system', selector: '#system-paths-card' },
+          env: { tabId: 'system', selector: '#system-env-editor-card' },
+          audit: { tabId: 'audit' },
+          sessions: { tabId: 'sessions' },
+          'git-sync': { tabId: 'git-sync' },
+        };
+        const next = routeMap[target];
+        if (!next) return;
+        if (next.selector) {
+          queuePanelFocus(next.tabId, next.selector);
+        }
+        setActiveTab(next.tabId);
+      });
     });
   }
 
@@ -923,7 +1017,21 @@
       </div>
       <div class="grid">
         <div class="card accent-info">
-          <h3>${state.lang === 'zh' ? '系统信息与路径' : 'System Info & Paths'}</h3>
+          <h3>${state.lang === 'zh' ? '运维提示' : 'Operations Guidance'}</h3>
+          <div class="status">${escapeHtml(state.lang === 'zh'
+            ? '这是 Guard 的唯一运维入口。Gateway、Guard Web、路径、Env 与运行快照，都统一在这里处理，避免驾驶舱和系统页重复堆叠控制。'
+            : 'This is the single operations entrypoint for Guard. Gateway, Guard Web, paths, env, and runtime snapshots are managed here to avoid duplicated controls in the cockpit.')}</div>
+          <div class="sub-card" style="margin-top:14px;">
+            <strong>${state.lang === 'zh' ? '建议用法' : 'Recommended Flow'}</strong>
+            <div class="muted small" style="margin-top:8px; line-height:1.7;">
+              ${escapeHtml(state.lang === 'zh'
+                ? '先在驾驶舱判断风险与优先级，再进入运维处理服务和环境；需要继续排查时，可从这里再跳到会话、审计或 Git 同步页。'
+                : 'Use the cockpit for prioritization first, then handle services and environment here. From Operations, continue into Sessions, Audit, or Git Sync when deeper diagnosis is needed.')}
+            </div>
+          </div>
+        </div>
+        <div class="card accent-info panel-focus-target" id="system-paths-card">
+          <h3>${state.lang === 'zh' ? '运行路径与目录' : 'Runtime Paths & Directories'}</h3>
           ${keyValueGrid([
             { label: state.lang === 'zh' ? '平台' : 'Platform', value: info.platform || '-' },
             { label: state.lang === 'zh' ? '用户' : 'User', value: info.user || '-' },
@@ -946,8 +1054,10 @@
             </div>
           </div>
         </div>
-        <div class="card accent-warn">
-          <h3>${state.lang === 'zh' ? '后台服务控制' : 'Background Service Controls'}</h3>
+      </div>
+      <div class="grid">
+        <div class="card accent-warn panel-focus-target" id="system-service-card">
+          <h3>${state.lang === 'zh' ? '服务与后台控制' : 'Service & Background Controls'}</h3>
           <div class="toolbar">
             <button class="action-btn primary" type="button" data-service-action="start">${escapeHtml(t('start'))} Gateway</button>
             <button class="action-btn" type="button" data-service-action="restart">${escapeHtml(t('restart'))} Gateway</button>
@@ -1003,7 +1113,7 @@
         </div>
       </div>
       <div class="grid">
-        <div class="card accent-success">
+        <div class="card accent-success panel-focus-target" id="system-env-list-card">
           <div class="row" style="justify-content:space-between; align-items:flex-start;">
             <div>
               <h3>${state.lang === 'zh' ? '本地 Env 管理' : 'Local Env Management'}</h3>
@@ -1030,7 +1140,7 @@
             </table>
           </div>
         </div>
-        <div class="card accent-info">
+        <div class="card accent-info panel-focus-target" id="system-env-editor-card">
           <div class="row" style="justify-content:space-between; align-items:flex-start;">
             <div>
               <h3>${state.lang === 'zh' ? '创建 / 更新 Env 键' : 'Create / Update Env Key'}</h3>
@@ -1062,13 +1172,14 @@
           </form>
         </div>
       </div>
-      <div class="card">
+      <div class="card panel-focus-target" id="system-runtime-card">
         <h3>${state.lang === 'zh' ? '运行态快照' : 'Runtime Snapshot'}</h3>
         <pre style="margin-top:14px;">${prettyJson(runtimeSnapshot)}</pre>
       </div>
     `;
 
     setPanel(t('tabs.system'), t('desc.system'), body);
+    applyPendingPanelFocus('system');
 
     document.querySelectorAll('[data-service-action]').forEach((button) => {
       button.addEventListener('click', async () => {

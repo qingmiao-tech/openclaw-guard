@@ -2618,3 +2618,35 @@
 - 风险与补充说明:
   1) 当前仓库里仍有其他未提交工作项，本次提交会聚焦 Guard 原生工作台与文档相关文件，避免把不在本轮范围内的内容混在一起。
   2) 全量测试仍存在既有失败项，主要在 `git-sync` 和 `openclaw-runtime`；本轮完整重启 Guard 的定向构建与测试已单独验证通过。
+
+## [2026-03-11 14:18] openclaw-guard 修复文件编辑器误判未保存并引入统一自定义弹框与通用骨架屏 [TASK-20260311-002]
+
+- 任务来源: 用户要求优化文件功能体验，解决“未修改也提示未保存切换”的问题，并把整个框架里的传统 alert / confirm / prompt 替换成更美观的统一弹框；随后又提出页面切换时应先渲染稳定 UI，再异步加载状态与数据，减少整页空白等待感。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成前端统一弹框、编辑器脏检查修复、菜单切页不重建整壳层，以及多页签通用骨架屏接入。
+- 实际完成:
+  1) `openclaw-guard/web/guard-ui.js` 已新增统一弹框系统:
+     - 新增 `showModalDialog()` / `showConfirmDialog()` / `showPromptDialog()` / `showValueDialog()`
+     - 原先文件中的原生 `window.prompt`、`confirm`、`window.confirm` 调用已全部替换为自定义弹框
+     - 复制兜底、新建文件/目录、删除任务、清空通知、删除 Provider、删除 Env、停止后台服务、重启 Guard 等都已统一进新交互
+  2) 文件页与记忆页的未保存判断已修复:
+     - 新增 `normalizeEditorText()`，统一把 `CRLF / LF / CR` 规范化后再比较
+     - `openManagedFile()`、`hasDirtyEditor()`、保存成功后的原始值回写都已接入统一规范化
+     - 解决了 Windows/macOS/Linux 不同换行格式导致的“未改也提示未保存”误判
+  3) 页面切换体验已做第一轮结构优化:
+     - `setActiveTab()` 不再每次切页都重新执行 `renderShell()`，避免顶部壳层、导航和主容器整页重绘
+     - `loadActiveTab()` 不再在切页时先把整个面板清成一块空白 loading
+     - 新增通用骨架 helper，如 `skeletonLine()`、`skeletonButton()`、`loadingMetricCard()`、`loadingListBlock()`、`renderTabLoadingState()`
+     - 已为文件、记忆、通知、渠道、AI、Cron、成本、Agent、会话、活动、审计、预设、加固、日志、飞书等页签补上稳定骨架布局
+  4) 通知页上一轮的紧凑摘要条样式与一行展示仍保留，并与本轮通用骨架能力兼容，没有被回退
+- 交付清单:
+  - openclaw-guard/web/guard-ui.js
+  - openclaw-guard/web/guard-ui.css
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  2) 已验证 `npm run build`（目录 `openclaw-guard`）通过。
+  3) 已确认 `openclaw-guard/web/guard-ui.js` 内原生 `alert / confirm / prompt` 调用点已清零。
+- 风险与补充说明:
+  1) 本轮主要解决的是“前端感知速度”和“交互一致性”，并不等于所有后端接口的真实耗时都已经降低；后续仍需要继续推进客户端缓存、按块更新和局部刷新标识。
+  2) 当前仓库里仍有其他未提交工作树改动，本次提交只会纳入我本轮处理的 Guard 前端文件与这份工作日志，不会混入其他范围外内容。

@@ -46,6 +46,41 @@
 
 ## 交付记录
 
+## [2026-03-10 09:15] 重构 Guard 驾驶舱与运维页职责边界 [TASK-20260310-001]
+
+- 任务来源: 用户确认“概览改为驾驶舱，系统改成运维”，并要求按既定方案执行信息架构重构。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-10 08:56
+- 开始时间: 2026-03-10 08:56
+- 提交时间: 2026-03-10 09:15
+- 任务目标:
+  1) 保留双页结构，但明确“驾驶舱负责摘要与分发，运维负责服务与环境操作”的职责边界。
+  2) 将 UI 文案同步重命名为“驾驶舱 / 运维”，避免用户继续把“概览 / 系统”理解为重复页面。
+  3) 验证从驾驶舱跳转到运维指定区域的入口是否真实可用。
+- 执行过程:
+  1) 排查 `openclaw-guard/web/guard-ui.js` 时发现整段替换曾把文件误写成空文件，先从当前 `HEAD` 恢复，再改用精确补丁重做本轮修改。
+  2) 重写 `loadOverview()`，将首页改造成驾驶舱：保留关键状态卡，新增“驾驶舱提示”“运行摘要”“下一步处理”，并把常驻控制收敛为“进入运维 + 条件式快速重启 Gateway + Dashboard”。
+  3) 重写 `loadSystem()`，将系统页改造成运维：新增唯一运维入口说明，拆分出路径、服务、Env 列表、Env 编辑、运行快照等清晰卡片，并补上聚焦锚点。
+  4) 加固 `applyPendingPanelFocus()`，将单次尝试改为短时重试，提升“驾驶舱 -> 运维指定卡片”跳转的稳定性。
+  5) 完成语法检查、TypeScript 构建和本地真实页面回归，确认页签文案、跳转和滚动定位可用。
+- 交付成果:
+  1) `Guard` 首页已从“概览”升级为“驾驶舱”，定位改为风险判断、运行摘要和下一步入口分发。
+  2) `Guard` 原“系统”页已升级为“运维”，成为 Gateway、Guard Web、路径、Env 和运行态的唯一运维入口。
+  3) 驾驶舱中的“进入运维 / 运维服务区 / 查看路径 / Env 管理”入口已能把页面实际滚动到对应运维卡片。
+- 变更清单:
+  - `openclaw-guard/web/guard-ui.js`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`91b22f8`; ahead/behind=`ahead 31, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`ad464c3`; ahead/behind=`ahead 2, behind 0`
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  2) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  3) 已临时启动 `node openclaw-guard/dist/index.js web --port 18090`，并通过 Playwright 确认页签显示为“驾驶舱 / 运维”。
+  4) 已确认从驾驶舱进入“运维服务区”和“Env 管理”后，页面会滚动到对应运维卡片顶部，说明入口分工和深链接已生效。
+- 后续建议:
+  1) 下一步可以继续把“驾驶舱”的摘要卡做得更决策化，例如把风险等级、同步状态、Cron 异常合并成更紧凑的第一屏判断区。
+  2) 若希望视觉反馈更强，可以继续补一层卡片聚焦动画，让从驾驶舱跳转到运维时的定位感更明显。
+
 ## [2026-03-07 23:28] tenacitOS 深度分析并形成与 openclaw-guard 对比文档 [TASK-20260307-003]
 
 - 任务来源: 用户要求“详细分析 `https://github.com/carlosazaustre/tenacitOS`，并加入与当前 `openclaw-guard` 的对比性文档，保存到 `worklogs`”。

@@ -8,6 +8,7 @@ import { getOpenClawDir } from './platform.js';
 import { ensureDir, ensureGuardLayout, readJsonFile, writeJsonFile } from './guard-state.js';
 import { addNotification, markNotificationsMatching } from './notifications.js';
 import { runCommand } from './openclaw-runtime.js';
+import { getPersistentCachedValue, invalidatePersistentCache } from './persistent-cache.js';
 
 export type GitProvider = 'github' | 'gitee';
 export type GitAuthMode = 'none' | 'token' | 'oauth';
@@ -142,6 +143,8 @@ const DEFAULT_OAUTH_STATE: GitOAuthState = {
   error: null,
 };
 
+const GIT_SYNC_STATUS_CACHE_KEY = 'git-sync-status-v1';
+
 const DEFAULT_STATE: GitSyncState = {
   provider: null,
   remoteName: 'origin',
@@ -183,15 +186,18 @@ function normalizeState(input?: Partial<GitSyncState> | null): GitSyncState {
 
 function saveState(nextState: GitSyncState): void {
   writeJsonFile(getStateFile(), normalizeState(nextState));
+  invalidatePersistentCache(GIT_SYNC_STATUS_CACHE_KEY);
 }
 
 function saveSecret(secret: GitSyncSecret | null): void {
   const filePath = getSecretFile();
   if (!secret) {
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    invalidatePersistentCache(GIT_SYNC_STATUS_CACHE_KEY);
     return;
   }
   writeJsonFile(filePath, secret);
+  invalidatePersistentCache(GIT_SYNC_STATUS_CACHE_KEY);
 }
 
 function loadSecret(): GitSyncSecret | null {
@@ -861,7 +867,11 @@ function clearActiveOAuthFlow(): void {
 }
 
 export function getGitSyncStatus(): GitSyncStatus {
-  return buildStatus();
+  return getPersistentCachedValue(GIT_SYNC_STATUS_CACHE_KEY, {
+    ttlMs: 15_000,
+    staleIfErrorMs: 2 * 60_000,
+    loader: () => buildStatus(),
+  });
 }
 
 export function initGitSync(): GitSyncActionResult {

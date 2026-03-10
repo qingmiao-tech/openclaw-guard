@@ -1,6 +1,7 @@
 ﻿import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { getPersistentCachedValue } from './persistent-cache.js';
 
 export interface CommandResult {
   success: boolean;
@@ -201,6 +202,11 @@ export interface CronSnapshot {
   status?: CronStatusSummary;
   raw: unknown;
 }
+
+const RUNTIME_SNAPSHOT_CACHE_KEY = 'openclaw-runtime-snapshot-v2';
+const CRON_STATUS_CACHE_KEY = 'openclaw-cron-status-v1';
+const CRON_SNAPSHOT_CACHE_KEY = 'openclaw-cron-snapshot-v1';
+
 function extractJsonPayload(text: string): unknown | null {
   const input = text.trim();
   if (!input) return null;
@@ -527,7 +533,7 @@ export function runOpenClawCommand(args: string[], timeoutMs = 30000): CommandRe
   return runCommand(command, args, timeoutMs);
 }
 
-export function runOpenClawJson(args: string[], mockEnvKey?: string): { ok: boolean; data: unknown; source: string; warnings: string[] } {
+export function runOpenClawJson(args: string[], mockEnvKey?: string, timeoutMs = 30_000): { ok: boolean; data: unknown; source: string; warnings: string[] } {
   if (mockEnvKey) {
     const mocked = readMockJsonFromEnv(mockEnvKey);
     if (mocked !== null) {
@@ -540,7 +546,7 @@ export function runOpenClawJson(args: string[], mockEnvKey?: string): { ok: bool
     }
   }
 
-  const result = runOpenClawCommand([...args, '--json']);
+  const result = runOpenClawCommand([...args, '--json'], timeoutMs);
   if (!result.success) {
     return {
       ok: false,
@@ -610,8 +616,8 @@ function resolveSessions(root: unknown): Record<string, unknown>[] {
   return findObjectArray(root, looksLikeSession);
 }
 
-export function getRuntimeSnapshot(): RuntimeSnapshot {
-  const response = runOpenClawJson(['status'], 'OPENCLAW_GUARD_MOCK_STATUS_JSON');
+function buildRuntimeSnapshot(): RuntimeSnapshot {
+  const response = runOpenClawJson(['status'], 'OPENCLAW_GUARD_MOCK_STATUS_JSON', 12_000);
   const raw = response.data;
   const root = toObject(raw) || {};
   const sessionsRoot = toObject(root.sessions) || {};
@@ -740,8 +746,8 @@ function resolveCronJobs(root: unknown): Record<string, unknown>[] {
   return findObjectArray(root, looksLikeCron);
 }
 
-export function getCronStatusSummary(): CronStatusSummary {
-  const response = runOpenClawJson(['cron', 'status'], 'OPENCLAW_GUARD_MOCK_CRON_STATUS_JSON');
+function buildCronStatusSummary(): CronStatusSummary {
+  const response = runOpenClawJson(['cron', 'status'], 'OPENCLAW_GUARD_MOCK_CRON_STATUS_JSON', 10_000);
   const raw = toObject(response.data);
   return {
     enabled: raw && typeof raw.enabled === 'boolean' ? raw.enabled : null,
@@ -753,8 +759,8 @@ export function getCronStatusSummary(): CronStatusSummary {
   };
 }
 
-export function getCronSnapshot(): CronSnapshot {
-  const response = runOpenClawJson(['cron', 'list'], 'OPENCLAW_GUARD_MOCK_CRON_JSON');
+function buildCronSnapshot(): CronSnapshot {
+  const response = runOpenClawJson(['cron', 'list'], 'OPENCLAW_GUARD_MOCK_CRON_JSON', 10_000);
   const raw = response.data;
   const root = toObject(raw) || {};
   const jobs = response.ok
@@ -772,13 +778,34 @@ export function getCronSnapshot(): CronSnapshot {
     limit: pickNumber(root.limit, jobs.length),
     hasMore: root.hasMore === true,
     nextOffset: pickNullableNumber(root.nextOffset),
-    status: getCronStatusSummary(),
+    status: buildCronStatusSummary(),
     raw,
   };
 }
 
+export function getRuntimeSnapshot(): RuntimeSnapshot {
+  return getPersistentCachedValue(RUNTIME_SNAPSHOT_CACHE_KEY, {
+    ttlMs: 15_000,
+    staleIfErrorMs: 24 * 60 * 60 * 1000,
+    loader: buildRuntimeSnapshot,
+    isValid: (snapshot) => snapshot.ok,
+  });
+}
 
+export function getCronStatusSummary(): CronStatusSummary {
+  return getPersistentCachedValue(CRON_STATUS_CACHE_KEY, {
+    ttlMs: 20_000,
+    staleIfErrorMs: 24 * 60 * 60 * 1000,
+    loader: buildCronStatusSummary,
+    isValid: (summary) => summary.raw !== null || summary.enabled !== null,
+  });
+}
 
-
-
-
+export function getCronSnapshot(): CronSnapshot {
+  return getPersistentCachedValue(CRON_SNAPSHOT_CACHE_KEY, {
+    ttlMs: 20_000,
+    staleIfErrorMs: 24 * 60 * 60 * 1000,
+    loader: buildCronSnapshot,
+    isValid: (snapshot) => snapshot.ok,
+  });
+}

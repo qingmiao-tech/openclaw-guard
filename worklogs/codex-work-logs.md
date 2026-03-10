@@ -46,6 +46,55 @@
 
 ## 交付记录
 
+## [2026-03-10 12:03] 修复 Guard 菜单加载过慢与 Windows 弹窗问题 [TASK-20260310-002]
+
+- 任务来源: 用户反馈多个菜单点击后长时间停留在“正在加载…”，并且在 Windows 上点击页签时会弹出 CMD/PowerShell 窗口，要求改为更隐蔽、更快、支持缓存的方案。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-10 10:58
+- 开始时间: 2026-03-10 10:58
+- 提交时间: 2026-03-10 12:03
+- 任务目标:
+  1) 找出导致页签加载缓慢的真实瓶颈，避免每次切页都同步执行重命令。
+  2) 修复 Windows 下因 shell 调用导致的 CMD/PowerShell 黑窗弹出问题。
+  3) 为稳定信息与运行态信息建立合理缓存策略，并在超时时给前端明确反馈，而不是无限加载。
+- 执行过程:
+  1) 梳理 `server.ts -> dashboard/openclaw/service/runtime/git-sync` 调用链，确认慢点主要来自 `openclaw status --json`、`openclaw cron list --json`、`npm view openclaw version` 与若干同步 shell 调用。
+  2) 在 `openclaw.ts`、`service-mgr.ts`、`audit.ts` 中补齐 Windows 隐藏执行参数，避免检测类命令显式弹出终端窗口。
+  3) 新增 `persistent-cache.ts`，给 OpenClaw 安装信息、运行态快照、Cron 快照、Git 同步状态增加本地持久化缓存。
+  4) 调整缓存策略：稳定安装信息使用长 TTL，运行态与 Cron 使用短 TTL；当新请求失败时，优先回退到旧缓存，而不是用坏结果覆盖好缓存。
+  5) 在 `dashboard.ts` 中避免对同一运行态快照重复落盘，减少切页时的额外 I/O。
+  6) 在 `guard-ui.js` 中给 `fetch` 请求增加超时控制，避免前端无限停留在“正在加载…”。
+- 交付成果:
+  1) Windows 下用于检测版本、端口、专用用户等信息的命令现在统一使用隐藏执行，不再采用明显的终端弹窗方式。
+  2) OpenClaw 检测、运行态、Cron、Git 同步状态都已接入持久化缓存，连续切页时会优先命中缓存，明显降低等待时间。
+  3) 当运行态命令偶发超时或失败时，Guard 会优先保留旧缓存，而不是把页面打成空白。
+  4) 前端请求现在具备超时反馈机制，用户不再看到无限加载。
+- 变更清单:
+  - `openclaw-guard/src/persistent-cache.ts`
+  - `openclaw-guard/src/openclaw.ts`
+  - `openclaw-guard/src/service-mgr.ts`
+  - `openclaw-guard/src/openclaw-runtime.ts`
+  - `openclaw-guard/src/dashboard.ts`
+  - `openclaw-guard/src/git-sync.ts`
+  - `openclaw-guard/src/audit.ts`
+  - `openclaw-guard/web/guard-ui.js`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`ddc0b2e`; ahead/behind=`ahead 33, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`ad464c3`; ahead/behind=`ahead 2, behind 0`
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  2) 已验证 `pnpm --dir openclaw-guard build` 通过。
+  3) 直接基于构建产物做函数级基准验证，确认同一进程内命中缓存后：
+     - `detectOpenClaw` 由秒级下降到 `0ms`
+     - `getRuntimeSnapshot` 二次调用下降到 `0ms`
+     - `getCronSnapshot` 二次调用下降到 `0ms`
+     - `getGitSyncStatus` 二次调用下降到 `0ms`
+  4) 已确认审计、OpenClaw 检测、Gateway 服务检测相关命令全部补上了 Windows 隐藏执行参数。
+- 后续建议:
+  1) 下一步可以继续把“首次无缓存时”的重命令做成后台预热，不阻塞用户第一次打开页面。
+  2) 可以继续补一层“数据来自缓存 / 数据刚刷新”的轻提示，让用户知道当前页是否使用了旧快照。
+  3) 若要进一步减少跨平台 shell 依赖，可以再分阶段把一部分信息改为直接读取 OpenClaw 状态文件，而不是优先调用 CLI。
+
 ## [2026-03-10 09:15] 重构 Guard 驾驶舱与运维页职责边界 [TASK-20260310-001]
 
 - 任务来源: 用户确认“概览改为驾驶舱，系统改成运维”，并要求按既定方案执行信息架构重构。

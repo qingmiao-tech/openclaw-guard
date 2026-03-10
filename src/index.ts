@@ -17,6 +17,7 @@ import { getAgentCatalog, getManagedRoots, listManagedFiles, readManagedFile, wr
 import { getCronOverview, enableCronJob, disableCronJob, runCronJob, removeCronJob, createCronJob, updateCronJob, type CronJobInput } from './cron-ui.js';
 import { getGitSyncStatus, initGitSync, connectGitRemote, saveGitTokenAuth, checkGitRemotePrivate, commitGitSync, pushGitSync, syncGitSync, startOAuthLogin } from './git-sync.js';
 import { summarizeCosts } from './costs.js';
+import { getCachePrewarmStatus, runCachePrewarm } from './cache-prewarm.js';
 
 const program = new Command();
 
@@ -537,6 +538,36 @@ program.command('web').description('启动 Web 管理界面').option('-p, --port
   startServer(Number(opts.port || 18088));
 });
 
+program.command('cache-prewarm')
+  .description('执行 Guard 缓存预热')
+  .option('--trigger <trigger>', '预热触发来源', 'manual')
+  .option('--json', '输出 JSON 状态')
+  .action((opts: { trigger?: string; json?: boolean }) => {
+    const status = runCachePrewarm(opts.trigger || 'manual');
+    if (opts.json) {
+      printJson(status);
+      return;
+    }
+    const summary = getCachePrewarmStatus();
+    const phaseLabel = summary.phase === 'completed' ? '完成' : summary.phase === 'error' ? '完成但有异常' : summary.phase;
+    console.log(chalk.bold('\nGuard 缓存预热\n'));
+    console.log(`状态: ${phaseLabel}`);
+    console.log(`触发来源: ${summary.trigger || '-'}`);
+    console.log(`PID: ${summary.pid || '-'}`);
+    console.log(`开始时间: ${summary.startedAt || '-'}`);
+    console.log(`结束时间: ${summary.finishedAt || '-'}`);
+    console.log(`耗时: ${summary.lastDurationMs ?? '-'} ms`);
+    if (summary.lastError) {
+      console.log(chalk.yellow(`首个异常: ${summary.lastError}`));
+    }
+    console.log('');
+    for (const task of summary.tasks) {
+      const badge = task.success === true ? chalk.green('OK') : task.success === false ? chalk.red('ERR') : chalk.gray('PENDING');
+      console.log(`${badge} ${task.label} (${task.durationMs ?? '-'} ms)`);
+      if (task.error) {
+        console.log(chalk.dim(`    ${task.error}`));
+      }
+    }
+  });
+
 program.parse();
-
-

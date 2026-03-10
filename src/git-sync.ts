@@ -5,7 +5,7 @@ import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { URL, URLSearchParams } from 'node:url';
 import { getOpenClawDir } from './platform.js';
-import { ensureDir, ensureGuardLayout, readJsonFile, writeJsonFile } from './guard-state.js';
+import { ensureDir, ensureGuardLayout, isoNow, readJsonFile, writeJsonFile } from './guard-state.js';
 import { addNotification, markNotificationsMatching } from './notifications.js';
 import { runCommand } from './openclaw-runtime.js';
 import { getPersistentCachedValue, invalidatePersistentCache } from './persistent-cache.js';
@@ -109,6 +109,28 @@ export interface GitIgnoreApplyResult extends GitSyncActionResult {
   preview: GitIgnorePreview;
 }
 
+export interface GitSyncCacheMeta {
+  generatedAt: string | null;
+  ageMs: number | null;
+  freshForMs: number;
+  stale: boolean;
+  refreshing: boolean;
+  source: 'bootstrap' | 'cache' | 'stale';
+  lastStartedAt: string | null;
+  lastFinishedAt: string | null;
+  lastSuccessAt: string | null;
+  lastReason: string | null;
+  lastError: string | null;
+}
+
+export interface GitSyncStatusWithCache extends GitSyncStatus {
+  cache: GitSyncCacheMeta;
+}
+
+export interface GitIgnorePreviewWithCache extends GitIgnorePreview {
+  cache: GitSyncCacheMeta;
+}
+
 export interface OAuthLoginOptions {
   provider: GitProvider;
   clientId: string;
@@ -132,6 +154,27 @@ interface EmbeddedGitIgnoreSuggestion {
   suggestedBlock: string;
 }
 
+interface StoredGitSyncStatusSnapshot {
+  generatedAt: string;
+  status: GitSyncStatus;
+}
+
+interface StoredGitIgnorePreviewSnapshot {
+  generatedAt: string;
+  mode: GitIgnoreMode;
+  preview: GitIgnorePreview;
+}
+
+interface RefreshState {
+  refreshing: boolean;
+  queued: boolean;
+  lastStartedAt: string | null;
+  lastFinishedAt: string | null;
+  lastSuccessAt: string | null;
+  lastReason: string | null;
+  lastError: string | null;
+}
+
 const DEFAULT_OAUTH_STATE: GitOAuthState = {
   phase: 'idle',
   provider: null,
@@ -144,6 +187,40 @@ const DEFAULT_OAUTH_STATE: GitOAuthState = {
 };
 
 const GIT_SYNC_STATUS_CACHE_KEY = 'git-sync-status-v1';
+const GIT_SYNC_VIEW_FRESH_MS = 30_000;
+const GIT_SYNC_VIEW_STATUS_FILE = path.join(ensureGuardLayout().stateDir, 'git-sync-workbench-status.json');
+const GIT_SYNC_VIEW_PREVIEW_FILE_PREFIX = path.join(ensureGuardLayout().stateDir, 'git-sync-workbench-preview');
+
+const gitStatusRefreshState: RefreshState = {
+  refreshing: false,
+  queued: false,
+  lastStartedAt: null,
+  lastFinishedAt: null,
+  lastSuccessAt: null,
+  lastReason: null,
+  lastError: null,
+};
+
+const gitPreviewRefreshStates: Record<GitIgnoreMode, RefreshState> = {
+  smart: {
+    refreshing: false,
+    queued: false,
+    lastStartedAt: null,
+    lastFinishedAt: null,
+    lastSuccessAt: null,
+    lastReason: null,
+    lastError: null,
+  },
+  exact: {
+    refreshing: false,
+    queued: false,
+    lastStartedAt: null,
+    lastFinishedAt: null,
+    lastSuccessAt: null,
+    lastReason: null,
+    lastError: null,
+  },
+};
 
 const DEFAULT_STATE: GitSyncState = {
   provider: null,
@@ -187,6 +264,7 @@ function normalizeState(input?: Partial<GitSyncState> | null): GitSyncState {
 function saveState(nextState: GitSyncState): void {
   writeJsonFile(getStateFile(), normalizeState(nextState));
   invalidatePersistentCache(GIT_SYNC_STATUS_CACHE_KEY);
+  invalidateGitSyncViewSnapshots();
 }
 
 function saveSecret(secret: GitSyncSecret | null): void {
@@ -194,10 +272,12 @@ function saveSecret(secret: GitSyncSecret | null): void {
   if (!secret) {
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     invalidatePersistentCache(GIT_SYNC_STATUS_CACHE_KEY);
+    invalidateGitSyncViewSnapshots();
     return;
   }
   writeJsonFile(filePath, secret);
   invalidatePersistentCache(GIT_SYNC_STATUS_CACHE_KEY);
+  invalidateGitSyncViewSnapshots();
 }
 
 function loadSecret(): GitSyncSecret | null {
@@ -206,6 +286,70 @@ function loadSecret(): GitSyncSecret | null {
 
 export function loadGitSyncState(): GitSyncState {
   return normalizeState(readJsonFile<GitSyncState>(getStateFile(), DEFAULT_STATE));
+}
+
+function getGitPreviewCacheFile(mode: GitIgnoreMode): string {
+  return `${GIT_SYNC_VIEW_PREVIEW_FILE_PREFIX}-${mode}.json`;
+}
+
+function readStoredGitStatusSnapshot(): StoredGitSyncStatusSnapshot | null {
+  const snapshot = readJsonFile<StoredGitSyncStatusSnapshot | null>(GIT_SYNC_VIEW_STATUS_FILE, null);
+  if (!snapshot || typeof snapshot.generatedAt !== 'string' || !snapshot.status) return null;
+  return snapshot;
+}
+
+function readStoredGitPreviewSnapshot(mode: GitIgnoreMode): StoredGitIgnorePreviewSnapshot | null {
+  const snapshot = readJsonFile<StoredGitIgnorePreviewSnapshot | null>(getGitPreviewCacheFile(mode), null);
+  if (!snapshot || typeof snapshot.generatedAt !== 'string' || !snapshot.preview) return null;
+  return snapshot;
+}
+
+function saveStoredGitStatusSnapshot(snapshot: StoredGitSyncStatusSnapshot): StoredGitSyncStatusSnapshot {
+  writeJsonFile(GIT_SYNC_VIEW_STATUS_FILE, snapshot);
+  return snapshot;
+}
+
+function saveStoredGitPreviewSnapshot(snapshot: StoredGitIgnorePreviewSnapshot): StoredGitIgnorePreviewSnapshot {
+  writeJsonFile(getGitPreviewCacheFile(snapshot.mode), snapshot);
+  return snapshot;
+}
+
+function buildGitCacheMeta(
+  generatedAt: string,
+  refreshState: RefreshState,
+  source: GitSyncCacheMeta['source'],
+  freshForMs: number,
+): GitSyncCacheMeta {
+  const generatedAtMs = Date.parse(generatedAt);
+  const ageMs = Number.isFinite(generatedAtMs) ? Math.max(0, Date.now() - generatedAtMs) : null;
+  const stale = ageMs === null || ageMs > freshForMs;
+  return {
+    generatedAt,
+    ageMs,
+    freshForMs,
+    stale,
+    refreshing: refreshState.refreshing || refreshState.queued,
+    source,
+    lastStartedAt: refreshState.lastStartedAt,
+    lastFinishedAt: refreshState.lastFinishedAt,
+    lastSuccessAt: refreshState.lastSuccessAt,
+    lastReason: refreshState.lastReason,
+    lastError: refreshState.lastError,
+  };
+}
+
+function clearGitViewCacheFile(filePath: string): void {
+  try {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  } catch {
+    // ignore cache cleanup failures
+  }
+}
+
+export function invalidateGitSyncViewSnapshots(): void {
+  clearGitViewCacheFile(GIT_SYNC_VIEW_STATUS_FILE);
+  clearGitViewCacheFile(getGitPreviewCacheFile('smart'));
+  clearGitViewCacheFile(getGitPreviewCacheFile('exact'));
 }
 
 let activeOAuthServer: http.Server | null = null;
@@ -677,6 +821,76 @@ export function previewGitIgnoreRules(paths?: string[], mode: GitIgnoreMode = 's
   };
 }
 
+export function refreshGitIgnorePreviewSnapshot(mode: GitIgnoreMode = 'smart', reason = 'manual'): StoredGitIgnorePreviewSnapshot {
+  const normalizedMode = normalizeGitIgnoreMode(mode);
+  const refreshState = gitPreviewRefreshStates[normalizedMode];
+  refreshState.refreshing = true;
+  refreshState.lastStartedAt = isoNow();
+  refreshState.lastReason = reason;
+  refreshState.lastError = null;
+
+  try {
+    const snapshot = saveStoredGitPreviewSnapshot({
+      generatedAt: isoNow(),
+      mode: normalizedMode,
+      preview: previewGitIgnoreRules(undefined, normalizedMode),
+    });
+    refreshState.lastFinishedAt = isoNow();
+    refreshState.lastSuccessAt = refreshState.lastFinishedAt;
+    return snapshot;
+  } catch (error) {
+    refreshState.lastFinishedAt = isoNow();
+    refreshState.lastError = error instanceof Error ? error.message : String(error);
+    throw error;
+  } finally {
+    refreshState.refreshing = false;
+  }
+}
+
+export function getCachedGitIgnorePreview(mode: GitIgnoreMode = 'smart', freshForMs = GIT_SYNC_VIEW_FRESH_MS): GitIgnorePreviewWithCache {
+  const normalizedMode = normalizeGitIgnoreMode(mode);
+  const refreshState = gitPreviewRefreshStates[normalizedMode];
+  const existing = readStoredGitPreviewSnapshot(normalizedMode);
+
+  if (!existing) {
+    const snapshot = refreshGitIgnorePreviewSnapshot(normalizedMode, 'bootstrap');
+    return {
+      ...snapshot.preview,
+      cache: buildGitCacheMeta(snapshot.generatedAt, refreshState, 'bootstrap', freshForMs),
+    };
+  }
+
+  const generatedAtMs = Date.parse(existing.generatedAt);
+  const ageMs = Number.isFinite(generatedAtMs) ? Math.max(0, Date.now() - generatedAtMs) : Number.POSITIVE_INFINITY;
+  const stale = !Number.isFinite(ageMs) || ageMs > freshForMs;
+  if (stale) scheduleGitPreviewRefresh(normalizedMode, 'stale-read');
+
+  return {
+    ...existing.preview,
+    cache: buildGitCacheMeta(existing.generatedAt, refreshState, stale ? 'stale' : 'cache', freshForMs),
+  };
+}
+
+function refreshGitWorkbenchCaches(reason: string): void {
+  try {
+    refreshGitSyncStatusSnapshot(reason);
+  } catch {
+    invalidateGitSyncViewSnapshots();
+  }
+
+  try {
+    refreshGitIgnorePreviewSnapshot('smart', reason);
+  } catch {
+    clearGitViewCacheFile(getGitPreviewCacheFile('smart'));
+  }
+
+  try {
+    refreshGitIgnorePreviewSnapshot('exact', reason);
+  } catch {
+    clearGitViewCacheFile(getGitPreviewCacheFile('exact'));
+  }
+}
+
 export function applyGitIgnoreRules(mode: GitIgnoreMode = 'smart'): GitIgnoreApplyResult {
   const normalizedMode = normalizeGitIgnoreMode(mode);
   const preview = previewGitIgnoreRules(undefined, normalizedMode);
@@ -714,6 +928,7 @@ export function applyGitIgnoreRules(mode: GitIgnoreMode = 'smart'): GitIgnoreApp
 
   const nextPreview = previewGitIgnoreRules(preview.embeddedRepos, normalizedMode);
   const nextStatus = buildStatus();
+  refreshGitWorkbenchCaches('gitignore-apply');
   return {
     success: true,
     message: `已将 ${preview.missingEntries.length} 条嵌套仓库忽略规则写入 .gitignore，并刷新当前同步状态。`,
@@ -874,6 +1089,77 @@ export function getGitSyncStatus(): GitSyncStatus {
   });
 }
 
+function scheduleGitStatusRefresh(reason: string): void {
+  if (gitStatusRefreshState.refreshing || gitStatusRefreshState.queued) return;
+  gitStatusRefreshState.queued = true;
+  setTimeout(() => {
+    gitStatusRefreshState.queued = false;
+    try {
+      refreshGitSyncStatusSnapshot(reason);
+    } catch {
+      // Keep serving the last good snapshot.
+    }
+  }, 0);
+}
+
+function scheduleGitPreviewRefresh(mode: GitIgnoreMode, reason: string): void {
+  const refreshState = gitPreviewRefreshStates[mode];
+  if (refreshState.refreshing || refreshState.queued) return;
+  refreshState.queued = true;
+  setTimeout(() => {
+    refreshState.queued = false;
+    try {
+      refreshGitIgnorePreviewSnapshot(mode, reason);
+    } catch {
+      // Keep serving the last good snapshot.
+    }
+  }, 0);
+}
+
+export function refreshGitSyncStatusSnapshot(reason = 'manual'): StoredGitSyncStatusSnapshot {
+  gitStatusRefreshState.refreshing = true;
+  gitStatusRefreshState.lastStartedAt = isoNow();
+  gitStatusRefreshState.lastReason = reason;
+  gitStatusRefreshState.lastError = null;
+
+  try {
+    const snapshot = saveStoredGitStatusSnapshot({
+      generatedAt: isoNow(),
+      status: getGitSyncStatus(),
+    });
+    gitStatusRefreshState.lastFinishedAt = isoNow();
+    gitStatusRefreshState.lastSuccessAt = gitStatusRefreshState.lastFinishedAt;
+    return snapshot;
+  } catch (error) {
+    gitStatusRefreshState.lastFinishedAt = isoNow();
+    gitStatusRefreshState.lastError = error instanceof Error ? error.message : String(error);
+    throw error;
+  } finally {
+    gitStatusRefreshState.refreshing = false;
+  }
+}
+
+export function getCachedGitSyncStatus(freshForMs = GIT_SYNC_VIEW_FRESH_MS): GitSyncStatusWithCache {
+  const existing = readStoredGitStatusSnapshot();
+  if (!existing) {
+    const snapshot = refreshGitSyncStatusSnapshot('bootstrap');
+    return {
+      ...snapshot.status,
+      cache: buildGitCacheMeta(snapshot.generatedAt, gitStatusRefreshState, 'bootstrap', freshForMs),
+    };
+  }
+
+  const generatedAtMs = Date.parse(existing.generatedAt);
+  const ageMs = Number.isFinite(generatedAtMs) ? Math.max(0, Date.now() - generatedAtMs) : Number.POSITIVE_INFINITY;
+  const stale = !Number.isFinite(ageMs) || ageMs > freshForMs;
+  if (stale) scheduleGitStatusRefresh('stale-read');
+
+  return {
+    ...existing.status,
+    cache: buildGitCacheMeta(existing.generatedAt, gitStatusRefreshState, stale ? 'stale' : 'cache', freshForMs),
+  };
+}
+
 export function initGitSync(): GitSyncActionResult {
   if (!ensureGitAvailable()) {
     return {
@@ -903,6 +1189,7 @@ export function initGitSync(): GitSyncActionResult {
     message: `Prepared the Git repository and updated ${gitignorePath}`,
     severity: 'success',
   });
+  refreshGitWorkbenchCaches('git-init');
   return {
     success: true,
     message: 'Git sync repository initialized.',
@@ -964,6 +1251,7 @@ export function connectGitRemote(input: { provider?: GitProvider; remoteUrl: str
     message: remote.normalizedRemoteUrl,
     severity: 'success',
   });
+  refreshGitWorkbenchCaches('git-connect');
   return {
     success: true,
     message: `Connected remote repository ${remote.normalizedRemoteUrl}`,
@@ -1005,6 +1293,7 @@ export function saveGitTokenAuth(input: { provider?: GitProvider; token: string;
     message: 'Git credentials were saved. You can continue with private-check or sync.',
     severity: 'success',
   });
+  refreshGitWorkbenchCaches('git-auth');
   return {
     success: true,
     message: 'Git authentication saved.',
@@ -1049,6 +1338,7 @@ export async function checkGitRemotePrivate(): Promise<GitSyncActionResult> {
       message,
       severity: repoInfo.private ? 'success' : 'warning',
     });
+    refreshGitWorkbenchCaches('git-private-check');
     return {
       success: repoInfo.private,
       message,
@@ -1187,6 +1477,7 @@ export function commitGitSync(message?: string): GitSyncActionResult {
     meta: { skippedEmbeddedRepos: stagePreparation.skippedEmbeddedRepos },
   });
   resolveUnsyncedChangeNotifications();
+  refreshGitWorkbenchCaches('git-commit');
   return {
     success: true,
     message: `Local commit succeeded.${skippedMessage}`,
@@ -1254,6 +1545,7 @@ export function pushGitSync(): GitSyncActionResult {
   });
   resolveUnsyncedChangeNotifications();
   resolveCommitSuccessNotifications();
+  refreshGitWorkbenchCaches('git-push');
   return {
     success: true,
     message: 'Remote push succeeded.',

@@ -1,8 +1,20 @@
-# OpenClaw Guard
+﻿# OpenClaw Guard / 虾护卫
 
-OpenClaw 权限管理与安全审计工具，帮助你在日常开发机上安全地部署和运行 OpenClaw。
+OpenClaw Guard 是 OpenClaw 的原生运维与安全工作台，统一承接安装检测、Guard Web 启停、Gateway 服务管理、Git 同步、缓存预热、运行态查看与安全配置。
 
-跨平台支持 Windows / macOS / Linux。
+当前形态以轻量 Node CLI + 原生 Web 工作台为主，不再依赖外部 Mission Control 侧挂。
+
+支持平台:
+- Windows
+- macOS
+- Linux
+
+## 适用场景
+
+- 电脑上还没有安装 OpenClaw，需要先检测并补装
+- OpenClaw 已安装，但需要统一管理 Gateway、Guard Web、AI、渠道、Git 同步
+- Guard 页面卡住、样式异常、接口超时后，需要做完整重启而不是只重启 Gateway
+- 需要在客户机上以更可控的方式做安装、运维和故障排查
 
 ## 安装
 
@@ -11,125 +23,232 @@ cd openclaw-guard
 npm install
 ```
 
-## 使用
+开发模式启动:
 
 ```bash
-# 查看系统环境信息
+npx tsx src/index.ts web --port 18088
+```
+
+构建后启动:
+
+```bash
+npm run build
+node dist/index.js web --port 18088
+```
+
+常用本地地址:
+
+- `http://127.0.0.1:18088`
+- `http://127.0.0.1:18088/workbench`
+
+## 常用 CLI
+
+```bash
+# 系统与 OpenClaw 基础信息
 npx tsx src/index.ts info
 
-# 执行安全审计
+# 安全审计
 npx tsx src/index.ts audit
 
-# 查看可用的安全 Profile
-npx tsx src/index.ts profile list
+# 启动 Web 工作台
+npx tsx src/index.ts web --port 18088
 
-# 查看某个 Profile 的详细配置
-npx tsx src/index.ts profile show coding
+# 查看 Gateway 服务状态
+npx tsx src/index.ts service status
 
-# 应用安全 Profile 到 openclaw.json
-npx tsx src/index.ts profile apply coding
+# 启动 / 停止 / 重启 Gateway
+npx tsx src/index.ts service start
+npx tsx src/index.ts service stop
+npx tsx src/index.ts service restart
 
-# 查看加固步骤
-npx tsx src/index.ts harden --steps
+# 查看 Guard 完整重启状态
+npx tsx src/index.ts guard status
 
-# 生成加固脚本
-npx tsx src/index.ts harden -o harden.sh
+# 完整重启 Guard Web
+npx tsx src/index.ts guard restart --port 18088
 
-# 安装并初始化 tenacitOS (Mission Control)
-npx tsx src/index.ts mission install
-
-# 查看 Mission Control 状态
-npx tsx src/index.ts mission status
-
-# 启动 Mission Control（默认 8089 端口）
-npx tsx src/index.ts mission start
-
-# 检查 Mission Control 健康状态
-npx tsx src/index.ts mission health
+# 完整重启 Guard Web，并联动重启 Gateway
+npx tsx src/index.ts guard restart --port 18088 --restart-gateway
 ```
 
-## 安全 Profile
+## Web 工作台入口
 
-| Profile | 风险等级 | 适用场景 |
-|---------|----------|----------|
-| chat | 🟢 无风险 | 纯聊天/问答 |
-| readonly | 🟢 低风险 | 代码审查、文档查阅 |
-| coding | 🟡 中风险 | 开发辅助（文件读写） |
-| devops | 🟠 需防护 | 全能开发（含命令执行） |
-| full | 🔴 高风险 | 完全信任（需沙箱隔离） |
+Guard Web 已把根路由 `/` 切到新的原生工作台，核心页签包括:
 
-## 核心功能
+- 驾驶舱
+- 运维
+- OpenClaw
+- 飞书
+- 渠道
+- AI
+- 通知
+- Agent
+- 会话
+- 活动
+- 文件
+- 记忆
+- 搜索
+- 成本
+- Cron
+- Git 同步
+- 审计
+- 预设
+- 加固
+- 日志
 
-- **安全审计** (`audit`): 检查用户隔离、敏感目录权限、凭证安全、OpenClaw 配置
-- **Profile 管理** (`profile`): 按场景选择预设的权限配置方案
-- **系统加固** (`harden`): 生成跨平台的安全加固脚本
-- **环境信息** (`info`): 显示当前系统环境和 OpenClaw 路径
-- **Mission Control 集成** (`mission`): 一键安装/同步/启动/健康检查 tenacitOS
-- **Web 集成面板** (`web`): 在 Guard Web UI 中直接管理 tenacitOS 生命周期与日志
+其中“运维”页是当前唯一的服务控制入口，用来集中处理:
 
-## Mission Control 运维补充
+- Gateway 启停与重启
+- Guard Web 后台托管
+- 完整重启 Guard
+- Guard + Gateway 全重启
+- 本地 Env 管理
+- 缓存预热
+- 运行路径与快照
 
-### 生产模式启动（稳定长期运行）
+## OpenClaw 未安装时的处理
+
+如果目标机器还没有安装 OpenClaw，可以直接在工作台的 `OpenClaw` 页使用安装能力。
+
+当前策略:
+
+- Guard 先检测本机是否已存在 `openclaw` CLI
+- 若未安装，展示安装前置条件与平台说明
+- 通过后台任务执行安装 / 修复 / 更新
+- 安装完成后可直接回到工作台继续做配置与运维
+
+说明:
+
+- 当前自动安装依赖 `npm install -g openclaw@latest`
+- 因此目标机器仍需具备 `Node.js + npm`
+- Windows / macOS / Linux 都按这一统一路径处理
+
+## 完整重启 Guard
+
+### 什么时候要用“完整重启 Guard”
+
+适合以下情况:
+
+- Guard 页面一直处于加载中，但 Gateway 本身未必异常
+- 切菜单后页面状态混乱，需要让 Guard Web 自己重启一轮
+- 前端资源已更新，但当前页面仍拿着旧脚本或旧缓存
+- 需要切换到新的后台托管实例
+
+不适合替代以下动作:
+
+- 只想恢复 OpenClaw Gateway: 用 `重启 Gateway`
+- 只想关闭当前 Guard Web: 用 `一键停后台服务`
+
+### Web 中的使用方式
+
+1. 右上角全局按钮: `完整重启 Guard`
+2. 运维页按钮: `完整重启 Guard`
+3. 运维页按钮: `Guard + Gateway 全重启`
+
+### CLI 中的使用方式
 
 ```bash
-# 自动执行 build + start，并写入 PID/运行元信息
-npx tsx src/index.ts mission start --prod
+# 仅重启 Guard Web
+npx tsx src/index.ts guard restart --port 18088
 
-# 生产模式重启（先 stop，再 build + start）
-npx tsx src/index.ts mission restart --prod
+# Guard Web 和 Gateway 一起重启
+npx tsx src/index.ts guard restart --port 18088 --restart-gateway
 ```
-
-### 登录密码找回/重置
-
-```bash
-# 查看当前 Mission Control 登录密码（ADMIN_PASSWORD）
-npx tsx src/index.ts mission credentials
-
-# 生成并写回新密码到 .env.local
-npx tsx src/index.ts mission reset-password
-```
-
-### Mission API 最小鉴权（/api/mission/*）
-
-- 本地回环地址（`127.0.0.1` / `::1` / `::ffff:127.0.0.1`）可直接访问。
-- 非回环远程请求默认拒绝；需配置环境变量 `OPENCLAW_GUARD_MISSION_TOKEN`。
-- 远程调用可通过以下任一方式传 token：
-  - 请求头：`X-Mission-Token: <token>`
-  - 请求头：`Authorization: Bearer <token>`
-  - 查询参数：`?mission_token=<token>`
-
-## AI Fallbacks (new)
-
-You can now configure fallback model chain directly in OpenClaw Guard.
-
-### Web UI
-- Open Guard Web -> `AI` tab.
-- Edit `Fallback Models` with comma-separated `provider/model` IDs.
-- Click `Save Fallbacks` or `Clear`.
 
 ### API
 
-Set fallbacks:
-
 ```http
-POST /api/ai/fallbacks
+GET /api/guard/restart-status
+POST /api/guard/restart
 Content-Type: application/json
 
 {
-  "modelIds": [
-    "qwen/qwen3.5-plus",
-    "wenwen/claude-opus-4-6"
-  ]
+  "restartGateway": true
 }
 ```
 
-Read current AI config:
+### 行为说明
 
-```http
-GET /api/ai/config
+完整重启 Guard 不是简单地“先停再起”按钮拼接，而是后台接力式重启:
+
+1. 当前页面发起重启请求
+2. Guard 调度独立后台任务
+3. 旧 Guard Web 进程退出
+4. 新 Guard Web 实例在同端口重新托管启动
+5. 如果勾选联动，则继续重启 Gateway
+6. 前端通过轮询 `restart-status` 判断是否恢复
+
+这样做的目的，是避免当前请求进程直接把自己杀掉，导致链路半途断掉。
+
+## 运维建议
+
+建议按下面的顺序处理问题:
+
+1. 先看“驾驶舱”，判断是页面问题、Gateway 问题，还是 OpenClaw 未安装
+2. 进入“运维”，执行 Guard Web / Gateway 相关操作
+3. 如果是安装问题，进入 `OpenClaw` 页处理安装或升级
+4. 如果是配置问题，继续到 `AI`、`渠道`、`飞书`、`Git 同步`
+5. 如果是运行态问题，查看 `会话`、`活动`、`日志`
+
+## 常见排障
+
+### 1. 页面能打开，但一直转圈
+
+优先检查:
+
+- 是否命中了旧缓存
+- Guard Web 是否需要完整重启
+- OpenClaw 状态接口是否返回过慢
+
+建议动作:
+
+- 先点右上角 `完整重启 Guard`
+- 如仍异常，再到“运维”页执行 `Guard + Gateway 全重启`
+
+### 2. 只想恢复 OpenClaw 服务
+
+直接使用:
+
+```bash
+npx tsx src/index.ts service restart
 ```
 
-Response includes:
-- `primaryModel`
-- `fallbackModels`
-- per-model `isFallback`
+或在“运维”页点击 `Restart Gateway`。
+
+### 3. 想把当前页面纳入后台托管
+
+在“运维”页使用:
+
+- `纳入后台托管`
+- `一键停后台服务`
+
+适用于当前页面已经打开，但还没有被 Guard 写入后台运行记录的情况。
+
+### 4. OpenClaw 没装
+
+进入 `OpenClaw` 页查看:
+
+- 安装状态
+- 安装条件
+- 安装前检查
+- 平台说明
+
+再执行:
+
+- `安装 / 修复`
+- `更新到最新`
+
+## 验证建议
+
+提交或发版前，至少验证以下链路:
+
+1. `npm run build`
+2. `npx vitest run src/__tests__/guard-restart.test.ts src/__tests__/web-background.test.ts`
+3. 浏览器点击 `完整重启 Guard` 后，页面能在短暂断开后恢复
+4. 浏览器点击 `Guard + Gateway 全重启` 后，Guard 和 Gateway 都能恢复
+
+## 当前说明
+
+- 文档中的“完整重启 Guard”已对应当前代码实现
+- 根路由 `/` 默认进入新工作台
+- 旧版兼容页仅作为历史兼容用途保留，不是主入口

@@ -139,6 +139,86 @@ pre { max-height: 560px; overflow: auto; }
 .git-tree-node.depth-3,
 .git-tree-node.depth-4,
 .git-tree-node.depth-5 { margin-left: 14px; }
+.notify-page-shell { display: grid; gap: 10px; }
+.notify-page-strip { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.notify-page-nav { min-width: 92px; }
+.notify-page-folders { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+.notify-page-folder {
+  position: relative;
+  border: 1px solid rgba(148,163,184,.16);
+  background: linear-gradient(180deg, rgba(15,23,42,.72), rgba(15,23,42,.92));
+  color: var(--muted);
+  border-radius: 16px 16px 12px 12px;
+  padding: 16px 14px 12px;
+  min-width: 96px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease;
+}
+.notify-page-folder:hover {
+  transform: translateY(-2px);
+  color: var(--text);
+  border-color: rgba(96,165,250,.24);
+}
+.notify-page-folder.active {
+  color: #dbeafe;
+  border-color: rgba(96,165,250,.42);
+  background: linear-gradient(180deg, rgba(30,64,175,.36), rgba(15,23,42,.96));
+  box-shadow: 0 14px 28px rgba(15,23,42,.22), inset 0 1px 0 rgba(255,255,255,.04);
+  transform: translateY(-3px);
+}
+.notify-page-folder-tab {
+  position: absolute;
+  left: 12px;
+  top: -7px;
+  width: 34px;
+  height: 12px;
+  border-radius: 10px 10px 0 0;
+  border: 1px solid rgba(148,163,184,.16);
+  border-bottom: 0;
+  background: linear-gradient(180deg, rgba(51,65,85,.92), rgba(30,41,59,.88));
+}
+.notify-page-folder.active .notify-page-folder-tab {
+  border-color: rgba(96,165,250,.42);
+  background: linear-gradient(180deg, rgba(59,130,246,.32), rgba(30,64,175,.26));
+}
+.notify-page-folder-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+.notify-page-gap {
+  color: var(--muted);
+  padding: 0 2px 6px;
+}
+.notify-day-stack { display: grid; gap: 18px; }
+.notify-day-group { display: grid; gap: 10px; }
+.notify-day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 0 2px;
+  flex-wrap: wrap;
+}
+.notify-day-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 16px 16px 10px 10px;
+  border: 1px solid rgba(96,165,250,.22);
+  background: linear-gradient(180deg, rgba(59,130,246,.18), rgba(15,23,42,.78));
+  color: #dbeafe;
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+.notify-day-meta {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: .02em;
+}
+.notify-day-list { display: grid; gap: 12px; }
 @media (max-width: 680px) {
   .git-tree-summary { flex-direction: column; }
   .git-tree-summary-pills { justify-content: flex-start; }
@@ -146,6 +226,12 @@ pre { max-height: 560px; overflow: auto; }
   .git-tree-node.depth-3,
   .git-tree-node.depth-4,
   .git-tree-node.depth-5 { margin-left: 8px; }
+  .notify-page-strip { align-items: stretch; }
+  .notify-page-nav { width: 100%; }
+  .notify-page-folders { width: 100%; }
+  .notify-page-folder { flex: 1 1 110px; min-width: 0; }
+  .notify-day-header { align-items: flex-start; }
+  .notify-day-label { width: 100%; justify-content: center; }
 }
 
 /* ── 登录页面 ─────────────────────────────────────────────────────────────────── */

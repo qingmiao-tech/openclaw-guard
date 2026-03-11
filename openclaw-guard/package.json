@@ -23,7 +23,8 @@
     "ui:smoke:interactions": "python scripts/guard-ui-interactions.py",
     "ui:smoke:with-web": "node scripts/run-ui-smoke.mjs",
     "web:bg:restart": "node scripts/restart-web.mjs",
-    "web:bg:down": "node scripts/stop-web.mjs"
+    "web:bg:down": "node scripts/stop-web.mjs",
+    "web:bg:show-status": "node scripts/status-web.mjs"
   },
   "keywords": [
     "openclaw",

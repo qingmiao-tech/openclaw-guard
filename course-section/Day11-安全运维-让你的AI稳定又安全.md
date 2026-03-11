@@ -343,6 +343,51 @@ pm2 flush
 
 ---
 
+## 第 7.5 页 · 桌面运维：用虾护卫统一启停查
+
+如果你是在 Windows、macOS 或 Linux 桌面电脑上运行 OpenClaw，建议把 `Gateway` 和 `Guard Web` 的常用操作交给“虾护卫”统一处理，而不是临时切换不同系统命令。
+
+### 三个最常用脚本
+
+| 动作 | Windows | macOS / Linux | 作用 |
+|------|---------|---------------|------|
+| 启动 / 重启 Guard Web | `start-web.bat` | `bash ./start-web.sh` | 自动执行“先停旧实例，再构建并启动新实例” |
+| 停止 Guard Web | `stop-web.bat` | `bash ./stop-web.sh` | 停止当前后台实例，并等待进程真正退出 |
+| 查看当前状态 | `status-web.bat` | `bash ./status-web.sh` | 查看端口、PID、访问地址和日志路径 |
+
+### macOS 双击入口
+
+如果你不想开终端，可以直接双击：
+
+- `start-web.command`
+- `stop-web.command`
+- `status-web.command`
+
+### 推荐使用顺序
+
+1. 页面打不开或状态异常时，先执行 `status-web`
+2. 确认是 Guard Web 自身问题，再执行 `start-web`
+3. 只想停掉后台服务时，执行 `stop-web`
+4. 如果是 OpenClaw 核心配置、插件或环境变量变更，再重启 `Gateway`
+
+### 自定义端口示例
+
+```bash
+bash ./start-web.sh --port 18090
+bash ./stop-web.sh --port 18090
+bash ./status-web.sh --port 18090
+```
+
+```bat
+start-web.bat --port 18090
+stop-web.bat --port 18090
+status-web.bat --port 18090
+```
+
+> 记住一个原则：`start-web` 负责“先停后启”，`stop-web` 负责“确实停掉”，`status-web` 负责“先确认，再处理”。
+
+---
+
 ## 第 8 页 · 四步排查法
 
 ### 遇到问题不要慌，按顺序排查
@@ -397,7 +442,8 @@ pm2 flush
 3. `free -h` → 检查内存
 4. `df -h` → 检查磁盘
 5. `ping google.com` → 测试网络
-6. 如发现问题，按故障排查手册处理
+6. `status-web` → 确认 Guard Web 是否真的在目标端口运行
+7. 如发现问题，按故障排查手册处理
 
 ### ✅ 成功标志
 
@@ -413,6 +459,9 @@ pm2 flush
 | 实时日志 | `pm2 logs openclaw-gw` |
 | 重启 Gateway | `pm2 restart openclaw-gw` |
 | 资源监控 | `pm2 monit` |
+| Guard Web 状态 | `status-web.bat` / `bash ./status-web.sh` |
+| Guard Web 重启 | `start-web.bat` / `bash ./start-web.sh` |
+| Guard Web 停止 | `stop-web.bat` / `bash ./stop-web.sh` |
 | 内存检查 | `free -h` |
 | 磁盘检查 | `df -h` |
 | 端口检查 | `ss -tlnp \| grep <端口>` |

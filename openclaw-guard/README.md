@@ -30,6 +30,7 @@ Windows:
 ```bat
 start-web.bat
 stop-web.bat
+status-web.bat
 ```
 
 macOS / Linux:
@@ -37,6 +38,7 @@ macOS / Linux:
 ```bash
 bash ./start-web.sh
 bash ./stop-web.sh
+bash ./status-web.sh
 ```
 
 macOS 双击方式:
@@ -44,6 +46,7 @@ macOS 双击方式:
 ```text
 start-web.command
 stop-web.command
+status-web.command
 ```
 
 脚本行为统一为:
@@ -61,11 +64,18 @@ stop-web.command
 - 若存在则执行停止，并等待进程真正退出
 - 最后输出当前状态，方便确认服务已经关闭
 
+状态脚本行为:
+
+- 读取当前 Guard Web 后台状态
+- 展示当前端口、PID、访问地址和日志位置
+- 在未运行时给出下一步启动提示
+
 如果你更习惯命令行，也可以直接执行:
 
 ```bash
 npm run web:bg:restart
 npm run web:bg:down
+npm run web:bg:show-status
 ```
 
 默认端口是 `18088`，也支持自定义端口，例如:
@@ -73,11 +83,13 @@ npm run web:bg:down
 ```bash
 bash ./start-web.sh --port 18090
 bash ./stop-web.sh --port 18090
+bash ./status-web.sh --port 18090
 ```
 
 ```bat
 start-web.bat --port 18090
 stop-web.bat --port 18090
+status-web.bat --port 18090
 ```
 
 开发模式启动:

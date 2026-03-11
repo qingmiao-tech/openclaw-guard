@@ -165,4 +165,69 @@ openclaw gateway restart
 
 ---
 
+## 七、Guard Web 为什么也要分成“启 / 停 / 查”三步
+
+很多同学会把 `OpenClaw Gateway` 和 `Guard Web` 混成一回事。实际上，它们是两层不同的能力：
+
+- `Gateway`：OpenClaw 的核心运行服务
+- `Guard Web`：虾护卫的本地运维工作台
+
+所以，遇到问题时也要分开处理。
+
+### 什么时候重启 Gateway，什么时候处理 Guard Web
+
+| 场景 | 推荐动作 |
+|------|----------|
+| 改了 `SOUL.md`、`USER.md`、`MEMORY.md` | 不需要重启 |
+| 改了 `openclaw.json` 里的 `gateway.*`、`plugins.*`、`.env` | 重启 Gateway |
+| 页面一直转圈、UI 状态混乱、前端资源没刷新 | 处理 Guard Web |
+| 想确认本地工作台到底有没有运行起来 | 先查 Guard Web 状态 |
+
+### 虾护卫的三条脚本分别做什么
+
+| 脚本 | 作用 |
+|------|------|
+| `start-web` | 先停旧实例，再构建并启动新实例 |
+| `stop-web` | 停止当前后台实例，并等待进程真正退出 |
+| `status-web` | 查看当前端口、PID、访问地址、日志位置 |
+
+### 为什么不建议只靠“重新开一个窗口试试”
+
+因为本地工作台最容易遇到的实际问题，不是“没启动”，而是：
+
+- 旧进程还占着端口
+- 新实例启动时漂移到了其他端口
+- 页面还连着旧实例
+- 你以为已经停掉了，其实后台进程还活着
+
+`start-web` 和 `stop-web` 之所以要做“确认端口释放 / 确认同端口回起”，就是为了解决这类桌面环境最常见的假恢复问题。
+
+### 跨平台使用方式
+
+Windows:
+
+```bat
+start-web.bat
+stop-web.bat
+status-web.bat
+```
+
+macOS / Linux:
+
+```bash
+bash ./start-web.sh
+bash ./stop-web.sh
+bash ./status-web.sh
+```
+
+macOS 也可以直接双击：
+
+- `start-web.command`
+- `stop-web.command`
+- `status-web.command`
+
+> 简单记忆：OpenClaw 配置生效看“是否影响 Gateway”；页面和本地工作台问题，看“虾护卫启停查”。
+
+---
+
 > 💡 记住一个简单原则：**Workspace 文件随改随生效，配置文件看情况，插件和环境变量必须重启。**

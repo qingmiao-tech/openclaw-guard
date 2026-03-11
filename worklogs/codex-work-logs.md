@@ -46,6 +46,49 @@
 
 ## 交付记录
 
+## [2026-03-11 20:40] 补齐护卫跨平台状态脚本并同步运维课程文档 [TASK-20260311-001]
+
+- 任务来源: 用户要求继续推进前一轮确定的两个方向，补齐 `status-web` 跨平台状态脚本，并把启停查方案同步进“虾护卫”的安装/运维文档。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-11 20:18
+- 开始时间: 2026-03-11 20:18
+- 提交时间:
+- 任务目标:
+  1) 为 Guard Web 补齐跨平台“状态查看”脚本，与已有启停脚本形成完整闭环。
+  2) 将启 / 停 / 查的跨平台入口同步到 README 与课程文档，改成面向用户的操作说明。
+  3) 完成验证并用中文提交本轮仅涉及的代码与文档。
+- 执行过程:
+  1) 复核现有 `restart-web.mjs`、`stop-web.mjs`、`web-background.mjs` 与 README，确认当前缺口集中在状态查看入口与课程文档同步。
+  2) 新增 `status-web.mjs`，统一读取后台托管状态，并输出端口、PID、访问地址、日志位置与下一步建议。
+  3) 新增 Windows/macOS/Linux 的 `status-web` 包装脚本，并在 `package.json` 中增加命令入口。
+  4) 更新 `openclaw-guard/README.md`，补齐三类脚本的行为、端口示例与命令行入口。
+  5) 更新 Day11 与热加载补充文档，把“虾护卫启停查”写成桌面运维的标准动作，而不是开发者内部说明。
+- 交付成果:
+  1) Guard Web 现在具备完整的跨平台 `start / stop / status` 脚本套件。
+  2) 用户可以直接从 README 和课程文档理解何时查状态、何时重启 Guard Web、何时重启 Gateway。
+  3) macOS 双击入口、Windows 批处理与 Linux/macOS Shell 入口已经全部对齐。
+- 变更清单:
+  - `openclaw-guard/scripts/status-web.mjs`
+  - `openclaw-guard/status-web.bat`
+  - `openclaw-guard/status-web.sh`
+  - `openclaw-guard/status-web.command`
+  - `openclaw-guard/package.json`
+  - `openclaw-guard/README.md`
+  - `course-section/Day11-安全运维-让你的AI稳定又安全.md`
+  - `course-section/补充-OpenClaw热加载与重启机制详解.md`
+  - `worklogs/codex-work-logs.md`
+- 提交来源(openclaw-course):
+- 提交来源(openclaw-feishu):
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/scripts/status-web.mjs` 通过。
+  2) 已验证 `node openclaw-guard/scripts/status-web.mjs --port 18088` 可正常输出“未运行”状态。
+  3) 已验证 `node openclaw-guard/scripts/status-web.mjs --port 18088 --json` 可正常返回 JSON 结果。
+  4) 已验证 `openclaw-guard/status-web.bat --port 18088` 可正常调用 Windows 包装脚本。
+  5) 已验证 `npm run web:bg:show-status` 可通过 `package.json` 新命令返回一致结果。
+- 后续建议:
+  1) 下一步可以把 `status-web` 的状态摘要接进 Guard Web 的运维页，形成“脚本与页面口径一致”的统一状态卡。
+  2) 如果后续要继续降低桌面运维门槛，可以再补一个“安装 OpenClaw + 启动虾护卫”的整机初始化脚本。
+
 ## [2026-03-10 12:03] 修复 Guard 菜单加载过慢与 Windows 弹窗问题 [TASK-20260310-002]
 
 - 任务来源: 用户反馈多个菜单点击后长时间停留在“正在加载…”，并且在 Windows 上点击页签时会弹出 CMD/PowerShell 窗口，要求改为更隐蔽、更快、支持缓存的方案。

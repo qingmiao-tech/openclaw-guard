@@ -9,7 +9,7 @@
   const I18N = {
     zh: {
       appTitle: '虾护卫',
-      appSubtitle: '自带“防弹衣”与“复活甲”。内置多档安全预设，精准隔离越权风险；结合 Git 深度同步，让你的虾进可自由折腾，退可一键重生。',
+      appSubtitle: '集中管理 OpenClaw、本机服务、安全设置、消息入口与私有同步。',
       refresh: '刷新当前页',
       restartGuard: '完整重启 Guard',
       restartGuardWithGateway: 'Guard + Gateway 全重启',
@@ -75,31 +75,31 @@
         logs: '日志'
       },
       desc: {
-        overview: '第一屏驾驶舱，集中判断运行健康度、风险与下一步处理入口。',
-        system: '集中处理 Gateway、Guard Web、路径、Env 与运行维护细节。',
-        openclaw: '检查 OpenClaw 安装状态、版本、升级信息和 Dashboard 入口。',
-        feishu: '维护飞书核心配置，确认插件是否安装、配置是否完整。',
-        channels: '查看当前渠道开关、配置摘要和敏感字段挂载情况。',
-        ai: '查看 Provider、主模型和 fallback 链，直接调整核心模型配置。',
-        notifications: '集中查看 Guard 产生的通知，支持批量已读和清理。',
-        agents: '查看 Agent 工作区、模型、SOUL/USER/AGENTS/MEMORY 文档准备情况。',
-        sessions: '查看运行态会话、Token 使用量和成本快照。',
-        activity: '追踪最近的运行活动、会话变化和告警。',
-        files: '在受控范围内浏览和编辑工作区文件。',
-        memory: '聚焦 SOUL.md、USER.md、AGENTS.md、MEMORY.md 和 memory/*.md。',
-        search: '在 Guard 管理的工作区内做全文搜索。',
-        costs: '按模型、Agent、会话查看成本估算。',
-        cron: '查看、启停、手动触发和删除 Cron 任务。',
-        'git-sync': '管理 .openclaw 私有仓同步、Token 与 OAuth 授权。',
-        audit: '统一查看安全审计结果和风险分类。',
-        profiles: '应用 Guard 的安全 Profile 预设。',
-        harden: '生成对应平台的加固步骤和脚本。',
-        logs: '查看 Gateway 日志输出。'
+        overview: '先看整体状态、风险和提醒，再决定是否需要进入运维、会话或 Git 同步。',
+        system: '在这里启动、停止或排查 Guard 与 Gateway，并查看路径、环境变量和运行信息。',
+        openclaw: '查看 OpenClaw 是否已安装、当前版本，以及是否需要更新或打开控制台。',
+        feishu: '检查飞书接入是否可用，并补全机器人、凭据和连接配置。',
+        channels: '查看各渠道是否已启用、账号是否完整，以及消息能否正常进入系统。',
+        ai: '查看当前模型和备选模型，按需要调整 Provider、主模型和回退设置。',
+        notifications: '集中处理提醒、错误和同步结果；可筛选、标记已读或批量清理。',
+        agents: '查看每个 Agent 的工作区、模型和文档准备情况，确认团队是否就绪。',
+        sessions: '查看会话数量、Token 使用和运行状态，判断是否存在异常或成本压力。',
+        activity: '回看最近发生的操作、变更和告警，快速了解系统刚刚做了什么。',
+        files: '浏览并编辑受控目录中的文件，用于查看说明、修配置或处理工作区内容。',
+        memory: '查看和维护 SOUL、USER、AGENTS、MEMORY 等关键记忆文件。',
+        search: '按关键词搜索工作区和记忆内容，快速找到需要的配置、文档或记录。',
+        costs: '查看模型、Agent 和会话的成本估算，帮助控制整体消耗。',
+        cron: '查看定时任务是否正常运行，并按需要启停、触发或编辑任务。',
+        'git-sync': '管理 .openclaw 的私有仓同步，检查权限、授权和提交状态是否正常。',
+        audit: '查看安全检查结果，并优先处理高风险问题。',
+        profiles: '套用安全预设，快速调整当前机器的权限与行为。',
+        harden: '按当前系统获取加固建议和脚本，减少误操作与越权风险。',
+        logs: '查看运行日志，定位启动失败、连接异常或执行报错。'
       }
     },
     en: {
       appTitle: 'OpenClaw Guard Native Workbench',
-      appSubtitle: 'One maintainable shell for security, channels, AI, workbench flows, and Git sync.',
+      appSubtitle: 'Manage OpenClaw, local services, security settings, channels, and private sync in one place.',
       refresh: 'Refresh',
       restartGuard: 'Full Guard Restart',
       restartGuardWithGateway: 'Restart Guard + Gateway',
@@ -165,26 +165,26 @@
         logs: 'Logs'
       },
       desc: {
-        overview: 'First-screen cockpit for health, risk, and next-step navigation.',
-        system: 'Operations center for Gateway, Guard Web, paths, env, and maintenance details.',
-        openclaw: 'Installation, version, update information, and Dashboard entry.',
-        feishu: 'Maintain core Feishu config and verify plugin readiness.',
-        channels: 'Review channel enablement, summaries, and secrets footprint.',
-        ai: 'Review providers, primary model, and fallback chain, then adjust the core routing.',
-        notifications: 'All Guard notifications in one place with batch actions.',
-        agents: 'Agent workspaces, models, and SOUL/USER/AGENTS/MEMORY readiness.',
-        sessions: 'Runtime sessions, token usage, and cost snapshots.',
-        activity: 'Recent timeline of session changes and runtime warnings.',
-        files: 'Browse and edit files within Guard managed paths only.',
-        memory: 'Focus on SOUL.md, USER.md, AGENTS.md, MEMORY.md and memory/*.md.',
-        search: 'Full text search across Guard managed workspaces.',
-        costs: 'Estimated cost breakdown by model, agent, and session.',
-        cron: 'Inspect, enable, disable, trigger, and delete cron jobs.',
-        'git-sync': 'Manage .openclaw private repo sync, token auth, and OAuth.',
-        audit: 'Grouped security audit results and risk categories.',
-        profiles: 'Apply Guard security profiles.',
-        harden: 'Generate platform-specific hardening steps and scripts.',
-        logs: 'Inspect Gateway logs.'
+        overview: 'Start here to check overall health, risks, and recent reminders before taking action elsewhere.',
+        system: 'Start, stop, or troubleshoot Guard and Gateway here, then review paths, environment variables, and runtime details.',
+        openclaw: 'Check whether OpenClaw is installed, which version is running, and whether updates or the console are available.',
+        feishu: 'Verify that Feishu integration is ready and complete the bot, credential, or connection setup if needed.',
+        channels: 'Review which channels are enabled, whether accounts are complete, and whether messages can enter the system correctly.',
+        ai: 'Review the current model setup and adjust the provider, primary model, and fallback options when needed.',
+        notifications: 'Handle reminders, errors, and sync results in one place with filters, read states, and bulk cleanup.',
+        agents: 'Review each agent workspace, model, and document readiness to confirm the team is prepared.',
+        sessions: 'Check session counts, token usage, and runtime status to spot anomalies or rising costs.',
+        activity: 'Look back at recent operations, changes, and warnings to understand what just happened.',
+        files: 'Browse and edit files inside managed folders to inspect docs, fix configs, or work on workspace content.',
+        memory: 'Review and maintain key memory files such as SOUL, USER, AGENTS, and MEMORY.',
+        search: 'Search across managed workspaces and memory files to quickly find the config, doc, or note you need.',
+        costs: 'Review estimated costs by model, agent, and session to keep usage under control.',
+        cron: 'Check whether scheduled jobs are healthy, then start, stop, trigger, or edit them as needed.',
+        'git-sync': 'Manage private .openclaw repository sync and confirm that auth, permissions, and commit status are healthy.',
+        audit: 'Review security findings and focus on the highest-risk items first.',
+        profiles: 'Apply security profiles to quickly adjust how this machine behaves.',
+        harden: 'Get platform-specific hardening guidance and scripts to reduce mistakes and over-permission.',
+        logs: 'Inspect runtime logs to diagnose startup failures, connection issues, or execution errors.'
       }
     }
   };
@@ -205,6 +205,7 @@
     fileOriginal: '',
     memoryFile: null,
     memoryOriginal: '',
+    filesViewData: null,
     searchQuery: '',
     searchResults: [],
     notificationFilter: 'all',
@@ -236,9 +237,12 @@
     runtimeViewPollTimer: null,
     guardRestartPollTimer: null,
     pendingPanelFocus: null,
+    renderCache: {},
+    tabRefreshHints: {},
   };
 
   let activeDialog = null;
+  const CACHEABLE_TABS = new Set(['notifications', 'agents', 'sessions', 'files']);
 
   function t(key) {
     const parts = key.split('.');
@@ -268,6 +272,23 @@
 
   function prettyJson(value) {
     return escapeHtml(JSON.stringify(value ?? {}, null, 2));
+  }
+
+  function renderAdvancedDisclosure(options = {}) {
+    const title = options.title || (state.lang === 'zh' ? '诊断信息（高级）' : 'Diagnostics (Advanced)');
+    const description = options.description || '';
+    const bodyHtml = options.bodyHtml || '';
+    const actionsHtml = options.actionsHtml || '';
+    const open = options.open ? ' open' : '';
+    const marginTop = Number.isFinite(options.marginTop) ? options.marginTop : 14;
+    return `
+      <details class="sub-card" style="margin-top:${marginTop}px;"${open}>
+        <summary>${escapeHtml(title)}</summary>
+        ${description ? `<div class="muted small" style="margin-top:10px; line-height:1.7;">${escapeHtml(description)}</div>` : ''}
+        ${actionsHtml ? `<div class="toolbar tight" style="margin-top:12px;">${actionsHtml}</div>` : ''}
+        ${bodyHtml ? `<div style="margin-top:12px;">${bodyHtml}</div>` : ''}
+      </details>
+    `;
   }
 
   function formatBytes(bytes) {
@@ -384,7 +405,7 @@
   function looksLikeGarbledText(value) {
     const text = String(value || '').trim();
     if (!text) return false;
-    const replacementCount = (text.match(/�/g) || []).length;
+    const replacementCount = (text.match(/\uFFFD/g) || []).length;
     return replacementCount >= 2;
   }
 
@@ -847,7 +868,20 @@
     });
   }
 
+  function preserveCurrentTabSnapshot(tabId) {
+    if (!CACHEABLE_TABS.has(tabId)) return;
+    if (tabId === 'files') {
+      cacheFilesPanelFromState();
+      return;
+    }
+    rememberCurrentPanelRender(tabId);
+  }
+
   function setActiveTab(tabId, updateHash = true) {
+    const previousTab = state.activeTab;
+    if (previousTab && previousTab !== tabId) {
+      preserveCurrentTabSnapshot(previousTab);
+    }
     state.activeTab = TAB_ORDER.includes(tabId) ? tabId : 'overview';
     localStorage.setItem(STORAGE_TAB, state.activeTab);
     if (updateHash) {
@@ -1120,6 +1154,10 @@
       'cron': { zh: 'Cron 事件', en: 'Cron Event' },
       'service': { zh: '服务事件', en: 'Service Event' },
       'runtime-warning': { zh: '运行告警', en: 'Runtime Warning' },
+      session: { zh: '会话事件', en: 'Session Event' },
+      sessions: { zh: '会话事件', en: 'Session Event' },
+      file: { zh: '文件事件', en: 'File Event' },
+      memory: { zh: '记忆事件', en: 'Memory Event' },
     };
     return map[key]?.[state.lang] || key || '-';
   }
@@ -1133,6 +1171,112 @@
       error: { zh: '错误', en: 'Error' },
     };
     return map[key]?.[state.lang] || key || '-';
+  }
+
+  function getSessionStatusLabel(value) {
+    return translateMappedLabel(value, {
+      active: { zh: '进行中', en: 'Active' },
+      running: { zh: '运行中', en: 'Running' },
+      idle: { zh: '空闲', en: 'Idle' },
+      pending: { zh: '等待中', en: 'Pending' },
+      paused: { zh: '已暂停', en: 'Paused' },
+      stopped: { zh: '已停止', en: 'Stopped' },
+      closed: { zh: '已关闭', en: 'Closed' },
+      completed: { zh: '已完成', en: 'Completed' },
+      finished: { zh: '已完成', en: 'Completed' },
+      failed: { zh: '失败', en: 'Failed' },
+      error: { zh: '异常', en: 'Error' },
+    });
+  }
+
+  function getSessionStatusClass(value) {
+    const key = String(value || '').trim().toLowerCase();
+    if (['active', 'running', 'completed', 'finished'].includes(key)) return 'success';
+    if (['pending', 'paused', 'idle'].includes(key)) return 'warn';
+    if (['failed', 'error'].includes(key)) return 'danger';
+    return '';
+  }
+
+  function getActivityTypeLabel(value) {
+    return translateMappedLabel(value, {
+      'runtime-warning': { zh: '运行告警', en: 'Runtime Warning' },
+      'git-sync': { zh: 'Git 同步', en: 'Git Sync' },
+      cron: { zh: '定时任务', en: 'Cron Job' },
+      service: { zh: '服务操作', en: 'Service Action' },
+      session: { zh: '会话事件', en: 'Session Event' },
+      sessions: { zh: '会话事件', en: 'Session Event' },
+      file: { zh: '文件操作', en: 'File Action' },
+      memory: { zh: '记忆文件', en: 'Memory File' },
+      audit: { zh: '安全审计', en: 'Security Audit' },
+    });
+  }
+
+  function getActivityTypeClass(value) {
+    const key = String(value || '').trim().toLowerCase();
+    if (['runtime-warning', 'warning'].includes(key)) return 'warn';
+    if (['error', 'failed'].includes(key)) return 'danger';
+    if (['git-sync', 'service', 'cron', 'session', 'sessions', 'file', 'memory'].includes(key)) return 'success';
+    return '';
+  }
+
+  function getCronJobStatusLabel(value, enabled) {
+    const key = String(value || '').trim().toLowerCase();
+    if (!key) {
+      return enabled === false
+        ? (state.lang === 'zh' ? '已停用' : 'Disabled')
+        : (state.lang === 'zh' ? '已启用' : 'Enabled');
+    }
+    return translateMappedLabel(key, {
+      enabled: { zh: '已启用', en: 'Enabled' },
+      disabled: { zh: '已停用', en: 'Disabled' },
+      running: { zh: '执行中', en: 'Running' },
+      queued: { zh: '排队中', en: 'Queued' },
+      pending: { zh: '等待中', en: 'Pending' },
+      paused: { zh: '已暂停', en: 'Paused' },
+      success: { zh: '成功', en: 'Success' },
+      completed: { zh: '已完成', en: 'Completed' },
+      failed: { zh: '失败', en: 'Failed' },
+      error: { zh: '异常', en: 'Error' },
+    }, enabled === false
+      ? (state.lang === 'zh' ? '已停用' : 'Disabled')
+      : (state.lang === 'zh' ? '已启用' : 'Enabled'));
+  }
+
+  function getCronJobStatusClass(value, enabled) {
+    const key = String(value || '').trim().toLowerCase();
+    if (['running', 'success', 'completed', 'enabled'].includes(key)) return 'success';
+    if (['queued', 'pending', 'paused', 'disabled'].includes(key) || enabled === false) return 'warn';
+    if (['failed', 'error'].includes(key)) return 'danger';
+    return enabled === false ? 'warn' : '';
+  }
+
+  function getAuditStatusLabel(value) {
+    return translateMappedLabel(value, {
+      pass: { zh: '通过', en: 'Pass' },
+      warn: { zh: '警告', en: 'Warning' },
+      fail: { zh: '失败', en: 'Fail' },
+      info: { zh: '提示', en: 'Info' },
+    });
+  }
+
+  function getAuditStatusClass(value) {
+    const key = String(value || '').trim().toLowerCase();
+    if (key === 'pass') return 'success';
+    if (key === 'warn') return 'warn';
+    if (key === 'fail') return 'danger';
+    return '';
+  }
+
+  function getRiskLevelLabel(value) {
+    return translateMappedLabel(value, {
+      low: { zh: '低风险', en: 'Low Risk' },
+      medium: { zh: '中风险', en: 'Medium Risk' },
+      high: { zh: '高风险', en: 'High Risk' },
+      critical: { zh: '高危', en: 'Critical' },
+      strict: { zh: '严格', en: 'Strict' },
+      balanced: { zh: '平衡', en: 'Balanced' },
+      relaxed: { zh: '宽松', en: 'Relaxed' },
+    });
   }
 
   function getNotificationMetaList(metaValue) {
@@ -1975,7 +2119,11 @@
         </div>
         <div>${escapeHtml(entry.message || '-')}</div>
         <div class="muted small" style="margin-top:8px;">${escapeHtml(formatDate(entry.at))}</div>
-        ${detailText ? `<pre style="margin-top:12px;">${escapeHtml(detailText)}</pre>` : ''}
+        ${detailText ? renderAdvancedDisclosure({
+          title: state.lang === 'zh' ? '查看操作详情' : 'View Action Details',
+          description: state.lang === 'zh' ? '这里保留了这次操作的原始返回内容，只有在排查问题时才需要展开。' : 'This keeps the raw result of the latest action. Expand it only when you need more detail.',
+          bodyHtml: `<pre>${escapeHtml(detailText)}</pre>`,
+        }) : ''}
       </div>
     `;
   }
@@ -2029,8 +2177,8 @@
     const text = String(value ?? '');
     if (!isSensitiveField(key)) return text;
     if (!text) return '';
-    if (text.length <= 6) return '••••••';
-    return `${text.slice(0, 2)}••••${text.slice(-2)}`;
+    if (text.length <= 6) return '******';
+    return `${text.slice(0, 2)}****${text.slice(-2)}`;
   }
 
   function parseBooleanValue(value) {
@@ -2471,10 +2619,8 @@
     return next;
   }
 
-  function setPanel(title, description, bodyHtml, actionsHtml = '') {
-    const panel = document.getElementById('guard-panel');
-    if (!panel) return;
-    panel.innerHTML = `
+  function buildPanelMarkup(title, description, bodyHtml, actionsHtml = '') {
+    return `
       <section class="panel-head">
         <div>
           <h2>${escapeHtml(title)}</h2>
@@ -2484,6 +2630,100 @@
       </section>
       <section class="panel-body">${bodyHtml}</section>
       `;
+  }
+
+  function setPanel(title, description, bodyHtml, actionsHtml = '') {
+    const panel = document.getElementById('guard-panel');
+    if (!panel) return;
+    panel.innerHTML = buildPanelMarkup(title, description, bodyHtml, actionsHtml);
+  }
+
+  function renderTabRefreshBanner(tabId) {
+    const refreshHint = state.tabRefreshHints[tabId];
+    if (!refreshHint) return '';
+    const tone = refreshHint.tone === 'danger' ? 'danger' : refreshHint.tone === 'success' ? 'success' : 'warn';
+    const statusClass = tone === 'danger' ? 'error' : tone;
+    return `
+      <section class="guard-refresh-banner-wrap">
+        <div class="status ${statusClass} guard-refresh-banner">
+          <div class="row" style="justify-content:space-between; gap:12px; align-items:flex-start;">
+            <strong>${escapeHtml(refreshHint.title || (state.lang === 'zh' ? '正在后台刷新' : 'Refreshing in background'))}</strong>
+            ${refreshHint.ageLabel ? `<span class="pill ${tone}">${escapeHtml(refreshHint.ageLabel)}</span>` : ''}
+          </div>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(refreshHint.message)}</div>
+        </div>
+      </section>
+    `;
+  }
+
+  function clearTabRefreshHint(tabId) {
+    delete state.tabRefreshHints[tabId];
+  }
+
+  function setTabRefreshHint(tabId, hint) {
+    if (!hint) {
+      clearTabRefreshHint(tabId);
+      return;
+    }
+    state.tabRefreshHints[tabId] = hint;
+  }
+
+  function rememberCurrentPanelRender(tabId, bindFn = null) {
+    if (!CACHEABLE_TABS.has(tabId)) return;
+    const panel = document.getElementById('guard-panel');
+    if (!panel) return;
+    const existingCache = state.renderCache[tabId];
+    state.renderCache[tabId] = {
+      html: panel.innerHTML,
+      bind: typeof bindFn === 'function' ? bindFn : existingCache?.bind || null,
+      cachedAt: new Date().toISOString(),
+    };
+  }
+
+  function restoreCachedPanel(tabId, message) {
+    if (!CACHEABLE_TABS.has(tabId)) return false;
+    const cached = state.renderCache[tabId];
+    const panel = document.getElementById('guard-panel');
+    if (!cached?.html || !panel) return false;
+    const cachedAtMs = cached.cachedAt ? Date.parse(cached.cachedAt) : NaN;
+    setTabRefreshHint(tabId, {
+      title: state.lang === 'zh' ? '先展示上次结果' : 'Showing previous result',
+      message: message || (state.lang === 'zh'
+        ? '当前页正在后台刷新最新数据，先显示上一次成功加载的内容。'
+        : 'This view is refreshing in the background. Showing the last successful result first.'),
+      ageLabel: Number.isFinite(cachedAtMs)
+        ? (state.lang === 'zh'
+          ? `缓存 ${formatAgeMs(Date.now() - cachedAtMs)}`
+          : `Cached ${formatAgeMs(Date.now() - cachedAtMs)}`)
+        : '',
+    });
+    panel.innerHTML = `${renderTabRefreshBanner(tabId)}${cached.html}`;
+    cached.bind?.();
+    return true;
+  }
+
+  function restoreCachedPanelWithError(tabId, error) {
+    if (!CACHEABLE_TABS.has(tabId)) return false;
+    const cached = state.renderCache[tabId];
+    const panel = document.getElementById('guard-panel');
+    if (!cached?.html || !panel) return false;
+    const cachedAtMs = cached.cachedAt ? Date.parse(cached.cachedAt) : NaN;
+    setTabRefreshHint(tabId, {
+      title: state.lang === 'zh' ? '最新刷新失败，已保留缓存' : 'Refresh failed, showing cached data',
+      message: state.lang === 'zh'
+        ? '后台刷新没有成功，当前继续保留上一次成功加载的页面内容。你可以稍后再刷新。'
+        : 'The background refresh did not succeed. Keeping the last successful result for now. You can refresh again later.',
+      ageLabel: Number.isFinite(cachedAtMs)
+        ? (state.lang === 'zh'
+          ? `缓存 ${formatAgeMs(Date.now() - cachedAtMs)}`
+          : `Cached ${formatAgeMs(Date.now() - cachedAtMs)}`)
+        : '',
+      tone: 'danger',
+    });
+    panel.innerHTML = `${renderTabRefreshBanner(tabId)}${cached.html}`;
+    cached.bind?.();
+    showToast(error?.message || String(error), 'error');
+    return true;
   }
 
   function skeletonLine(width = '100%', height = '14px', className = '') {
@@ -2546,12 +2786,16 @@
     `;
   }
 
-  function setPanelSections(title, description, sections, actionsHtml = '') {
-    const bodyHtml = sections.map((section) => `
+  function renderPanelSectionsMarkup(sections) {
+    return sections.map((section) => `
       <div data-panel-section="${escapeHtml(section.id)}">
         ${section.html || loadingCard(section.title || '')}
       </div>
     `).join('');
+  }
+
+  function setPanelSections(title, description, sections, actionsHtml = '') {
+    const bodyHtml = renderPanelSectionsMarkup(sections);
     setPanel(title, description, bodyHtml, actionsHtml);
   }
 
@@ -2768,7 +3012,6 @@
       { id: 'overview-summary', title: state.lang === 'zh' ? '驾驶舱摘要' : 'Cockpit Summary' },
       { id: 'overview-runtime', title: state.lang === 'zh' ? '运行摘要' : 'Runtime Summary' },
       { id: 'overview-signals', title: state.lang === 'zh' ? '风险与信号' : 'Signals' },
-      { id: 'overview-actions', title: state.lang === 'zh' ? '下一步处理' : 'Next Actions' },
     ]);
 
     const overviewPromise = apiRequest('/api/dashboard/overview');
@@ -2790,18 +3033,9 @@
     updatePanelSection('overview-signals', `
       <div class="grid">
         ${loadingCard(state.lang === 'zh' ? '风险与告警' : 'Risk & Alerts', state.lang === 'zh' ? '正在读取风险信号…' : 'Loading alerts…')}
-        ${loadingCard(state.lang === 'zh' ? '最新通知' : 'Latest Notifications', state.lang === 'zh' ? '正在读取通知摘要…' : 'Loading notifications…')}
+        ${loadingCard(state.lang === 'zh' ? '最近提醒' : 'Recent Reminders', state.lang === 'zh' ? '正在读取提醒摘要…' : 'Loading reminders…')}
       </div>
     `);
-    updatePanelSection('overview-actions', `
-      <div class="card">
-        <h3>${state.lang === 'zh' ? '下一步处理' : 'Next Actions'}</h3>
-        <div class="status ${webStatus.running ? '' : 'warn'}">${escapeHtml(webStatus.running
-          ? (state.lang === 'zh' ? `Guard Web 已在运行，PID ${webStatus.pid}。正在继续加载运行态摘要。` : `Guard Web is running with PID ${webStatus.pid}. Runtime summary is loading.`)
-          : (state.lang === 'zh' ? '当前未检测到 Guard Web 后台进程，正在继续加载详细状态。' : 'No Guard Web background process detected. Detailed state is still loading.'))}</div>
-      </div>
-    `);
-
     const overview = await overviewPromise;
     if (state.activeTab !== viewTabId) return;
 
@@ -2864,9 +3098,9 @@
       },
     ];
     const cockpitActions = [
-      `<button class="action-btn primary" type="button" data-overview-action="enter-operations">${state.lang === 'zh' ? '进入运维' : 'Open Operations'}</button>`,
-      showQuickRestart ? `<button class="action-btn" type="button" data-overview-action="gateway-restart">${state.lang === 'zh' ? '快速重启 Gateway' : 'Quick Restart Gateway'}</button>` : '',
-      `<button class="action-btn" type="button" data-overview-action="open-dashboard">${state.lang === 'zh' ? 'OpenClaw 面板' : 'Open Dashboard'}</button>`,
+      `<button class="action-btn primary" type="button" data-overview-action="enter-operations">${state.lang === 'zh' ? '打开运维' : 'Open Operations'}</button>`,
+      showQuickRestart ? `<button class="action-btn" type="button" data-overview-action="gateway-restart">${state.lang === 'zh' ? '重启 Gateway' : 'Restart Gateway'}</button>` : '',
+      `<button class="action-btn" type="button" data-overview-action="open-dashboard">${state.lang === 'zh' ? '打开 OpenClaw' : 'Open OpenClaw'}</button>`,
     ].filter(Boolean).join('');
     const body = `
       ${renderCacheSummaryCard(overview.cache, state.lang === 'zh' ? '驾驶舱共享快照' : 'Cockpit Shared Snapshot')}
@@ -2881,12 +3115,12 @@
       </div>
       <div class="grid">
         <div class="card accent-info">
-          <h3>${state.lang === 'zh' ? '驾驶舱提示' : 'Cockpit Guidance'}</h3>
+          <h3>${state.lang === 'zh' ? '如何使用驾驶舱' : 'How To Use The Cockpit'}</h3>
           <div class="status">${escapeHtml(state.lang === 'zh'
-            ? '这里保留摘要、风险判断与下一步入口；涉及 Gateway、Guard Web、路径、Env 的具体操作，统一收敛到“运维”页。'
-            : 'This page stays focused on summaries, risk signals, and next-step routing. Detailed Gateway, Guard Web, path, and env operations now live in Operations.')}</div>
+            ? '这里主要用来快速看整体状态、风险和最近提醒，不在这里堆放具体操作。需要启动、重启或排查服务时，请进入“运维”页。'
+            : 'Use this page to quickly review overall status, risks, and recent reminders. Detailed service actions belong in Operations, not here.')}</div>
           <div class="sub-card" style="margin-top:14px;">
-            <h3 style="margin-bottom:10px;">${state.lang === 'zh' ? '运行摘要' : 'Runtime Summary'}</h3>
+            <h3 style="margin-bottom:10px;">${state.lang === 'zh' ? '你现在最需要知道的' : 'What Matters Right Now'}</h3>
             ${keyValueGrid(runtimeSummaryRows)}
           </div>
         </div>
@@ -2902,7 +3136,7 @@
       </div>
       <div class="grid">
         <div class="card">
-          <h3>${state.lang === 'zh' ? '后台任务状态' : 'Background Task Status'}</h3>
+          <h3>${state.lang === 'zh' ? '最近后台操作' : 'Recent Background Action'}</h3>
           <div class="list-item">
             <div class="row" style="justify-content:space-between">
               <strong>${escapeHtml(serviceActionMeta.actionLabel)}</strong>
@@ -2921,25 +3155,20 @@
           ${alerts.length ? `<div class="list">${alerts.map((item) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(item.code)}</strong><span class="pill ${item.level === 'critical' || item.level === 'error' ? 'danger' : item.level === 'warning' ? 'warn' : ''}">${escapeHtml(getRuntimeAlertLevelLabel(item.level))}</span></div><div>${escapeHtml(item.message)}</div></div>`).join('')}</div>` : emptyState(state.lang === 'zh' ? '当前没有新的运行态告警。' : 'No runtime alerts right now.')}
         </div>
         <div class="card">
-          <h3>${state.lang === 'zh' ? '最新通知' : 'Latest Notifications'}</h3>
+          <h3>${state.lang === 'zh' ? '最近提醒' : 'Recent Reminders'}</h3>
           ${latestNotifications.length ? `<div class="list">${latestNotifications.map((item) => {
             const view = getNotificationPresentation(item);
             return `<div class="list-item ${item.read ? '' : 'unread'}"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(view.title)}</strong><span class="muted">${escapeHtml(formatRelative(item.createdAt))}</span></div><div class="muted small" style="margin-top:6px;">${escapeHtml(view.sourceLabel)} · ${escapeHtml(view.severityLabel)}</div><div style="margin-top:8px;">${escapeHtml(view.message)}</div></div>`;
-          }).join('')}</div>` : emptyState(state.lang === 'zh' ? '暂无通知。' : 'No notifications yet.')}
+          }).join('')}</div>` : emptyState(state.lang === 'zh' ? '暂时没有新的提醒。' : 'No new reminders right now.')}
         </div>
       </div>
       <div class="grid">
         <div class="card">
-          <h3>${state.lang === 'zh' ? '下一步处理' : 'Next Actions'}</h3>
-          <div class="toolbar" style="flex-wrap:wrap;">
-            <button class="action-btn primary" type="button" data-overview-link="service">${state.lang === 'zh' ? '运维服务区' : 'Operations Service'}</button>
-            <button class="action-btn" type="button" data-overview-link="paths">${state.lang === 'zh' ? '查看路径' : 'View Paths'}</button>
-            <button class="action-btn" type="button" data-overview-link="env">${state.lang === 'zh' ? 'Env 管理' : 'Env Management'}</button>
-            <button class="action-btn" type="button" data-overview-link="audit">${state.lang === 'zh' ? '安全审计' : 'Security Audit'}</button>
-            <button class="action-btn" type="button" data-overview-link="sessions">${state.lang === 'zh' ? '会话面板' : 'Sessions'}</button>
-            <button class="action-btn" type="button" data-overview-link="git-sync">${state.lang === 'zh' ? 'Git 同步' : 'Git Sync'}</button>
-          </div>
+          <h3>${state.lang === 'zh' ? '当前建议' : 'Recommended Next Step'}</h3>
           <div class="status ${webStatus.running ? '' : 'warn'}" style="margin-top:14px;">${escapeHtml(webStatus.running ? (state.lang === 'zh' ? `当前 Guard Web 正在运行，PID ${webStatus.pid}。如需处理服务细节，直接进入“运维”。` : `Guard Web is running with PID ${webStatus.pid}. Use Operations for service-level actions.`) : (state.lang === 'zh' ? '当前未检测到 Guard Web 后台进程。建议先进入“运维”确认服务状态。' : 'No Guard Web background process detected. Open Operations to inspect service state.'))}</div>
+          <div class="muted small" style="margin-top:12px; line-height:1.7;">${escapeHtml(state.lang === 'zh'
+            ? '如果你只是查看整体健康度、最近提醒或风险，这一页已经足够。只有在需要修改服务、路径、环境变量或继续排查时，再进入对应页面。'
+            : 'If you are only checking overall health, recent reminders, or risks, this page should be enough. Move to another page only when you need to change services, paths, environment variables, or investigate further.')}</div>
         </div>
       </div>
     `;
@@ -2973,26 +3202,6 @@
         showToast(error.message || String(error), 'error');
       }
     });
-    document.querySelectorAll('[data-overview-link]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const target = button.getAttribute('data-overview-link');
-        const routeMap = {
-          service: { tabId: 'system', selector: '#system-service-card' },
-          paths: { tabId: 'system', selector: '#system-paths-card' },
-          env: { tabId: 'system', selector: '#system-env-editor-card' },
-          audit: { tabId: 'audit' },
-          sessions: { tabId: 'sessions' },
-          'git-sync': { tabId: 'git-sync' },
-        };
-        const next = routeMap[target];
-        if (!next) return;
-        if (next.selector) {
-          queuePanelFocus(next.tabId, next.selector);
-        }
-        setActiveTab(next.tabId);
-      });
-    });
-
     if (serviceActionMeta.phase === 'running') {
       scheduleServiceStatusPoll();
     }
@@ -3005,9 +3214,9 @@
     const viewTabId = 'system';
     setPanelSections(t('tabs.system'), t('desc.system'), [
       { id: 'system-summary', title: state.lang === 'zh' ? '运维摘要' : 'Operations Summary' },
-      { id: 'system-services', title: state.lang === 'zh' ? '服务与后台控制' : 'Service & Background Controls' },
-      { id: 'system-env', title: state.lang === 'zh' ? '本地 Env 管理' : 'Local Env Management' },
-      { id: 'system-runtime', title: state.lang === 'zh' ? '运行路径与快照' : 'Runtime Paths & Snapshot' },
+      { id: 'system-services', title: state.lang === 'zh' ? '服务操作与后台状态' : 'Service Actions & Background State' },
+      { id: 'system-env', title: state.lang === 'zh' ? '本机密钥与变量' : 'Local Secrets & Variables' },
+      { id: 'system-runtime', title: state.lang === 'zh' ? '本机路径与诊断信息' : 'Local Paths & Diagnostics' },
     ]);
 
     const infoPromise = apiRequest('/api/info');
@@ -3043,10 +3252,10 @@
     updatePanelSection('system-services', `
       <div class="grid">
         <div class="card accent-warn">
-          <h3>${state.lang === 'zh' ? '服务与后台控制' : 'Service & Background Controls'}</h3>
+          <h3>${state.lang === 'zh' ? '服务操作与后台状态' : 'Service Actions & Background State'}</h3>
           <div class="status ${quickServiceActionMeta.phase === 'error' ? 'warn' : ''}">${escapeHtml(quickServiceActionMeta.message)}</div>
           <div class="muted small" style="margin-top:10px;">${escapeHtml(quickGuardRestartMeta.message)}</div>
-          <div class="muted small" style="margin-top:12px;">${escapeHtml(state.lang === 'zh' ? '正在补充路径、托管来源与详细控制面板…' : 'Loading path, tracking source, and detailed controls…')}</div>
+          <div class="muted small" style="margin-top:12px;">${escapeHtml(state.lang === 'zh' ? '正在补充可执行操作、后台接管状态和详细诊断信息…' : 'Loading available actions, background ownership, and detailed diagnostics…')}</div>
         </div>
         ${loadingCard(state.lang === 'zh' ? '启动后缓存预热' : 'Startup Cache Prewarm', state.lang === 'zh' ? '正在读取预热任务详情…' : 'Loading prewarm task details…')}
       </div>
@@ -3055,16 +3264,16 @@
       <div class="card accent-success">
         <div class="row" style="justify-content:space-between; align-items:flex-start;">
           <div>
-            <h3>${state.lang === 'zh' ? '本地 Env 管理' : 'Local Env Management'}</h3>
-            <p>${escapeHtml(state.lang === 'zh' ? 'Env 键已经读取完成，正在补充路径和编辑器区域。' : 'Env keys are loaded. Path details and the editor area are loading now.')}</p>
-          </div>
-          <div class="tag-list">
-            <span class="chip active">${escapeHtml((state.lang === 'zh' ? '键数量：' : 'Keys: ') + envEntries.length)}</span>
+              <h3>${state.lang === 'zh' ? '本机密钥与变量' : 'Local Secrets & Variables'}</h3>
+              <p>${escapeHtml(state.lang === 'zh' ? '已读取当前机器上供 Guard 使用的本地变量，马上会显示列表和编辑区。' : 'The local values used by Guard on this machine are loaded. The list and editor will appear next.')}</p>
+            </div>
+            <div class="tag-list">
+              <span class="chip active">${escapeHtml((state.lang === 'zh' ? '键数量：' : 'Keys: ') + envEntries.length)}</span>
+            </div>
           </div>
         </div>
-      </div>
     `);
-    updatePanelSection('system-runtime', loadingCard(state.lang === 'zh' ? '运行路径与快照' : 'Runtime Paths & Snapshot', state.lang === 'zh' ? '正在读取 OpenClaw 检测结果和本机路径信息…' : 'Loading OpenClaw detection and local path details…'));
+    updatePanelSection('system-runtime', loadingCard(state.lang === 'zh' ? '本机路径与诊断信息' : 'Local Paths & Diagnostics', state.lang === 'zh' ? '正在读取配置路径、当前实例信息和诊断数据…' : 'Loading config paths, current instance details, and diagnostics…'));
 
     const info = await infoPromise;
     if (state.activeTab !== viewTabId) return;
@@ -3081,26 +3290,26 @@
 
     let webPrimaryLabel = state.lang === 'zh' ? '后台启动 Guard Web' : 'Start Guard Web in Background';
     let webPrimaryHint = state.lang === 'zh'
-      ? '当当前端口没有 Guard Web 监听时，Guard 会以 detached 模式在后台直接拉起一个工作台实例。'
-      : 'When no Guard Web process is listening on this port, Guard starts one in detached mode.';
+      ? '当这个端口上还没有 Guard Web 时，可以用这里在后台启动一个新的工作台实例。'
+      : 'Use this when no Guard Web is running on this port and you want to start one in the background.';
     let webPrimaryDisabled = false;
 
     if (isCurrentManaged) {
       webPrimaryLabel = state.lang === 'zh' ? '当前实例已纳入托管' : 'Current Instance Managed';
       webPrimaryHint = state.lang === 'zh'
-        ? '你现在打开的页面本身就是已被 Guard 托管的实例，不需要重复接管。'
-        : 'This page is already backed by a managed Guard instance.';
+        ? '你当前打开的这个工作台已经在 Guard 托管之下，不需要再次接管。'
+        : 'The workbench you are viewing is already managed by Guard, so no further action is needed.';
       webPrimaryDisabled = true;
     } else if (isCurrentInstance) {
       webPrimaryLabel = state.lang === 'zh' ? '纳入后台托管' : 'Adopt Current Instance';
       webPrimaryHint = state.lang === 'zh'
-        ? '当前页面已经在运行，但还没有被 web:bg 记录。点击后会把当前实例登记进 Guard 的后台运行状态。'
-        : 'This page is already running, but it is not tracked by web:bg yet. Guard will adopt it into managed background state.';
+        ? '当前工作台已经打开，但还没有写入后台托管记录。点击后会把它登记为可管理实例。'
+        : 'This workbench is already open, but it is not tracked as a managed background instance yet. Guard can adopt it for you.';
     } else if (isOtherProcess) {
       webPrimaryLabel = state.lang === 'zh' ? '已有其他 Guard Web 实例' : 'Another Guard Web Is Running';
       webPrimaryHint = state.lang === 'zh'
-        ? `端口 ${webStatus.port} 已被 PID ${webStatus.pid} 占用。请先停掉这个实例，再决定是否启动新的后台实例。`
-        : `Port ${webStatus.port} is already occupied by PID ${webStatus.pid}. Stop it before starting another background instance.`;
+        ? `端口 ${webStatus.port} 已经被另一个 Guard Web 占用。请先停掉它，再决定是否启动新的实例。`
+        : `Port ${webStatus.port} is already occupied by another Guard Web instance. Stop it before starting a new one.`;
       webPrimaryDisabled = true;
     }
 
@@ -3122,7 +3331,7 @@
           </tr>
         `;
       }).join('')
-      : `<tr><td colspan="4">${emptyState(state.lang === 'zh' ? '当前还没有本地 env 键。' : 'No local env keys yet.')}</td></tr>`;
+      : `<tr><td colspan="4">${emptyState(state.lang === 'zh' ? '当前还没有本机变量。你可以在右侧新建一项。' : 'No local values are configured yet. Create one from the editor on the right.')}</td></tr>`;
 
     const runtimeSnapshot = {
       info: {
@@ -3142,6 +3351,12 @@
       guardRestart: guardRestartStatus,
       envKeys: envEntries.map(([key]) => key),
     };
+    const prewarmTasksHtml = (prewarmStatus.tasks || []).length
+      ? prewarmStatus.tasks.map((task) => {
+          const taskMeta = getPrewarmMeta({ phase: task.success === true ? 'completed' : task.success === false ? 'error' : 'idle', lastError: task.error });
+          return `<div class="list-item"><div class="row" style="justify-content:space-between;"><strong>${escapeHtml(task.label)}</strong><span class="pill ${taskMeta.pillClass}">${escapeHtml(task.success === true ? (state.lang === 'zh' ? '完成' : 'Done') : task.success === false ? (state.lang === 'zh' ? '失败' : 'Failed') : (state.lang === 'zh' ? '等待执行' : 'Waiting'))}</span></div><div class="muted small">${escapeHtml(state.lang === 'zh' ? `开始 ${formatDate(task.startedAt)} · 结束 ${formatDate(task.finishedAt)} · 耗时 ${task.durationMs ?? '-'} ms` : `Started ${formatDate(task.startedAt)} · Finished ${formatDate(task.finishedAt)} · Duration ${task.durationMs ?? '-'} ms`)}</div>${task.error ? `<div style="margin-top:8px;">${escapeHtml(task.error)}</div>` : ''}</div>`;
+        }).join('')
+      : emptyState(state.lang === 'zh' ? '暂时还没有预热记录。手动触发一次后，这里会显示结果。' : 'No prewarm history yet. Trigger one run to see the result here.');
 
     const body = `
       <div class="grid">
@@ -3153,21 +3368,21 @@
       </div>
       <div class="grid">
         <div class="card accent-info">
-          <h3>${state.lang === 'zh' ? '运维提示' : 'Operations Guidance'}</h3>
+          <h3>${state.lang === 'zh' ? '什么时候来这里' : 'When To Use This Page'}</h3>
           <div class="status">${escapeHtml(state.lang === 'zh'
-            ? '这是 Guard 的唯一运维入口。Gateway、Guard Web、路径、Env 与运行快照，都统一在这里处理，避免驾驶舱和系统页重复堆叠控制。'
-            : 'This is the single operations entrypoint for Guard. Gateway, Guard Web, paths, env, and runtime snapshots are managed here to avoid duplicated controls in the cockpit.')}</div>
+            ? '当你需要启动、停止、重启或排查 Guard 和 Gateway，或者查看路径、环境变量与运行信息时，请使用这一页。'
+            : 'Use this page when you need to start, stop, restart, or troubleshoot Guard and Gateway, or when you need paths, environment variables, and runtime details.')}</div>
           <div class="sub-card" style="margin-top:14px;">
-            <strong>${state.lang === 'zh' ? '建议用法' : 'Recommended Flow'}</strong>
+            <strong>${state.lang === 'zh' ? '推荐用法' : 'Recommended Flow'}</strong>
             <div class="muted small" style="margin-top:8px; line-height:1.7;">
               ${escapeHtml(state.lang === 'zh'
-                ? '先在驾驶舱判断风险与优先级，再进入运维处理服务和环境；需要继续排查时，可从这里再跳到会话、审计或 Git 同步页。'
-                : 'Use the cockpit for prioritization first, then handle services and environment here. From Operations, continue into Sessions, Audit, or Git Sync when deeper diagnosis is needed.')}
+                ? '先在驾驶舱确认整体状态，再到这里处理服务和环境问题；如果还需要继续排查，可以再进入会话、审计或 Git 同步页面。'
+                : 'Check the overall state in the cockpit first, then handle service and environment issues here. If you need deeper diagnosis, continue into Sessions, Audit, or Git Sync.')}
             </div>
           </div>
         </div>
         <div class="card accent-info panel-focus-target" id="system-paths-card">
-          <h3>${state.lang === 'zh' ? '运行路径与目录' : 'Runtime Paths & Directories'}</h3>
+          <h3>${state.lang === 'zh' ? '本机路径与配置位置' : 'Local Paths & Config Locations'}</h3>
           ${keyValueGrid([
             { label: state.lang === 'zh' ? '平台' : 'Platform', value: info.platform || '-' },
             { label: state.lang === 'zh' ? '用户' : 'User', value: info.user || '-' },
@@ -3175,25 +3390,25 @@
             { label: 'OpenClaw Dir', value: info.openclawDir || '-' },
             { label: 'openclaw.json', value: info.configPath || '-' },
             { label: '.env', value: info.envPath || '-' },
-            { label: state.lang === 'zh' ? '当前页面 PID' : 'Current Page PID', value: info.pid || '-' },
-            { label: state.lang === 'zh' ? '当前监听端口' : 'Current Listen Port', value: webStatus.port || '-' },
+            { label: state.lang === 'zh' ? '当前工作台进程' : 'Current Workbench Process', value: info.pid || '-' },
+            { label: state.lang === 'zh' ? '当前监听端口' : 'Current Port', value: webStatus.port || '-' },
           ])}
           <div class="sub-card" style="margin-top:14px;">
             <div class="row" style="justify-content:space-between;">
-              <strong>${state.lang === 'zh' ? '路径用途' : 'Path Roles'}</strong>
-              <span class="pill success">${state.lang === 'zh' ? '原生工作台' : 'Native Workbench'}</span>
+              <strong>${state.lang === 'zh' ? '这些路径分别做什么' : 'What These Paths Are For'}</strong>
+              <span class="pill success">${state.lang === 'zh' ? '当前工作台' : 'Current Workbench'}</span>
             </div>
             <div class="muted small" style="margin-top:8px; line-height:1.7;">
               ${escapeHtml(state.lang === 'zh'
-                ? 'openclaw.json 用于保存模型、渠道和 Agent 主配置；env 文件用于保存适合本地托管的密钥和令牌，供渠道、Git 同步和后续扩展模块复用。'
-                : 'openclaw.json stores models, channels, and agent settings. The env file stores local secrets and tokens that can be reused by channels, Git sync, and future modules.')}
+                ? 'openclaw.json 保存模型、渠道和 Agent 的主要配置；.env 保存只适合留在本机的密钥、令牌和账号变量，供渠道接入和 Git 同步等功能复用。'
+                : 'openclaw.json stores the main model, channel, and agent settings. The .env file stores machine-local secrets, tokens, and account values used by channels, Git sync, and related features.')}
             </div>
           </div>
         </div>
       </div>
       <div class="grid">
         <div class="card accent-warn panel-focus-target" id="system-service-card">
-          <h3>${state.lang === 'zh' ? '服务与后台控制' : 'Service & Background Controls'}</h3>
+          <h3>${state.lang === 'zh' ? '服务操作与后台状态' : 'Service Actions & Background State'}</h3>
           <div class="toolbar">
             <button class="action-btn primary" type="button" data-service-action="start" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('start'))} Gateway</button>
             <button class="action-btn" type="button" data-service-action="restart" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('restart'))} Gateway</button>
@@ -3273,8 +3488,8 @@
             </div>
             <div class="muted small" style="margin-top:10px;">
               ${escapeHtml(state.lang === 'zh'
-                ? '如果你已经打开了当前页面，优先使用“纳入后台托管”或“一键停后台服务”，避免在同端口重复拉起第二个 Guard Web 实例。'
-                : 'If this page is already open, adopt the current instance or stop the background service first instead of spawning a second Guard Web on the same port.')}
+                ? '如果这个工作台已经打开，优先使用“纳入后台托管”或“一键停后台服务”，避免在同一端口重复启动第二个实例。'
+                : 'If this workbench is already open, adopt it or stop the background service first instead of starting a second instance on the same port.')}
             </div>
           </div>
         </div>
@@ -3304,12 +3519,7 @@
             ])}
           </div>
           <div class="list" style="margin-top:14px;">
-            ${(prewarmStatus.tasks || []).length
-              ? prewarmStatus.tasks.map((task) => {
-                  const taskMeta = getPrewarmMeta({ phase: task.success === true ? 'completed' : task.success === false ? 'error' : 'idle', lastError: task.error });
-                  return `<div class="list-item"><div class="row" style="justify-content:space-between;"><strong>${escapeHtml(task.label)}</strong><span class="pill ${taskMeta.pillClass}">${escapeHtml(task.success === true ? (state.lang === 'zh' ? '完成' : 'Done') : task.success === false ? (state.lang === 'zh' ? '失败' : 'Failed') : (state.lang === 'zh' ? '待执行' : 'Pending'))}</span></div><div class="muted small">${escapeHtml(state.lang === 'zh' ? `开始 ${formatDate(task.startedAt)} · 结束 ${formatDate(task.finishedAt)} · 耗时 ${task.durationMs ?? '-'} ms` : `Started ${formatDate(task.startedAt)} · Finished ${formatDate(task.finishedAt)} · Duration ${task.durationMs ?? '-'} ms`)}</div>${task.error ? `<div style="margin-top:8px;">${escapeHtml(task.error)}</div>` : ''}</div>`;
-                }).join('')
-              : emptyState(state.lang === 'zh' ? '当前还没有预热任务记录。' : 'No prewarm task history yet.')}
+            ${prewarmTasksHtml}
           </div>
         </div>
       </div>
@@ -3317,10 +3527,10 @@
         <div class="card accent-success panel-focus-target" id="system-env-list-card">
           <div class="row" style="justify-content:space-between; align-items:flex-start;">
             <div>
-              <h3>${state.lang === 'zh' ? '本地 Env 管理' : 'Local Env Management'}</h3>
+              <h3>${state.lang === 'zh' ? '本机密钥与变量' : 'Local Secrets & Variables'}</h3>
               <p>${escapeHtml(state.lang === 'zh'
-                ? '这里直接管理 Guard 使用的本地 env 键。敏感字段会在列表里脱敏显示，但不会影响实际保存值。'
-                : 'Manage local env keys used by Guard. Sensitive entries are masked in the list without changing the stored value.')}</p>
+                ? '这里直接管理当前机器给 Guard 使用的本地变量。列表里会隐藏敏感值，但不会影响实际保存内容。'
+                : 'Manage the machine-local values used by Guard here. Sensitive values stay masked in the list without changing what is stored.')}</p>
             </div>
             <div class="tag-list">
               <span class="chip">${escapeHtml((state.lang === 'zh' ? 'Env 文件：' : 'Env file: ') + (info.envPath || '-'))}</span>
@@ -3344,15 +3554,15 @@
         <div class="card accent-info panel-focus-target" id="system-env-editor-card">
           <div class="row" style="justify-content:space-between; align-items:flex-start;">
             <div>
-              <h3>${state.lang === 'zh' ? '创建 / 更新 Env 键' : 'Create / Update Env Key'}</h3>
-              <p id="system-env-mode">${state.lang === 'zh' ? '新建模式：填写 key 和 value 后保存。' : 'Create mode: enter a key and value, then save.'}</p>
+              <h3>${state.lang === 'zh' ? '新增或更新本机变量' : 'Add Or Update A Local Value'}</h3>
+              <p id="system-env-mode">${state.lang === 'zh' ? '新建模式：填写变量名和值后保存。' : 'Create mode: enter the variable name and value, then save.'}</p>
             </div>
             <span class="pill success">${state.lang === 'zh' ? '本地优先' : 'Local First'}</span>
           </div>
           <div class="status" id="system-env-hint" style="margin-top:14px;">
             ${escapeHtml(state.lang === 'zh'
-              ? '编辑已有敏感键时，旧值不会回填到表单。直接输入新值即可覆盖。'
-              : 'Existing sensitive values are not prefilled. Enter a new value to overwrite them.')}
+              ? '编辑已有敏感变量时，旧值不会回填到表单。直接输入新值即可覆盖。'
+              : 'Existing sensitive values are never prefilled. Enter a new value if you want to replace them.')}
           </div>
           <form id="system-env-form" class="stack" style="margin-top:14px;">
             <div class="form-grid">
@@ -3366,16 +3576,21 @@
               </div>
             </div>
             <div class="toolbar tight">
-              <button class="action-btn primary" type="submit">${state.lang === 'zh' ? '保存 Env' : 'Save Env'}</button>
+              <button class="action-btn primary" type="submit">${state.lang === 'zh' ? '保存变量' : 'Save Value'}</button>
               <button class="action-btn" type="button" data-env-action="clear">${state.lang === 'zh' ? '清空表单' : 'Clear Form'}</button>
-              <button class="action-btn" type="button" data-env-action="reload">${state.lang === 'zh' ? '刷新 Env' : 'Reload Env'}</button>
+              <button class="action-btn" type="button" data-env-action="reload">${state.lang === 'zh' ? '刷新变量列表' : 'Reload Values'}</button>
             </div>
           </form>
         </div>
       </div>
       <div class="card panel-focus-target" id="system-runtime-card">
-        <h3>${state.lang === 'zh' ? '运行态快照' : 'Runtime Snapshot'}</h3>
-        <pre style="margin-top:14px;">${prettyJson(runtimeSnapshot)}</pre>
+        <h3>${state.lang === 'zh' ? '本机路径与诊断信息' : 'Local Paths & Diagnostics'}</h3>
+        <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '上面已经展示了日常会用到的路径和状态。只有在需要排查问题或联系技术支持时，再展开下面的高级诊断信息。' : 'The cards above already show the paths and statuses needed for daily use. Only expand the advanced diagnostics below when troubleshooting or contacting support.')}</div>
+        ${renderAdvancedDisclosure({
+          title: state.lang === 'zh' ? '诊断信息（高级）' : 'Diagnostics (Advanced)',
+          description: state.lang === 'zh' ? '这是一份原始运行诊断数据，适合排查问题或发给技术支持。普通使用场景可以忽略。' : 'This raw diagnostic payload is mainly for troubleshooting or sharing with support. Most users can ignore it.',
+          bodyHtml: `<pre>${prettyJson(runtimeSnapshot)}</pre>`,
+        })}
       </div>
     `;
 
@@ -3554,11 +3769,11 @@
 
   async function loadOpenClawTab() {
     setPanelSections(t('tabs.openclaw'), t('desc.openclaw'), [
-      { id: 'openclaw-summary', title: state.lang === 'zh' ? 'OpenClaw 摘要' : 'OpenClaw Summary' },
-      { id: 'openclaw-install', title: state.lang === 'zh' ? '安装与修复' : 'Install & Repair' },
-      { id: 'openclaw-runtime', title: state.lang === 'zh' ? '后台执行状态' : 'Task Status' },
-      { id: 'openclaw-notes', title: state.lang === 'zh' ? '安装前检查与平台说明' : 'Checks & Notes' },
-      { id: 'openclaw-snapshot', title: state.lang === 'zh' ? '状态快照' : 'Status Snapshot' },
+      { id: 'openclaw-summary', title: state.lang === 'zh' ? 'OpenClaw 概览' : 'OpenClaw Overview' },
+      { id: 'openclaw-install', title: state.lang === 'zh' ? '安装、修复与更新' : 'Install, Repair & Update' },
+      { id: 'openclaw-runtime', title: state.lang === 'zh' ? '安装 / 更新过程' : 'Install / Update Progress' },
+      { id: 'openclaw-notes', title: state.lang === 'zh' ? '安装前先确认' : 'Before You Install' },
+      { id: 'openclaw-snapshot', title: state.lang === 'zh' ? '诊断信息（高级）' : 'Diagnostics (Advanced)' },
     ]);
 
     const status = await apiRequest('/api/openclaw/status');
@@ -3587,13 +3802,14 @@
     const partialBody = `
       <div class="grid">
         ${metricCard(state.lang === 'zh' ? '安装状态' : 'Install State', status.installed ? (state.lang === 'zh' ? '已安装' : 'Installed') : (state.lang === 'zh' ? '未安装' : 'Missing'), versionDetail, status.installed ? 'success' : 'warn')}
-        ${metricCard(state.lang === 'zh' ? '安装条件' : 'Install Readiness', status.installReady ? (state.lang === 'zh' ? '可安装' : 'Ready') : (state.lang === 'zh' ? '待处理' : 'Blocked'), installReadyDetail, status.installReady ? 'success' : 'warn')}
-        ${metricCard(state.lang === 'zh' ? '后台任务' : 'Background Task', actionMeta.phaseLabel, `${actionMeta.modeLabel} · ${formatRelative(status.action?.lastUpdatedAt || status.action?.startedAt)}`, actionMeta.pillClass)}
+        ${metricCard(state.lang === 'zh' ? '现在能否安装' : 'Ready To Install', status.installReady ? (state.lang === 'zh' ? '可以开始' : 'Ready') : (state.lang === 'zh' ? '先处理问题' : 'Blocked'), installReadyDetail, status.installReady ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '当前任务' : 'Current Task', actionMeta.phaseLabel, `${actionMeta.modeLabel} · ${formatRelative(status.action?.lastUpdatedAt || status.action?.startedAt)}`, actionMeta.pillClass)}
         ${metricCard('Dashboard', state.lang === 'zh' ? '加载中' : 'Loading', state.lang === 'zh' ? '正在读取 Gateway 信息' : 'Reading gateway details', 'warn')}
       </div>
       <div class="grid">
         <div class="card">
-          <h3>${state.lang === 'zh' ? '安装与修复' : 'Install & Repair'}</h3>
+          <h3>${state.lang === 'zh' ? '安装、修复与更新' : 'Install, Repair & Update'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '当这台电脑还没装 OpenClaw，或当前安装异常、版本过旧时，在这里处理。' : 'Use this section when OpenClaw is missing, broken, or needs to be updated on this machine.')}</div>
           <div class="muted small" style="margin-top:8px;">${escapeHtml(actionMeta.message)}</div>
           <div class="toolbar tight" style="margin-top:14px;">
             <button class="action-btn primary" type="button" data-openclaw-action="install" ${isRunning ? 'disabled' : ''}>${state.lang === 'zh' ? '安装 / 修复' : 'Install / Repair'}</button>
@@ -3603,7 +3819,8 @@
           <div class="status" style="margin-top:14px;">${escapeHtml(state.lang === 'zh' ? `命令: ${installCommand}` : `Command: ${installCommand}`)}</div>
         </div>
         <div class="card">
-          <h3>${state.lang === 'zh' ? '快速检查' : 'Quick Checks'}</h3>
+          <h3>${state.lang === 'zh' ? '开始前先看这里' : 'Check Before You Start'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '如果这里出现待处理项，先处理完再安装，成功率会更高。' : 'If this card shows blockers, clear them first so installation succeeds more reliably.')}</div>
           ${installBlockers.length
             ? `<div class="list" style="margin-top:12px;">${installBlockers.map((item) => `<div class="list-item">${escapeHtml(item)}</div>`).join('')}</div>`
             : `<div class="status" style="margin-top:12px;">${escapeHtml(state.lang === 'zh' ? '环境已满足自动安装前置条件。' : 'This machine is ready for automated installation.')}</div>`}
@@ -3621,15 +3838,16 @@
     const body = `
       <div class="grid">
         ${metricCard(state.lang === 'zh' ? '安装状态' : 'Install State', status.installed ? (state.lang === 'zh' ? '已安装' : 'Installed') : (state.lang === 'zh' ? '未安装' : 'Missing'), versionDetail, status.installed ? 'success' : 'warn')}
-        ${metricCard(state.lang === 'zh' ? '安装条件' : 'Install Readiness', status.installReady ? (state.lang === 'zh' ? '可安装' : 'Ready') : (state.lang === 'zh' ? '待处理' : 'Blocked'), installReadyDetail, status.installReady ? 'success' : 'warn')}
-        ${metricCard(state.lang === 'zh' ? '后台任务' : 'Background Task', actionMeta.phaseLabel, state.lang === 'zh' ? `${actionMeta.modeLabel} · ${formatRelative(status.action?.lastUpdatedAt || status.action?.startedAt)}` : `${actionMeta.modeLabel} · ${formatRelative(status.action?.lastUpdatedAt || status.action?.startedAt)}`, actionMeta.pillClass)}
+        ${metricCard(state.lang === 'zh' ? '现在能否安装' : 'Ready To Install', status.installReady ? (state.lang === 'zh' ? '可以开始' : 'Ready') : (state.lang === 'zh' ? '先处理问题' : 'Blocked'), installReadyDetail, status.installReady ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '当前任务' : 'Current Task', actionMeta.phaseLabel, state.lang === 'zh' ? `${actionMeta.modeLabel} · ${formatRelative(status.action?.lastUpdatedAt || status.action?.startedAt)}` : `${actionMeta.modeLabel} · ${formatRelative(status.action?.lastUpdatedAt || status.action?.startedAt)}`, actionMeta.pillClass)}
         ${metricCard('Dashboard', dashboard.url ? 'READY' : 'UNAVAILABLE', dashboard.url || (state.lang === 'zh' ? '等待 Gateway 就绪' : 'Waiting for Gateway'), dashboard.url ? 'success' : 'warn')}
       </div>
       <div class="grid">
         <div class="card">
           <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
             <div>
-              <h3>${state.lang === 'zh' ? '安装与修复' : 'Install & Repair'}</h3>
+              <h3>${state.lang === 'zh' ? '安装、修复与更新' : 'Install, Repair & Update'}</h3>
+              <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '当这台电脑还没装 OpenClaw，或当前安装异常、版本过旧时，在这里处理。' : 'Use this section when OpenClaw is missing, broken, or needs to be updated on this machine.')}</div>
               <div class="muted small" style="margin-top:8px;">${escapeHtml(actionMeta.message)}</div>
             </div>
             <span class="pill ${actionMeta.pillClass}">${escapeHtml(actionMeta.phaseLabel)}</span>
@@ -3666,7 +3884,8 @@
         <div class="card">
           <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
             <div>
-              <h3>${state.lang === 'zh' ? '后台执行状态' : 'Task Status'}</h3>
+              <h3>${state.lang === 'zh' ? '安装 / 更新过程' : 'Install / Update Progress'}</h3>
+              <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这里会显示最近一次安装或更新正在做什么，失败时也会留下线索。' : 'This card shows what the latest install or update is doing, and keeps clues when something fails.')}</div>
               <div class="muted small" style="margin-top:8px;">${escapeHtml(actionTimeline)}</div>
             </div>
             <span class="pill ${actionMeta.pillClass}">${escapeHtml(actionMeta.modeLabel)}</span>
@@ -3678,36 +3897,42 @@
               ${status.action?.error ? `<div class="muted small" style="margin-top:8px; color:#b42318;">${escapeHtml(status.action.error)}</div>` : ''}
             </div>
             <div class="list-item">
-              <strong>${state.lang === 'zh' ? '日志尾部' : 'Log Tail'}</strong>
-              <div style="margin-top:8px;">${logTail.length ? `<pre>${escapeHtml(logTail.join('\n'))}</pre>` : emptyState(state.lang === 'zh' ? '当前还没有安装日志。' : 'No install log yet.')}</div>
+              <strong>${state.lang === 'zh' ? '最近日志' : 'Recent Log'}</strong>
+              <div style="margin-top:8px;">${logTail.length ? `<pre>${escapeHtml(logTail.join('\n'))}</pre>` : emptyState(state.lang === 'zh' ? '当前还没有安装或更新日志。' : 'No install or update log yet.')}</div>
             </div>
           </div>
         </div>
       </div>
       <div class="grid">
         <div class="card">
-          <h3>${state.lang === 'zh' ? '安装前检查' : 'Preflight Checks'}</h3>
+          <h3>${state.lang === 'zh' ? '安装前先确认' : 'Before You Install'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '如果这里提示待处理项，先修正后再安装，通常可以避免中途失败。' : 'If this card lists blockers, fix them before you install to avoid failing halfway through.')}</div>
           ${installBlockers.length
             ? `<div class="list" style="margin-top:12px;">${installBlockers.map((item) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(state.lang === 'zh' ? '阻塞项' : 'Blocker')}</strong><span class="pill warn">${escapeHtml(state.lang === 'zh' ? '待处理' : 'Action Needed')}</span></div><div style="margin-top:8px;">${escapeHtml(item)}</div></div>`).join('')}</div>`
             : `<div class="status" style="margin-top:12px;">${escapeHtml(state.lang === 'zh' ? '当前环境满足 OpenClaw 自动安装条件。' : 'This machine is ready for automated OpenClaw installation.')}</div>`}
         </div>
         <div class="card">
-          <h3>${state.lang === 'zh' ? '平台说明' : 'Platform Notes'}</h3>
+          <h3>${state.lang === 'zh' ? '平台补充说明' : 'Platform-specific Notes'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这里会补充当前系统下的安装差异、路径习惯或兼容提醒。' : 'This card highlights platform-specific install differences, path conventions, and compatibility notes.')}</div>
           ${platformNotes.length
             ? `<div class="list" style="margin-top:12px;">${platformNotes.map((item) => `<div class="list-item">${escapeHtml(item)}</div>`).join('')}</div>`
             : emptyState(state.lang === 'zh' ? '当前没有额外的平台说明。' : 'No platform notes.')}
         </div>
       </div>
-      <div class="card">
-        <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
-          <div>
-            <h3>${state.lang === 'zh' ? '状态快照' : 'Status Snapshot'}</h3>
-            <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '保留原始状态，便于排查安装、PATH 与版本识别问题。' : 'Raw state is kept for troubleshooting install, PATH, and version detection issues.')}</div>
+        <div class="card">
+          <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+            <div>
+              <h3>${state.lang === 'zh' ? '诊断信息（高级）' : 'Diagnostics (Advanced)'}</h3>
+              <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这里保留原始状态，适合排查 PATH、版本识别或安装异常，也可以直接复制给技术支持。' : 'This raw state is helpful for diagnosing PATH, version detection, or install problems, and can be copied directly for support.')}</div>
+            </div>
+            <button class="action-btn" type="button" data-openclaw-action="copy-status">${state.lang === 'zh' ? '复制状态 JSON' : 'Copy JSON'}</button>
           </div>
-          <button class="action-btn" type="button" data-openclaw-action="copy-status">${state.lang === 'zh' ? '复制状态 JSON' : 'Copy JSON'}</button>
+          ${renderAdvancedDisclosure({
+            title: state.lang === 'zh' ? '展开原始状态' : 'Expand Raw Status',
+            description: state.lang === 'zh' ? '只有在需要进一步排查时，再展开查看完整状态 JSON。' : 'Expand this only when you need the full raw status JSON for troubleshooting.',
+            bodyHtml: `<pre>${prettyJson(status)}</pre>`,
+          })}
         </div>
-        <pre style="margin-top:14px;">${prettyJson(status)}</pre>
-      </div>
     `;
 
     setPanel(t('tabs.openclaw'), t('desc.openclaw'), body);
@@ -3757,13 +3982,20 @@
 
     const body = `
       <div class="grid">
-        ${metricCard(state.lang === 'zh' ? '插件' : 'Plugin', plugin.installed ? 'READY' : 'MISSING', plugin.version || (state.lang === 'zh' ? '已检测到配置' : 'configured'), plugin.installed ? 'success' : 'warn')}
-        ${metricCard('Domain', config.domain || 'feishu', config.connectionMode || '-')}
-        ${metricCard(state.lang === 'zh' ? '群策略' : 'Group Policy', config.groupPolicy || '-', config.dmPolicy || '-')}
-        ${metricCard(state.lang === 'zh' ? '流式输出' : 'Streaming', config.streaming ? 'ON' : 'OFF', config.renderMode || '-')}
+        ${metricCard(state.lang === 'zh' ? '插件状态' : 'Plugin', plugin.installed ? (state.lang === 'zh' ? '已安装' : 'Installed') : (state.lang === 'zh' ? '未安装' : 'Missing'), plugin.version || (state.lang === 'zh' ? '已检测到配置' : 'configuration detected'), plugin.installed ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '接入域名' : 'Domain', config.domain || 'feishu', config.connectionMode || '-')}
+        ${metricCard(state.lang === 'zh' ? '群聊策略' : 'Group Policy', config.groupPolicy || '-', config.dmPolicy || '-')}
+        ${metricCard(state.lang === 'zh' ? '回复方式' : 'Response Mode', config.streaming ? (state.lang === 'zh' ? '流式回复' : 'Streaming') : (state.lang === 'zh' ? '普通回复' : 'Standard'), config.renderMode || '-')}
       </div>
       <div class="card">
-        <h3>${state.lang === 'zh' ? '飞书配置' : 'Feishu Config'}</h3>
+        <h3>${state.lang === 'zh' ? '什么时候来这里' : 'When To Use This Page'}</h3>
+        <div class="status">${escapeHtml(state.lang === 'zh'
+          ? '当你需要补全飞书机器人凭据、调整连接方式，或确认插件是否安装正确时，请使用这一页。'
+          : 'Use this page when you need to complete Feishu bot credentials, change the connection mode, or verify that the plugin was installed correctly.')}</div>
+      </div>
+      <div class="card">
+        <h3>${state.lang === 'zh' ? '飞书接入配置' : 'Feishu Connection Settings'}</h3>
+        <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '保存后会直接更新当前机器上的飞书配置。敏感字段会按原样保存，请确认粘贴的是正确值。' : 'Saving will update the Feishu settings on this machine immediately. Sensitive fields are stored as-is, so make sure the values are correct before saving.')}</div>
         <div class="form-grid" id="feishu-form">
           <div class="field"><label>appId</label><input name="appId" value="${escapeHtml(config.appId || '')}"></div>
           <div class="field"><label>appSecret</label><input name="appSecret" value="${escapeHtml(config.appSecret || '')}"></div>
@@ -3779,13 +4011,18 @@
           <div class="field"><label>whisperModel</label><input name="whisperModel" value="${escapeHtml(config.whisperModel || '')}"></div>
         </div>
         <div class="row" style="margin-top:14px; gap:18px;">
-          <label><input type="checkbox" id="feishu-require-mention" ${config.requireMention ? 'checked' : ''}> requireMention</label>
-          <label><input type="checkbox" id="feishu-streaming" ${config.streaming ? 'checked' : ''}> streaming</label>
+          <label><input type="checkbox" id="feishu-require-mention" ${config.requireMention ? 'checked' : ''}> ${state.lang === 'zh' ? '仅在被提及时回复' : 'Reply only when mentioned'}</label>
+          <label><input type="checkbox" id="feishu-streaming" ${config.streaming ? 'checked' : ''}> ${state.lang === 'zh' ? '开启流式回复' : 'Enable streaming replies'}</label>
         </div>
         <div class="toolbar tight" style="margin-top:14px;">
           <button class="action-btn primary" type="button" data-feishu-action="save">${escapeHtml(t('save'))}</button>
           <button class="action-btn" type="button" data-feishu-action="reload">${escapeHtml(t('reload'))}</button>
         </div>
+        ${renderAdvancedDisclosure({
+          title: state.lang === 'zh' ? '查看当前原始配置' : 'View Current Raw Configuration',
+          description: state.lang === 'zh' ? '只有在核对字段或排查配置异常时，再展开这份原始配置。' : 'Expand this only when you need to verify the raw fields or troubleshoot a configuration issue.',
+          bodyHtml: `<pre>${prettyJson(config || {})}</pre>`,
+        })}
       </div>
     `;
 
@@ -3836,7 +4073,7 @@
     const selectedDef = defMap[state.channelSelectedId] || defs[0] || {
       id: 'feishu',
       name: 'Feishu / Lark',
-      icon: '🪁',
+      icon: 'FL',
       fields: [],
       envFields: [],
     };
@@ -3912,14 +4149,15 @@
 
     const body = `
       <div class="grid">
-        ${metricCard(state.lang === 'zh' ? '渠道总数' : 'Channels', formatNumber(defs.length), state.lang === 'zh' ? '当前可管理的消息入口' : 'configured channel surfaces')}
-        ${metricCard(state.lang === 'zh' ? '已启用' : 'Enabled', formatNumber((channels || []).filter((item) => item.enabled).length), state.lang === 'zh' ? '运行态会接收消息' : 'receives traffic now')}
-        ${metricCard(state.lang === 'zh' ? '已配置' : 'Configured', formatNumber((channels || []).filter((item) => item.configured).length), state.lang === 'zh' ? '已填入配置或 env' : 'config or env present')}
-        ${metricCard(state.lang === 'zh' ? '当前选中' : 'Selected', selected.name || selected.id, selected.enabled ? (state.lang === 'zh' ? '已启用' : 'enabled') : (state.lang === 'zh' ? '停用中' : 'disabled'), selected.enabled ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '消息入口总数' : 'Channels', formatNumber(defs.length), state.lang === 'zh' ? '当前可管理的消息入口' : 'available message entry points')}
+        ${metricCard(state.lang === 'zh' ? '已启用' : 'Enabled', formatNumber((channels || []).filter((item) => item.enabled).length), state.lang === 'zh' ? '运行中会接收消息' : 'receives traffic at runtime')}
+        ${metricCard(state.lang === 'zh' ? '已配置' : 'Configured', formatNumber((channels || []).filter((item) => item.configured).length), state.lang === 'zh' ? '已经填入配置或本机变量' : 'config or local values present')}
+        ${metricCard(state.lang === 'zh' ? '当前查看' : 'Selected', selected.name || selected.id, selected.enabled ? (state.lang === 'zh' ? '已启用' : 'Enabled') : (state.lang === 'zh' ? '已停用' : 'Disabled'), selected.enabled ? 'success' : 'warn')}
       </div>
       <div class="two-col">
         <div class="card">
-          <h3>${state.lang === 'zh' ? '渠道目录' : 'Channel Catalog'}</h3>
+          <h3>${state.lang === 'zh' ? '消息入口列表' : 'Channel Catalog'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '先从左侧选择一个消息入口，再在右侧查看或修改它的设置。' : 'Choose a message entry point on the left, then review or update its settings on the right.')}</div>
           <div class="split-list">
             ${defs.map((def) => {
               const info = channelMap[def.id] || { enabled: false, configured: false };
@@ -3932,7 +4170,7 @@
                   </div>
                 </button>
               `;
-            }).join('') || emptyState(state.lang === 'zh' ? '暂无渠道定义。' : 'No channel definitions.')}
+            }).join('') || emptyState(state.lang === 'zh' ? '暂时没有可管理的消息入口定义。' : 'No channel definitions are available yet.')}
           </div>
         </div>
         <div class="stack">
@@ -3943,17 +4181,17 @@
                 <p>${escapeHtml(selected.id)}</p>
               </div>
               <div class="tag-list">
-                <span class="pill ${selected.enabled ? 'success' : 'warn'}">${escapeHtml(selected.enabled ? (state.lang === 'zh' ? '运行中' : 'enabled') : (state.lang === 'zh' ? '已停用' : 'disabled'))}</span>
-                <span class="pill ${selected.configured ? 'success' : 'warn'}">${escapeHtml(selected.configured ? (state.lang === 'zh' ? '配置已落地' : 'configured') : (state.lang === 'zh' ? '尚未配置' : 'empty'))}</span>
+                <span class="pill ${selected.enabled ? 'success' : 'warn'}">${escapeHtml(selected.enabled ? (state.lang === 'zh' ? '正在接收' : 'Enabled') : (state.lang === 'zh' ? '已停用' : 'Disabled'))}</span>
+                <span class="pill ${selected.configured ? 'success' : 'warn'}">${escapeHtml(selected.configured ? (state.lang === 'zh' ? '配置已完成' : 'Configured') : (state.lang === 'zh' ? '还未配置' : 'Not Configured'))}</span>
               </div>
             </div>
             <div class="status ${selected.enabled ? '' : 'warn'}" style="margin-bottom:14px;">
               ${escapeHtml(selected.enabled
-                ? (state.lang === 'zh' ? '保存后会直接更新当前渠道配置。' : 'Saving here updates the live channel config directly.')
-                : (state.lang === 'zh' ? '当前处于停用状态，可以先补齐配置，再启用。' : 'This channel is disabled. Fill the form first, then enable it.'))}
+                ? (state.lang === 'zh' ? '保存后会直接更新当前消息入口配置。' : 'Saving here updates the live channel configuration immediately.')
+                : (state.lang === 'zh' ? '这个消息入口当前停用中。可以先补齐配置，再决定是否启用。' : 'This channel is currently disabled. Finish the settings first, then decide whether to enable it.'))}
             </div>
             <div class="form-grid" id="channel-config-form">
-              ${editorFields || emptyState(state.lang === 'zh' ? '该渠道暂无可编辑字段。' : 'No editable fields for this channel.')}
+              ${editorFields || emptyState(state.lang === 'zh' ? '这个消息入口当前没有可编辑字段。' : 'There are no editable fields for this channel right now.')}
             </div>
             <div class="toolbar tight" style="margin-top:14px;">
               <button class="action-btn primary" type="button" data-channel-action="save">${escapeHtml(t('save'))}</button>
@@ -3962,12 +4200,17 @@
             </div>
           </div>
           <div class="card">
-            <h3>${state.lang === 'zh' ? '配置摘要' : 'Config Summary'}</h3>
+            <h3>${state.lang === 'zh' ? '当前配置摘要' : 'Current Configuration Summary'}</h3>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '先看普通字段和本机变量数量；只有在排查问题时，再展开原始配置。' : 'Start with the counts of regular fields and local values. Expand the raw configuration only when you need more detail.')}</div>
             <div class="grid">
               ${metricCard(state.lang === 'zh' ? '普通字段' : 'Config Fields', formatNumber(configKeys.length), configKeys.join(', ') || '-')}
               ${metricCard(state.lang === 'zh' ? 'Env 字段' : 'Env Fields', formatNumber(envKeys.length), envKeys.join(', ') || '-')}
             </div>
-            <pre style="margin-top:14px;">${prettyJson(selected.config || {})}</pre>
+            ${renderAdvancedDisclosure({
+              title: state.lang === 'zh' ? '查看原始配置' : 'View Raw Configuration',
+              description: state.lang === 'zh' ? '这里会显示当前消息入口的完整原始配置。' : 'This shows the complete raw configuration for the selected channel.',
+              bodyHtml: `<pre>${prettyJson(selected.config || {})}</pre>`,
+            })}
           </div>
         </div>
       </div>
@@ -4189,13 +4432,13 @@
           const modelsHtml = (provider.models || []).map((model) => {
             const badges = [
               model.isPrimary ? `<span class="pill success">${escapeHtml(state.lang === 'zh' ? '主模型' : 'primary')}</span>` : '',
-              model.isFallback ? `<span class="pill warn">fallback</span>` : '',
+            model.isFallback ? `<span class="pill warn">${state.lang === 'zh' ? '备用' : 'backup'}</span>` : '',
               model.contextWindow ? `<span class="chip">ctx ${escapeHtml(formatNumber(model.contextWindow))}</span>` : '',
               model.maxTokens ? `<span class="chip">max ${escapeHtml(formatNumber(model.maxTokens))}</span>` : '',
             ].join('');
             const fallbackButton = model.isFallback
-              ? `<button class="action-btn danger" type="button" data-ai-model-action="remove-fallback" data-model-id="${escapeHtml(model.fullId)}">${state.lang === 'zh' ? '移出 Fallback' : 'Remove Fallback'}</button>`
-              : `<button class="action-btn" type="button" data-ai-model-action="add-fallback" data-model-id="${escapeHtml(model.fullId)}">${state.lang === 'zh' ? '加入 Fallback' : 'Add Fallback'}</button>`;
+      ? `<button class="action-btn danger" type="button" data-ai-model-action="remove-fallback" data-model-id="${escapeHtml(model.fullId)}">${state.lang === 'zh' ? '移出备用顺序' : 'Remove From Backups'}</button>`
+      : `<button class="action-btn" type="button" data-ai-model-action="add-fallback" data-model-id="${escapeHtml(model.fullId)}">${state.lang === 'zh' ? '加入备用顺序' : 'Add As Backup'}</button>`;
             return `
               <div class="sub-card">
                 <div class="row" style="justify-content:space-between; align-items:flex-start;">
@@ -4225,18 +4468,19 @@
             </div>
           `;
         }).join('')
-      : emptyState(state.lang === 'zh' ? '先创建 Provider，模型快捷操作才会出现。' : 'Create a provider first to unlock model quick actions.');
+      : emptyState(state.lang === 'zh' ? '先在右侧配置至少一个 Provider，这里才会显示可用模型和快捷操作。' : 'Configure at least one provider on the right to unlock model choices and quick actions here.');
 
     const body = `
       <div class="grid">
         ${metricCard(state.lang === 'zh' ? '主模型' : 'Primary Model', config.primaryModel || '-', `${configuredProviders.length} ${state.lang === 'zh' ? '个 Provider' : 'providers'}`)}
-        ${metricCard(state.lang === 'zh' ? 'Fallback 数量' : 'Fallback Count', formatNumber((config.fallbackModels || []).length), (config.fallbackModels || []).join(', ') || '-')}
-        ${metricCard(state.lang === 'zh' ? '可选模型' : 'Available Models', formatNumber((config.availableModels || []).length), state.lang === 'zh' ? '允许直接用于主模型 / 回退链' : 'usable in primary / fallback routing')}
+        ${metricCard(state.lang === 'zh' ? '备用模型' : 'Backup Models', formatNumber((config.fallbackModels || []).length), (config.fallbackModels || []).join(', ') || '-')}
+        ${metricCard(state.lang === 'zh' ? '可选模型' : 'Available Models', formatNumber((config.availableModels || []).length), state.lang === 'zh' ? '这些模型都可以选作主模型或备用模型' : 'These models can be used as a primary model or a backup model')}
         ${metricCard(state.lang === 'zh' ? '已配置 Provider' : 'Configured Providers', formatNumber(configuredProviders.length), configuredProviders.map((item) => item.name).join(', ') || '-')}
       </div>
       <div class="grid">
         <div class="card">
-          <h3>${state.lang === 'zh' ? '主模型与回退链' : 'Primary Model & Fallback Chain'}</h3>
+          <h3>${state.lang === 'zh' ? '主模型与备用顺序' : 'Primary Model & Backup Order'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '先确定主模型，再安排备用顺序。主模型不可用时，系统会按这里的顺序继续尝试。' : 'Set your primary model first, then define the backup order. If the primary model is unavailable, Guard will try these models in sequence.')}</div>
           ${renderFormField({
             name: 'primaryModel',
             label: state.lang === 'zh' ? '主模型 ID' : 'Primary Model ID',
@@ -4246,26 +4490,28 @@
           })}
           ${renderFormField({
             name: 'fallbackModels',
-            label: 'Fallbacks',
+            label: state.lang === 'zh' ? '备用模型' : 'Backup Models',
             type: 'textarea',
             value: (config.fallbackModels || []).join('\n'),
             placeholder: 'provider/model-a\nprovider/model-b',
-            help: state.lang === 'zh' ? '一行一个模型，顺序即回退顺序。' : 'One model per line, in failover order.',
+            help: state.lang === 'zh' ? '一行一个模型，顺序就是自动切换的顺序。' : 'One model per line, in the order Guard should switch to them.',
             fullWidth: true,
           })}
           <div class="toolbar tight" style="margin-top:14px;">
-            <button class="action-btn primary" type="button" data-ai-action="save-routing">${state.lang === 'zh' ? '保存主模型与回退链' : 'Save Routing'}</button>
-            <button class="action-btn" type="button" data-ai-action="clear-fallbacks">${state.lang === 'zh' ? '清空 Fallbacks' : 'Clear Fallbacks'}</button>
+            <button class="action-btn primary" type="button" data-ai-action="save-routing">${state.lang === 'zh' ? '保存模型设置' : 'Save Model Settings'}</button>
+            <button class="action-btn" type="button" data-ai-action="clear-fallbacks">${state.lang === 'zh' ? '清空备用模型' : 'Clear Backup Models'}</button>
           </div>
         </div>
         <div class="card">
-          <h3>${state.lang === 'zh' ? 'Provider 速览' : 'Provider Snapshot'}</h3>
+          <h3>${state.lang === 'zh' ? '已配置的 Provider' : 'Configured Providers'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这里可以快速确认每个 Provider 是否已接好、是否可用。' : 'Use this card to quickly confirm whether each provider is connected and ready to use.')}</div>
           <div class="list">${providerSummaryHtml}</div>
         </div>
       </div>
       <div class="two-col">
         <div class="card">
-          <h3>${state.lang === 'zh' ? 'Provider 目录' : 'Provider Catalog'}</h3>
+          <h3>${state.lang === 'zh' ? '创建或选择 Provider' : 'Choose Or Create A Provider'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '可以从预设开始，也可以载入已有 Provider 继续修改。' : 'Start from a preset, or load an existing provider and continue editing it.')}</div>
           <div class="split-list">${pickerOptionsHtml}</div>
         </div>
         <div class="card">
@@ -4438,184 +4684,7 @@
     });
   }
 
-  async function loadNotifications() {
-    const summary = await apiRequest('/api/notifications?limit=200');
-    const items = summary.items || [];
-    const pageSizeOptions = [10, 20, 50];
-    if (!pageSizeOptions.includes(state.notificationPageSize)) {
-      state.notificationPageSize = 20;
-    }
-    const warningCount = items.filter((item) => item.severity === 'warning' || item.severity === 'error').length;
-    const successCount = items.filter((item) => item.severity === 'success').length;
-    const sources = Array.from(new Set(items.map((item) => item.source).filter(Boolean))).sort();
-    const filtered = items.filter((item) => {
-      const present = getNotificationPresentation(item);
-      if (state.notificationFilter === 'unread' && item.read) return false;
-      if (state.notificationFilter === 'warning' && item.severity !== 'warning' && item.severity !== 'error') return false;
-      if (state.notificationFilter === 'success' && item.severity !== 'success') return false;
-      if (state.notificationSource !== 'all' && item.source !== state.notificationSource) return false;
-      return matchesTextQuery([
-        item.title,
-        item.message,
-        item.type,
-        item.source,
-        item.severity,
-        item.meta ? JSON.stringify(item.meta) : '',
-        present.title,
-        present.message,
-        present.typeLabel,
-        present.sourceLabel,
-        present.severityLabel,
-      ], state.notificationSearchQuery);
-    });
-    const totalFiltered = filtered.length;
-    const totalPages = Math.max(1, Math.ceil(totalFiltered / state.notificationPageSize));
-    if (state.notificationPage > totalPages) state.notificationPage = totalPages;
-    if (state.notificationPage < 1) state.notificationPage = 1;
-    const pageStart = (state.notificationPage - 1) * state.notificationPageSize;
-    const pagedItems = filtered.slice(pageStart, pageStart + state.notificationPageSize);
-    const pageEnd = pageStart + pagedItems.length;
-    const pageButtons = getNotificationPageButtons(state.notificationPage, totalPages);
-    const expandedRawId = ensureNotificationRawExpansion(pagedItems);
-    const pagedGroups = groupNotificationsByDay(pagedItems);
-    const getNotificationJumpTarget = (item) => {
-      const meta = item?.meta || {};
-      if (item?.source === 'git-sync' && (
-        Array.isArray(meta.embeddedRepos) ||
-        item?.title === 'Embedded Git repositories detected' ||
-        item?.title === '.gitignore updated for embedded repositories'
-      )) {
-        return {
-          tabId: 'git-sync',
-          selector: '#gitignore-preview-card',
-          label: state.lang === 'zh' ? '打开 Git Sync' : 'Open Git Sync',
-        };
-      }
-      if (item?.source === 'git-sync' && (
-        item?.title === 'Local commit succeeded' ||
-        item?.title === 'Remote push succeeded'
-      )) {
-        return {
-          tabId: 'git-sync',
-          selector: item?.title === 'Local commit succeeded' ? '#git-sync-commit-card' : '#git-sync-readiness-card',
-          label: state.lang === 'zh' ? '查看同步状态' : 'View Sync Status',
-        };
-      }
-      return null;
-    };
-
-    const body = `
-      <div class="grid">
-        ${metricCard(state.lang === 'zh' ? '通知总数' : 'Total Notifications', formatNumber(summary.total || 0), state.lang === 'zh' ? '全部记录' : 'all records')}
-        ${metricCard(state.lang === 'zh' ? '未读通知' : 'Unread', formatNumber(summary.unread || 0), state.lang === 'zh' ? '待处理' : 'requires attention', (summary.unread || 0) > 0 ? 'warn' : 'success')}
-        ${metricCard(state.lang === 'zh' ? '警告 / 错误' : 'Warnings / Errors', formatNumber(warningCount), state.lang === 'zh' ? '需要排查' : 'needs review', warningCount > 0 ? 'warn' : 'success')}
-        ${metricCard(state.lang === 'zh' ? '成功事件' : 'Success Events', formatNumber(successCount), state.lang === 'zh' ? '最近完成' : 'recent completions', successCount > 0 ? 'success' : '')}
-      </div>
-      <div class="card">
-        <div class="toolbar tight">
-          <input id="notify-search" value="${escapeHtml(state.notificationSearchQuery || '')}" placeholder="${escapeHtml(state.lang === 'zh' ? '搜索标题 / 消息 / 来源' : 'Search title / message / source')}" />
-          <select id="notify-source">
-            <option value="all">${escapeHtml(state.lang === 'zh' ? '全部来源' : 'All sources')}</option>
-            ${sources.map((source) => `<option value="${escapeHtml(source)}" ${state.notificationSource === source ? 'selected' : ''}>${escapeHtml(getNotificationSourceLabel(source))}</option>`).join('')}
-          </select>
-        </div>
-        <div class="toolbar tight" style="margin-top:12px;">
-          <button class="chip ${state.notificationFilter === 'all' ? 'active' : ''}" type="button" data-notify-filter="all">${state.lang === 'zh' ? '全部' : 'All'} (${formatNumber(summary.total || 0)})</button>
-          <button class="chip ${state.notificationFilter === 'unread' ? 'active' : ''}" type="button" data-notify-filter="unread">${state.lang === 'zh' ? '未读' : 'Unread'} (${formatNumber(summary.unread || 0)})</button>
-          <button class="chip ${state.notificationFilter === 'warning' ? 'active' : ''}" type="button" data-notify-filter="warning">${state.lang === 'zh' ? '警告' : 'Warning'} (${formatNumber(warningCount)})</button>
-          <button class="chip ${state.notificationFilter === 'success' ? 'active' : ''}" type="button" data-notify-filter="success">${state.lang === 'zh' ? '成功' : 'Success'} (${formatNumber(successCount)})</button>
-        </div>
-        <div class="toolbar tight" style="margin-top:12px;">
-          <button class="action-btn" type="button" data-notify-bulk="read-all">${escapeHtml(t('readAll'))}</button>
-          <button class="action-btn" type="button" data-notify-bulk="unread-all">${escapeHtml(t('unreadAll'))}</button>
-          <button class="action-btn" type="button" data-notify-bulk="clear-read">${escapeHtml(t('clearRead'))}</button>
-          <button class="action-btn danger" type="button" data-notify-bulk="clear-all">${escapeHtml(t('clearAll'))}</button>
-        </div>
-        <div class="toolbar tight" style="margin-top:12px;">
-          <span class="muted small">${escapeHtml(state.lang === 'zh' ? '详情视图' : 'Detail View')}</span>
-          <button class="chip ${state.notificationDetailMode === 'summary' ? 'active' : ''}" type="button" data-notify-detail-mode="summary">${escapeHtml(state.lang === 'zh' ? '摘要详情' : 'Summary Detail')}</button>
-          <button class="chip ${state.notificationDetailMode === 'raw' ? 'active' : ''}" type="button" data-notify-detail-mode="raw">${escapeHtml(state.lang === 'zh' ? '原始详情' : 'Raw Detail')}</button>
-        </div>
-        <div class="toolbar tight" style="margin-top:12px; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-          <div class="muted small">
-            ${escapeHtml(totalFiltered
-              ? (state.lang === 'zh'
-                ? `当前仅渲染第 ${formatNumber(state.notificationPage)} / ${formatNumber(totalPages)} 页，显示 ${formatNumber(pageStart + 1)}-${formatNumber(pageEnd)} / ${formatNumber(totalFiltered)} 条通知。`
-                : `Rendering page ${formatNumber(state.notificationPage)} of ${formatNumber(totalPages)} with ${formatNumber(pageStart + 1)}-${formatNumber(pageEnd)} of ${formatNumber(totalFiltered)} notifications.`)
-              : (state.lang === 'zh' ? '当前没有符合筛选条件的通知。' : 'No notifications match the current filters.'))}
-          </div>
-          <div class="toolbar tight" style="margin:0;">
-            <span class="muted small">${escapeHtml(state.lang === 'zh' ? '每页显示' : 'Per page')}</span>
-            <select id="notify-page-size">
-              ${pageSizeOptions.map((size) => `<option value="${size}" ${size === state.notificationPageSize ? 'selected' : ''}>${escapeHtml(state.lang === 'zh' ? `${formatNumber(size)} 条` : `${formatNumber(size)}`)}</option>`).join('')}
-            </select>
-          </div>
-        </div>
-        ${state.notificationDetailMode === 'raw' ? `
-          <div class="sub-card" style="margin-top:12px;">
-            <div class="muted small">${escapeHtml(state.lang === 'zh'
-              ? '为降低页面负担，原始详情改为按需展开，当前页只渲染 1 条通知的原始负载。点击卡片里的“查看原始详情”可切换。'
-              : 'To keep the page light, raw payloads are rendered on demand and only one notification on the current page expands at a time. Use "View Raw Detail" inside a card to switch.')}</div>
-          </div>
-        ` : ''}
-        ${totalPages > 1 ? `
-          <div class="notify-page-shell" style="margin-top:12px;">
-            <div class="notify-page-strip">
-              <button class="action-btn notify-page-nav" type="button" data-notify-page-nav="prev" ${state.notificationPage <= 1 ? 'disabled' : ''}>${escapeHtml(state.lang === 'zh' ? '上一页' : 'Previous')}</button>
-              <div class="notify-page-folders" role="tablist" aria-label="${escapeHtml(state.lang === 'zh' ? '通知分页' : 'Notification pages')}">
-                ${pageButtons.map((page) => page === 'ellipsis'
-                  ? `<span class="notify-page-gap" aria-hidden="true">...</span>`
-                  : `<button class="notify-page-folder ${page === state.notificationPage ? 'active' : ''}" type="button" role="tab" aria-selected="${page === state.notificationPage ? 'true' : 'false'}" data-notify-page="${page}"><span class="notify-page-folder-tab"></span><span class="notify-page-folder-label">${escapeHtml(state.lang === 'zh' ? `第 ${formatNumber(page)} 页` : `Page ${formatNumber(page)}`)}</span></button>`).join('')}
-              </div>
-              <button class="action-btn notify-page-nav" type="button" data-notify-page-nav="next" ${state.notificationPage >= totalPages ? 'disabled' : ''}>${escapeHtml(state.lang === 'zh' ? '下一页' : 'Next')}</button>
-            </div>
-          </div>
-        ` : ''}
-      </div>
-      <div class="notify-day-stack">
-        ${pagedGroups.length ? pagedGroups.map((group) => `
-          <section class="notify-day-group">
-            <div class="notify-day-header">
-              <div class="notify-day-label">${escapeHtml(group.label)}</div>
-              <div class="notify-day-meta">${escapeHtml(state.lang === 'zh' ? `${formatNumber(group.items.length)} 条通知` : `${formatNumber(group.items.length)} notifications`)}</div>
-            </div>
-            <div class="notify-day-list">
-              ${group.items.map((item) => {
-          const present = getNotificationPresentation(item);
-          const jumpTarget = getNotificationJumpTarget(item);
-          const isRawExpanded = state.notificationDetailMode === 'raw' && expandedRawId === item.id;
-          return `
-          <div class="list-item ${item.read ? '' : 'unread'}">
-            <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
-              <div>
-                <strong>${escapeHtml(present.title)}</strong>
-                <div class="muted small">${escapeHtml(present.typeLabel)} · ${escapeHtml(present.sourceLabel)} · ${escapeHtml(formatDate(item.createdAt))}</div>
-              </div>
-              <span class="pill ${item.severity === 'success' ? 'success' : item.severity === 'warning' ? 'warn' : item.severity === 'error' ? 'danger' : ''}">${escapeHtml(present.severityLabel)}</span>
-            </div>
-            <p style="margin-top:10px;">${escapeHtml(present.message)}</p>
-            ${state.notificationDetailMode === 'raw'
-              ? (isRawExpanded ? renderNotificationRawDetail(item) : '')
-              : renderNotificationSummaryDetail(item, present)}
-            <div class="toolbar tight" style="margin-top:12px;">
-              <button class="action-btn" type="button" data-notify-item="${escapeHtml(item.id)}" data-next-read="${item.read ? 'false' : 'true'}">${escapeHtml(item.read ? t('markUnread') : t('markRead'))}</button>
-              ${state.notificationDetailMode === 'raw'
-                ? `<button class="action-btn ${isRawExpanded ? 'primary' : ''}" type="button" data-notify-raw-item="${escapeHtml(item.id)}" ${isRawExpanded ? 'disabled' : ''}>${escapeHtml(isRawExpanded ? (state.lang === 'zh' ? '当前原始详情' : 'Current Raw Detail') : (state.lang === 'zh' ? '查看原始详情' : 'View Raw Detail'))}</button>`
-                : ''}
-              <button class="action-btn" type="button" data-notify-copy="${escapeHtml(item.id)}">${escapeHtml(state.lang === 'zh' ? '复制详情' : 'Copy Details')}</button>
-              ${jumpTarget ? `<button class="action-btn primary" type="button" data-notify-open-tab="${escapeHtml(jumpTarget.tabId)}" data-notify-focus="${escapeHtml(jumpTarget.selector)}">${escapeHtml(jumpTarget.label)}</button>` : ''}
-            </div>
-          </div>
-        `;
-        }).join('')}
-            </div>
-          </section>
-        `).join('') : emptyState(state.lang === 'zh' ? '没有符合筛选条件的通知。' : 'No notifications match the current filters.')}
-      </div>
-    `;
-
-    setPanel(t('tabs.notifications'), t('desc.notifications'), body);
-
+  function bindNotificationsView(items, totalPages, pageSizeOptions) {
     document.getElementById('notify-search')?.addEventListener('input', (event) => {
       state.notificationSearchQuery = event.target.value;
       state.notificationPage = 1;
@@ -4740,15 +4809,232 @@
     });
   }
 
+  async function loadNotifications() {
+    const viewTabId = 'notifications';
+    const summary = await apiRequest('/api/notifications?limit=200');
+    if (state.activeTab !== viewTabId) return;
+    clearTabRefreshHint(viewTabId);
+    const items = summary.items || [];
+    const pageSizeOptions = [10, 20, 50];
+    if (!pageSizeOptions.includes(state.notificationPageSize)) {
+      state.notificationPageSize = 20;
+    }
+    const warningCount = items.filter((item) => item.severity === 'warning' || item.severity === 'error').length;
+    const successCount = items.filter((item) => item.severity === 'success').length;
+    const sources = Array.from(new Set(items.map((item) => item.source).filter(Boolean))).sort();
+    const filtered = items.filter((item) => {
+      const present = getNotificationPresentation(item);
+      if (state.notificationFilter === 'unread' && item.read) return false;
+      if (state.notificationFilter === 'warning' && item.severity !== 'warning' && item.severity !== 'error') return false;
+      if (state.notificationFilter === 'success' && item.severity !== 'success') return false;
+      if (state.notificationSource !== 'all' && item.source !== state.notificationSource) return false;
+      return matchesTextQuery([
+        item.title,
+        item.message,
+        item.type,
+        item.source,
+        item.severity,
+        item.meta ? JSON.stringify(item.meta) : '',
+        present.title,
+        present.message,
+        present.typeLabel,
+        present.sourceLabel,
+        present.severityLabel,
+      ], state.notificationSearchQuery);
+    });
+    const totalFiltered = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalFiltered / state.notificationPageSize));
+    if (state.notificationPage > totalPages) state.notificationPage = totalPages;
+    if (state.notificationPage < 1) state.notificationPage = 1;
+    const pageStart = (state.notificationPage - 1) * state.notificationPageSize;
+    const pagedItems = filtered.slice(pageStart, pageStart + state.notificationPageSize);
+    const pageEnd = pageStart + pagedItems.length;
+    const pageButtons = getNotificationPageButtons(state.notificationPage, totalPages);
+    const expandedRawId = ensureNotificationRawExpansion(pagedItems);
+    const pagedGroups = groupNotificationsByDay(pagedItems);
+    const getNotificationJumpTarget = (item) => {
+      const meta = item?.meta || {};
+      if (item?.source === 'git-sync' && (
+        Array.isArray(meta.embeddedRepos) ||
+        item?.title === 'Embedded Git repositories detected' ||
+        item?.title === '.gitignore updated for embedded repositories'
+      )) {
+        return {
+          tabId: 'git-sync',
+          selector: '#gitignore-preview-card',
+          label: state.lang === 'zh' ? '打开 Git Sync' : 'Open Git Sync',
+        };
+      }
+      if (item?.source === 'git-sync' && (
+        item?.title === 'Local commit succeeded' ||
+        item?.title === 'Remote push succeeded'
+      )) {
+        return {
+          tabId: 'git-sync',
+          selector: item?.title === 'Local commit succeeded' ? '#git-sync-commit-card' : '#git-sync-readiness-card',
+          label: state.lang === 'zh' ? '查看同步状态' : 'View Sync Status',
+        };
+      }
+      return null;
+    };
+    const summarySectionHtml = `
+      <div class="grid">
+        ${metricCard(state.lang === 'zh' ? '提醒总数' : 'Total Reminders', formatNumber(summary.total || 0), state.lang === 'zh' ? '全部记录' : 'all records')}
+        ${metricCard(state.lang === 'zh' ? '还未处理' : 'Needs Attention', formatNumber(summary.unread || 0), state.lang === 'zh' ? '建议优先查看' : 'recommended to review first', (summary.unread || 0) > 0 ? 'warn' : 'success')}
+        ${metricCard(state.lang === 'zh' ? '需要排查' : 'Warnings / Errors', formatNumber(warningCount), state.lang === 'zh' ? '建议尽快处理' : 'recommended to investigate', warningCount > 0 ? 'warn' : 'success')}
+        ${metricCard(state.lang === 'zh' ? '最近成功' : 'Recent Successes', formatNumber(successCount), state.lang === 'zh' ? '近期已完成' : 'recent completions', successCount > 0 ? 'success' : '')}
+      </div>
+      <div class="card">
+        <div class="muted small" style="margin-bottom:12px;">${escapeHtml(state.lang === 'zh' ? '你可以按来源、状态和关键词筛选提醒，再决定是否标记已读、清理或跳转到对应页面处理。' : 'Filter reminders by source, status, or keyword, then decide whether to mark them read, clear them, or jump to the relevant page.')}</div>
+        <div class="toolbar tight">
+          <input id="notify-search" value="${escapeHtml(state.notificationSearchQuery || '')}" placeholder="${escapeHtml(state.lang === 'zh' ? '搜索标题 / 消息 / 来源' : 'Search title / message / source')}" />
+          <select id="notify-source">
+            <option value="all">${escapeHtml(state.lang === 'zh' ? '全部来源' : 'All sources')}</option>
+            ${sources.map((source) => `<option value="${escapeHtml(source)}" ${state.notificationSource === source ? 'selected' : ''}>${escapeHtml(getNotificationSourceLabel(source))}</option>`).join('')}
+          </select>
+        </div>
+        <div class="toolbar tight" style="margin-top:12px;">
+          <button class="chip ${state.notificationFilter === 'all' ? 'active' : ''}" type="button" data-notify-filter="all">${state.lang === 'zh' ? '全部' : 'All'} (${formatNumber(summary.total || 0)})</button>
+          <button class="chip ${state.notificationFilter === 'unread' ? 'active' : ''}" type="button" data-notify-filter="unread">${state.lang === 'zh' ? '未读' : 'Unread'} (${formatNumber(summary.unread || 0)})</button>
+          <button class="chip ${state.notificationFilter === 'warning' ? 'active' : ''}" type="button" data-notify-filter="warning">${state.lang === 'zh' ? '警告' : 'Warning'} (${formatNumber(warningCount)})</button>
+          <button class="chip ${state.notificationFilter === 'success' ? 'active' : ''}" type="button" data-notify-filter="success">${state.lang === 'zh' ? '成功' : 'Success'} (${formatNumber(successCount)})</button>
+        </div>
+        <div class="toolbar tight" style="margin-top:12px;">
+          <button class="action-btn" type="button" data-notify-bulk="read-all">${escapeHtml(t('readAll'))}</button>
+          <button class="action-btn" type="button" data-notify-bulk="unread-all">${escapeHtml(t('unreadAll'))}</button>
+          <button class="action-btn" type="button" data-notify-bulk="clear-read">${escapeHtml(t('clearRead'))}</button>
+          <button class="action-btn danger" type="button" data-notify-bulk="clear-all">${escapeHtml(t('clearAll'))}</button>
+        </div>
+        <div class="toolbar tight" style="margin-top:12px;">
+          <span class="muted small">${escapeHtml(state.lang === 'zh' ? '详情模式' : 'Detail Mode')}</span>
+          <button class="chip ${state.notificationDetailMode === 'summary' ? 'active' : ''}" type="button" data-notify-detail-mode="summary">${escapeHtml(state.lang === 'zh' ? '易读详情' : 'Readable Detail')}</button>
+          <button class="chip ${state.notificationDetailMode === 'raw' ? 'active' : ''}" type="button" data-notify-detail-mode="raw">${escapeHtml(state.lang === 'zh' ? '原始数据' : 'Raw Payload')}</button>
+        </div>
+        <div class="toolbar tight" style="margin-top:12px; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+          <div class="muted small">
+            ${escapeHtml(totalFiltered
+              ? (state.lang === 'zh'
+                ? `当前仅渲染第 ${formatNumber(state.notificationPage)} / ${formatNumber(totalPages)} 页，显示 ${formatNumber(pageStart + 1)}-${formatNumber(pageEnd)} / ${formatNumber(totalFiltered)} 条通知。`
+                : `Rendering page ${formatNumber(state.notificationPage)} of ${formatNumber(totalPages)} with ${formatNumber(pageStart + 1)}-${formatNumber(pageEnd)} of ${formatNumber(totalFiltered)} notifications.`)
+              : (state.lang === 'zh' ? '当前没有符合筛选条件的通知。' : 'No notifications match the current filters.'))}
+          </div>
+          <div class="row" style="gap:8px;">
+            <span class="muted small">${escapeHtml(state.lang === 'zh' ? '每页显示' : 'Per page')}</span>
+            <select id="notify-page-size">
+              ${pageSizeOptions.map((size) => `<option value="${size}" ${size === state.notificationPageSize ? 'selected' : ''}>${escapeHtml(state.lang === 'zh' ? `${formatNumber(size)} 条` : `${formatNumber(size)}`)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        ${state.notificationDetailMode === 'raw' ? `
+          <div class="sub-card" style="margin-top:12px;">
+            <div class="muted small">${escapeHtml(state.lang === 'zh'
+              ? '为降低页面负担，原始详情改为按需展开，当前页只渲染 1 条通知的原始负载。点击卡片里的“查看原始详情”可切换。'
+              : 'To keep the page light, raw payloads are rendered on demand and only one notification on the current page expands at a time. Use "View Raw Detail" inside a card to switch.')}</div>
+          </div>
+        ` : ''}
+        ${totalPages > 1 ? `
+          <div class="notify-page-shell" style="margin-top:12px;">
+            <div class="notify-page-strip">
+              <button class="action-btn notify-page-nav" type="button" data-notify-page-nav="prev" ${state.notificationPage <= 1 ? 'disabled' : ''}>${escapeHtml(state.lang === 'zh' ? '上一页' : 'Previous')}</button>
+              <div class="notify-page-folders" role="tablist" aria-label="${escapeHtml(state.lang === 'zh' ? '通知分页' : 'Notification pages')}">
+                ${pageButtons.map((page) => page === 'ellipsis'
+                  ? `<span class="notify-page-gap" aria-hidden="true">...</span>`
+                  : `<button class="notify-page-folder ${page === state.notificationPage ? 'active' : ''}" type="button" role="tab" aria-selected="${page === state.notificationPage ? 'true' : 'false'}" data-notify-page="${page}"><span class="notify-page-folder-tab"></span><span class="notify-page-folder-label">${escapeHtml(state.lang === 'zh' ? `第 ${formatNumber(page)} 页` : `Page ${formatNumber(page)}`)}</span></button>`).join('')}
+              </div>
+              <button class="action-btn notify-page-nav" type="button" data-notify-page-nav="next" ${state.notificationPage >= totalPages ? 'disabled' : ''}>${escapeHtml(state.lang === 'zh' ? '下一页' : 'Next')}</button>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+    const listSectionHtml = pagedGroups.length ? `
+      <div class="notify-day-stack">
+        ${pagedGroups.map((group) => `
+          <section class="notify-day-group">
+            <div class="notify-day-header">
+              <div class="notify-day-label">${escapeHtml(group.label)}</div>
+              <div class="notify-day-meta">${escapeHtml(state.lang === 'zh' ? `${formatNumber(group.items.length)} 条通知` : `${formatNumber(group.items.length)} notifications`)}</div>
+            </div>
+            <div class="notify-day-list">
+              ${group.items.map((item) => {
+                const present = getNotificationPresentation(item);
+                const jumpTarget = getNotificationJumpTarget(item);
+                const isRawExpanded = state.notificationDetailMode === 'raw' && expandedRawId === item.id;
+                return `
+                  <div class="list-item ${item.read ? '' : 'unread'}">
+                    <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+                      <div>
+                        <strong>${escapeHtml(present.title)}</strong>
+                        <div class="muted small">${escapeHtml(present.typeLabel)} · ${escapeHtml(present.sourceLabel)} · ${escapeHtml(formatDate(item.createdAt))}</div>
+                      </div>
+                      <span class="pill ${item.severity === 'success' ? 'success' : item.severity === 'warning' ? 'warn' : item.severity === 'error' ? 'danger' : ''}">${escapeHtml(present.severityLabel)}</span>
+                    </div>
+                    <p style="margin-top:10px;">${escapeHtml(present.message)}</p>
+                    ${state.notificationDetailMode === 'raw'
+                      ? (isRawExpanded ? renderNotificationRawDetail(item) : '')
+                      : renderNotificationSummaryDetail(item, present)}
+                    <div class="toolbar tight" style="margin-top:12px;">
+                      <button class="action-btn" type="button" data-notify-item="${escapeHtml(item.id)}" data-next-read="${item.read ? 'false' : 'true'}">${escapeHtml(item.read ? t('markUnread') : t('markRead'))}</button>
+                      ${state.notificationDetailMode === 'raw'
+                        ? `<button class="action-btn ${isRawExpanded ? 'primary' : ''}" type="button" data-notify-raw-item="${escapeHtml(item.id)}" ${isRawExpanded ? 'disabled' : ''}>${escapeHtml(isRawExpanded ? (state.lang === 'zh' ? '当前原始详情' : 'Current Raw Detail') : (state.lang === 'zh' ? '查看原始详情' : 'View Raw Detail'))}</button>`
+                        : ''}
+                      <button class="action-btn" type="button" data-notify-copy="${escapeHtml(item.id)}">${escapeHtml(state.lang === 'zh' ? '复制详情' : 'Copy Details')}</button>
+                      ${jumpTarget ? `<button class="action-btn primary" type="button" data-notify-open-tab="${escapeHtml(jumpTarget.tabId)}" data-notify-focus="${escapeHtml(jumpTarget.selector)}">${escapeHtml(jumpTarget.label)}</button>` : ''}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </section>
+        `).join('')}
+      </div>
+    ` : emptyState(state.lang === 'zh' ? '没有符合筛选条件的通知。' : 'No notifications match the current filters.');
+    setPanelSections(t('tabs.notifications'), t('desc.notifications'), [
+      { id: 'notifications-summary', title: state.lang === 'zh' ? '提醒概览' : 'Reminder Overview', html: summarySectionHtml },
+      { id: 'notifications-list', title: state.lang === 'zh' ? '提醒列表' : 'Reminder List', html: loadingCard(state.lang === 'zh' ? '提醒列表' : 'Reminder List', state.lang === 'zh' ? '正在分批渲染提醒卡片…' : 'Rendering reminder cards in batches…') },
+    ]);
+    requestAnimationFrame(() => {
+      if (state.activeTab !== viewTabId) return;
+      updatePanelSection('notifications-list', listSectionHtml);
+      bindNotificationsView(items, totalPages, pageSizeOptions);
+      rememberCurrentPanelRender(viewTabId, () => bindNotificationsView(items, totalPages, pageSizeOptions));
+    });
+  }
+
   async function loadAgents() {
+    const viewTabId = 'agents';
     const data = await apiRequest('/api/agents');
+    if (state.activeTab !== viewTabId) return;
+    clearTabRefreshHint(viewTabId);
     const agents = data.agents || [];
-    const body = agents.length ? `<div class="grid">${agents.map((agent) => `<div class="card"><div class="row" style="justify-content:space-between"><h3>${escapeHtml(agent.name)}</h3><span class="pill ${agent.isDefault ? 'success' : ''}">${agent.isDefault ? 'default' : agent.id}</span></div><div class="muted">${escapeHtml(agent.resolvedWorkspace || agent.workspace || '-')}</div><div class="tag-list" style="margin-top:12px;"><span class="chip ${agent.docStatus?.soul ? 'active' : ''}">SOUL</span><span class="chip ${agent.docStatus?.user ? 'active' : ''}">USER</span><span class="chip ${agent.docStatus?.agents ? 'active' : ''}">AGENTS</span><span class="chip ${agent.docStatus?.memory ? 'active' : ''}">MEMORY</span></div><pre>${prettyJson(agent)}</pre></div>`).join('')}</div>` : emptyState(state.lang === 'zh' ? '当前没有 Agent。' : 'No agents configured.');
-    setPanel(t('tabs.agents'), t('desc.agents'), body);
+    const docReadyCount = agents.filter((agent) => agent.docStatus?.soul && agent.docStatus?.user && agent.docStatus?.agents && agent.docStatus?.memory).length;
+    const defaultCount = agents.filter((agent) => agent.isDefault).length;
+    const summaryHtml = `
+      <div class="grid">
+        ${metricCard(state.lang === 'zh' ? '团队角色数' : 'Team Roles', formatNumber(agents.length), state.lang === 'zh' ? '当前已接入' : 'currently connected')}
+        ${metricCard(state.lang === 'zh' ? '默认角色' : 'Default Role', formatNumber(defaultCount), defaultCount > 0 ? (state.lang === 'zh' ? '已设置默认值' : 'default role configured') : (state.lang === 'zh' ? '还没有设置默认角色' : 'no default role set'), defaultCount > 0 ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '关键文档齐全' : 'Core Docs Ready', formatNumber(docReadyCount), state.lang === 'zh' ? 'SOUL / USER / AGENTS / MEMORY' : 'SOUL / USER / AGENTS / MEMORY', docReadyCount > 0 ? 'success' : 'warn')}
+      </div>
+    `;
+    const listHtml = agents.length
+      ? `<div class="grid">${agents.map((agent) => `<div class="card"><div class="row" style="justify-content:space-between"><h3>${escapeHtml(agent.name)}</h3><span class="pill ${agent.isDefault ? 'success' : ''}">${agent.isDefault ? (state.lang === 'zh' ? '默认' : 'Default') : agent.id}</span></div><div class="muted">${escapeHtml(agent.resolvedWorkspace || agent.workspace || '-')}</div><div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '用下方标签快速确认关键文档是否齐全。' : 'Use the tags below to quickly confirm whether the key docs are present.')}</div><div class="tag-list" style="margin-top:12px;"><span class="chip ${agent.docStatus?.soul ? 'active' : ''}">SOUL</span><span class="chip ${agent.docStatus?.user ? 'active' : ''}">USER</span><span class="chip ${agent.docStatus?.agents ? 'active' : ''}">AGENTS</span><span class="chip ${agent.docStatus?.memory ? 'active' : ''}">MEMORY</span></div>${renderAdvancedDisclosure({ title: state.lang === 'zh' ? '查看诊断信息' : 'View Diagnostics', description: state.lang === 'zh' ? '这里保留这个角色的原始配置和状态信息，平时可以不用展开。' : 'This keeps the raw config and status for this role. You usually do not need to expand it.', bodyHtml: `<pre>${prettyJson(agent)}</pre>` })}</div>`).join('')}</div>`
+      : emptyState(state.lang === 'zh' ? '还没有发现可用的 Agent。请先检查配置文件或安装步骤。' : 'No agents are available yet. Check the configuration or installation first.');
+    setPanelSections(t('tabs.agents'), t('desc.agents'), [
+      { id: 'agents-summary', title: state.lang === 'zh' ? '团队概览' : 'Team Overview', html: summaryHtml },
+      { id: 'agents-list', title: state.lang === 'zh' ? '团队成员' : 'Team Members', html: loadingCard(state.lang === 'zh' ? '团队成员' : 'Team Members', state.lang === 'zh' ? '正在填充角色卡片…' : 'Rendering agent cards…') },
+    ]);
+    requestAnimationFrame(() => {
+      if (state.activeTab !== viewTabId) return;
+      updatePanelSection('agents-list', listHtml);
+      rememberCurrentPanelRender(viewTabId);
+    });
   }
 
   async function loadSessions() {
+    const viewTabId = 'sessions';
     const data = await apiRequest('/api/sessions');
+    if (state.activeTab !== viewTabId) return;
+    clearTabRefreshHint(viewTabId);
     const snapshot = data.snapshot || {};
     const sessions = snapshot.sessions || [];
     const summary = snapshot.summary || {};
@@ -4761,20 +5047,23 @@
     const runtimeUpdate = snapshot.update || {};
     const localizedGatewayService = getLocalizedServiceSummary(gatewayService);
     const localizedNodeService = getLocalizedServiceSummary(nodeService);
-    const body = `
+    const summarySectionHtml = `
       ${renderCacheSummaryCard(data.cache, state.lang === 'zh' ? '会话共享快照' : 'Session Shared Snapshot')}
       <div class="grid">
         ${metricCard(state.lang === 'zh' ? '会话总数' : 'Sessions', formatNumber(summary.sessionCount ?? sessions.length), summary.defaultModel || '-')}
-        ${metricCard(state.lang === 'zh' ? '默认上下文' : 'Default Context', summary.defaultContextTokens ? formatNumber(summary.defaultContextTokens) : '-', state.lang === 'zh' ? 'tokens' : 'tokens')}
-        ${metricCard(state.lang === 'zh' ? '总 Tokens' : 'Total Tokens', formatNumber(data.costSummary?.totalTokens || 0), '')}
-        ${metricCard(state.lang === 'zh' ? '总成本' : 'Total Cost', formatCost(data.costSummary?.totalEstimatedCost || 0), '')}
-        ${metricCard(state.lang === 'zh' ? '会话索引文件' : 'Session Paths', formatNumber((sessionsMeta.paths || []).length), state.lang === 'zh' ? '已发现路径' : 'discovered paths')}
-        ${metricCard(state.lang === 'zh' ? '排队系统事件' : 'Queued Events', formatNumber(summary.queuedSystemEvents || 0), state.lang === 'zh' ? '等待处理' : 'pending')}
+        ${metricCard(state.lang === 'zh' ? '默认上下文窗口' : 'Default Context Window', summary.defaultContextTokens ? formatNumber(summary.defaultContextTokens) : '-', state.lang === 'zh' ? 'tokens' : 'tokens')}
+        ${metricCard(state.lang === 'zh' ? '累计 Tokens' : 'Total Tokens', formatNumber(data.costSummary?.totalTokens || 0), '')}
+        ${metricCard(state.lang === 'zh' ? '累计成本估算' : 'Estimated Cost', formatCost(data.costSummary?.totalEstimatedCost || 0), '')}
+        ${metricCard(state.lang === 'zh' ? '会话索引路径' : 'Session Paths', formatNumber((sessionsMeta.paths || []).length), state.lang === 'zh' ? '已发现路径' : 'discovered paths')}
+        ${metricCard(state.lang === 'zh' ? '待处理系统消息' : 'Queued Events', formatNumber(summary.queuedSystemEvents || 0), state.lang === 'zh' ? '等待处理' : 'awaiting processing')}
       </div>
       ${snapshot.warnings?.length ? `<div class="status warn" style="margin-top:14px; white-space:pre-wrap;">${escapeHtml(snapshot.warnings.join('\n'))}</div>` : ''}
-      <div class="grid" style="margin-top:14px;">
+    `;
+    const runtimeSectionHtml = `
+      <div class="grid">
         <div class="card">
-          <h3>${state.lang === 'zh' ? '运行上下文' : 'Runtime Context'}</h3>
+          <h3>${state.lang === 'zh' ? '运行环境' : 'Runtime Context'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这里展示当前会话依赖的系统、记忆检索和服务环境，便于判断异常是否来自运行环境。' : 'This card shows the system, memory search, and service environment behind the current sessions so you can tell whether an issue comes from the runtime context.')}</div>
           ${keyValueGrid([
             {
               label: state.lang === 'zh' ? '系统' : 'OS',
@@ -4816,7 +5105,7 @@
           ])}
         </div>
         <div class="card">
-          <h3>${state.lang === 'zh' ? '按 Agent 聚合' : 'By Agent'}</h3>
+          <h3>${state.lang === 'zh' ? '按 Agent 查看会话' : 'Sessions By Agent'}</h3>
           ${byAgent.length ? `<div class="list">${byAgent.map((item) => {
             const lastSession = (item.recent || [])[0] || null;
             return `<div class="list-item">
@@ -4825,32 +5114,41 @@
                 <span class="pill ${item.count > 0 ? 'success' : ''}">${formatNumber(item.count)} ${state.lang === 'zh' ? '个会话' : 'sessions'}</span>
               </div>
               <div class="muted small">${escapeHtml(item.path || '-')}</div>
-              ${lastSession ? `<div class="muted small" style="margin-top:8px;">${escapeHtml(lastSession.modelId || '-')} · ${escapeHtml(formatDate(lastSession.updatedAt || lastSession.startedAt))}</div>` : `<div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '暂无最近会话' : 'No recent sessions')}</div>`}
+              ${lastSession ? `<div class="muted small" style="margin-top:8px;">${escapeHtml(lastSession.modelId || '-')} · ${escapeHtml(formatDate(lastSession.updatedAt || lastSession.startedAt))}</div>` : `<div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '暂时没有最近会话' : 'No recent sessions yet')}</div>`}
             </div>`;
-          }).join('')}</div>` : emptyState(state.lang === 'zh' ? '当前没有按 Agent 的会话数据。' : 'No session-by-agent data.')}
+          }).join('')}</div>` : emptyState(state.lang === 'zh' ? '暂时还没有可按 Agent 聚合的会话数据。' : 'No session-by-agent data is available yet.')}
         </div>
       </div>
-      <div class="list" style="margin-top:14px;">${sessions.length ? sessions.map((session) => `<div class="list-item">
+    `;
+    const listSectionHtml = `<div class="list">${sessions.length ? sessions.map((session) => `<div class="list-item">
         <div class="row" style="justify-content:space-between">
           <div>
             <strong>${escapeHtml(session.id)}</strong>
             <div class="muted small">${escapeHtml(session.agentId)} · ${escapeHtml(session.modelId)}</div>
           </div>
-          <span class="pill ${session.status === 'active' ? 'success' : ''}">${escapeHtml(session.status)}</span>
+          <span class="pill ${getSessionStatusClass(session.status)}">${escapeHtml(getSessionStatusLabel(session.status))}</span>
         </div>
         <div class="row">
-          <span class="chip">in ${formatNumber(session.usage?.inputTokens || 0)}</span>
-          <span class="chip">out ${formatNumber(session.usage?.outputTokens || 0)}</span>
-          <span class="chip">cache ${formatNumber((session.usage?.cacheReadTokens || 0) + (session.usage?.cacheWriteTokens || 0))}</span>
+          <span class="chip">${state.lang === 'zh' ? '输入' : 'Input'} ${formatNumber(session.usage?.inputTokens || 0)}</span>
+          <span class="chip">${state.lang === 'zh' ? '输出' : 'Output'} ${formatNumber(session.usage?.outputTokens || 0)}</span>
+          <span class="chip">${state.lang === 'zh' ? '缓存' : 'Cache'} ${formatNumber((session.usage?.cacheReadTokens || 0) + (session.usage?.cacheWriteTokens || 0))}</span>
           <span class="chip active">${formatNumber(session.usage?.totalTokens || 0)}</span>
-          ${session.contextTokens ? `<span class="chip">${state.lang === 'zh' ? '上下文' : 'context'} ${formatNumber(session.contextTokens)}</span>` : ''}
-          ${session.remainingTokens ? `<span class="chip">${state.lang === 'zh' ? '剩余' : 'remaining'} ${formatNumber(session.remainingTokens)}</span>` : ''}
-          ${session.percentUsed ? `<span class="chip">${state.lang === 'zh' ? '使用率' : 'used'} ${formatNumber(session.percentUsed)}%</span>` : ''}
+          ${session.contextTokens ? `<span class="chip">${state.lang === 'zh' ? '上下文' : 'Context'} ${formatNumber(session.contextTokens)}</span>` : ''}
+          ${session.remainingTokens ? `<span class="chip">${state.lang === 'zh' ? '剩余' : 'Remaining'} ${formatNumber(session.remainingTokens)}</span>` : ''}
+          ${session.percentUsed ? `<span class="chip">${state.lang === 'zh' ? '使用率' : 'Used'} ${formatNumber(session.percentUsed)}%</span>` : ''}
         </div>
         <div class="muted small">${escapeHtml(formatDate(session.updatedAt || session.startedAt))}</div>
-      </div>`).join('') : emptyState(state.lang === 'zh' ? '当前没有运行态会话。' : 'No runtime sessions.')}</div>
-    `;
-    setPanel(t('tabs.sessions'), t('desc.sessions'), body);
+      </div>`).join('') : emptyState(state.lang === 'zh' ? '当前还没有可展示的会话。' : 'No sessions are available to show right now.')}</div>`;
+    setPanelSections(t('tabs.sessions'), t('desc.sessions'), [
+      { id: 'sessions-summary', title: state.lang === 'zh' ? '会话概览' : 'Session Overview', html: summarySectionHtml },
+      { id: 'sessions-runtime', title: state.lang === 'zh' ? '运行环境' : 'Runtime Context', html: runtimeSectionHtml },
+      { id: 'sessions-list', title: state.lang === 'zh' ? '会话明细' : 'Session List', html: loadingCard(state.lang === 'zh' ? '会话明细' : 'Session List', state.lang === 'zh' ? '正在填充会话卡片…' : 'Rendering session cards…') },
+    ]);
+    requestAnimationFrame(() => {
+      if (state.activeTab !== viewTabId) return;
+      updatePanelSection('sessions-list', `<div class="card"><h3>${escapeHtml(state.lang === 'zh' ? '会话明细' : 'Session Details')}</h3><div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这里会显示每个会话当前使用的模型、状态和 Token 消耗。' : 'This section shows the model, status, and token usage for each session.')}</div><div style="margin-top:14px;">${listSectionHtml}</div></div>`);
+      rememberCurrentPanelRender(viewTabId);
+    });
     if (data.cache?.refreshing) scheduleRuntimeViewPoll();
     else clearRuntimeViewPollTimer();
   }
@@ -4858,7 +5156,7 @@
   async function loadActivity() {
     const data = await apiRequest('/api/activity?limit=80');
     const events = data.events || [];
-    const body = events.length ? `<div class="list">${events.map((event) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(event.title)}</strong><span class="pill ${event.type === 'runtime-warning' ? 'warn' : ''}">${escapeHtml(event.type)}</span></div><div>${escapeHtml(event.description)}</div><div class="muted small">${escapeHtml(formatDate(event.createdAt))}</div></div>`).join('')}</div>` : emptyState(state.lang === 'zh' ? '暂无活动记录。' : 'No activity yet.');
+    const body = `<div class="card"><h3>${escapeHtml(state.lang === 'zh' ? '最近发生了什么' : 'What Happened Recently')}</h3><div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这里按时间顺序记录最近的运行变化、同步结果和告警。' : 'This timeline records recent runtime changes, sync results, and alerts in chronological order.')}</div><div style="margin-top:14px;">${events.length ? `<div class="list">${events.map((event) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(event.title)}</strong><span class="pill ${getActivityTypeClass(event.type)}">${escapeHtml(getActivityTypeLabel(event.type))}</span></div><div>${escapeHtml(event.description)}</div><div class="muted small">${escapeHtml(formatDate(event.createdAt))}</div></div>`).join('')}</div>` : emptyState(state.lang === 'zh' ? '暂时还没有新的活动记录。' : 'No activity has been recorded yet.')}</div></div>`;
     setPanel(t('tabs.activity'), t('desc.activity'), body);
   }
   async function openManagedFile(targetPath, mode) {
@@ -4896,15 +5194,44 @@
     });
   }
 
-  async function loadFiles() {
-    const queryPath = state.filesPath ? `?path=${encodeURIComponent(state.filesPath)}` : '';
-    const data = await apiRequest(`/api/files${queryPath}`);
-    state.filesPath = data.currentPath || state.filesPath;
+  function syncFileEditorDraftState() {
+    const editor = document.getElementById('file-editor');
+    if (!editor || !state.currentFile) return;
+    state.currentFile = {
+      ...state.currentFile,
+      content: editor.value,
+    };
+  }
 
+  function renderFileEntryLabel(entry) {
+    if (!entry?.isDirectory) return entry?.name || '';
+    return `${state.lang === 'zh' ? '[目录]' : '[DIR]'} ${entry.name}`;
+  }
+
+  function renderFilesSummaryHtml(data) {
+    const entries = data.entries || [];
+    const dirCount = entries.filter((entry) => entry.isDirectory).length;
+    const fileCount = entries.length - dirCount;
+    const selectedRoot = (data.roots || []).find((root) => state.filesPath && state.filesPath.startsWith(root.path));
+    return `
+      <div class="grid">
+        ${metricCard(state.lang === 'zh' ? '可浏览根目录' : 'Managed Roots', formatNumber((data.roots || []).length), selectedRoot?.label || (state.lang === 'zh' ? '当前在受控范围内浏览' : 'browsing within the managed scope'))}
+        ${metricCard(state.lang === 'zh' ? '当前目录内容' : 'Current Entries', formatNumber(entries.length), state.lang === 'zh' ? `${formatNumber(dirCount)} 个目录 / ${formatNumber(fileCount)} 个文件` : `${formatNumber(dirCount)} dirs / ${formatNumber(fileCount)} files`)}
+        ${metricCard(state.lang === 'zh' ? '当前打开文件' : 'Open File', state.currentFile ? '1' : '0', state.currentFile ? (state.currentFile.relativePath || state.currentFile.path) : (state.lang === 'zh' ? '还没有打开文件' : 'no file opened yet'), state.currentFile ? 'success' : 'warn')}
+      </div>
+      <div class="card">
+        <h3>${escapeHtml(state.lang === 'zh' ? '当前路径' : 'Current Path')}</h3>
+        <div class="muted" style="margin-top:8px;">${escapeHtml(data.currentPath || state.filesPath || '-')}</div>
+        <div class="muted small" style="margin-top:10px;">${escapeHtml(data.parentPath ? (state.lang === 'zh' ? '支持返回上级目录并在当前受控范围内继续浏览。' : 'You can move to the parent folder and continue browsing within the managed scope.') : (state.lang === 'zh' ? '当前已经位于受控范围的起点。' : 'You are already at the managed root.'))}</div>
+      </div>
+    `;
+  }
+
+  function renderFilesWorkspaceHtml(data) {
     const rootButtons = (data.roots || []).map((root) => `<button type="button" class="chip ${state.filesPath === root.path ? 'active' : ''}" data-root-path="${escapeHtml(root.path)}">${escapeHtml(root.label)}</button>`).join('');
     const entriesHtml = (data.entries || []).length
-      ? data.entries.map((entry) => `<button type="button" class="${state.currentFile?.path === entry.path ? 'active' : ''}" data-file-entry="${escapeHtml(entry.path)}" data-entry-type="${entry.isDirectory ? 'dir' : 'file'}"><strong>${escapeHtml(entry.isDirectory ? `📁 ${entry.name}` : entry.name)}</strong><div class="muted small">${escapeHtml(entry.relativePath || entry.path)}</div></button>`).join('')
-      : emptyState(state.lang === 'zh' ? '当前目录为空。' : 'Folder is empty.');
+      ? data.entries.map((entry) => `<button type="button" class="${state.currentFile?.path === entry.path ? 'active' : ''}" data-file-entry="${escapeHtml(entry.path)}" data-entry-type="${entry.isDirectory ? 'dir' : 'file'}"><strong>${escapeHtml(renderFileEntryLabel(entry))}</strong><div class="muted small">${escapeHtml(entry.relativePath || entry.path)}</div></button>`).join('')
+      : emptyState(state.lang === 'zh' ? '这个目录里暂时没有文件或子目录。' : 'This folder is empty right now.');
 
     const editor = state.currentFile
       ? `
@@ -4923,24 +5250,27 @@
           ${state.currentFile.truncated ? `<div class="status warn" style="margin-top:12px;">${state.lang === 'zh' ? '文件较大，当前为截断预览。保存前请确认内容完整。' : 'Large file preview was truncated. Verify content before saving.'}</div>` : ''}
         </div>
       `
-      : `<div class="card">${emptyState(state.lang === 'zh' ? '从左侧选择一个文件开始编辑。' : 'Select a file from the left panel to start editing.')}</div>`;
+      : `<div class="card">${emptyState(state.lang === 'zh' ? '先从左侧选择一个文件，再在右侧查看或编辑内容。' : 'Select a file on the left to view or edit it here.')}</div>`;
 
-    const body = `
-      <div class="toolbar">
-        ${rootButtons}
-        <button class="action-btn" type="button" data-file-action="go-up" ${data.parentPath ? '' : 'disabled'}>↑</button>
-        <button class="action-btn" type="button" data-file-action="reload-list">${escapeHtml(t('reload'))}</button>
-        <button class="action-btn" type="button" data-file-action="new-file">${escapeHtml(t('createFile'))}</button>
-        <button class="action-btn" type="button" data-file-action="new-dir">${escapeHtml(t('createDir'))}</button>
+    return `
+      <div class="card">
+        <div class="muted small" style="margin-bottom:12px;">${escapeHtml(state.lang === 'zh' ? '你可以在受控目录内切换路径、创建文件或目录，并在右侧编辑当前文件。' : 'Browse within the managed folders, create files or folders, and edit the selected file on the right.')}</div>
+        <div class="toolbar">
+          ${rootButtons}
+          <button class="action-btn" type="button" data-file-action="go-up" ${data.parentPath ? '' : 'disabled'}>${state.lang === 'zh' ? '上一级' : 'Up'}</button>
+          <button class="action-btn" type="button" data-file-action="reload-list">${escapeHtml(t('reload'))}</button>
+          <button class="action-btn" type="button" data-file-action="new-file">${escapeHtml(t('createFile'))}</button>
+          <button class="action-btn" type="button" data-file-action="new-dir">${escapeHtml(t('createDir'))}</button>
+        </div>
       </div>
-      <div class="two-col">
+      <div class="two-col" style="margin-top:14px;">
         <div class="card"><div class="split-list">${entriesHtml}</div></div>
         ${editor}
       </div>
     `;
+  }
 
-    setPanel(t('tabs.files'), t('desc.files'), body);
-
+  function bindFilesView(data) {
     document.querySelectorAll('[data-root-path]').forEach((button) => {
       button.addEventListener('click', async () => {
         const confirmed = await confirmEditorSwitch('file');
@@ -4977,16 +5307,21 @@
         const action = button.getAttribute('data-file-action');
         try {
           if (action === 'go-up' && data.parentPath) {
+            const confirmed = await confirmEditorSwitch('file');
+            if (!confirmed) return;
             state.filesPath = data.parentPath;
             state.currentFile = null;
             await loadFiles();
             return;
           }
           if (action === 'reload-list') {
+            syncFileEditorDraftState();
             await loadFiles();
             return;
           }
           if (action === 'reload-current' && state.currentFile?.path) {
+            const confirmed = await confirmEditorSwitch('file');
+            if (!confirmed) return;
             await openManagedFile(state.currentFile.path, 'file');
             await loadFiles();
             return;
@@ -4997,6 +5332,7 @@
             state.currentFile.content = content;
             state.fileOriginal = normalizeEditorText(content);
             showToast(result.message || 'OK');
+            cacheFilesPanelFromState();
             return;
           }
           if (action === 'new-file' || action === 'new-dir') {
@@ -5042,16 +5378,65 @@
     });
   }
 
+  function cacheFilesPanelFromState() {
+    if (!state.filesViewData) {
+      rememberCurrentPanelRender('files');
+      return;
+    }
+    syncFileEditorDraftState();
+    const sections = [
+      {
+        id: 'files-summary',
+        title: state.lang === 'zh' ? '文件摘要' : 'File Summary',
+        html: renderFilesSummaryHtml(state.filesViewData),
+      },
+      {
+        id: 'files-workspace',
+        title: state.lang === 'zh' ? '文件工作区' : 'File Workspace',
+        html: renderFilesWorkspaceHtml(state.filesViewData),
+      },
+    ];
+    state.renderCache.files = {
+      html: buildPanelMarkup(t('tabs.files'), t('desc.files'), renderPanelSectionsMarkup(sections)),
+      bind: () => bindFilesView(state.filesViewData),
+      cachedAt: new Date().toISOString(),
+    };
+  }
+
+  async function loadFiles() {
+    const viewTabId = 'files';
+    const queryPath = state.filesPath ? `?path=${encodeURIComponent(state.filesPath)}` : '';
+    const data = await apiRequest(`/api/files${queryPath}`);
+    if (state.activeTab !== viewTabId) return;
+    clearTabRefreshHint(viewTabId);
+    state.filesPath = data.currentPath || state.filesPath;
+    state.filesViewData = data;
+
+    setPanelSections(t('tabs.files'), t('desc.files'), [
+      { id: 'files-summary', title: state.lang === 'zh' ? '文件摘要' : 'File Summary', html: renderFilesSummaryHtml(data) },
+      { id: 'files-workspace', title: state.lang === 'zh' ? '文件工作区' : 'File Workspace', html: loadingCard(state.lang === 'zh' ? '文件工作区' : 'File Workspace', state.lang === 'zh' ? '正在分步填充文件树与编辑器…' : 'Rendering the file tree and editor in phases…') },
+    ]);
+
+    requestAnimationFrame(() => {
+      if (state.activeTab !== viewTabId) return;
+      updatePanelSection('files-workspace', renderFilesWorkspaceHtml(data));
+      bindFilesView(data);
+      rememberCurrentPanelRender(viewTabId, () => bindFilesView(data));
+    });
+  }
+
   async function loadMemory() {
     const data = await apiRequest('/api/memory');
     const files = data.files || [];
-    const listHtml = files.length ? files.map((file) => `<button type="button" class="${state.memoryFile?.path === file.path ? 'active' : ''}" data-memory-file="${escapeHtml(file.path)}"><strong>${escapeHtml(file.type)}</strong><div class="muted small">${escapeHtml(file.agentId)} · ${escapeHtml(file.relativePath || file.path)}</div></button>`).join('') : emptyState(state.lang === 'zh' ? '暂无记忆文件。' : 'No memory files yet.');
+    const memoryAgentCount = new Set(files.map((file) => file.agentId).filter(Boolean)).size;
+    const listHtml = files.length ? files.map((file) => `<button type="button" class="${state.memoryFile?.path === file.path ? 'active' : ''}" data-memory-file="${escapeHtml(file.path)}"><strong>${escapeHtml(file.type)}</strong><div class="muted small">${escapeHtml(file.agentId)} · ${escapeHtml(file.relativePath || file.path)}</div></button>`).join('') : emptyState(state.lang === 'zh' ? '暂时还没有发现记忆文件。' : 'No memory files have been found yet.');
     const editor = state.memoryFile ? `
       <div class="card">
         <div class="panel-head" style="margin-bottom:12px;">
           <div>
             <h3>${escapeHtml(state.memoryFile.relativePath || state.memoryFile.path)}</h3>
             <p>${escapeHtml(state.memoryFile.path)}</p>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '修改后记得保存，这些内容会直接影响对应 Agent 的行为和长期记忆。' : 'Remember to save after editing. These files directly affect the agent behavior and long-term memory.')}</div>
           </div>
           <div class="toolbar tight">
             <button class="action-btn" data-memory-action="reload">${escapeHtml(t('reload'))}</button>
@@ -5060,9 +5445,19 @@
         </div>
         <textarea id="memory-editor">${escapeHtml(state.memoryFile.content || '')}</textarea>
       </div>
-    ` : `<div class="card">${emptyState(state.lang === 'zh' ? '从左侧选择一个记忆文件。' : 'Select a memory file from the left panel.')}</div>`;
+    ` : `<div class="card">${emptyState(state.lang === 'zh' ? '先从左侧选择一个记忆文件，再在右侧查看或编辑。' : 'Select a memory file on the left to view or edit it here.')}</div>`;
 
-    setPanel(t('tabs.memory'), t('desc.memory'), `<div class="two-col"><div class="card"><div class="split-list">${listHtml}</div></div>${editor}</div>`);
+    setPanel(t('tabs.memory'), t('desc.memory'), `
+      <div class="grid">
+        ${metricCard(state.lang === 'zh' ? '记忆文件数' : 'Memory Files', formatNumber(files.length), state.lang === 'zh' ? '当前已扫描' : 'currently scanned')}
+        ${metricCard(state.lang === 'zh' ? '覆盖 Agent' : 'Covered Agents', formatNumber(memoryAgentCount), state.lang === 'zh' ? '包含记忆文件的 Agent' : 'agents with memory files')}
+        ${metricCard(state.lang === 'zh' ? '当前打开' : 'Current File', state.memoryFile ? '1' : '0', state.memoryFile ? (state.memoryFile.relativePath || state.memoryFile.path) : (state.lang === 'zh' ? '还没有打开文件' : 'no file opened yet'), state.memoryFile ? 'success' : 'warn')}
+      </div>
+      <div class="card" style="margin-top:14px;">
+        <div class="muted small">${escapeHtml(state.lang === 'zh' ? '这里集中维护 SOUL、USER、AGENTS、MEMORY 等关键文件。修改这些文件前，建议先确认你正在编辑的是正确的 Agent。' : 'This page centralizes SOUL, USER, AGENTS, MEMORY, and related files. Before editing, make sure you are working on the correct agent.')}</div>
+      </div>
+      <div class="two-col" style="margin-top:14px;"><div class="card"><div class="split-list">${listHtml}</div></div>${editor}</div>
+    `);
 
     document.querySelectorAll('[data-memory-file]').forEach((button) => {
       button.addEventListener('click', async () => {
@@ -5190,16 +5585,16 @@
       : (state.lang === 'zh' ? '新建 Cron 任务' : 'Create Cron Job');
 
     const body = `
-      ${renderCacheSummaryCard(data.cache, state.lang === 'zh' ? 'Cron 共享快照' : 'Cron Shared Snapshot')}
+      ${renderCacheSummaryCard(data.cache, state.lang === 'zh' ? 'Cron 状态缓存' : 'Cron Status Cache')}
       <div class="grid">
-        ${metricCard(state.lang === 'zh' ? '任务总量' : 'Jobs', `${formatNumber(jobs.length)} / ${formatNumber(data.total ?? jobs.length)}`, state.lang === 'zh' ? '当前加载 / 实际总量' : 'loaded / total')}
-        ${metricCard(state.lang === 'zh' ? '启用中' : 'Enabled', formatNumber(enabledJobs.length), state.lang === 'zh' ? '正在调度' : 'active schedule', enabledJobs.length > 0 ? 'success' : '')}
-        ${metricCard(state.lang === 'zh' ? '已停用' : 'Disabled', formatNumber(disabledJobs.length), state.lang === 'zh' ? '待恢复或清理' : 'paused jobs', disabledJobs.length > 0 ? 'warn' : '')}
-        ${metricCard(state.lang === 'zh' ? '调度器' : 'Scheduler', data.status?.enabled === null ? '-' : (data.status.enabled ? 'ON' : 'OFF'), data.status?.schedulerNextWakeAt ? formatDate(data.status.schedulerNextWakeAt) : (data.status?.storePath || '-'), data.status?.enabled ? 'success' : 'warn')}
-        ${metricCard(state.lang === 'zh' ? '状态计数' : 'Status Count', data.status?.jobsCount === null ? '-' : formatNumber(data.status.jobsCount), state.lang === 'zh' ? 'cron status 返回的任务数' : 'reported by cron status')}
-        ${metricCard(state.lang === 'zh' ? '分页窗口' : 'Pagination', `${formatNumber(data.offset || 0)} / ${formatNumber(data.limit || jobs.length)}`, data.hasMore ? (state.lang === 'zh' ? `还有更多，nextOffset=${data.nextOffset ?? '-'}` : `more available, nextOffset=${data.nextOffset ?? '-'}`) : (state.lang === 'zh' ? '当前页已完整' : 'current page is complete'), data.hasMore ? 'warn' : 'success')}
+        ${metricCard(state.lang === 'zh' ? '任务总数' : 'Jobs', `${formatNumber(jobs.length)} / ${formatNumber(data.total ?? jobs.length)}`, state.lang === 'zh' ? '当前已加载 / 实际总量' : 'loaded / total')}
+        ${metricCard(state.lang === 'zh' ? '已启用' : 'Enabled', formatNumber(enabledJobs.length), state.lang === 'zh' ? '会按计划运行' : 'scheduled to run', enabledJobs.length > 0 ? 'success' : '')}
+        ${metricCard(state.lang === 'zh' ? '已停用' : 'Disabled', formatNumber(disabledJobs.length), state.lang === 'zh' ? '可恢复或清理' : 'can be resumed or cleaned up', disabledJobs.length > 0 ? 'warn' : '')}
+        ${metricCard(state.lang === 'zh' ? '调度器状态' : 'Scheduler', data.status?.enabled === null ? '-' : (data.status.enabled ? (state.lang === 'zh' ? '已开启' : 'On') : (state.lang === 'zh' ? '已关闭' : 'Off')), data.status?.schedulerNextWakeAt ? formatDate(data.status.schedulerNextWakeAt) : (data.status?.storePath || '-'), data.status?.enabled ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '运行态任务数' : 'Runtime Job Count', data.status?.jobsCount === null ? '-' : formatNumber(data.status.jobsCount), state.lang === 'zh' ? 'cron status 返回的任务数' : 'reported by cron status')}
+        ${metricCard(state.lang === 'zh' ? '分页窗口' : 'Pagination', `${formatNumber(data.offset || 0)} / ${formatNumber(data.limit || jobs.length)}`, data.hasMore ? (state.lang === 'zh' ? `后面还有更多任务，nextOffset=${data.nextOffset ?? '-'}` : `more available, nextOffset=${data.nextOffset ?? '-'}`) : (state.lang === 'zh' ? '当前页已完整' : 'current page is complete'), data.hasMore ? 'warn' : 'success')}
       </div>
-      <div style="margin-top:14px;">${renderActionFeedback(state.lang === 'zh' ? '最近 Cron 操作' : 'Latest Cron Action', state.cronLastAction, state.lang === 'zh' ? '还没有执行过 Cron 管理动作。' : 'No cron action has been executed yet.')}</div>
+      <div style="margin-top:14px;">${renderActionFeedback(state.lang === 'zh' ? '最近一次任务操作' : 'Latest Task Action', state.cronLastAction, state.lang === 'zh' ? '你还没有执行过任务管理操作。' : 'No task action has been executed yet.')}</div>
       ${(data.warnings || []).length ? `<div class="status warn" style="margin-top:14px; white-space:pre-wrap;">${escapeHtml(data.warnings.join('\n'))}</div>` : ''}
       ${(data.hasMore && jobs.length < (data.total || jobs.length)) ? `<div class="status warn" style="margin-top:14px;">${escapeHtml(state.lang === 'zh' ? `当前只加载了 ${jobs.length} 条 Cron，实际总量 ${data.total}，后续可以补做翻页。` : `Only ${jobs.length} cron jobs are loaded right now while the runtime reports ${data.total} in total.`)}</div>` : ''}
       <div class="grid" style="margin-top:14px; align-items:start;">
@@ -5208,6 +5603,7 @@
             <h3>${escapeHtml(formTitle)}</h3>
             <span class="pill ${state.cronEditorMode === 'edit' ? 'warn' : 'success'}">${escapeHtml(state.cronEditorMode === 'edit' ? (state.lang === 'zh' ? '编辑模式' : 'edit mode') : (state.lang === 'zh' ? '创建模式' : 'create mode'))}</span>
           </div>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '在这里创建或修改定时任务。保存后，任务会按你设置的时间自动运行。' : 'Create or edit scheduled jobs here. Once saved, they will run on the schedule you set.')}</div>
           <form id="cron-editor-form" class="form-grid" style="margin-top:12px;">
             ${renderFormField({
               name: 'name',
@@ -5355,6 +5751,7 @@
             <h3>${state.lang === 'zh' ? '任务列表' : 'Job List'}</h3>
             <span class="muted small">${escapeHtml(state.lang === 'zh' ? `筛选后 ${filteredJobs.length} / ${jobs.length}` : `${filteredJobs.length} filtered / ${jobs.length}`)}</span>
           </div>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '先筛选出你关心的任务，再执行编辑、立即运行、启停或删除。' : 'Filter to the jobs you care about, then edit, run, enable, disable, or remove them.')}</div>
           <div class="toolbar tight" style="margin-top:12px;">
             <button class="chip ${state.cronFilter === 'all' ? 'active' : ''}" type="button" data-cron-filter="all">${escapeHtml(state.lang === 'zh' ? '全部' : 'All')}</button>
             <button class="chip ${state.cronFilter === 'enabled' ? 'active' : ''}" type="button" data-cron-filter="enabled">${escapeHtml(state.lang === 'zh' ? '仅启用' : 'Enabled')}</button>
@@ -5368,7 +5765,7 @@
                   <strong>${escapeHtml(job.name || job.id)}</strong>
                   <div class="muted small">${escapeHtml(job.id)} · ${escapeHtml(job.agentId)}</div>
                 </div>
-                <span class="pill ${job.enabled ? 'success' : 'warn'}">${escapeHtml(job.status || (job.enabled ? 'enabled' : 'disabled'))}</span>
+                <span class="pill ${getCronJobStatusClass(job.status, job.enabled)}">${escapeHtml(getCronJobStatusLabel(job.status, job.enabled))}</span>
               </div>
               <div class="muted small" style="margin-top:8px;">${escapeHtml(job.schedule || '-')}</div>
               <div style="margin-top:8px;">${escapeHtml(job.prompt || '-')}</div>
@@ -5379,7 +5776,7 @@
                 <button class="action-btn" type="button" data-cron-action="${job.enabled ? 'disable' : 'enable'}" data-job-id="${escapeHtml(job.id)}">${escapeHtml(job.enabled ? t('disable') : t('enable'))}</button>
                 <button class="action-btn" type="button" data-cron-action="remove" data-job-id="${escapeHtml(job.id)}">${escapeHtml(t('remove'))}</button>
               </div>
-            </div>`).join('') : emptyState(state.lang === 'zh' ? '当前筛选条件下没有 Cron 任务。' : 'No cron jobs match the current filter.')}
+            </div>`).join('') : emptyState(state.lang === 'zh' ? '当前筛选条件下没有匹配的任务。' : 'No cron jobs match the current filters.')}
           </div>
         </div>
       </div>
@@ -5525,10 +5922,10 @@
     clearGitSyncPollTimer();
     const gitIgnoreMode = state.gitSyncIgnoreMode === 'exact' ? 'exact' : 'smart';
     setPanelSections(t('tabs.git-sync'), t('desc.git-sync'), [
-      { id: 'git-sync-summary', title: state.lang === 'zh' ? 'Git 同步摘要' : 'Git Sync Summary' },
-      { id: 'git-sync-main', title: state.lang === 'zh' ? '同步准备度' : 'Sync Readiness' },
-      { id: 'git-sync-ignore', title: state.lang === 'zh' ? '.gitignore 预览' : '.gitignore Preview' },
-      { id: 'git-sync-auth', title: state.lang === 'zh' ? '认证与提交' : 'Auth & Commit' },
+      { id: 'git-sync-summary', title: state.lang === 'zh' ? 'Git 同步概览' : 'Git Sync Overview' },
+      { id: 'git-sync-main', title: state.lang === 'zh' ? '现在能不能同步' : 'Can You Sync Now?' },
+      { id: 'git-sync-ignore', title: state.lang === 'zh' ? '.gitignore 建议' : '.gitignore Suggestions' },
+      { id: 'git-sync-auth', title: state.lang === 'zh' ? '认证、提交与推送' : 'Auth, Commit & Push' },
     ]);
     const status = await apiRequest('/api/git-sync/status');
     const gitignorePreviewPromise = apiRequest(`/api/git-sync/gitignore-preview?mode=${encodeURIComponent(gitIgnoreMode)}`).catch(() => null);
@@ -5622,7 +6019,7 @@
       <div class="list-item">
         <div class="row" style="justify-content:space-between; align-items:flex-start;">
           <strong>${escapeHtml(stage.label)}</strong>
-          <span class="pill ${stage.ok ? 'success' : 'warn'}">${escapeHtml(stage.ok ? (state.lang === 'zh' ? '就绪' : 'ready') : (state.lang === 'zh' ? '待处理' : 'pending'))}</span>
+          <span class="pill ${stage.ok ? 'success' : 'warn'}">${escapeHtml(stage.ok ? (state.lang === 'zh' ? '就绪' : 'Ready') : (state.lang === 'zh' ? '待处理' : 'Needs Action'))}</span>
         </div>
         <div class="muted small">${escapeHtml(stage.detail)}</div>
       </div>
@@ -5692,7 +6089,7 @@
         : 'When .openclaw contains independent child repositories such as workspace-* or extensions/*, use these rules to plan the sync boundary ahead of time.');
 
     const partialBody = `
-      ${renderCacheSummaryCard(status.cache, state.lang === 'zh' ? 'Git 状态快照' : 'Git Status Snapshot')}
+      ${renderCacheSummaryCard(status.cache, state.lang === 'zh' ? 'Git 状态缓存' : 'Git Status Cache')}
       <div class="grid">
         ${metricCard(state.lang === 'zh' ? '仓库状态' : 'Repository', getReadyStateLabel(status.repoInitialized), status.repoPath || '-', status.repoInitialized ? 'success' : 'warn')}
         ${metricCard(state.lang === 'zh' ? '远程仓库' : 'Remote', status.remoteRepo || status.remoteUrl || '-', status.remoteWebUrl || status.provider || '-', status.remoteUrl ? 'success' : 'warn')}
@@ -5703,11 +6100,13 @@
       </div>
       <div class="grid">
         <div class="card">
-          <h3>${state.lang === 'zh' ? '同步准备度' : 'Sync Readiness'}</h3>
+          <h3>${state.lang === 'zh' ? '现在能不能同步' : 'Can You Sync Now?'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这里会告诉你还差哪一步，处理完以后就可以继续提交或推送。' : 'This card shows which step is still missing so you know what to fix before you commit or push.')}</div>
           <div class="list">${stageHtml}</div>
         </div>
         <div class="card">
-          <h3>${state.lang === 'zh' ? '.gitignore 预览' : '.gitignore Preview'}</h3>
+          <h3>${state.lang === 'zh' ? '.gitignore 建议' : '.gitignore Suggestions'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '如果你的 .openclaw 里还有独立仓库，这里会给出建议的忽略规则。' : 'If your .openclaw contains child repositories, this card suggests the ignore rules you may want to add.')}</div>
           <div class="empty">${escapeHtml(state.lang === 'zh' ? '正在加载嵌套仓库预览…' : 'Loading embedded repository preview…')}</div>
         </div>
       </div>
@@ -5759,8 +6158,8 @@
         : (state.lang === 'zh' ? '当前没有需要生成的嵌套仓库忽略规则。' : 'No embedded repository ignore rules need to be generated right now.'));
 
     const body = `
-      ${renderCacheSummaryCard(status.cache, state.lang === 'zh' ? 'Git 状态快照' : 'Git Status Snapshot')}
-      ${renderCacheSummaryCard(gitignorePreview?.cache, state.lang === 'zh' ? '.gitignore 预览快照' : '.gitignore Preview Snapshot')}
+      ${renderCacheSummaryCard(status.cache, state.lang === 'zh' ? 'Git 状态缓存' : 'Git Status Cache')}
+      ${renderCacheSummaryCard(gitignorePreview?.cache, state.lang === 'zh' ? '.gitignore 建议缓存' : '.gitignore Suggestion Cache')}
       <div class="grid">
         ${metricCard(state.lang === 'zh' ? '仓库状态' : 'Repository', getReadyStateLabel(status.repoInitialized), status.repoPath || '-', status.repoInitialized ? 'success' : 'warn')}
         ${metricCard(state.lang === 'zh' ? '远程仓库' : 'Remote', status.remoteRepo || status.remoteUrl || '-', status.remoteWebUrl || status.provider || '-', status.remoteUrl ? 'success' : 'warn')}
@@ -5771,10 +6170,11 @@
       </div>
       ${status.state?.lastError ? `<div class="status error" style="margin-top:14px;">${escapeHtml((state.lang === 'zh' ? '最近错误：' : 'Last error: ') + status.state.lastError)}</div>` : ''}
       ${embeddedRepoNotice}
-      <div style="margin-top:14px;">${renderActionFeedback(state.lang === 'zh' ? '最近 Git 同步操作' : 'Latest Git Sync Action', state.gitSyncLastAction, state.lang === 'zh' ? '还没有执行过 Git 同步动作。' : 'No Git sync action has been executed yet.')}</div>
+      <div style="margin-top:14px;">${renderActionFeedback(state.lang === 'zh' ? '最近一次同步结果' : 'Latest Sync Result', state.gitSyncLastAction, state.lang === 'zh' ? '你还没有执行过 Git 同步操作。' : 'No Git sync action has been executed yet.')}</div>
       <div class="grid" style="margin-top:14px;">
         <div class="card accent-info panel-focus-target" id="git-sync-readiness-card">
-          <h3>${state.lang === 'zh' ? '同步准备度' : 'Sync Readiness'}</h3>
+          <h3>${state.lang === 'zh' ? '现在能不能同步' : 'Can You Sync Now?'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这里按步骤告诉你现在卡在哪，先处理待办项，再继续提交或推送。' : 'This card shows where the sync flow is blocked right now, so you can fix the pending items before committing or pushing.')}</div>
           <div class="list">${stageHtml}</div>
           <div class="toolbar tight" style="margin-top:12px;">
             <button class="action-btn" type="button" data-git-action="copy-repo-path">${state.lang === 'zh' ? '复制本地目录' : 'Copy Repo Path'}</button>
@@ -5784,7 +6184,8 @@
           </div>
         </div>
         <div class="card panel-focus-target" id="git-sync-commit-card">
-          <h3>${state.lang === 'zh' ? '阻断拆解' : 'Readiness Breakdown'}</h3>
+          <h3>${state.lang === 'zh' ? '为什么现在还不能提交 / 推送' : 'Why Commit Or Push Is Still Blocked'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '如果按钮是灰的，先看这里。它会分别告诉你提交、推送和一键同步卡在什么地方。' : 'If the action buttons are disabled, start here. This card explains what is blocking commit, push, or one-click sync.')}</div>
           <div class="stack">
             <div>
               <div class="muted small" style="margin-bottom:8px;">${escapeHtml(state.lang === 'zh' ? '提交阻断' : 'Commit blockers')}</div>
@@ -5810,7 +6211,7 @@
         <div class="card accent-success">
           <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
             <div>
-              <h3>${state.lang === 'zh' ? '本次会纳入提交的路径' : 'Stageable Paths For This Commit'}</h3>
+              <h3>${state.lang === 'zh' ? '这次会提交哪些内容' : 'What Will Be Included In This Commit'}</h3>
               <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '改成目录树展示，既能看清结构，也不会被超长平铺列表拖慢。' : 'Rendered as a folder tree so the structure stays visible without the cost of a huge flat list.')}</div>
             </div>
             <button class="action-btn" type="button" data-git-action="copy-stageable-list" ${stageableChangedFiles.length ? '' : 'disabled'}>${state.lang === 'zh' ? '复制完整清单' : 'Copy Full List'}</button>
@@ -5858,7 +6259,7 @@
           <div class="sub-card panel-focus-target" id="gitignore-preview-card">
             <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
               <div>
-                <strong>${escapeHtml(state.lang === 'zh' ? '.gitignore \u5dee\u5f02\u9884\u89c8' : '.gitignore Diff Preview')}</strong>
+                <strong>${escapeHtml(state.lang === 'zh' ? '.gitignore 将写入哪些规则' : 'What Would Be Added To .gitignore')}</strong>
                 <div class="muted small" style="margin-top:8px;">${escapeHtml(gitIgnorePath)}</div>
               </div>
               <span class="pill ${gitIgnoreMissingEntries.length > 0 ? 'warn' : 'success'}">${escapeHtml(gitIgnoreMissingEntries.length > 0 ? (state.lang === 'zh' ? '\u6709\u5f85\u5199\u5165\u89c4\u5219' : 'Changes Pending') : (state.lang === 'zh' ? '\u65e0\u9700\u8ffd\u52a0' : 'Up To Date'))}</span>
@@ -5867,11 +6268,15 @@
               <label class="field-label" for="gitignore-mode">${escapeHtml(state.lang === 'zh' ? '写入策略' : 'Write Strategy')}</label>
               <select id="gitignore-mode">${gitIgnoreModeOptions}</select>
             </div>
-            <div class="muted small" style="margin-top:12px;">${escapeHtml(state.lang === 'zh' ? '\u4e0b\u9762\u5c55\u793a\u8fd9\u6b21\u4f1a\u8ffd\u52a0\u5230\u5916\u5c42 .gitignore \u7684\u89c4\u5219\u7247\u6bb5\u3002' : 'This is the block that would be appended to the root .gitignore.')}</div>
-            <pre style="margin-top:12px;">${escapeHtml(gitIgnoreAppendBlock || (state.lang === 'zh' ? '\u5f53\u524d\u6ca1\u6709\u65b0\u589e\u89c4\u5219\u9700\u8981\u5199\u5165\u3002' : 'No new ignore rules need to be written right now.'))}</pre>
+            ${renderAdvancedDisclosure({
+              title: state.lang === 'zh' ? '查看建议写入的规则' : 'View Suggested Rules',
+              description: state.lang === 'zh' ? '这里展示本次建议追加到外层 .gitignore 的规则片段。' : 'This shows the block that would be appended to the root .gitignore.',
+              bodyHtml: `<pre>${escapeHtml(gitIgnoreAppendBlock || (state.lang === 'zh' ? '当前没有新增规则需要写入。' : 'No new ignore rules need to be written right now.'))}</pre>`,
+              marginTop: 12,
+            })}
           </div>
           <div class="sub-card">
-            <strong>${escapeHtml(state.lang === 'zh' ? '\u89c4\u5219\u547d\u4e2d\u60c5\u51b5' : 'Rule Coverage')}</strong>
+            <strong>${escapeHtml(state.lang === 'zh' ? '当前规则覆盖情况' : 'Current Rule Coverage')}</strong>
             <div class="stack" style="margin-top:12px;">
               <div>
                 <div class="muted small" style="margin-bottom:8px;">${escapeHtml(state.lang === 'zh' ? '\u5df2\u5b58\u5728\u89c4\u5219' : 'Existing Rules')}</div>
@@ -5893,7 +6298,8 @@
       </div>
       <div class="grid" style="margin-top:14px;">
         <div class="card">
-          <h3>${state.lang === 'zh' ? '初始化与远程绑定' : 'Init & Remote Bind'}</h3>
+          <h3>${state.lang === 'zh' ? '初始化仓库并绑定远程' : 'Initialize The Repo And Connect A Remote'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '第一次接入 Git Sync 时，从这里完成仓库初始化和远程仓库绑定。' : 'Use this card the first time you connect Git Sync, to initialize the repo and bind a remote repository.')}</div>
           <div class="toolbar tight" style="margin-bottom:12px;">
             <button class="action-btn" type="button" data-git-action="init">git init</button>
             <button class="action-btn" type="button" data-git-action="check">${state.lang === 'zh' ? '检查 private' : 'Check Private'}</button>
@@ -5909,7 +6315,8 @@
           </div>
         </div>
         <div class="card">
-          <h3>${state.lang === 'zh' ? 'HTTPS Token 认证' : 'HTTPS Token Auth'}</h3>
+          <h3>${state.lang === 'zh' ? 'HTTPS Token 认证' : 'HTTPS Token Authentication'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '如果你想直接用 Token 完成提交和推送，在这里保存凭证。' : 'Save a token here if you want to commit and push with HTTPS credentials.')}</div>
           <div class="form-grid" id="git-token-form">
             ${renderFormField({ name: 'provider', label: 'Provider', type: 'select', value: status.provider || status.state?.provider || 'github', options: ['github', 'gitee'] })}
             ${renderFormField({ name: 'username', label: state.lang === 'zh' ? '用户名 / 账号' : 'Username', value: status.state?.username || '', placeholder: 'optional-user' })}
@@ -5922,7 +6329,8 @@
       </div>
       <div class="grid" style="margin-top:14px;">
         <div class="card">
-          <h3>OAuth</h3>
+          <h3>${state.lang === 'zh' ? '浏览器 OAuth 授权' : 'Browser OAuth Authorization'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '如果你更习惯浏览器登录，可以在这里发起授权流程。' : 'Start the browser-based login flow here if you prefer OAuth over pasting a token.')}</div>
           <div class="status ${oauthStatusClass}">${escapeHtml(oauthStatusMessage)}</div>
           <div class="form-grid" id="git-oauth-form" style="margin-top:14px;">
             ${renderFormField({ name: 'provider', label: 'Provider', type: 'select', value: oauth.provider || status.provider || status.state?.provider || 'github', options: ['github', 'gitee'] })}
@@ -5935,10 +6343,16 @@
             <button class="action-btn" type="button" data-git-action="oauth">${state.lang === 'zh' ? '启动 OAuth' : 'Start OAuth'}</button>
             <button class="action-btn" type="button" data-git-action="copy-oauth" ${oauth.authorizeUrl ? '' : 'disabled'}>${state.lang === 'zh' ? '复制授权地址' : 'Copy Auth URL'}</button>
           </div>
-          <pre style="margin-top:12px;">${prettyJson(oauth)}</pre>
+          ${renderAdvancedDisclosure({
+            title: state.lang === 'zh' ? '查看 OAuth 原始状态' : 'View Raw OAuth State',
+            description: state.lang === 'zh' ? '只有在授权异常或排查回调问题时，再展开这份原始状态。' : 'Expand this only when the OAuth flow fails or you need to debug the callback state.',
+            bodyHtml: `<pre>${prettyJson(oauth)}</pre>`,
+            marginTop: 12,
+          })}
         </div>
         <div class="card">
           <h3>${state.lang === 'zh' ? '提交与推送' : 'Commit & Push'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '确认改动后，可以先提交，再推送；也可以直接执行一键同步。' : 'Once the changes look correct, you can commit first and then push, or run one-click sync directly.')}</div>
           ${renderFormField({
             name: 'gitCommitMessage',
             label: state.lang === 'zh' ? '提交说明' : 'Commit Message',
@@ -6219,18 +6633,28 @@
     });
     const body = `
       <div class="grid">
-        ${metricCard('PASS', formatNumber(data.summary?.pass || 0), '', 'success')}
-        ${metricCard('WARN', formatNumber(data.summary?.warn || 0), '', 'warn')}
-        ${metricCard('FAIL', formatNumber(data.summary?.fail || 0), '', 'danger')}
+        ${metricCard(state.lang === 'zh' ? '通过项' : 'Pass', formatNumber(data.summary?.pass || 0), state.lang === 'zh' ? '当前无需处理' : 'no action needed', 'success')}
+        ${metricCard(state.lang === 'zh' ? '警告项' : 'Warning', formatNumber(data.summary?.warn || 0), state.lang === 'zh' ? '建议尽快检查' : 'recommended to review', 'warn')}
+        ${metricCard(state.lang === 'zh' ? '失败项' : 'Fail', formatNumber(data.summary?.fail || 0), state.lang === 'zh' ? '需要优先处理' : 'highest priority', 'danger')}
       </div>
-      <div class="stack">${Object.entries(groups).map(([category, items]) => `<div class="card"><h3>${escapeHtml(category)}</h3><div class="list">${items.map((item) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(item.item)}</strong><span class="pill ${item.status === 'pass' ? 'success' : item.status === 'warn' ? 'warn' : 'danger'}">${escapeHtml(item.status)}</span></div><div>${escapeHtml(item.message)}</div>${item.fix ? `<div class="muted small">Fix: ${escapeHtml(item.fix)}</div>` : ''}</div>`).join('')}</div></div>`).join('')}</div>
+      <div class="card">
+        <h3>${state.lang === 'zh' ? '如何查看这一页' : 'How To Read This Page'}</h3>
+        <div class="status">${escapeHtml(state.lang === 'zh' ? '优先处理失败项，其次处理警告项。通过项通常不需要操作，只用来确认当前状态。' : 'Handle failed checks first, then warnings. Passed checks are mainly here so you can confirm what is already safe.')}</div>
+      </div>
+      <div class="stack">${Object.entries(groups).map(([category, items]) => `<div class="card"><h3>${escapeHtml(category)}</h3><div class="list">${items.map((item) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(item.item)}</strong><span class="pill ${getAuditStatusClass(item.status)}">${escapeHtml(getAuditStatusLabel(item.status))}</span></div><div>${escapeHtml(item.message)}</div>${item.fix ? `<div class="muted small">${escapeHtml((state.lang === 'zh' ? '建议处理：' : 'Suggested fix: ') + item.fix)}</div>` : ''}</div>`).join('')}</div></div>`).join('') || emptyState(state.lang === 'zh' ? '当前没有审计结果。' : 'No audit results are available right now.')}</div>
     `;
     setPanel(t('tabs.audit'), t('desc.audit'), body);
   }
 
   async function loadProfiles() {
     const profiles = await apiRequest('/api/profiles');
-    const body = profiles.length ? `<div class="grid">${profiles.map((profile) => `<div class="card"><div class="row" style="justify-content:space-between"><h3>${escapeHtml(profile.name)}</h3><span class="pill">${escapeHtml(profile.riskLevel || profile.key)}</span></div><p>${escapeHtml(profile.description || '')}</p><div class="list">${(profile.recommendations || []).map((item) => `<div class="list-item">${escapeHtml(item)}</div>`).join('')}</div><div class="toolbar tight" style="margin-top:12px;"><button class="action-btn primary" data-profile-key="${escapeHtml(profile.key)}">apply</button></div></div>`).join('')}</div>` : emptyState();
+    const body = profiles.length ? `
+      <div class="card">
+        <h3>${state.lang === 'zh' ? '如何选择预设' : 'How To Choose A Profile'}</h3>
+        <div class="status">${escapeHtml(state.lang === 'zh' ? '预设会批量调整这台机器的安全行为。若你希望更稳妥，优先选择更严格的预设；若你更看重灵活性，再考虑较宽松的选项。' : 'Profiles change this machine in batches. Choose a stricter profile when you want stronger guardrails, and pick a looser one only if you need more flexibility.')}</div>
+      </div>
+      <div class="grid">${profiles.map((profile) => `<div class="card"><div class="row" style="justify-content:space-between"><h3>${escapeHtml(profile.name)}</h3><span class="pill">${escapeHtml(getRiskLevelLabel(profile.riskLevel || profile.key))}</span></div><p>${escapeHtml(profile.description || '')}</p><div class="list">${(profile.recommendations || []).map((item) => `<div class="list-item">${escapeHtml(item)}</div>`).join('')}</div><div class="toolbar tight" style="margin-top:12px;"><button class="action-btn primary" data-profile-key="${escapeHtml(profile.key)}">${state.lang === 'zh' ? '应用到本机' : 'Apply To This Machine'}</button></div></div>`).join('')}</div>
+    ` : emptyState(state.lang === 'zh' ? '当前没有可用的安全预设。' : 'No security profiles are available right now.');
     setPanel(t('tabs.profiles'), t('desc.profiles'), body);
     document.querySelectorAll('[data-profile-key]').forEach((button) => {
       button.addEventListener('click', async () => {
@@ -6249,14 +6673,19 @@
       state.hardenPlatform = navigator.platform.toLowerCase().includes('win') ? 'windows' : navigator.platform.toLowerCase().includes('mac') ? 'macos' : 'linux';
     }
     const data = await apiRequest(`/api/harden/steps?platform=${encodeURIComponent(state.hardenPlatform)}`);
+    const hardenStepsHtml = (data.steps || []).map((step) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(step.title || step.id)}</strong><span class="pill">${escapeHtml(getRiskLevelLabel(step.category || step.risk || 'step'))}</span></div><div>${escapeHtml(step.description || '')}</div>${renderAdvancedDisclosure({ title: state.lang === 'zh' ? '查看命令与脚本' : 'View Commands', description: state.lang === 'zh' ? '只有在你准备执行这一步时，再展开查看对应命令。' : 'Expand this when you are ready to run the commands for this step.', bodyHtml: `<pre>${escapeHtml((step.commands || []).join('\n') || (state.lang === 'zh' ? '当前没有附带命令。' : 'No commands are attached to this step.'))}</pre>`, marginTop: 12 })}</div>`).join('');
     const body = `
+      <div class="card">
+        <h3>${state.lang === 'zh' ? '如何使用加固建议' : 'How To Use Hardening Guidance'}</h3>
+        <div class="status">${escapeHtml(state.lang === 'zh' ? '先选择你当前使用的系统，再按步骤逐项执行。若你希望批量执行，可以直接下载脚本。' : 'Choose the platform you are using, then follow the steps one by one. If you prefer to batch them, download the script directly.')}</div>
+      </div>
       <div class="toolbar tight">
         <button class="chip ${state.hardenPlatform === 'windows' ? 'active' : ''}" data-harden-platform="windows">Windows</button>
         <button class="chip ${state.hardenPlatform === 'macos' ? 'active' : ''}" data-harden-platform="macos">macOS</button>
         <button class="chip ${state.hardenPlatform === 'linux' ? 'active' : ''}" data-harden-platform="linux">Linux</button>
         <a class="action-btn primary" href="/api/harden/script?platform=${encodeURIComponent(state.hardenPlatform)}">${state.lang === 'zh' ? '下载脚本' : 'Download Script'}</a>
       </div>
-      <div class="list">${(data.steps || []).map((step) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(step.title || step.id)}</strong><span class="pill">${escapeHtml(step.category || step.risk || 'step')}</span></div><div>${escapeHtml(step.description || '')}</div><pre>${escapeHtml((step.commands || []).join('\n'))}</pre></div>`).join('') || emptyState()}</div>
+      <div class="list">${hardenStepsHtml || emptyState(state.lang === 'zh' ? '当前平台还没有可显示的加固步骤。' : 'No hardening steps are available for this platform right now.')}</div>
     `;
     setPanel(t('tabs.harden'), t('desc.harden'), body);
     document.querySelectorAll('[data-harden-platform]').forEach((button) => {
@@ -6269,12 +6698,27 @@
 
   async function loadLogs() {
     const serviceLogs = await apiRequest('/api/service/logs?lines=200').catch(() => ({ logs: [] }));
+    const logLines = Array.isArray(serviceLogs.logs) ? serviceLogs.logs : [];
     const body = `
+      <div class="grid">
+        ${metricCard(state.lang === 'zh' ? '日志来源' : 'Source', 'Gateway', state.lang === 'zh' ? '当前仅展示 Gateway 日志' : 'Gateway logs only')}
+        ${metricCard(state.lang === 'zh' ? '日志行数' : 'Log Lines', formatNumber(logLines.length), state.lang === 'zh' ? '最近读取结果' : 'latest loaded result')}
+      </div>
+      <div class="card">
+        <h3>${state.lang === 'zh' ? '如何查看日志' : 'How To Use Logs'}</h3>
+        <div class="status">${escapeHtml(state.lang === 'zh' ? '当服务启动失败、连接异常或动作报错时，先刷新这一页，再查看最近日志。' : 'If service startup, connectivity, or actions fail, refresh this page first and then inspect the latest log lines.')}</div>
+      </div>
       <div class="toolbar tight">
         <button class="chip active" data-logs-target="service">Gateway</button>
         <button class="action-btn" data-logs-action="reload">${escapeHtml(t('reload'))}</button>
       </div>
-      <div class="card"><pre>${escapeHtml((serviceLogs.logs || []).join('\n'))}</pre></div>
+      <div class="card">
+        ${renderAdvancedDisclosure({
+          title: state.lang === 'zh' ? '查看最近 200 行日志' : 'View The Latest 200 Log Lines',
+          description: state.lang === 'zh' ? '日志内容较长时，默认折叠显示。需要排查问题时再展开查看。' : 'Logs can be long, so they stay folded by default. Expand them when you need to investigate an issue.',
+          bodyHtml: `<pre>${escapeHtml(logLines.join('\n') || (state.lang === 'zh' ? '当前没有可显示的日志内容。' : 'No log content is available right now.'))}</pre>`,
+        })}
+      </div>
     `;
     setPanel(t('tabs.logs'), t('desc.logs'), body);
     document.querySelector('[data-logs-action="reload"]')?.addEventListener('click', () => loadLogs());
@@ -6292,7 +6736,10 @@
       clearServicePollTimer();
       clearPrewarmPollTimer();
     }
-    if (!['overview', 'system', 'openclaw', 'git-sync', 'search'].includes(active)) {
+    const restoredFromCache = restoreCachedPanel(active, state.lang === 'zh'
+      ? '当前页正在后台刷新最新数据，先显示上一次成功加载的内容。'
+      : 'Refreshing the latest data in the background. Showing the last successful result first.');
+    if (!restoredFromCache && !['overview', 'system', 'openclaw', 'git-sync', 'search'].includes(active)) {
       renderTabLoadingState(active);
     }
     try {
@@ -6318,6 +6765,9 @@
       if (active === 'logs') return await loadLogs();
       return await loadOverview();
     } catch (error) {
+      if (restoredFromCache && restoreCachedPanelWithError(active, error)) {
+        return;
+      }
       setPanel(t(`tabs.${active}`), t(`desc.${active}`), `<div class="status error">${escapeHtml(error.message || String(error))}</div><pre>${escapeHtml(error.stack || '')}</pre>`);
     }
   }

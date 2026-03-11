@@ -2650,3 +2650,81 @@
 - 风险与补充说明:
   1) 本轮主要解决的是“前端感知速度”和“交互一致性”，并不等于所有后端接口的真实耗时都已经降低；后续仍需要继续推进客户端缓存、按块更新和局部刷新标识。
   2) 当前仓库里仍有其他未提交工作树改动，本次提交只会纳入我本轮处理的 Guard 前端文件与这份工作日志，不会混入其他范围外内容。
+
+## [2026-03-11 16:02] openclaw-guard 完成高频页签 SWR、慢页分块渲染与页内刷新提示收口 [TASK-20260311-003]
+
+- 任务来源: 用户要求按顺序继续处理三项体验优化，包括高频页签做 stale-while-revalidate、慢页继续拆成更细局部块/渐进渲染，以及补上页内局部刷新提示；同时要求保持只改我负责的 Guard 前端代码。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成 `notifications / agents / sessions / files` 四个高频页签的缓存恢复、后台刷新提示、失败回退和分块渲染收口。
+- 实际完成:
+  1) `openclaw-guard/web/guard-ui.js` 已完成高频页签 SWR 底座收口:
+     - 新增并收口 `renderCache`、`tabRefreshHints`、`restoreCachedPanel()`、`restoreCachedPanelWithError()`
+     - 切回高频页签时会先展示上一次成功加载的结果，再在后台刷新最新数据
+     - 当后台刷新失败时，不再直接把页面切成报错页，而是保留缓存内容并给出刷新失败提示
+  2) 已补齐高频页签缓存快照持久逻辑:
+     - `setActiveTab()` 切页前会先为当前页签做快照
+     - `notifications / agents / sessions` 会复用已有绑定函数重新挂事件
+     - `files` 页额外处理了编辑器草稿同步，避免切页后丢失当前未保存的文本状态
+  3) `files` 页面已完成第二轮结构化渲染:
+     - 抽出 `renderFilesSummaryHtml()`、`renderFilesWorkspaceHtml()`、`bindFilesView()`、`cacheFilesPanelFromState()`
+     - 页面先渲染摘要区和工作区占位，再分步填充文件树与编辑器
+     - 当前目录、根目录、已选文件等信息先于文件内容区域稳定出现，降低整页空白感
+  4) `notifications / agents / sessions` 三页已继续收口分块渲染:
+     - `notifications` 拆成摘要区 + 列表区，列表采用后置填充，事件绑定独立抽离
+     - `agents` 拆成摘要区 + Agent 卡片区，卡片延后一帧落地
+     - `sessions` 拆成摘要区 + 运行上下文 + 会话列表三块，会话长列表延后一帧填充
+  5) 顺手修复了本轮中间态留下的编码污染:
+     - 敏感字段掩码改回稳定 ASCII 形式，避免出现 `????` 这类异常占位
+     - 文件目录标签改为 `[目录] / [DIR]`，不再受控制台或编码环境影响
+     - 渠道默认图标回退改为稳定文本 `FL`
+- 交付清单:
+  - openclaw-guard/web/guard-ui.js
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/web/guard-ui.js` 通过。
+  2) 已验证 `npm run build`（目录 `openclaw-guard`）通过。
+  3) 已启动本地无鉴权 Guard Web 并用浏览器自动化做最小回归:
+     - 通知页可直接打开，并先稳定出摘要区和分页结构
+     - 文件页可直接打开，并先出摘要区再出工作区
+     - 已实测从 `AGENTS.md` 切到 `BOOTSTRAP.md`，在未修改内容的情况下不会再弹“未保存修改”确认框
+  4) 验证完成后已主动停止本地 Guard Web 后台进程，避免遗留测试服务。
+- 风险与补充说明:
+  1) 这轮已经把“先出旧结果、后台刷新”的体验铺到四个高频页签，但其它慢页仍以骨架屏为主；如果后续还要继续压首屏等待，优先值得继续做的是 `cron / git-sync / openclaw` 的细粒度分块刷新。
+  2) 当前 `files` 页的缓存快照已经会带上编辑器草稿文本，但 `memory` 页还没有同等级 SWR 处理；如果后续用户高频切换记忆文件页，可以按同样模式继续平移。
+
+## [2026-03-11 10:55] openclaw-guard 新增一键 UI 校验入口与第二层交互冒烟测试 [TASK-20260311-004]
+
+- 任务来源: 用户同意继续推进三个后续动作，包括补工作日志、把基础 smoke 接成一键本地校验入口，以及补齐通知筛选 / 文件切换 / Git 同步非破坏性交互的自动化验证。
+- 仓库范围: openclaw-course
+- 当前状态: 已完成一键校验入口、第二层交互测试脚本，并在本机完成基础 smoke + 交互 smoke 的整链路验证。
+- 实际完成:
+  1) 为 Guard Web 新增本地一键校验入口:
+     - `openclaw-guard/package.json` 新增 `ui:smoke`、`ui:smoke:interactions`、`ui:smoke:with-web`
+     - `openclaw-guard/scripts/run-ui-smoke.mjs` 负责串联 `build -> 检查服务状态 -> 必要时临时拉起 Guard Web -> 跑基础/交互 smoke -> 按需停止服务`
+     - 入口默认支持 `--suite all|basic|interactions`、`--lang zh|en|both`、`--password`、`--keep-running` 和透传 `--headed`
+  2) 补齐基础 UI smoke 脚本落地并保留为独立入口:
+     - `openclaw-guard/scripts/guard-ui-smoke.py` 支持中英文切换、核心页签可达、页面不长期停留在 loading，以及控制台 / 页面异常收集
+     - 现在既可以单独执行，也可以被一键入口复用
+  3) 新增第二层交互测试脚本:
+     - `openclaw-guard/scripts/guard-ui-interactions.py` 已覆盖通知页搜索与清空确认弹框取消、文件页新建文件弹框取消、无修改切换文件不误报、修改后切换文件正确弹出未保存确认，以及 Git 同步页的 `.gitignore` 预览 / 处理说明复制等非破坏性交互
+     - 文件页脚本已额外处理“DOM 已出现但事件绑定稍后挂载”的稳定等待，避免误判为点击失效
+  4) 包装器在 Windows 下做了兼容收口:
+     - `run-ui-smoke.mjs` 增加 `--help`
+     - Windows 下调用 `npm` 改为更稳妥的 `cmd.exe /c npm.cmd ...`
+     - 跑 Python 脚本时补 `PYTHONUTF8=1`，尽量减少控制台编码问题
+- 交付清单:
+  - openclaw-guard/package.json
+  - openclaw-guard/scripts/guard-ui-smoke.py
+  - openclaw-guard/scripts/guard-ui-interactions.py
+  - openclaw-guard/scripts/run-ui-smoke.mjs
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `python -m py_compile openclaw-guard/scripts/guard-ui-smoke.py openclaw-guard/scripts/guard-ui-interactions.py` 通过。
+  2) 已验证 `node --check openclaw-guard/scripts/run-ui-smoke.mjs` 通过。
+  3) 已验证 `npm run ui:smoke:with-web`（目录 `openclaw-guard`）通过，结果包括:
+     - `PASS guard-ui smoke | lang=zh, en`
+     - `PASS guard-ui interactions | lang=zh, en`
+  4) 这轮验证结束后，已主动停止我手动拉起的临时 Guard Web 后台服务，避免遗留无鉴权测试实例。
+- 风险与补充说明:
+  1) 当前交互 smoke 仍以“无破坏、可重复执行”为原则，没有覆盖真正的提交 / 推送 / 清空通知等写操作；如果后续要继续扩大自动化覆盖，建议优先补 Mock 或沙盒路径上的写操作验证。
+  2) 这轮只提交我负责的 Guard 前端 / 测试 / 工作日志文件，不会混入 `src/auth.ts`、`src/profiles.ts`、`src/server.ts`、`nk-self/*` 以及 `.github/` 等当前不在我处理范围内的改动。

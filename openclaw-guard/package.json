@@ -14,12 +14,15 @@
                     "dev:dist":  "npm run build \u0026\u0026 node dist/index.js web --port 18088",
                     "dev:cli":  "tsx src/index.ts",
                     "start":  "node dist/index.js",
-                    "test":  "vitest run",
-                    "web":  "tsx src/index.ts web --port 18088",
-                    "web:bg:start":  "npm run build \u0026\u0026 node scripts/web-background.mjs start --port 18088",
-                    "web:bg:stop":  "node scripts/web-background.mjs stop --port 18088",
-                    "web:bg:status":  "node scripts/web-background.mjs status --port 18088"
-                },
+    "test":  "vitest run",
+    "web":  "tsx src/index.ts web --port 18088",
+    "web:bg:start":  "npm run build \u0026\u0026 node scripts/web-background.mjs start --port 18088",
+    "web:bg:stop":  "node scripts/web-background.mjs stop --port 18088",
+    "web:bg:status":  "node scripts/web-background.mjs status --port 18088",
+    "ui:smoke":  "python scripts/guard-ui-smoke.py",
+    "ui:smoke:interactions":  "python scripts/guard-ui-interactions.py",
+    "ui:smoke:with-web":  "node scripts/run-ui-smoke.mjs"
+  },
     "keywords":  [
                      "openclaw",
                      "security",

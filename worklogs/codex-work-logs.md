@@ -2728,3 +2728,54 @@
 - 风险与补充说明:
   1) 当前交互 smoke 仍以“无破坏、可重复执行”为原则，没有覆盖真正的提交 / 推送 / 清空通知等写操作；如果后续要继续扩大自动化覆盖，建议优先补 Mock 或沙盒路径上的写操作验证。
   2) 这轮只提交我负责的 Guard 前端 / 测试 / 工作日志文件，不会混入 `src/auth.ts`、`src/profiles.ts`、`src/server.ts`、`nk-self/*` 以及 `.github/` 等当前不在我处理范围内的改动。
+
+## [2026-03-11 11:48] openclaw-guard 补齐跨平台启停脚本并收口先停后启逻辑 [TASK-20260311-005]
+
+- 任务来源: 用户要求继续推进三项后续工作，包括补完整的启停脚本、兼顾 Windows/macOS/Linux 使用方式，并把“如果已经启动就先关闭再启动”的逻辑做成通用方案。
+- 仓库范围: openclaw-course
+- 当前状态: 已补齐跨平台启停脚本、macOS 双击入口、README 使用说明，并修正 Guard Web 后台停止判定的边界问题。
+- 实际完成:
+  1) 把跨平台重启逻辑统一沉淀到 Node 脚本:
+     - 新增 `openclaw-guard/scripts/restart-web.mjs`
+     - 统一负责 `依赖检查 -> 停旧实例 -> 等端口释放 -> 构建 -> 启新实例 -> 校验目标端口`
+     - `start-web.bat` 和 `start-web.sh` 现在都只是薄包装，三端行为保持一致
+  2) 补齐停止链路:
+     - 新增 `openclaw-guard/scripts/stop-web.mjs`
+     - 新增 `openclaw-guard/stop-web.bat`
+     - 新增 `openclaw-guard/stop-web.sh`
+     - 停止后会回显最终状态，方便确认后台实例已经真正退出
+  3) 为 macOS 增加双击友好的入口:
+     - 新增 `openclaw-guard/start-web.command`
+     - 新增 `openclaw-guard/stop-web.command`
+     - 这两个 `.command` 文件都只是转调对应的 `.sh` 脚本，降低维护成本
+  4) 修正后台停止的稳定性问题:
+     - `openclaw-guard/scripts/web-background.mjs` 的 `stop()` 不再只发出 kill 就立即返回
+     - 现在会等待进程与监听端口真正退出，再清理 pid 文件
+     - 这样可以减少重启时偶发漂移到 `18089` 之类旁路端口的问题
+  5) README 已同步更新:
+     - 新增 Windows / macOS / Linux 的启停脚本入口说明
+     - 新增 `npm run web:bg:restart` 与 `npm run web:bg:down` 说明
+     - 明确“启动脚本 = 先停后启”，“停止脚本 = 停止并回显状态”
+- 交付清单:
+  - openclaw-guard/scripts/restart-web.mjs
+  - openclaw-guard/scripts/stop-web.mjs
+  - openclaw-guard/scripts/web-background.mjs
+  - openclaw-guard/start-web.bat
+  - openclaw-guard/start-web.sh
+  - openclaw-guard/start-web.command
+  - openclaw-guard/stop-web.bat
+  - openclaw-guard/stop-web.sh
+  - openclaw-guard/stop-web.command
+  - openclaw-guard/package.json
+  - openclaw-guard/README.md
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 `node --check openclaw-guard/scripts/restart-web.mjs` 通过。
+  2) 已验证 `node --check openclaw-guard/scripts/stop-web.mjs` 通过。
+  3) 已实测 `node openclaw-guard/scripts/restart-web.mjs --port 18088` 能正常拉起 Guard Web 后台实例。
+  4) 已实测 `node openclaw-guard/scripts/stop-web.mjs --port 18088` 能正常停止实例并返回 `running=false`。
+  5) 已实测 `openclaw-guard/start-web.bat --port 18088` 与 `openclaw-guard/stop-web.bat --port 18088` 两条 Windows 包装脚本链路都可用。
+  6) 当前机器没有可用的本地 bash 运行环境，因此没有对 `.sh` / `.command` 做本机实跑；不过它们只是薄包装，底层调用的是已实测的 Node 启停脚本，风险相对可控。
+- 风险与补充说明:
+  1) 当前 `restart-web.mjs` 为了保证“必须回到指定端口”，如果检测到目标端口未释放，会直接中止并报错，而不是偷偷漂移到旁路端口；这是刻意保守的行为，便于客户机排障。
+  2) `.command` 文件在 macOS 上更适合配合可执行权限一起使用；这轮提交会顺手把 `.sh` / `.command` 的可执行位纳入 Git。

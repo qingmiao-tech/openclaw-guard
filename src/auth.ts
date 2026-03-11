@@ -169,3 +169,81 @@ export function extractBearerToken(req: http.IncomingMessage): string | undefine
 export function isAuthEnabled(): boolean {
   return process.env.GUARD_NO_AUTH !== '1';
 }
+
+// ── IP 登录速率限制 ──────────────────────────────────────────────────────────
+
+const RATE_WINDOW_MS = 60_000;       // 1 分钟窗口
+const RATE_MAX_ATTEMPTS = 5;         // 窗口内最多 5 次
+const RATE_LOCKOUT_MS = 60_000;      // 超限后锁定 60 秒
+
+interface RateEntry {
+  attempts: number;
+  windowStart: number;
+  lockedUntil: number;
+}
+
+const ipRateMap = new Map<string, RateEntry>();
+
+/** 定期清理过期条目，防止内存泄漏 */
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of ipRateMap) {
+    if (now - entry.windowStart > RATE_WINDOW_MS * 3 && now > entry.lockedUntil) {
+      ipRateMap.delete(ip);
+    }
+  }
+}, 120_000);
+
+/**
+ * 检查 IP 是否允许登录尝试。
+ * 返回 { allowed: true } 或 { allowed: false, retryAfter: 剩余秒数 }
+ */
+export function checkLoginRate(ip: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now();
+  let entry = ipRateMap.get(ip);
+
+  if (!entry) {
+    entry = { attempts: 0, windowStart: now, lockedUntil: 0 };
+    ipRateMap.set(ip, entry);
+  }
+
+  // 处于锁定期
+  if (now < entry.lockedUntil) {
+    return { allowed: false, retryAfter: Math.ceil((entry.lockedUntil - now) / 1000) };
+  }
+
+  // 窗口过期，重置
+  if (now - entry.windowStart > RATE_WINDOW_MS) {
+    entry.attempts = 0;
+    entry.windowStart = now;
+    entry.lockedUntil = 0;
+  }
+
+  if (entry.attempts >= RATE_MAX_ATTEMPTS) {
+    entry.lockedUntil = now + RATE_LOCKOUT_MS;
+    return { allowed: false, retryAfter: Math.ceil(RATE_LOCKOUT_MS / 1000) };
+  }
+
+  return { allowed: true };
+}
+
+/** 记录一次登录失败 */
+export function recordLoginFailure(ip: string): void {
+  const entry = ipRateMap.get(ip);
+  if (entry) {
+    entry.attempts += 1;
+  }
+}
+
+/** 登录成功后重置计数 */
+export function resetLoginRate(ip: string): void {
+  ipRateMap.delete(ip);
+}
+
+/** 从请求中提取客户端 IP */
+export function getClientIp(req: http.IncomingMessage): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string') return forwarded.split(',')[0].trim();
+  if (Array.isArray(forwarded) && forwarded.length > 0) return forwarded[0].split(',')[0].trim();
+  return req.socket.remoteAddress || '127.0.0.1';
+}

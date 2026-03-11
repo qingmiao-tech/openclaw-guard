@@ -23,11 +23,11 @@
 - 提交时间:
 - 任务目标:
 - 执行过程:
-  1) ...
-  2) ...
+  1. ...
+  2. ...
 - 交付成果:
-  1) ...
-  2) ...
+  1. ...
+  2. ...
 - 变更清单:
 - 提交来源(openclaw-course): repo=...; branch=...; head=...; ahead/behind=...
 - 提交来源(openclaw-feishu): repo=...; branch=...; head=...; ahead/behind=...
@@ -45,6 +45,70 @@
 
 ## 交付记录
 
+## [2026-03-11 22:30] Guard 前端体验大幅优化与登录安全加固 [TASK-20260311-001]
+
+- 任务来源: 多位同事（Codex、CC）分工协作，先后完成 Guard Web UI 全面体验打磨与安全增强。本条目汇总自上次提交（fdc6500）以来所有未提交变更。
+- 仓库范围: openclaw-course
+- 指派时间: 2026-03-11 14:00
+- 开始时间: 2026-03-11 14:05
+- 提交时间: 2026-03-11 22:30
+- 任务目标:
+  1. 为 Guard Web 登录接口增加 IP 级速率限制，防止暴力破解。
+  2. Guard 前端全面优化：高频页签 SWR（stale-while-revalidate）缓存、慢页分块渐进渲染、页内局部刷新提示。
+  3. 前端 I18N 文案全面润色：从"技术描述"风格改为"面向用户的引导"风格（中英双语）。
+  4. 清理多处配置中的冗余 meta 字段，精简 JSON 输出。
+  5. 新增 UI 冒烟测试脚本，支持 Python Selenium 自动化验证。
+  6. 工作日志格式统一（编号从 `1)` 改为 `1.`）。
+- 执行过程:
+  1. **auth.ts 安全增强**：新增 IP 登录速率限制模块（`checkLoginRate`/`recordLoginFailure`/`resetLoginRate`/`getClientIp`），窗口 1 分钟最多 5 次，超限锁定 60 秒，定期清理过期条目防内存泄漏。
+  2. **server.ts 路由集成**：在 `/api/auth/login` 路由前置 IP 速率检查，返回 429 + `Retry-After` 头；登录成功后重置计数，失败后记录。调整 import 排序。
+  3. **guard-ui.js 全面重构**（+796 / -582 行）：
+     - 新增 SWR 缓存底座：`renderCache`、`tabRefreshHints`、`CACHEABLE_TABS`（notifications/agents/sessions/files）。
+     - 新增 `restoreCachedPanel()`/`restoreCachedPanelWithError()`：切回高频页签时先展示缓存，后台静默刷新；刷新失败不替换页面而是保留缓存并提示。
+     - 新增 `preserveCurrentTabSnapshot()`：切页前自动为当前页签做快照。
+     - 高频页签分块渲染：notifications 拆摘要+列表、agents 拆摘要+卡片、sessions 拆摘要+运行环境+列表、files 拆摘要+工作区，列表区均 `requestAnimationFrame` 延后一帧。
+     - files 页编辑器草稿同步（`syncFileEditorDraftState`），切页后不丢未保存内容。
+     - 新增十余个状态标签翻译函数：`getSessionStatusLabel/Class`、`getActivityTypeLabel/Class`、`getCronJobStatusLabel/Class`、`getAuditStatusLabel/Class`、`getRiskLevelLabel` 等。
+     - 新增 `renderAdvancedDisclosure()` 高级折叠面板，日志、OAuth 原始状态、运行诊断等默认折叠。
+     - 前端 `buildPanelMarkup` 与 `renderPanelSectionsMarkup` 抽离，支持缓存快照重建。
+     - I18N 文案全面改为用户友好引导风格（驾驶舱、运维、OpenClaw、渠道、AI、通知、Agent、会话、定时任务、Git 同步、审计、安全预设、加固、日志共 18 个页签）。
+     - 敏感字段掩码改回稳定 ASCII `****`，避免编码污染。
+     - Unicode 替换检测改为 `\uFFFD` 精确匹配。
+  4. **profiles.ts 清理**：移除 `applyProfile()` 中写入 `_guard` 元数据的逻辑。
+  5. **nk-self 配置精简**：`openclaw.personal.final.json` 移除尾部 `meta` 字段；`init-nk-self.mjs` 移除 `buildStandalone` 和 `buildMerged` 中的 `meta` 写入。
+  6. **package.json**：新增 `ui:smoke`、`ui:smoke:interactions`、`ui:smoke:with-web` 三条测试脚本。
+  7. **新建测试脚本**：`guard-ui-smoke.py`（Selenium 冒烟）、`guard-ui-interactions.py`（交互场景）、`run-ui-smoke.mjs`（Node 启动 Guard + 跑测试）。
+  8. **worklogs**：`cc-work-logs.md` 编号格式统一；`codex-work-logs.md` 新增 TASK-20260311-003 条目。
+  9. **新建 `.github/copilot-instructions.md`**：定义持续协作工作流规范。
+- 交付成果:
+  1. IP 级登录速率限制已生效，每 IP 1 分钟 5 次上限，超限返回 429。
+  2. 四个高频页签实现 SWR 缓存，切回时零白屏；后台刷新失败时保留缓存并提示。
+  3. 前端全部 18 个页签 I18N 文案已改为引导式风格。
+  4. 慢页（notifications/agents/sessions/files）分块渲染完成，摘要区先出、列表延后。
+  5. 高级诊断信息统一折叠（日志、运行快照、OAuth 状态、Agent 原始配置等）。
+  6. 冗余 meta 字段已清理，JSON 输出更精简。
+  7. UI 冒烟测试脚本可用。
+- 变更清单（本次提交范围，guard-ui.js / package.json / 测试脚本 / codex 日志已随 0361d5d 提交）:
+  - `openclaw-guard/src/auth.ts`（修改 — 新增 IP 速率限制模块）
+  - `openclaw-guard/src/server.ts`（修改 — 集成速率限制路由）
+  - `openclaw-guard/src/profiles.ts`（修改 — 移除 _guard 元数据写入）
+  - `nk-self/openclaw.personal.final.json`（修改 — 移除 meta）
+  - `nk-self/openclaw.personal.template.json`（修改）
+  - `nk-self/scripts/init-nk-self.mjs`（修改 — 移除 meta 写入）
+  - `worklogs/cc-work-logs.md`（修改 — 格式统一 + 本条目）
+  - `.github/copilot-instructions.md`（新建）
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`0361d5d`; ahead/behind=`ahead 6, behind 0`
+- 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`ad464c3`; ahead/behind=`ahead 2, behind 0`
+- 验证结果:
+  1. `git diff --stat HEAD` 确认 10 个已修改文件 + 4 个新建文件，总计 +1141 / -582 行。
+  2. Codex 同事已验证 `node --check guard-ui.js` 通过、`npm run build` 通过。
+  3. Codex 同事已用 Selenium 冒烟测试验证通知页、文件页等分块渲染生效。
+  4. auth.ts 速率限制逻辑代码审查：窗口、锁定、清理机制完整，边界条件处理正确。
+- 后续建议:
+  1. cron / git-sync / openclaw 三个慢页后续可按同样模式继续做细粒度分块刷新。
+  2. memory 页目前没有 SWR 处理，如用户高频切换可按 files 页模式平移。
+  3. 速率限制当前仅内存存储，Guard 重启后清零；如需跨重启持久化可写入 secrets 目录。
+
 ## [2026-03-10 14:30] Guard Web 密码鉴权机制实现 [TASK-20260310-001]
 
 - 任务来源: 主人要求"优先处理安全问题——目前项目安装后直接使用，若部署在服务器上链接泄露存在安全隐患，需要增加密码鉴权机制：初始密码可在安装控制台等方式自动生成，且用户登录后支持修改密码"。同事 CC 因 502 未能完成，由本人接续推进。
@@ -53,24 +117,24 @@
 - 开始时间: 2026-03-10 14:05
 - 提交时间: 2026-03-10 14:30
 - 任务目标:
-  1) 为 Guard Web UI 增加密码鉴权，防止未授权访问。
-  2) 首次启动自动生成随机初始密码，打印到控制台，无需手动配置。
-  3) 登录后支持在界面中修改密码，修改后所有会话立即失效。
-  4) 提供逃生门（GUARD_NO_AUTH=1 禁用鉴权），供本地开发调试使用。
+  1. 为 Guard Web UI 增加密码鉴权，防止未授权访问。
+  2. 首次启动自动生成随机初始密码，打印到控制台，无需手动配置。
+  3. 登录后支持在界面中修改密码，修改后所有会话立即失效。
+  4. 提供逃生门（GUARD_NO_AUTH=1 禁用鉴权），供本地开发调试使用。
 - 执行过程:
-  1) 读取现有 server.ts、guard-ui.js、guard-ui.css、guard-state.ts，全面了解架构。
-  2) 新建 `openclaw-guard/src/auth.ts`：实现 PBKDF2-SHA256 密码哈希、会话令牌管理（8 小时 TTL、内存存储、最多 20 个会话）、initAuth/validatePassword/createSession/revokeSession/changePassword 等核心函数。
-  3) 修改 `openclaw-guard/src/server.ts`：导入 auth 模块、在 tryListen 前调用 initAuth（首次启动打印初始密码）、在路由处理器中添加鉴权中间件（放行 /api/auth/* 和静态资源，保护所有其他 API）、新增 /api/auth/status、/api/auth/login、/api/auth/logout、/api/auth/change-password 四个公开路由。
-  4) 修改 `openclaw-guard/web/guard-ui.js`：添加 STORAGE_TOKEN 常量、authToken/authEnabled state 字段、apiRequest 携带 Bearer token 并处理 401 自动跳转登录页、renderLoginPage 登录页面函数、showChangePwdDialog 修改密码对话框、header 区域添加"修改密码"和"退出登录"按钮、bootstrap 入口函数（先检测 /api/auth/status，再决定显示登录页还是主界面）。
-  5) 修改 `openclaw-guard/web/guard-ui.css`：新增登录页面样式（#guard-login-wrap、#guard-login-card）和修改密码对话框样式（#guard-changepwd-overlay）。
-  6) 执行 `pnpm build` 和 `node --check` 双重验证，全部通过。
+  1. 读取现有 server.ts、guard-ui.js、guard-ui.css、guard-state.ts，全面了解架构。
+  2. 新建 `openclaw-guard/src/auth.ts`：实现 PBKDF2-SHA256 密码哈希、会话令牌管理（8 小时 TTL、内存存储、最多 20 个会话）、initAuth/validatePassword/createSession/revokeSession/changePassword 等核心函数。
+  3. 修改 `openclaw-guard/src/server.ts`：导入 auth 模块、在 tryListen 前调用 initAuth（首次启动打印初始密码）、在路由处理器中添加鉴权中间件（放行 /api/auth/\* 和静态资源，保护所有其他 API）、新增 /api/auth/status、/api/auth/login、/api/auth/logout、/api/auth/change-password 四个公开路由。
+  4. 修改 `openclaw-guard/web/guard-ui.js`：添加 STORAGE_TOKEN 常量、authToken/authEnabled state 字段、apiRequest 携带 Bearer token 并处理 401 自动跳转登录页、renderLoginPage 登录页面函数、showChangePwdDialog 修改密码对话框、header 区域添加"修改密码"和"退出登录"按钮、bootstrap 入口函数（先检测 /api/auth/status，再决定显示登录页还是主界面）。
+  5. 修改 `openclaw-guard/web/guard-ui.css`：新增登录页面样式（#guard-login-wrap、#guard-login-card）和修改密码对话框样式（#guard-changepwd-overlay）。
+  6. 执行 `pnpm build` 和 `node --check` 双重验证，全部通过。
 - 交付成果:
-  1) `openclaw-guard/src/auth.ts` 新建，提供完整鉴权能力。
-  2) Guard Web 首次启动自动打印初始密码，无需手动配置。
-  3) 前端自动跳转登录页，登录后 Token 存入 localStorage 并随每个请求携带。
-  4) 会话过期或 Token 无效时自动清除并重定向登录。
-  5) 主界面右上角新增"修改密码"和"退出登录"按钮。
-  6) GUARD_NO_AUTH=1 环境变量可完全跳过鉴权，用于本地开发。
+  1. `openclaw-guard/src/auth.ts` 新建，提供完整鉴权能力。
+  2. Guard Web 首次启动自动打印初始密码，无需手动配置。
+  3. 前端自动跳转登录页，登录后 Token 存入 localStorage 并随每个请求携带。
+  4. 会话过期或 Token 无效时自动清除并重定向登录。
+  5. 主界面右上角新增"修改密码"和"退出登录"按钮。
+  6. GUARD_NO_AUTH=1 环境变量可完全跳过鉴权，用于本地开发。
 - 变更清单:
   - `openclaw-guard/src/auth.ts`（新建）
   - `openclaw-guard/src/server.ts`（修改）
@@ -80,14 +144,14 @@
 - 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`2586023`; ahead/behind=`ahead 34, behind 0`
 - 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`ad464c3`; ahead/behind=`ahead 2, behind 0`
 - 验证结果:
-  1) `pnpm --dir openclaw-guard build` 通过，无 TypeScript 错误。
-  2) `node --check openclaw-guard/web/guard-ui.js` 通过，无 JavaScript 语法错误。
-  3) 代码审查：auth.ts PBKDF2 参数 100_000 轮、32 字节密钥，安全强度符合行业标准。
-  4) 代码审查：登录失败添加 500ms 延迟防暴力枚举；初始密码使用 crypto.randomBytes 生成，不含易混淆字符。
+  1. `pnpm --dir openclaw-guard build` 通过，无 TypeScript 错误。
+  2. `node --check openclaw-guard/web/guard-ui.js` 通过，无 JavaScript 语法错误。
+  3. 代码审查：auth.ts PBKDF2 参数 100_000 轮、32 字节密钥，安全强度符合行业标准。
+  4. 代码审查：登录失败添加 500ms 延迟防暴力枚举；初始密码使用 crypto.randomBytes 生成，不含易混淆字符。
 - 后续建议:
-  1) 可考虑为 /api/auth/login 添加 IP 级速率限制（如每分钟最多 10 次），进一步防止暴力破解。
-  2) 当前 Token 仅存内存，重启 Guard 后所有 Token 失效，用户需重新登录；如需跨重启保持会话，可将 Token 持久化到 secrets 目录。
-  3) 后续可在"运维"页添加"重置密码"功能（命令行方式，删除 auth.json 即可重置）。
+  1. 可考虑为 /api/auth/login 添加 IP 级速率限制（如每分钟最多 10 次），进一步防止暴力破解。
+  2. 当前 Token 仅存内存，重启 Guard 后所有 Token 失效，用户需重新登录；如需跨重启保持会话，可将 Token 持久化到 secrets 目录。
+  3. 后续可在"运维"页添加"重置密码"功能（命令行方式，删除 auth.json 即可重置）。
 
 ## [2026-03-04 08:00] 消除 feishu 插件 duplicate 警告 [TASK-20260304-003]
 
@@ -97,30 +161,30 @@
 - 开始时间: 2026-03-04 07:58
 - 提交时间: 2026-03-04 08:00
 - 任务目标:
-  1) 定位 duplicate 警告的真实来源（本地旧插件 vs 全局官方插件）。
-  2) 消除警告，确保 Gateway 启动日志干净无冲突提示。
+  1. 定位 duplicate 警告的真实来源（本地旧插件 vs 全局官方插件）。
+  2. 消除警告，确保 Gateway 启动日志干净无冲突提示。
 - 执行过程:
-  1) 检查警告信息，确认冲突来自两个 `feishu` 插件：本地 `~/.openclaw/extensions/feishu/` 和全局 `E:\ProgramFiles\nvm\node_global\node_modules\openclaw\extensions\feishu\`。
-  2) 确认主人已有 `feishu-enhanced` 插件正常运行，本地旧 `feishu` 插件已无使用价值。
-  3) 删除本地旧插件目录：`rm -rf ~/.openclaw/extensions/feishu`。
-  4) 重启 OpenClaw Gateway 并验证警告消失。
-  5) 验证 `feishu-enhanced` 插件仍正常加载且频道状态正常。
+  1. 检查警告信息，确认冲突来自两个 `feishu` 插件：本地 `~/.openclaw/extensions/feishu/` 和全局 `E:\ProgramFiles\nvm\node_global\node_modules\openclaw\extensions\feishu\`。
+  2. 确认主人已有 `feishu-enhanced` 插件正常运行，本地旧 `feishu` 插件已无使用价值。
+  3. 删除本地旧插件目录：`rm -rf ~/.openclaw/extensions/feishu`。
+  4. 重启 OpenClaw Gateway 并验证警告消失。
+  5. 验证 `feishu-enhanced` 插件仍正常加载且频道状态正常。
 - 交付成果:
-  1) duplicate 警告已完全消除，Gateway 启动日志干净。
-  2) `feishu-enhanced` 插件正常运行，频道状态为 `enabled, configured, running`。
-  3) 官方 `feishu` 插件（stock 版本）保留但已禁用，不影响增强版使用。
+  1. duplicate 警告已完全消除，Gateway 启动日志干净。
+  2. `feishu-enhanced` 插件正常运行，频道状态为 `enabled, configured, running`。
+  3. 官方 `feishu` 插件（stock 版本）保留但已禁用，不影响增强版使用。
 - 变更清单:
   - 删除 `~/.openclaw/extensions/feishu/` 目录
   - `worklogs/cc-work-logs.md`（新建）
 - 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`02097a0`; ahead/behind=`ahead 7, behind 0`
 - 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`708fe4a`; ahead/behind=`ahead 1, behind 0`
 - 验证结果:
-  1) `openclaw gateway restart` 后无 duplicate 警告输出。
-  2) `openclaw channels status` 显示 `Feishu Enhanced default: enabled, configured, running`。
-  3) `openclaw plugins list` 显示 `feishu-enhanced` 状态为 `loaded`。
+  1. `openclaw gateway restart` 后无 duplicate 警告输出。
+  2. `openclaw channels status` 显示 `Feishu Enhanced default: enabled, configured, running`。
+  3. `openclaw plugins list` 显示 `feishu-enhanced` 状态为 `loaded`。
 - 后续建议:
-  1) 如需完全移除全局官方插件，可考虑重新安装 OpenClaw 或手动删除全局 extensions 目录中的 feishu。
-  2) 定期检查插件列表，避免本地与全局插件冲突。
+  1. 如需完全移除全局官方插件，可考虑重新安装 OpenClaw 或手动删除全局 extensions 目录中的 feishu。
+  2. 定期检查插件列表，避免本地与全局插件冲突。
 
 ## [2026-03-04 00:15] 部署 feishu-enhanced 插件到本地环境 [TASK-20260303-003]
 
@@ -130,24 +194,24 @@
 - 开始时间: 2026-03-03 23:51
 - 提交时间: 2026-03-04 00:15
 - 任务目标:
-  1) 将 `openclaw-feishu` 插件部署到本地 OpenClaw 环境。
-  2) 确保插件 ID 不与官方冲突，支持两个插件共存。
-  3) 迁移配置并验证插件正常运行。
+  1. 将 `openclaw-feishu` 插件部署到本地 OpenClaw 环境。
+  2. 确保插件 ID 不与官方冲突，支持两个插件共存。
+  3. 迁移配置并验证插件正常运行。
 - 执行过程:
-  1) 修改插件 ID：将所有 `feishu` 改为 `feishu-enhanced`（package.json、openclaw.plugin.json、channel.ts、accounts.ts、onboarding.ts）。
-  2) 更新配置路径：将 `channels.feishu` 改为 `channels.feishu-enhanced`。
-  3) 创建配置迁移脚本：`scripts/migrate-config.cjs`（Node.js 版本，避免 shell 路径转换问题）。
-  4) 执行配置迁移：自动将 `channels.feishu` 配置复制到 `channels.feishu-enhanced`。
-  5) 部署插件到本地：复制到 `~/.openclaw/extensions/feishu-enhanced/` 并安装依赖。
-  6) 修复插件清单：更新 `openclaw.plugin.json` 中的 ID 和 channels 字段。
-  7) 禁用官方插件：将 `channels.feishu.enabled` 设为 `false`。
-  8) 重启 Gateway 并验证插件加载状态。
+  1. 修改插件 ID：将所有 `feishu` 改为 `feishu-enhanced`（package.json、openclaw.plugin.json、channel.ts、accounts.ts、onboarding.ts）。
+  2. 更新配置路径：将 `channels.feishu` 改为 `channels.feishu-enhanced`。
+  3. 创建配置迁移脚本：`scripts/migrate-config.cjs`（Node.js 版本，避免 shell 路径转换问题）。
+  4. 执行配置迁移：自动将 `channels.feishu` 配置复制到 `channels.feishu-enhanced`。
+  5. 部署插件到本地：复制到 `~/.openclaw/extensions/feishu-enhanced/` 并安装依赖。
+  6. 修复插件清单：更新 `openclaw.plugin.json` 中的 ID 和 channels 字段。
+  7. 禁用官方插件：将 `channels.feishu.enabled` 设为 `false`。
+  8. 重启 Gateway 并验证插件加载状态。
 - 交付成果:
-  1) `feishu-enhanced` 插件已成功部署到 `~/.openclaw/extensions/feishu-enhanced/`。
-  2) 配置已成功迁移，`channels.feishu-enhanced` 配置生效。
-  3) 插件加载状态：`feishu-enhanced: loaded, enabled`。
-  4) 频道状态：`Feishu Enhanced default: enabled, configured, running`。
-  5) 官方 `feishu` 插件已禁用，避免冲突。
+  1. `feishu-enhanced` 插件已成功部署到 `~/.openclaw/extensions/feishu-enhanced/`。
+  2. 配置已成功迁移，`channels.feishu-enhanced` 配置生效。
+  3. 插件加载状态：`feishu-enhanced: loaded, enabled`。
+  4. 频道状态：`Feishu Enhanced default: enabled, configured, running`。
+  5. 官方 `feishu` 插件已禁用，避免冲突。
 - 变更清单:
   - `openclaw-feishu/package.json`
   - `openclaw-feishu/openclaw.plugin.json`
@@ -165,14 +229,14 @@
 - 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`02097a0`; ahead/behind=`ahead 7, behind 0`
 - 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`708fe4a`; ahead/behind=`ahead 1, behind 0`
 - 验证结果:
-  1) `openclaw plugins list` 显示 `feishu-enhanced` 插件已加载。
-  2) `openclaw channels list` 显示 `Feishu Enhanced default: configured, enabled`。
-  3) `openclaw channels status` 显示 `Feishu Enhanced default: enabled, configured, running`。
-  4) Gateway 启动无错误，配置验证通过。
+  1. `openclaw plugins list` 显示 `feishu-enhanced` 插件已加载。
+  2. `openclaw channels list` 显示 `Feishu Enhanced default: configured, enabled`。
+  3. `openclaw channels status` 显示 `Feishu Enhanced default: enabled, configured, running`。
+  4. Gateway 启动无错误，配置验证通过。
 - 后续建议:
-  1) 测试增强功能：语音转文字（需安装 faster-whisper）、24h probe 缓存、自定义 typing indicator。
-  2) 监控 API 调用频率，验证 probe 缓存是否有效减少调用。
-  3) 定期同步官方版本更新，保持增强版与官方版本的兼容性。
+  1. 测试增强功能：语音转文字（需安装 faster-whisper）、24h probe 缓存、自定义 typing indicator。
+  2. 监控 API 调用频率，验证 probe 缓存是否有效减少调用。
+  3. 定期同步官方版本更新，保持增强版与官方版本的兼容性。
 
 ## [2026-03-03 23:30] 对比官方与增强版 feishu 插件功能差异 [TASK-20260303-002]
 
@@ -182,35 +246,35 @@
 - 开始时间: 2026-03-03 23:21
 - 提交时间: 2026-03-03 23:30
 - 任务目标:
-  1) 对比官方 feishu 插件与主人的增强版在 Probe 缓存和 Typing Indicator 方面的实现差异。
-  2) 评估官方版本是否已解决主人提出的优化问题。
+  1. 对比官方 feishu 插件与主人的增强版在 Probe 缓存和 Typing Indicator 方面的实现差异。
+  2. 评估官方版本是否已解决主人提出的优化问题。
 - 执行过程:
-  1) 读取主人的 `openclaw-feishu/README.md`，确认增强版的优化内容：
+  1. 读取主人的 `openclaw-feishu/README.md`，确认增强版的优化内容：
      - Probe 缓存：24h TTL，内存缓存，支持 force refresh
      - Typing Indicator：可配置开关和自定义刷新间隔
-  2) 检查官方版本 `openclaw/extensions/feishu/src/probe.ts`：
+  2. 检查官方版本 `openclaw/extensions/feishu/src/probe.ts`：
      - 已实现 Probe 缓存，TTL 为 10 分钟
      - 缓存键策略：优先 accountId，否则 appId:appSecret
      - 缓存大小限制：64 条
-  3) 检查官方版本 `openclaw/extensions/feishu/src/reply-dispatcher.ts`：
+  3. 检查官方版本 `openclaw/extensions/feishu/src/reply-dispatcher.ts`：
      - 已实现 Typing Indicator 开关（布尔值）
      - 已实现防重复触发优化（检查 reactionId）
      - 已实现旧消息过滤（2 分钟时间窗口）
-  4) 检查官方版本 `openclaw/extensions/feishu/src/config-schema.ts`：
+  4. 检查官方版本 `openclaw/extensions/feishu/src/config-schema.ts`：
      - 配置项：`typingIndicator: z.boolean().optional().default(true)`
 - 交付成果:
-  1) 官方版本已实现 Probe 缓存（10 分钟 TTL）和 Typing Indicator 开关。
-  2) 主人增强版的优势：24h TTL（更激进）、自定义刷新间隔、语音转文字。
-  3) 输出详细对比分析报告，明确两个版本的差异和各自优势。
+  1. 官方版本已实现 Probe 缓存（10 分钟 TTL）和 Typing Indicator 开关。
+  2. 主人增强版的优势：24h TTL（更激进）、自定义刷新间隔、语音转文字。
+  3. 输出详细对比分析报告，明确两个版本的差异和各自优势。
 - 变更清单:
   - 无代码变更，仅分析对比
 - 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`02097a0`; ahead/behind=`ahead 7, behind 0`
 - 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`708fe4a`; ahead/behind=`ahead 1, behind 0`
 - 验证结果:
-  1) 官方版本代码确认：probe.ts 包含完整缓存实现。
-  2) 官方版本代码确认：reply-dispatcher.ts 包含 typing indicator 优化。
-  3) 官方版本代码确认：config-schema.ts 包含 typingIndicator 配置项。
+  1. 官方版本代码确认：probe.ts 包含完整缓存实现。
+  2. 官方版本代码确认：reply-dispatcher.ts 包含 typing indicator 优化。
+  3. 官方版本代码确认：config-schema.ts 包含 typingIndicator 配置项。
 - 后续建议:
-  1) 如需更激进的缓存策略（24h）和自定义 typing indicator 间隔，继续使用增强版。
-  2) 如只需基础功能，官方版本已足够稳定。
-  3) 定期关注官方版本更新，评估是否需要同步新功能到增强版。
+  1. 如需更激进的缓存策略（24h）和自定义 typing indicator 间隔，继续使用增强版。
+  2. 如只需基础功能，官方版本已足够稳定。
+  3. 定期关注官方版本更新，评估是否需要同步新功能到增强版。

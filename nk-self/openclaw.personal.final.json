@@ -103,10 +103,5 @@
       }
     }
   },
-  "bindings": [],
-  "meta": {
-    "template": "nk-self-personal-multi-agent-final",
-    "createdAt": "2026-03-10",
-    "notes": "Standalone personal config skeleton. Replace agents.defaults.model.primary or merge into existing openclaw.json via scripts/init-nk-self.ps1."
-  }
+  "bindings": []
 }

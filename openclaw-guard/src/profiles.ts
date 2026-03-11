@@ -113,13 +113,6 @@ export function applyProfile(profileName: string, configPath?: string): { succes
   // 更新 tools 配置
   config.tools = profile.tools;
 
-  // 添加 guard 元数据
-  (config as Record<string, unknown>)._guard = {
-    profile: profileName,
-    appliedAt: new Date().toISOString(),
-    version: '1.0.0',
-  };
-
   try {
     const dir = path.dirname(targetPath);
     if (!fs.existsSync(dir)) {

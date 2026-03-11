@@ -100,11 +100,6 @@ function buildStandalone(templateConfig, modelPrimary) {
     ...ensureObject(output.messages),
   };
   output.bindings = ensureArray(output.bindings);
-  output.meta = {
-    ...ensureObject(output.meta),
-    renderedAt: new Date().toISOString(),
-    renderedFrom: 'nk-self/scripts/init-nk-self.mjs',
-  };
   return output;
 }
 
@@ -177,13 +172,6 @@ function buildMerged(currentConfig, personalConfig) {
     },
   };
   result.bindings = ensureArray(current.bindings);
-  result.meta = {
-    ...ensureObject(current.meta),
-    ...ensureObject(personalConfig.meta),
-    mergedAt: new Date().toISOString(),
-    mergedFrom: 'nk-self/scripts/init-nk-self.mjs',
-  };
-
   return result;
 }
 

@@ -5,11 +5,15 @@ import { fileURLToPath } from 'node:url';
 import { runFullAudit } from './audit.js';
 import {
     changePassword,
+    checkLoginRate,
     createSession,
     extractBearerToken,
+    getClientIp,
     hasAuthConfigured,
     initAuth,
     isAuthEnabled,
+    recordLoginFailure,
+    resetLoginRate,
     revokeSession,
     validatePassword,
     validateSession,
@@ -54,6 +58,7 @@ import {
     startOAuthLogin,
     syncGitSync
 } from './git-sync.js';
+import { getGuardRestartStatus, scheduleGuardRestart } from './guard-restart.js';
 import { generateHardenScript, getAllHardenSteps } from './harden.js';
 import {
     PROVIDERS as AI_PROVIDERS,
@@ -73,7 +78,6 @@ import {
     getCachedSessionOverview,
 } from './runtime-view-store.js';
 import { getLogs, getServiceActionStatus, getServiceStatus, restartService, startService, stopService } from './service-mgr.js';
-import { getGuardRestartStatus, scheduleGuardRestart } from './guard-restart.js';
 import { getWebBackgroundStatus, registerBackgroundProcess, startWebBackgroundService, stopWebBackgroundService } from './web-background.js';
 import { getCompatibilityPage } from './web-ui.js';
 import { getWorkbenchPage } from './workbench-ui.js';
@@ -280,6 +284,17 @@ export function startServer(port: number) {
         }
 
         if (pathname === '/api/auth/login' && req.method === 'POST') {
+          const clientIp = getClientIp(req);
+          const rateCheck = checkLoginRate(clientIp);
+          if (!rateCheck.allowed) {
+            res.setHeader('Retry-After', String(rateCheck.retryAfter ?? 60));
+            jsonResponse(res, {
+              success: false,
+              error: `登录尝试过于频繁，请 ${rateCheck.retryAfter} 秒后再试`,
+              retryAfter: rateCheck.retryAfter,
+            }, 429);
+            return;
+          }
           const body = await readJsonBody(req);
           const password = typeof body.password === 'string' ? body.password : '';
           if (!password) {
@@ -287,10 +302,11 @@ export function startServer(port: number) {
             return;
           }
           if (validatePassword(password)) {
+            resetLoginRate(clientIp);
             const token = createSession();
             jsonResponse(res, { success: true, token, expiresIn: 8 * 3600 });
           } else {
-            // 小延迟，防止暴力破解
+            recordLoginFailure(clientIp);
             await new Promise((resolve) => setTimeout(resolve, 500));
             jsonResponse(res, { success: false, error: '密码错误' }, 401);
           }

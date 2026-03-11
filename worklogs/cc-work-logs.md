@@ -45,69 +45,36 @@
 
 ## 交付记录
 
-## [2026-03-11 22:30] Guard 前端体验大幅优化与登录安全加固 [TASK-20260311-001]
+## [2026-03-11 22:30] 工作日志撰写与未提交变更统一入库 [TASK-20260311-001]
 
-- 任务来源: 多位同事（Codex、CC）分工协作，先后完成 Guard Web UI 全面体验打磨与安全增强。本条目汇总自上次提交（fdc6500）以来所有未提交变更。
+- 任务来源: 主人要求"写入工作日志到 worklogs/cc-work-logs.md 然后提交所有修改内容到 git"。
 - 仓库范围: openclaw-course
-- 指派时间: 2026-03-11 14:00
-- 开始时间: 2026-03-11 14:05
+- 指派时间: 2026-03-11 22:00
+- 开始时间: 2026-03-11 22:05
 - 提交时间: 2026-03-11 22:30
 - 任务目标:
-  1. 为 Guard Web 登录接口增加 IP 级速率限制，防止暴力破解。
-  2. Guard 前端全面优化：高频页签 SWR（stale-while-revalidate）缓存、慢页分块渐进渲染、页内局部刷新提示。
-  3. 前端 I18N 文案全面润色：从"技术描述"风格改为"面向用户的引导"风格（中英双语）。
-  4. 清理多处配置中的冗余 meta 字段，精简 JSON 输出。
-  5. 新增 UI 冒烟测试脚本，支持 Python Selenium 自动化验证。
-  6. 工作日志格式统一（编号从 `1)` 改为 `1.`）。
+  1. 分析自上次提交（fdc6500）以来的所有未提交变更，了解各变更归属。
+  2. 撰写本轮工作日志条目。
+  3. 将所有遗留未提交文件统一入库。
 - 执行过程:
-  1. **auth.ts 安全增强**：新增 IP 登录速率限制模块（`checkLoginRate`/`recordLoginFailure`/`resetLoginRate`/`getClientIp`），窗口 1 分钟最多 5 次，超限锁定 60 秒，定期清理过期条目防内存泄漏。
-  2. **server.ts 路由集成**：在 `/api/auth/login` 路由前置 IP 速率检查，返回 429 + `Retry-After` 头；登录成功后重置计数，失败后记录。调整 import 排序。
-  3. **guard-ui.js 全面重构**（+796 / -582 行）：
-     - 新增 SWR 缓存底座：`renderCache`、`tabRefreshHints`、`CACHEABLE_TABS`（notifications/agents/sessions/files）。
-     - 新增 `restoreCachedPanel()`/`restoreCachedPanelWithError()`：切回高频页签时先展示缓存，后台静默刷新；刷新失败不替换页面而是保留缓存并提示。
-     - 新增 `preserveCurrentTabSnapshot()`：切页前自动为当前页签做快照。
-     - 高频页签分块渲染：notifications 拆摘要+列表、agents 拆摘要+卡片、sessions 拆摘要+运行环境+列表、files 拆摘要+工作区，列表区均 `requestAnimationFrame` 延后一帧。
-     - files 页编辑器草稿同步（`syncFileEditorDraftState`），切页后不丢未保存内容。
-     - 新增十余个状态标签翻译函数：`getSessionStatusLabel/Class`、`getActivityTypeLabel/Class`、`getCronJobStatusLabel/Class`、`getAuditStatusLabel/Class`、`getRiskLevelLabel` 等。
-     - 新增 `renderAdvancedDisclosure()` 高级折叠面板，日志、OAuth 原始状态、运行诊断等默认折叠。
-     - 前端 `buildPanelMarkup` 与 `renderPanelSectionsMarkup` 抽离，支持缓存快照重建。
-     - I18N 文案全面改为用户友好引导风格（驾驶舱、运维、OpenClaw、渠道、AI、通知、Agent、会话、定时任务、Git 同步、审计、安全预设、加固、日志共 18 个页签）。
-     - 敏感字段掩码改回稳定 ASCII `****`，避免编码污染。
-     - Unicode 替换检测改为 `\uFFFD` 精确匹配。
-  4. **profiles.ts 清理**：移除 `applyProfile()` 中写入 `_guard` 元数据的逻辑。
-  5. **nk-self 配置精简**：`openclaw.personal.final.json` 移除尾部 `meta` 字段；`init-nk-self.mjs` 移除 `buildStandalone` 和 `buildMerged` 中的 `meta` 写入。
-  6. **package.json**：新增 `ui:smoke`、`ui:smoke:interactions`、`ui:smoke:with-web` 三条测试脚本。
-  7. **新建测试脚本**：`guard-ui-smoke.py`（Selenium 冒烟）、`guard-ui-interactions.py`（交互场景）、`run-ui-smoke.mjs`（Node 启动 Guard + 跑测试）。
-  8. **worklogs**：`cc-work-logs.md` 编号格式统一；`codex-work-logs.md` 新增 TASK-20260311-003 条目。
-  9. **新建 `.github/copilot-instructions.md`**：定义持续协作工作流规范。
+  1. 通过 `git status`、`git diff --stat HEAD`、`git log` 了解工作区状态：发现 10 个已修改文件和 4 个新建文件尚未提交，分属多位同事的工作成果。
+  2. 逐文件阅读 diff，理清变更归属：auth.ts IP 速率限制、server.ts 路由集成、profiles.ts meta 清理、nk-self 配置精简来自同事；guard-ui.js SWR + I18N 大改来自 Codex；README/启动脚本也来自 Codex。
+  3. 获取 openclaw-course 和 openclaw-feishu 两个仓库的 HEAD、ahead/behind 信息。
+  4. 撰写日志条目并写入 `worklogs/cc-work-logs.md`。
+  5. `git add -A && git commit` 分两批完成提交（cee328f + a341ad9），工作区清空。
 - 交付成果:
-  1. IP 级登录速率限制已生效，每 IP 1 分钟 5 次上限，超限返回 429。
-  2. 四个高频页签实现 SWR 缓存，切回时零白屏；后台刷新失败时保留缓存并提示。
-  3. 前端全部 18 个页签 I18N 文案已改为引导式风格。
-  4. 慢页（notifications/agents/sessions/files）分块渲染完成，摘要区先出、列表延后。
-  5. 高级诊断信息统一折叠（日志、运行快照、OAuth 状态、Agent 原始配置等）。
-  6. 冗余 meta 字段已清理，JSON 输出更精简。
-  7. UI 冒烟测试脚本可用。
-- 变更清单（本次提交范围，guard-ui.js / package.json / 测试脚本 / codex 日志已随 0361d5d 提交）:
-  - `openclaw-guard/src/auth.ts`（修改 — 新增 IP 速率限制模块）
-  - `openclaw-guard/src/server.ts`（修改 — 集成速率限制路由）
-  - `openclaw-guard/src/profiles.ts`（修改 — 移除 _guard 元数据写入）
-  - `nk-self/openclaw.personal.final.json`（修改 — 移除 meta）
-  - `nk-self/openclaw.personal.template.json`（修改）
-  - `nk-self/scripts/init-nk-self.mjs`（修改 — 移除 meta 写入）
-  - `worklogs/cc-work-logs.md`（修改 — 格式统一 + 本条目）
-  - `.github/copilot-instructions.md`（新建）
-- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`0361d5d`; ahead/behind=`ahead 6, behind 0`
+  1. 工作日志 TASK-20260311-001 已写入。
+  2. 所有遗留未提交文件已入库，工作区干净。
+- 变更清单（仅本人直接修改）:
+  - `worklogs/cc-work-logs.md`（修改 — 新增本条目 + 历史条目编号格式统一 `1)` → `1.`）
+- 提交来源(openclaw-course): repo=`e:\openclaw-course`; branch=`main`; head=`a341ad9`; ahead/behind=`ahead 8, behind 0`
 - 提交来源(openclaw-feishu): repo=`e:\openclaw-course\openclaw-feishu`; branch=`main`; head=`ad464c3`; ahead/behind=`ahead 2, behind 0`
 - 验证结果:
-  1. `git diff --stat HEAD` 确认 10 个已修改文件 + 4 个新建文件，总计 +1141 / -582 行。
-  2. Codex 同事已验证 `node --check guard-ui.js` 通过、`npm run build` 通过。
-  3. Codex 同事已用 Selenium 冒烟测试验证通知页、文件页等分块渲染生效。
-  4. auth.ts 速率限制逻辑代码审查：窗口、锁定、清理机制完整，边界条件处理正确。
+  1. `git diff HEAD --stat` 确认工作区无残留变更（提交后又有新文件出现，已在 a341ad9 补充提交）。
+  2. `git log --oneline -4` 确认提交链完整。
 - 后续建议:
-  1. cron / git-sync / openclaw 三个慢页后续可按同样模式继续做细粒度分块刷新。
-  2. memory 页目前没有 SWR 处理，如用户高频切换可按 files 页模式平移。
-  3. 速率限制当前仅内存存储，Guard 重启后清零；如需跨重启持久化可写入 secrets 目录。
+  1. 各同事的代码变更详情请参考 `worklogs/codex-work-logs.md` 中 Codex 的 TASK-20260311-003 条目。
+  2. 当前 main 分支 ahead origin/main 8 commits，需要择机推送。
 
 ## [2026-03-10 14:30] Guard Web 密码鉴权机制实现 [TASK-20260310-001]
 

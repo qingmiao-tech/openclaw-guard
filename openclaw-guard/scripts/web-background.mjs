@@ -115,6 +115,15 @@ function sleep(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
+function waitForPidExit(pid, timeoutMs = 15000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (!isPidAlive(pid) && findPortsByPid(pid).length === 0) return true;
+    sleep(250);
+  }
+  return !isPidAlive(pid) && findPortsByPid(pid).length === 0;
+}
+
 function capturePortSnapshot(basePort) {
   const snapshot = new Map();
   for (let current = basePort; current <= basePort + portRetryWindow; current += 1) {
@@ -257,6 +266,11 @@ function stop(port) {
 
   if (!killPid(status.pid)) {
     console.error(`停止失败: PID ${status.pid}`);
+    process.exit(1);
+  }
+
+  if (!waitForPidExit(status.pid)) {
+    console.error(`停止超时: PID ${status.pid} 仍未完全退出`);
     process.exit(1);
   }
 

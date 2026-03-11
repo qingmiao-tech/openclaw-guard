@@ -23,6 +23,45 @@ cd openclaw-guard
 npm install
 ```
 
+## 一键启动脚本
+
+Windows:
+
+```bat
+start-web.bat
+```
+
+macOS / Linux:
+
+```bash
+bash ./start-web.sh
+```
+
+脚本行为统一为:
+
+- 先检查 `node` / `npm` 是否可用
+- 如果本地还没有 `node_modules`，自动执行 `npm install`
+- 如果 Guard Web 已经在后台运行，先停止旧实例
+- 重新构建最新版本
+- 再启动新的后台实例
+- 最后输出当前状态与访问地址
+
+如果你更习惯命令行，也可以直接执行:
+
+```bash
+npm run web:bg:restart
+```
+
+默认端口是 `18088`，也支持自定义端口，例如:
+
+```bash
+bash ./start-web.sh --port 18090
+```
+
+```bat
+start-web.bat --port 18090
+```
+
 开发模式启动:
 
 ```bash

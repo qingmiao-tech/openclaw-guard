@@ -37,6 +37,7 @@
     "install.sh",
     "install.ps1",
     "README.md",
+    "README.en.md",
     "LICENSE",
     "package.json"
   ],

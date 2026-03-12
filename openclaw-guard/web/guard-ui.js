@@ -1860,6 +1860,158 @@
     ].join('\n');
   }
 
+  function getGitSyncScopeLevelMeta(level) {
+    if (level === 'core') {
+      return {
+        label: state.lang === 'zh' ? '核心同步' : 'Core Sync',
+        className: 'success',
+      };
+    }
+    if (level === 'optional') {
+      return {
+        label: state.lang === 'zh' ? '可选同步' : 'Optional',
+        className: 'warn',
+      };
+    }
+    if (level === 'separate') {
+      return {
+        label: state.lang === 'zh' ? '建议拆仓' : 'Separate Repo',
+        className: '',
+      };
+    }
+    return {
+      label: state.lang === 'zh' ? '默认排除' : 'Exclude By Default',
+      className: 'danger',
+    };
+  }
+
+  function describeGitSyncScopeEntry(entry) {
+    switch (entry?.kind) {
+      case 'workspace':
+        return {
+          description: state.lang === 'zh'
+            ? '工作区里的提示词、文档、代码和长期资料通常最值得保留，换机后恢复价值最高。'
+            : 'Workspace prompts, docs, code, and long-lived notes are usually the highest-value assets to preserve across machines.',
+          warning: entry.autoDetected
+            ? (state.lang === 'zh'
+              ? '这是一个新识别出的 Workspace 候选。Guard 已经能浏览它；如果它应绑定到某个 Agent，后续再补进正式配置即可。'
+              : 'This is a newly detected workspace candidate. Guard can already browse it; bind it to an agent later if needed.')
+            : (entry.hasGitRepo
+              ? (state.lang === 'zh'
+                ? '这个工作区内部已经带有独立 Git 仓库，建议继续单独同步。'
+                : 'This workspace already contains its own Git repository and is best synced separately.')
+              : ''),
+        };
+      case 'config':
+        return {
+          description: state.lang === 'zh'
+            ? '这是当前机器最关键的主配置入口，通常值得保留，但要避免把敏感值直接写进公开仓库。'
+            : 'This is the main machine-level configuration entry and is usually worth keeping, but avoid storing sensitive values in public repositories.',
+          warning: '',
+        };
+      case 'cron':
+        return {
+          description: state.lang === 'zh'
+            ? '如果你希望换机后继续保留自动化任务编排，建议把这些规则一并同步。'
+            : 'Sync this if you want scheduled automation rules to survive a machine move.',
+          warning: '',
+        };
+      case 'canvas':
+        return {
+          description: state.lang === 'zh'
+            ? '绘画和画布记录可以作为第二层资产保留，方便换机后找回创作历史。'
+            : 'Canvas and drawing history can be kept as a second-layer asset so the creative record survives a machine move.',
+          warning: state.lang === 'zh'
+            ? '友好提醒：画布导出、图片和历史快照可能会让仓库迅速变大。建议只在你确实需要跨机器延续创作记录时再纳入同步。'
+            : 'Friendly reminder: exports, images, and history snapshots can grow quickly. Include them only when you really need the creative history on another machine.',
+        };
+      case 'extensions':
+        return {
+          description: state.lang === 'zh'
+            ? '如果这里放的是你长期维护的插件代码，更推荐单独仓库管理，而不是混进根 .openclaw 同步。'
+            : 'If this folder contains plugin code you maintain long-term, it is better kept in a dedicated repository instead of the root .openclaw sync.',
+          warning: '',
+        };
+      case 'skills':
+        return {
+          description: state.lang === 'zh'
+            ? 'Skills 往往是可复用代码或模板，通常更适合独立版本化。'
+            : 'Skills are often reusable code or templates and are usually better versioned independently.',
+          warning: '',
+        };
+      case 'runtime':
+        return {
+          description: state.lang === 'zh'
+            ? '这些目录主要承载运行态状态、日志和密钥，不适合默认进 Git。'
+            : 'These paths mostly contain runtime state, logs, and secrets, so they should not enter Git by default.',
+          warning: '',
+        };
+      case 'identity':
+        return {
+          description: state.lang === 'zh'
+            ? '这里通常包含设备绑定、授权状态或敏感凭据，更适合留在本机。'
+            : 'These files usually contain device binding, auth state, or sensitive credentials and are best kept local.',
+          warning: '',
+        };
+      case 'browser-cache':
+        return {
+          description: state.lang === 'zh'
+            ? '浏览器状态、队列和媒体缓存通常可重建，但体积和噪音都偏大。'
+            : 'Browser state, queues, and media caches are usually reproducible but tend to be large and noisy.',
+          warning: '',
+        };
+      case 'session-history':
+        return {
+          description: state.lang === 'zh'
+            ? '会话历史、SQLite 索引和备份文件更像运行副产物，默认不建议同步。'
+            : 'Session history, SQLite indexes, and backup files behave more like runtime by-products and are not recommended for default sync.',
+          warning: '',
+        };
+      default:
+        return {
+          description: '',
+          warning: '',
+        };
+    }
+  }
+
+  function renderGitSyncScopeEntry(entry) {
+    const levelMeta = getGitSyncScopeLevelMeta(entry.level);
+    const detail = describeGitSyncScopeEntry(entry);
+    const stats = [];
+    if (entry.fileCount > 0) stats.push(`${formatNumber(entry.fileCount)} ${state.lang === 'zh' ? '个文件' : 'files'}`);
+    if (entry.totalBytes > 0) stats.push(formatBytes(entry.totalBytes));
+    if (entry.statsTruncated) {
+      stats.push(state.lang === 'zh' ? '统计为近似值' : 'approximate stats');
+    }
+    return `
+      <div class="list-item">
+        <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+          <strong>${escapeHtml(entry.label)}</strong>
+          <span class="pill ${levelMeta.className}">${escapeHtml(levelMeta.label)}</span>
+        </div>
+        ${entry.paths?.length ? `<div class="muted small" style="margin-top:8px;">${escapeHtml(entry.paths.join(' · '))}</div>` : ''}
+        ${detail.description ? `<div style="margin-top:8px;">${escapeHtml(detail.description)}</div>` : ''}
+        ${detail.warning ? `<div class="status warn" style="margin-top:10px;">${escapeHtml(detail.warning)}</div>` : ''}
+        ${stats.length ? `<div class="muted small" style="margin-top:8px;">${escapeHtml(stats.join(' · '))}</div>` : ''}
+      </div>
+    `;
+  }
+
+  function renderGitSyncScopeSection(title, entries, emptyMessage) {
+    return `
+      <div class="sub-card">
+        <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+          <strong>${escapeHtml(title)}</strong>
+          <span class="pill">${escapeHtml(`${formatNumber(entries.length)} ${state.lang === 'zh' ? '项' : 'items'}`)}</span>
+        </div>
+        <div style="margin-top:12px;">
+          ${entries.length ? `<div class="list">${entries.map((entry) => renderGitSyncScopeEntry(entry)).join('')}</div>` : emptyState(emptyMessage)}
+        </div>
+      </div>
+    `;
+  }
+
   function detectGitPathStatus(pathValue, stageableSet, skippedEmbeddedRepos) {
     if (stageableSet?.has(pathValue)) return 'stageable';
     if ((skippedEmbeddedRepos || []).some((repoPath) => pathValue === repoPath || pathValue.startsWith(`${repoPath}/`))) {
@@ -5969,12 +6121,14 @@
     const gitIgnoreMode = state.gitSyncIgnoreMode === 'exact' ? 'exact' : 'smart';
     setPanelSections(t('tabs.git-sync'), t('desc.git-sync'), [
       { id: 'git-sync-summary', title: state.lang === 'zh' ? 'Git 同步概览' : 'Git Sync Overview' },
+      { id: 'git-sync-scope', title: state.lang === 'zh' ? '同步范围建议' : 'Sync Scope Guidance' },
       { id: 'git-sync-main', title: state.lang === 'zh' ? '现在能不能同步' : 'Can You Sync Now?' },
       { id: 'git-sync-ignore', title: state.lang === 'zh' ? '.gitignore 建议' : '.gitignore Suggestions' },
       { id: 'git-sync-auth', title: state.lang === 'zh' ? '认证、提交与推送' : 'Auth, Commit & Push' },
     ]);
     const status = await apiRequest('/api/git-sync/status');
     const gitignorePreviewPromise = apiRequest(`/api/git-sync/gitignore-preview?mode=${encodeURIComponent(gitIgnoreMode)}`).catch(() => null);
+    const syncScopePromise = apiRequest('/api/git-sync/scope').catch(() => null);
     const oauth = status.oauth || {};
 
     if (!state.gitSyncDraftMessage) state.gitSyncDraftMessage = '';
@@ -6156,6 +6310,11 @@
           <div class="empty">${escapeHtml(state.lang === 'zh' ? '正在加载嵌套仓库预览…' : 'Loading embedded repository preview…')}</div>
         </div>
       </div>
+      <div class="card">
+        <h3>${state.lang === 'zh' ? '同步范围建议' : 'Sync Scope Guidance'}</h3>
+        <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这里会把 .openclaw 里的内容分成核心同步、可选同步、建议拆仓和默认排除四层，帮助你决定哪些应该跟着 Git 走。' : 'This card groups .openclaw content into core sync, optional sync, separate repo, and exclude-by-default layers so you can decide what should travel with Git.')}</div>
+        <div class="empty">${escapeHtml(state.lang === 'zh' ? '正在分析同步范围…' : 'Analyzing sync scope…')}</div>
+      </div>
     `;
     setPanel(t('tabs.git-sync'), t('desc.git-sync'), partialBody);
     applyPendingPanelFocus('git-sync');
@@ -6202,6 +6361,73 @@
       : emptyState(skippedEmbeddedRepos.length
         ? (state.lang === 'zh' ? '当前 .gitignore 已覆盖这些嵌套仓库规则。' : '.gitignore already covers the current embedded repositories.')
         : (state.lang === 'zh' ? '当前没有需要生成的嵌套仓库忽略规则。' : 'No embedded repository ignore rules need to be generated right now.'));
+    const syncScope = await syncScopePromise;
+    const scopeEntries = Array.isArray(syncScope?.entries) ? syncScope.entries : [];
+    const scopeCoreEntries = scopeEntries.filter((entry) => entry.level === 'core' && entry.exists !== false);
+    const scopeOptionalEntries = scopeEntries.filter((entry) => entry.level === 'optional' && entry.exists !== false);
+    const scopeSeparateEntries = scopeEntries.filter((entry) => entry.level === 'separate' && entry.exists !== false);
+    const scopeExcludeEntries = scopeEntries.filter((entry) => entry.level === 'exclude' && entry.exists !== false);
+    const workspaceCandidates = Array.isArray(syncScope?.workspaceCandidates) ? syncScope.workspaceCandidates : [];
+    const scopeIgnoreMissingEntries = Array.isArray(syncScope?.missingIgnoreEntries) ? syncScope.missingIgnoreEntries : [];
+    const scopeIgnoreBlock = typeof syncScope?.recommendedIgnoreBlock === 'string' ? syncScope.recommendedIgnoreBlock : '';
+    const workspaceCandidateNotice = workspaceCandidates.length
+      ? `<div class="status warn" style="margin-top:14px;">${escapeHtml(state.lang === 'zh'
+          ? `检测到 ${workspaceCandidates.length} 个新工作区候选。Guard 已自动把它们纳入文件浏览与搜索范围；如果它们应该绑定到某个 Agent，请后续补进正式配置。`
+          : `Detected ${workspaceCandidates.length} new workspace candidates. Guard already includes them in file browsing and search; add them to the formal agent config later if they should be agent-bound.`)}</div>`
+      : '';
+    const workspaceCandidateHtml = workspaceCandidates.length
+      ? `<div class="list" style="margin-top:12px;">${workspaceCandidates.map((candidate) => `
+          <div class="list-item">
+            <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+              <strong>${escapeHtml(candidate.relativePath)}</strong>
+              <span class="pill ${candidate.hasGitRepo ? 'warn' : 'success'}">${escapeHtml(candidate.hasGitRepo ? (state.lang === 'zh' ? '带独立 Git' : 'Has Git Repo') : (state.lang === 'zh' ? '已自动识别' : 'Auto-detected'))}</span>
+            </div>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(candidate.path)}</div>
+            <div style="margin-top:8px;">${escapeHtml(candidate.reason === 'named-workspace'
+              ? (state.lang === 'zh' ? '目录命名符合 workspace / workspace-* 约定。' : 'The directory name matches the workspace / workspace-* convention.')
+              : (state.lang === 'zh' ? '目录内发现了多个 Workspace 标记文件。' : 'Multiple workspace marker files were found inside this directory.'))}</div>
+          </div>
+        `).join('')}</div>`
+      : '';
+    const scopeSummaryHtml = syncScope
+      ? `
+        <div class="grid">
+          ${metricCard(state.lang === 'zh' ? '核心同步' : 'Core Sync', formatNumber(syncScope?.summary?.coreCount || scopeCoreEntries.length), state.lang === 'zh' ? '建议默认保留' : 'recommended by default', 'success')}
+          ${metricCard(state.lang === 'zh' ? '可选同步' : 'Optional', formatNumber(syncScope?.summary?.optionalCount || scopeOptionalEntries.length), state.lang === 'zh' ? '按价值与体积取舍' : 'choose based on value and size', scopeOptionalEntries.length > 0 ? 'warn' : '')}
+          ${metricCard(state.lang === 'zh' ? '建议拆仓' : 'Separate Repo', formatNumber(syncScope?.summary?.separateCount || scopeSeparateEntries.length), state.lang === 'zh' ? '代码型资产更适合独立版本化' : 'code-like assets are better versioned separately')}
+          ${metricCard(state.lang === 'zh' ? '默认排除' : 'Exclude', formatNumber(syncScope?.summary?.excludeCount || scopeExcludeEntries.length), state.lang === 'zh' ? '运行态与敏感信息' : 'runtime and sensitive data', scopeExcludeEntries.length > 0 ? 'danger' : '')}
+        </div>
+        ${workspaceCandidateNotice}
+        ${renderGitSyncScopeSection(state.lang === 'zh' ? '第一层：核心同步' : 'Layer 1: Core Sync', scopeCoreEntries, state.lang === 'zh' ? '当前没有核心同步项。' : 'No core-sync items detected.')}
+        ${renderGitSyncScopeSection(state.lang === 'zh' ? '第二层：可选同步' : 'Layer 2: Optional Sync', scopeOptionalEntries, state.lang === 'zh' ? '当前没有可选同步项。' : 'No optional-sync items detected.')}
+        ${renderGitSyncScopeSection(state.lang === 'zh' ? '第三层：建议拆仓' : 'Layer 3: Separate Repositories', scopeSeparateEntries, state.lang === 'zh' ? '当前没有建议拆仓的目录。' : 'No separate-repository candidates detected.')}
+        ${renderGitSyncScopeSection(state.lang === 'zh' ? '第四层：默认排除' : 'Layer 4: Exclude By Default', scopeExcludeEntries, state.lang === 'zh' ? '当前没有默认排除项。' : 'No default exclusions detected.')}
+        ${workspaceCandidateHtml ? `
+          <div class="sub-card" style="margin-top:14px;">
+            <strong>${escapeHtml(state.lang === 'zh' ? '新工作区候选' : 'New Workspace Candidates')}</strong>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这些目录已经被自动识别为 Workspace 候选。你现在就可以在文件页里浏览它们；如果需要 Agent 级绑定，再补正式配置。' : 'These directories are already recognized as workspace candidates. You can browse them in the Files tab now; add formal agent bindings later if needed.')}</div>
+            ${workspaceCandidateHtml}
+          </div>
+        ` : ''}
+        <div class="sub-card" style="margin-top:14px;">
+          <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+            <div>
+              <strong>${escapeHtml(state.lang === 'zh' ? '推荐排除模板' : 'Recommended Exclusion Template')}</strong>
+              <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这是一组更贴近“内容同步、运行态排除”的根仓建议规则。你可以先复制审阅，再决定是否写进 .gitignore。' : 'This root-level template follows a content-sync / runtime-exclude approach. Copy and review it first, then decide whether to write it into .gitignore.')}</div>
+            </div>
+            <span class="pill ${scopeIgnoreMissingEntries.length > 0 ? 'warn' : 'success'}">${escapeHtml(scopeIgnoreMissingEntries.length > 0 ? `${formatNumber(scopeIgnoreMissingEntries.length)} ${state.lang === 'zh' ? '条待补齐' : 'missing'}` : (state.lang === 'zh' ? '已覆盖' : 'Covered'))}</span>
+          </div>
+          <div style="margin-top:12px;">
+            ${scopeIgnoreBlock
+              ? `<pre>${escapeHtml(scopeIgnoreBlock)}</pre>`
+              : emptyState(state.lang === 'zh' ? '当前没有新的推荐排除规则。' : 'No new exclusion rules are recommended right now.')}
+          </div>
+          <div class="toolbar tight" style="margin-top:12px;">
+            <button class="action-btn" type="button" data-git-action="copy-scope-ignore-template" ${scopeIgnoreBlock ? '' : 'disabled'}>${state.lang === 'zh' ? '复制推荐排除模板' : 'Copy Exclusion Template'}</button>
+          </div>
+        </div>
+      `
+      : `<div class="card">${emptyState(state.lang === 'zh' ? '暂时无法读取同步范围建议。' : 'Sync scope guidance is unavailable right now.')}</div>`;
 
     const body = `
       ${renderCacheSummaryCard(status.cache, state.lang === 'zh' ? 'Git 状态缓存' : 'Git Status Cache')}
@@ -6216,6 +6442,11 @@
       </div>
       ${status.state?.lastError ? `<div class="status error" style="margin-top:14px;">${escapeHtml((state.lang === 'zh' ? '最近错误：' : 'Last error: ') + status.state.lastError)}</div>` : ''}
       ${embeddedRepoNotice}
+      <div class="card" style="margin-top:14px;">
+        <h3>${state.lang === 'zh' ? '同步范围建议' : 'Sync Scope Guidance'}</h3>
+        <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '目标不是把整个 .openclaw 全量塞进 Git，而是把真正值得换机保留的内容和运行副产物分开。' : 'The goal is not to push the entire .openclaw into Git, but to separate high-value portable content from runtime by-products.')}</div>
+        <div style="margin-top:14px;">${scopeSummaryHtml}</div>
+      </div>
       <div style="margin-top:14px;">${renderActionFeedback(state.lang === 'zh' ? '最近一次同步结果' : 'Latest Sync Result', state.gitSyncLastAction, state.lang === 'zh' ? '你还没有执行过 Git 同步操作。' : 'No Git sync action has been executed yet.')}</div>
       <div class="grid" style="margin-top:14px;">
         <div class="card accent-info panel-focus-target" id="git-sync-readiness-card">
@@ -6593,6 +6824,13 @@
             await copyTextValue(gitIgnoreTemplate, {
               successMessage: state.lang === 'zh' ? '忽略模板已复制。' : 'Ignore template copied.',
               emptyMessage: state.lang === 'zh' ? '当前没有可复制的忽略模板。' : 'No ignore template available.',
+            });
+            return;
+          }
+          if (action === 'copy-scope-ignore-template') {
+            await copyTextValue(scopeIgnoreBlock, {
+              successMessage: state.lang === 'zh' ? '推荐排除模板已复制。' : 'Exclusion template copied.',
+              emptyMessage: state.lang === 'zh' ? '当前没有可复制的推荐排除模板。' : 'No exclusion template is available right now.',
             });
             return;
           }

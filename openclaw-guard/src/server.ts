@@ -58,6 +58,7 @@ import {
     startOAuthLogin,
     syncGitSync
 } from './git-sync.js';
+import { getGitSyncScopeReport } from './git-sync-scope.js';
 import { getGuardRestartStatus, scheduleGuardRestart } from './guard-restart.js';
 import { generateHardenScript, getAllHardenSteps } from './harden.js';
 import {
@@ -769,6 +770,10 @@ export function startServer(port: number) {
         }
         if (pathname === '/api/git-sync/gitignore-preview' && req.method === 'GET') {
           jsonResponse(res, getCachedGitIgnorePreview(url.searchParams.get('mode') === 'exact' ? 'exact' : 'smart'));
+          return;
+        }
+        if (pathname === '/api/git-sync/scope' && req.method === 'GET') {
+          jsonResponse(res, getGitSyncScopeReport());
           return;
         }
         if (pathname === '/api/git-sync/gitignore-apply' && req.method === 'POST') {

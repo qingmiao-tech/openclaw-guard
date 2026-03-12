@@ -482,9 +482,9 @@ export function restartService(): ServiceActionResult {
 
 export function getLogs(lines = 100): string[] {
   const candidates = [
-    ['logs', '--plain', '--limit', String(lines)],
+    ['logs', '--plain', '--no-color', '--limit', String(lines)],
+    ['logs', '--no-color', '--limit', String(lines)],
     ['logs', '--limit', String(lines)],
-    ['logs', '--lines', String(lines)],
   ];
   let failureOutput = '';
   for (const args of candidates) {

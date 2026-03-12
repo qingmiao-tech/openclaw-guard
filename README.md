@@ -70,28 +70,30 @@ pwsh ./install.ps1 -Version latest -Port 18088 -DryRun
 
 ## 一键启动脚本
 
+辅助包装脚本统一收纳在 `launchers/` 目录，和内部 `scripts/*.mjs` 实现分开维护。
+
 Windows:
 
 ```bat
-start-web.bat
-stop-web.bat
-status-web.bat
+launchers\start-web.bat
+launchers\stop-web.bat
+launchers\status-web.bat
 ```
 
 macOS / Linux:
 
 ```bash
-bash ./start-web.sh
-bash ./stop-web.sh
-bash ./status-web.sh
+bash ./launchers/start-web.sh
+bash ./launchers/stop-web.sh
+bash ./launchers/status-web.sh
 ```
 
 macOS 双击方式:
 
 ```text
-start-web.command
-stop-web.command
-status-web.command
+launchers/start-web.command
+launchers/stop-web.command
+launchers/status-web.command
 ```
 
 脚本行为统一为:
@@ -126,15 +128,15 @@ npm run web:bg:show-status
 默认端口是 `18088`，也支持自定义端口，例如:
 
 ```bash
-bash ./start-web.sh --port 18090
-bash ./stop-web.sh --port 18090
-bash ./status-web.sh --port 18090
+bash ./launchers/start-web.sh --port 18090
+bash ./launchers/stop-web.sh --port 18090
+bash ./launchers/status-web.sh --port 18090
 ```
 
 ```bat
-start-web.bat --port 18090
-stop-web.bat --port 18090
-status-web.bat --port 18090
+launchers\start-web.bat --port 18090
+launchers\stop-web.bat --port 18090
+launchers\status-web.bat --port 18090
 ```
 
 开发模式启动:

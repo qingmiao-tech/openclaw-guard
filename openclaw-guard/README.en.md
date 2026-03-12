@@ -70,28 +70,30 @@ pwsh ./install.ps1 -Version latest -Port 18088 -DryRun
 
 ## One-click web scripts
 
+The convenience wrappers now live under `launchers/`, separate from the internal `scripts/*.mjs` implementation files.
+
 Windows:
 
 ```bat
-start-web.bat
-stop-web.bat
-status-web.bat
+launchers\start-web.bat
+launchers\stop-web.bat
+launchers\status-web.bat
 ```
 
 macOS / Linux:
 
 ```bash
-bash ./start-web.sh
-bash ./stop-web.sh
-bash ./status-web.sh
+bash ./launchers/start-web.sh
+bash ./launchers/stop-web.sh
+bash ./launchers/status-web.sh
 ```
 
 macOS double-click entry points:
 
 ```text
-start-web.command
-stop-web.command
-status-web.command
+launchers/start-web.command
+launchers/stop-web.command
+launchers/status-web.command
 ```
 
 Unified behavior of the start scripts:
@@ -126,15 +128,15 @@ npm run web:bg:show-status
 The default port is `18088`, and custom ports are supported as well:
 
 ```bash
-bash ./start-web.sh --port 18090
-bash ./stop-web.sh --port 18090
-bash ./status-web.sh --port 18090
+bash ./launchers/start-web.sh --port 18090
+bash ./launchers/stop-web.sh --port 18090
+bash ./launchers/status-web.sh --port 18090
 ```
 
 ```bat
-start-web.bat --port 18090
-stop-web.bat --port 18090
-status-web.bat --port 18090
+launchers\start-web.bat --port 18090
+launchers\stop-web.bat --port 18090
+launchers\status-web.bat --port 18090
 ```
 
 Start in development mode:

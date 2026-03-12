@@ -340,6 +340,23 @@
     `;
   }
 
+  function renderPageTip(options = {}) {
+    const title = options.title || (state.lang === 'zh' ? '操作提示' : 'Quick Tip');
+    const body = options.body || '';
+    const bodyHtml = options.bodyHtml || '';
+    const tone = options.tone === 'warn' ? 'warn' : 'info';
+    const icon = tone === 'warn' ? '!' : 'i';
+    return `
+      <div class="page-tip${tone === 'warn' ? ' tone-warn' : ''}">
+        <div class="page-tip-icon" aria-hidden="true">${icon}</div>
+        <div class="page-tip-main">
+          <div class="page-tip-label">${escapeHtml(title)}</div>
+          <div class="page-tip-body">${bodyHtml || escapeHtml(body)}</div>
+        </div>
+      </div>
+    `;
+  }
+
   function formatBytes(bytes) {
     const input = Number(bytes);
     if (!Number.isFinite(input) || input <= 0) return '-';
@@ -3457,16 +3474,16 @@
         ${metricCard(state.lang === 'zh' ? '通知' : 'Notifications', formatNumber(overview.notifications?.unread || 0), state.lang === 'zh' ? '未读通知' : 'unread')}
         ${metricCard(state.lang === 'zh' ? '记忆文件' : 'Memory Files', formatNumber(overview.memoryFiles || 0), overview.openclawDir || '-')}
       </div>
+      ${renderPageTip({
+        title: state.lang === 'zh' ? '页面用途' : 'Page Purpose',
+        body: state.lang === 'zh'
+          ? '驾驶舱只负责帮你快速判断整体状态、风险和提醒，不在这里堆具体操作。需要启动、重启或排查服务时，直接进入“运维”。'
+          : 'The cockpit is for quickly judging overall health, risks, and reminders. Keep detailed actions in Operations instead of loading them here.',
+      })}
       <div class="grid">
         <div class="card accent-info">
-          <h3>${state.lang === 'zh' ? '如何使用驾驶舱' : 'How To Use The Cockpit'}</h3>
-          <div class="status">${escapeHtml(state.lang === 'zh'
-            ? '这里主要用来快速看整体状态、风险和最近提醒，不在这里堆放具体操作。需要启动、重启或排查服务时，请进入“运维”页。'
-            : 'Use this page to quickly review overall status, risks, and recent reminders. Detailed service actions belong in Operations, not here.')}</div>
-          <div class="sub-card" style="margin-top:14px;">
-            <h3 style="margin-bottom:10px;">${state.lang === 'zh' ? '你现在最需要知道的' : 'What Matters Right Now'}</h3>
-            ${keyValueGrid(runtimeSummaryRows)}
-          </div>
+          <h3>${state.lang === 'zh' ? '你现在最需要知道的' : 'What Matters Right Now'}</h3>
+          ${keyValueGrid(runtimeSummaryRows)}
         </div>
         <div class="card">
           <h3>${state.lang === 'zh' ? '系统资源' : 'System Resources'}</h3>
@@ -3758,50 +3775,65 @@
         ${metricCard('OpenClaw', getInstallStateLabel(info.openclaw?.installed), info.openclaw?.version || '-', info.openclaw?.installed ? 'success' : 'warn')}
         ${metricCard(state.lang === 'zh' ? '本地 Env' : 'Local Env', formatNumber(envEntries.length), info.envPath || '-')}
       </div>
-      <div class="context-note">
-        <strong>${state.lang === 'zh' ? '什么时候来这里' : 'When To Use This Page'}</strong>
-        <span>${escapeHtml(state.lang === 'zh'
-          ? '需要启动、停止、重启或排查 Guard / Gateway 时进入这里。推荐顺序：先看驾驶舱，再回来处理服务与环境问题；需要深查时再去会话、安全或 Git 同步。'
-          : 'Use this page to start, stop, restart, or troubleshoot Guard and Gateway. Recommended flow: check the cockpit first, come back here for service and environment work, then continue into Sessions, Security, or Git Sync only when you need deeper diagnosis.')}</span>
-      </div>
-      <div class="card accent-info panel-focus-target" id="system-paths-card">
-        <h3>${state.lang === 'zh' ? '本机路径与配置位置' : 'Local Paths & Config Locations'}</h3>
-        ${keyValueGrid([
-          { label: state.lang === 'zh' ? '平台' : 'Platform', value: info.platform || '-' },
-          { label: state.lang === 'zh' ? '用户' : 'User', value: info.user || '-' },
-          { label: 'Home', value: info.home || '-' },
-          { label: 'OpenClaw Dir', value: info.openclawDir || '-' },
-          { label: 'openclaw.json', value: info.configPath || '-' },
-          { label: '.env', value: info.envPath || '-' },
-          { label: state.lang === 'zh' ? '当前工作台进程' : 'Current Workbench Process', value: info.pid || '-' },
-          { label: state.lang === 'zh' ? '当前监听端口' : 'Current Port', value: webReport.port || '-' },
-        ])}
-        <div class="sub-card" style="margin-top:14px;">
-          <div class="row" style="justify-content:space-between;">
-            <strong>${state.lang === 'zh' ? '这些路径分别做什么' : 'What These Paths Are For'}</strong>
-            <span class="pill success">${state.lang === 'zh' ? '当前工作台' : 'Current Workbench'}</span>
+      <div class="card accent-warn panel-focus-target" id="system-service-card">
+        <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+          <div>
+            <h3>${state.lang === 'zh' ? '服务操作与后台状态' : 'Service Actions & Background State'}</h3>
+            <p>${escapeHtml(state.lang === 'zh'
+              ? '启动、停止和重启按钮放在最前面。判断清楚状态后，直接在这里操作就可以。'
+              : 'Keep the service controls first. Once the state is clear, act here directly without hunting through diagnostics.')}</p>
           </div>
-          <div class="muted small" style="margin-top:8px; line-height:1.7;">
-            ${escapeHtml(state.lang === 'zh'
-              ? 'openclaw.json 保存模型、渠道和 Agent 的主要配置；.env 保存只适合留在本机的密钥、令牌和账号变量，供渠道接入和 Git 同步等功能复用。'
-              : 'openclaw.json stores the main model, channel, and agent settings. The .env file stores machine-local secrets, tokens, and account values used by channels, Git sync, and related features.')}
+          <div class="tag-list">
+            <span class="chip ${webReport.running ? 'active' : ''}">${escapeHtml((state.lang === 'zh' ? 'Guard Web：' : 'Guard Web: ') + getRunStateLabel(webReport.running))}</span>
+            <span class="chip ${service.running ? 'active' : ''}">${escapeHtml((state.lang === 'zh' ? 'Gateway：' : 'Gateway: ') + getRunStateLabel(service.running))}</span>
+            <span class="chip">${escapeHtml((state.lang === 'zh' ? '端口：' : 'Port: ') + (webReport.port || '-'))}</span>
           </div>
         </div>
-      </div>
-      <div class="grid">
-        <div class="card accent-warn panel-focus-target" id="system-service-card">
-          <h3>${state.lang === 'zh' ? '服务操作与后台状态' : 'Service Actions & Background State'}</h3>
-          <div class="toolbar">
-            <button class="action-btn primary" type="button" data-service-action="start" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('start'))} Gateway</button>
-            <button class="action-btn" type="button" data-service-action="restart" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('restart'))} Gateway</button>
-            <button class="action-btn warn" type="button" data-service-action="stop" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('stop'))} Gateway</button>
-            <button class="action-btn ${webPrimaryDisabled ? '' : 'primary'}" type="button" data-service-action="start-web" ${webPrimaryDisabled ? 'disabled' : ''}>${escapeHtml(webPrimaryLabel)}</button>
-            <button class="action-btn warn" type="button" data-service-action="stop-web" ${webReport.running ? '' : 'disabled'}>${escapeHtml(t('stopWeb'))}</button>
-            <button class="action-btn" type="button" data-service-action="restart-guard" ${guardRestartBusy ? 'disabled' : ''}>${escapeHtml(t('restartGuard'))}</button>
-            <button class="action-btn" type="button" data-service-action="restart-guard-with-gateway" ${(guardRestartBusy || serviceBusy) ? 'disabled' : ''}>${escapeHtml(t('restartGuardWithGateway'))}</button>
+        <div class="toolbar" style="margin-top:14px;">
+          <button class="action-btn primary" type="button" data-service-action="start" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('start'))} Gateway</button>
+          <button class="action-btn" type="button" data-service-action="restart" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('restart'))} Gateway</button>
+          <button class="action-btn warn" type="button" data-service-action="stop" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('stop'))} Gateway</button>
+          <button class="action-btn ${webPrimaryDisabled ? '' : 'primary'}" type="button" data-service-action="start-web" ${webPrimaryDisabled ? 'disabled' : ''}>${escapeHtml(webPrimaryLabel)}</button>
+          <button class="action-btn warn" type="button" data-service-action="stop-web" ${webReport.running ? '' : 'disabled'}>${escapeHtml(t('stopWeb'))}</button>
+          <button class="action-btn" type="button" data-service-action="restart-guard" ${guardRestartBusy ? 'disabled' : ''}>${escapeHtml(t('restartGuard'))}</button>
+          <button class="action-btn" type="button" data-service-action="restart-guard-with-gateway" ${(guardRestartBusy || serviceBusy) ? 'disabled' : ''}>${escapeHtml(t('restartGuardWithGateway'))}</button>
+        </div>
+        <div class="status ${webPrimaryDisabled && !isCurrentManaged ? 'warn' : ''}" style="margin-top:14px;">${escapeHtml(webPrimaryHint)}</div>
+        <div class="grid" style="margin-top:14px;">
+          <div class="list-item">
+            <div class="row" style="justify-content:space-between;">
+              <strong>${state.lang === 'zh' ? '检测结果' : 'Detection Result'}</strong>
+              <span class="pill ${webReport.running ? 'success' : 'warn'}">${escapeHtml(getRunStateLabel(webReport.running))}</span>
+            </div>
+            <div class="muted small" style="margin-top:8px;">
+              ${escapeHtml(webReport.running
+                ? (state.lang === 'zh'
+                  ? `当前检测到 PID ${webReport.pid || '-'} 正在监听端口 ${webReport.port}，可直接访问 ${webReport.workbenchUrl}。`
+                  : `PID ${webReport.pid || '-'} is listening on port ${webReport.port}. Open ${webReport.workbenchUrl} to access the workbench.`)
+                : (state.lang === 'zh' ? '当前端口没有 Guard Web 进程在监听。' : 'No Guard Web process is listening on this port right now.'))}
+            </div>
           </div>
-          <div class="status ${webPrimaryDisabled && !isCurrentManaged ? 'warn' : ''}" style="margin-top:14px;">${escapeHtml(webPrimaryHint)}</div>
-          <div class="list-item" style="margin-top:14px;">
+          <div class="list-item">
+            <div class="row" style="justify-content:space-between;">
+              <strong>${state.lang === 'zh' ? '托管来源' : 'Tracking Source'}</strong>
+              <span class="pill ${webReport.managed ? 'success' : 'warn'}">${escapeHtml(trackingSourceLabel)}</span>
+            </div>
+            <div class="muted small" style="margin-top:8px;">
+              ${escapeHtml(webReport.managed
+                ? (state.lang === 'zh' ? '该实例已经被 Guard 写入后台运行记录，可直接按托管实例处理。' : 'This instance is already tracked by Guard background runtime records and can be handled as a managed service.')
+                : (state.lang === 'zh' ? '当前只是通过端口扫描识别到进程，还没有进入 Guard 托管。' : 'This instance is currently detected by port scan only and is not under Guard management yet.'))}
+            </div>
+          </div>
+          <div class="list-item">
+            <div class="row" style="justify-content:space-between;">
+              <strong>${state.lang === 'zh' ? '下一步建议' : 'Recommended Next Step'}</strong>
+              <span class="chip">${escapeHtml(webNextActionLabel)}</span>
+            </div>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(webNextActionHelp)}</div>
+          </div>
+        </div>
+        <div class="grid" style="margin-top:14px;">
+          <div class="list-item">
             <div class="row" style="justify-content:space-between;">
               <strong>${state.lang === 'zh' ? 'Gateway 后台任务' : 'Gateway Background Task'}</strong>
               <span class="pill ${serviceActionMeta.pillClass}">${escapeHtml(serviceActionMeta.phaseLabel)}</span>
@@ -3813,7 +3845,7 @@
                 : `Task PID ${service.action?.pid || '-'} · started ${formatDate(service.action?.startedAt)} · finished ${formatDate(service.action?.finishedAt)}`)}
             </div>
           </div>
-          <div class="list-item" style="margin-top:14px;">
+          <div class="list-item">
             <div class="row" style="justify-content:space-between;">
               <strong>${state.lang === 'zh' ? 'Guard 完整重启任务' : 'Guard Full Restart Task'}</strong>
               <span class="pill ${guardRestartMeta.pillClass}">${escapeHtml(guardRestartMeta.phaseLabel)}</span>
@@ -3830,52 +3862,72 @@
                 : `Started ${formatDate(guardRestartStatus?.startedAt)} · Finished ${formatDate(guardRestartStatus?.finishedAt)}`)}
             </div>
           </div>
-          <div class="grid" style="margin-top:14px;">
-            <div class="list-item">
-              <div class="row" style="justify-content:space-between;">
-                <strong>${state.lang === 'zh' ? '检测结果' : 'Detection Result'}</strong>
-                <span class="pill ${webReport.running ? 'success' : 'warn'}">${escapeHtml(getRunStateLabel(webReport.running))}</span>
-              </div>
-              <div class="muted small" style="margin-top:8px;">
-                ${escapeHtml(webReport.running
-                  ? (state.lang === 'zh'
-                    ? `当前检测到 PID ${webReport.pid || '-'} 正在监听端口 ${webReport.port}，可直接访问 ${webReport.workbenchUrl}。`
-                    : `PID ${webReport.pid || '-'} is listening on port ${webReport.port}. Open ${webReport.workbenchUrl} to access the workbench.`)
-                  : (state.lang === 'zh' ? '当前端口没有 Guard Web 进程在监听。' : 'No Guard Web process is listening on this port right now.'))}
-              </div>
+        </div>
+        <div class="sub-card" style="margin-top:14px;">
+          <h3 style="margin-bottom:10px;">${state.lang === 'zh' ? '手动命令参考' : 'Manual Commands'}</h3>
+          <div class="command-list">
+            <code>openclaw-guard web-status --port ${webReport.port}</code>
+            <code>npm run web:bg:start</code>
+            <code>npm run web:bg:stop</code>
+          </div>
+          <div class="muted small" style="margin-top:10px;">
+            ${escapeHtml(state.lang === 'zh'
+              ? '如果这个工作台已经打开，优先使用“纳入后台托管”或“一键停后台服务”，避免在同一端口重复启动第二个实例。'
+              : 'If this workbench is already open, adopt it or stop the background service first instead of starting a second instance on the same port.')}
+          </div>
+        </div>
+      </div>
+      ${renderPageTip({
+        title: state.lang === 'zh' ? '适用场景' : 'Best Used For',
+        body: state.lang === 'zh'
+          ? '当你需要启动、停止、重启或排查 Guard / Gateway 时，优先在这一页处理。推荐顺序：先看驾驶舱，再回到这里动服务；只有在需要深查时，再继续进入会话、安全或 Git 同步。'
+          : 'Use this page first when you need to start, stop, restart, or troubleshoot Guard and Gateway. Check the cockpit first, act here next, and only continue into Sessions, Security, or Git Sync for deeper diagnosis.',
+      })}
+      <div class="grid">
+        <div class="card accent-info panel-focus-target" id="system-paths-card">
+          <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+            <div>
+              <h3>${state.lang === 'zh' ? '路径与配置位置' : 'Paths & Config Locations'}</h3>
+              <p>${escapeHtml(state.lang === 'zh'
+                ? '日常只会频繁用到端口、openclaw.json 和 .env。其他路径默认折叠，排查问题时再展开即可。'
+                : 'For daily work you usually only need the port, openclaw.json, and .env. The rest stays folded until you need diagnostics.')}</p>
             </div>
-            <div class="list-item">
-              <div class="row" style="justify-content:space-between;">
-                <strong>${state.lang === 'zh' ? '托管来源' : 'Tracking Source'}</strong>
-                <span class="pill ${webReport.managed ? 'success' : 'warn'}">${escapeHtml(trackingSourceLabel)}</span>
-              </div>
-              <div class="muted small" style="margin-top:8px;">
-                ${escapeHtml(webReport.managed
-                  ? (state.lang === 'zh' ? '该实例已经被 Guard 写入后台运行记录，可直接按托管实例处理。' : 'This instance is already tracked by Guard background runtime records and can be handled as a managed service.')
-                  : (state.lang === 'zh' ? '当前只是通过端口扫描识别到进程，还没有进入 Guard 托管。' : 'This instance is currently detected by port scan only and is not under Guard management yet.'))}
-              </div>
-            </div>
-            <div class="list-item">
-              <div class="row" style="justify-content:space-between;">
-                <strong>${state.lang === 'zh' ? '下一步建议' : 'Recommended Next Step'}</strong>
-                <span class="chip">${escapeHtml(webNextActionLabel)}</span>
-              </div>
-              <div class="muted small" style="margin-top:8px;">${escapeHtml(webNextActionHelp)}</div>
+            <div class="tag-list">
+              <span class="chip">${escapeHtml((state.lang === 'zh' ? '平台：' : 'Platform: ') + (info.platform || '-'))}</span>
+              <span class="chip">${escapeHtml((state.lang === 'zh' ? '端口：' : 'Port: ') + (webReport.port || '-'))}</span>
+              <span class="chip active">openclaw.json</span>
+              <span class="chip active">.env</span>
             </div>
           </div>
-          <div class="sub-card" style="margin-top:14px;">
-            <h3 style="margin-bottom:10px;">${state.lang === 'zh' ? '手动命令参考' : 'Manual Commands'}</h3>
-            <div class="command-list">
-              <code>openclaw-guard web-status --port ${webReport.port}</code>
-              <code>npm run web:bg:start</code>
-              <code>npm run web:bg:stop</code>
-            </div>
-            <div class="muted small" style="margin-top:10px;">
-              ${escapeHtml(state.lang === 'zh'
-                ? '如果这个工作台已经打开，优先使用“纳入后台托管”或“一键停后台服务”，避免在同一端口重复启动第二个实例。'
-                : 'If this workbench is already open, adopt it or stop the background service first instead of starting a second instance on the same port.')}
-            </div>
-          </div>
+          ${renderAdvancedDisclosure({
+            title: state.lang === 'zh' ? '展开本机路径与配置' : 'Expand Paths & Config',
+            description: state.lang === 'zh'
+              ? '这里只有在排查路径、确认配置文件位置或联系技术支持时才需要展开。'
+              : 'Expand this when you need to troubleshoot paths, confirm config locations, or share details with support.',
+            bodyHtml: `
+              ${keyValueGrid([
+                { label: state.lang === 'zh' ? '平台' : 'Platform', value: info.platform || '-' },
+                { label: state.lang === 'zh' ? '用户' : 'User', value: info.user || '-' },
+                { label: 'Home', value: info.home || '-' },
+                { label: 'OpenClaw Dir', value: info.openclawDir || '-' },
+                { label: 'openclaw.json', value: info.configPath || '-' },
+                { label: '.env', value: info.envPath || '-' },
+                { label: state.lang === 'zh' ? '当前工作台进程' : 'Current Workbench Process', value: info.pid || '-' },
+                { label: state.lang === 'zh' ? '当前监听端口' : 'Current Port', value: webReport.port || '-' },
+              ])}
+              <div class="sub-card" style="margin-top:14px;">
+                <div class="row" style="justify-content:space-between;">
+                  <strong>${state.lang === 'zh' ? '这些路径分别做什么' : 'What These Paths Are For'}</strong>
+                  <span class="pill success">${state.lang === 'zh' ? '当前工作台' : 'Current Workbench'}</span>
+                </div>
+                <div class="muted small" style="margin-top:8px; line-height:1.7;">
+                  ${escapeHtml(state.lang === 'zh'
+                    ? 'openclaw.json 保存模型、渠道和 Agent 的主要配置；.env 保存只适合留在本机的密钥、令牌和账号变量，供渠道接入和 Git 同步等功能复用。'
+                    : 'openclaw.json stores the main model, channel, and agent settings. The .env file stores machine-local secrets, tokens, and account values used by channels, Git sync, and related features.')}
+                </div>
+              </div>
+            `,
+          })}
         </div>
         <div class="card accent-info panel-focus-target" id="system-prewarm-card">
           <div class="row" style="justify-content:space-between; align-items:flex-start;">
@@ -7250,24 +7302,30 @@
   async function loadLogs() {
     const serviceLogs = await apiRequest('/api/service/logs?lines=200').catch(() => ({ logs: [] }));
     const logLines = Array.isArray(serviceLogs.logs) ? serviceLogs.logs : [];
+    const logError = typeof logLines[0] === 'string' && /^(获取日志失败|Failed to fetch logs)/.test(logLines[0]);
     const body = `
       <div class="grid">
-        ${metricCard(state.lang === 'zh' ? '日志来源' : 'Source', 'Gateway', state.lang === 'zh' ? '当前仅展示 Gateway 日志' : 'Gateway logs only')}
-        ${metricCard(state.lang === 'zh' ? '日志行数' : 'Log Lines', formatNumber(logLines.length), state.lang === 'zh' ? '最近读取结果' : 'latest loaded result')}
+        ${metricCard(state.lang === 'zh' ? '日志来源' : 'Source', 'Gateway RPC', state.lang === 'zh' ? '当前仅展示 Gateway 日志' : 'Gateway logs only')}
+        ${metricCard(state.lang === 'zh' ? '日志行数' : 'Log Lines', formatNumber(logLines.length), state.lang === 'zh' ? '最近读取结果' : 'latest loaded result', logError ? 'warn' : '')}
       </div>
-      <div class="card">
-        <h3>${state.lang === 'zh' ? '如何查看日志' : 'How To Use Logs'}</h3>
-        <div class="status">${escapeHtml(state.lang === 'zh' ? '当服务启动失败、连接异常或动作报错时，先刷新这一页，再查看最近日志。' : 'If service startup, connectivity, or actions fail, refresh this page first and then inspect the latest log lines.')}</div>
-      </div>
+      ${renderPageTip({
+        title: state.lang === 'zh' ? '排查提示' : 'Troubleshooting Tip',
+        tone: logError ? 'warn' : 'info',
+        body: state.lang === 'zh'
+          ? '当服务启动失败、连接异常或动作报错时，先刷新这一页，再看最近日志；如果日志仍为空，再回到运维确认服务状态。'
+          : 'When startup, connectivity, or action failures occur, refresh this page first and then inspect the latest log lines. If logs stay empty, go back to Operations and confirm the service state.',
+      })}
       <div class="toolbar tight">
         <button class="chip active" data-logs-target="service">Gateway</button>
         <button class="action-btn" data-logs-action="reload">${escapeHtml(t('reload'))}</button>
       </div>
       <div class="card">
+        ${logError ? `<div class="status warn">${escapeHtml(logLines[0])}</div>` : ''}
         ${renderAdvancedDisclosure({
           title: state.lang === 'zh' ? '查看最近 200 行日志' : 'View The Latest 200 Log Lines',
           description: state.lang === 'zh' ? '日志内容较长时，默认折叠显示。需要排查问题时再展开查看。' : 'Logs can be long, so they stay folded by default. Expand them when you need to investigate an issue.',
           bodyHtml: `<pre>${escapeHtml(logLines.join('\n') || (state.lang === 'zh' ? '当前没有可显示的日志内容。' : 'No log content is available right now.'))}</pre>`,
+          marginTop: logError ? 12 : 0,
         })}
       </div>
     `;

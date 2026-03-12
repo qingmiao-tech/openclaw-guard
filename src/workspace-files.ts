@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { loadConfig, getNested } from './config.js';
 import { resolveUserPath, statSafe } from './guard-state.js';
+import { getOpenClawDir } from './platform.js';
 
 export interface AgentWorkspaceDocStatus {
   soul: boolean;
@@ -25,7 +26,17 @@ export interface ManagedRoot {
   id: string;
   label: string;
   path: string;
-  type: 'default-workspace' | 'agent-workspace';
+  type: 'default-workspace' | 'agent-workspace' | 'detected-workspace';
+}
+
+export interface DetectedWorkspaceCandidate {
+  id: string;
+  name: string;
+  path: string;
+  relativePath: string;
+  reason: 'named-workspace' | 'workspace-markers';
+  docStatus: AgentWorkspaceDocStatus;
+  hasGitRepo: boolean;
 }
 
 export interface ManagedFileEntry {
@@ -70,6 +81,9 @@ export interface CreateManagedEntryResult {
 const EDITABLE_EXTENSIONS = new Set(['.md', '.txt', '.json', '.json5', '.yml', '.yaml', '.log', '.csv']);
 const PREVIEWABLE_EXTENSIONS = new Set([...Array.from(EDITABLE_EXTENSIONS), '.ts', '.js', '.mjs', '.cjs', '.tsx', '.jsx']);
 const MEMORY_FILE_NAMES = new Set(['SOUL.md', 'USER.md', 'AGENTS.md', 'MEMORY.md']);
+const WORKSPACE_NAME_PATTERN = /^workspace(?:-[^/\\]+)?$/i;
+const WORKSPACE_MARKER_FILES = ['SOUL.md', 'USER.md', 'AGENTS.md', 'MEMORY.md', 'BOOTSTRAP.md', 'HEARTBEAT.md', 'IDENTITY.md', 'TOOLS.md'];
+const WORKSPACE_MARKER_DIRS = ['memory', '.openclaw'];
 
 function buildDocStatus(workspacePath: string): AgentWorkspaceDocStatus {
   return {
@@ -78,6 +92,72 @@ function buildDocStatus(workspacePath: string): AgentWorkspaceDocStatus {
     agents: fs.existsSync(path.join(workspacePath, 'AGENTS.md')),
     memory: fs.existsSync(path.join(workspacePath, 'MEMORY.md')) || fs.existsSync(path.join(workspacePath, 'memory')),
   };
+}
+
+function getConfiguredWorkspacePaths(): string[] {
+  const config = loadConfig();
+  const defaults = toObject(getNested(config, ['agents', 'defaults'])) || {};
+  const defaultWorkspace = typeof defaults.workspace === 'string' ? defaults.workspace : '~/.openclaw/workspace';
+  const list = Array.isArray(getNested(config, ['agents', 'list']))
+    ? getNested(config, ['agents', 'list']) as unknown[]
+    : [];
+
+  const configured = new Set<string>();
+  configured.add(resolveUserPath(defaultWorkspace));
+
+  for (const item of list) {
+    const record = toObject(item);
+    if (!record) continue;
+    const workspace = typeof record.workspace === 'string' && record.workspace.trim()
+      ? record.workspace
+      : defaultWorkspace;
+    configured.add(resolveUserPath(workspace));
+  }
+
+  return Array.from(configured);
+}
+
+function detectWorkspaceReason(workspacePath: string, directoryName: string): DetectedWorkspaceCandidate['reason'] | null {
+  if (WORKSPACE_NAME_PATTERN.test(directoryName)) return 'named-workspace';
+
+  const markerFileCount = WORKSPACE_MARKER_FILES.filter((fileName) => fs.existsSync(path.join(workspacePath, fileName))).length;
+  const markerDirCount = WORKSPACE_MARKER_DIRS.filter((dirName) => fs.existsSync(path.join(workspacePath, dirName))).length;
+
+  if (markerFileCount >= 2) return 'workspace-markers';
+  if (markerFileCount >= 1 && markerDirCount >= 1) return 'workspace-markers';
+  return null;
+}
+
+export function getDetectedWorkspaceCandidates(): DetectedWorkspaceCandidate[] {
+  const openclawDir = getOpenClawDir();
+  if (!fs.existsSync(openclawDir)) return [];
+
+  const configuredPaths = new Set(getConfiguredWorkspacePaths());
+  const entries = fs.readdirSync(openclawDir, { withFileTypes: true });
+  const detected: DetectedWorkspaceCandidate[] = [];
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name === '.git' || entry.name === '.clawhub') continue;
+
+    const absolutePath = path.join(openclawDir, entry.name);
+    if (configuredPaths.has(absolutePath)) continue;
+
+    const reason = detectWorkspaceReason(absolutePath, entry.name);
+    if (!reason) continue;
+
+    detected.push({
+      id: makeRootId('detected', entry.name),
+      name: entry.name,
+      path: absolutePath,
+      relativePath: path.relative(openclawDir, absolutePath) || entry.name,
+      reason,
+      docStatus: buildDocStatus(absolutePath),
+      hasGitRepo: fs.existsSync(path.join(absolutePath, '.git')),
+    });
+  }
+
+  return detected.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
 }
 
 export function getAgentCatalog(): AgentSummary[] {
@@ -162,6 +242,17 @@ export function getManagedRoots(): ManagedRoot[] {
         label: `${agent.name} (${agent.id})`,
         path: agent.resolvedWorkspace,
         type: 'agent-workspace',
+      });
+    }
+  }
+
+  for (const candidate of getDetectedWorkspaceCandidates()) {
+    if (!roots.some((root) => root.path === candidate.path)) {
+      roots.push({
+        id: candidate.id,
+        label: `Auto-detected Workspace (${candidate.name})`,
+        path: candidate.path,
+        type: 'detected-workspace',
       });
     }
   }
@@ -315,8 +406,18 @@ function walkDirectory(rootPath: string, collector: string[]): void {
 export function listMemoryFiles(): MemoryFileRecord[] {
   const agents = getAgentCatalog();
   const results: MemoryFileRecord[] = [];
+  const workspaceTargets = new Map<string, { id: string; path: string }>();
 
   for (const agent of agents) {
+    workspaceTargets.set(agent.resolvedWorkspace, { id: agent.id, path: agent.resolvedWorkspace });
+  }
+  for (const candidate of getDetectedWorkspaceCandidates()) {
+    if (!workspaceTargets.has(candidate.path)) {
+      workspaceTargets.set(candidate.path, { id: `detected:${candidate.relativePath}`, path: candidate.path });
+    }
+  }
+
+  for (const target of workspaceTargets.values()) {
     const files = [
       { file: 'SOUL.md', type: 'SOUL.md' as const },
       { file: 'USER.md', type: 'USER.md' as const },
@@ -325,11 +426,11 @@ export function listMemoryFiles(): MemoryFileRecord[] {
     ];
 
     for (const item of files) {
-      const absolutePath = path.join(agent.resolvedWorkspace, item.file);
+      const absolutePath = path.join(target.path, item.file);
       const stats = statSafe(absolutePath);
       if (!stats) continue;
       results.push({
-        agentId: agent.id,
+        agentId: target.id,
         type: item.type,
         path: absolutePath,
         relativePath: item.file,
@@ -338,17 +439,17 @@ export function listMemoryFiles(): MemoryFileRecord[] {
       });
     }
 
-    const memoryDir = path.join(agent.resolvedWorkspace, 'memory');
+    const memoryDir = path.join(target.path, 'memory');
     const memoryFiles: string[] = [];
     walkDirectory(memoryDir, memoryFiles);
     for (const absolutePath of memoryFiles.filter((filePath) => path.extname(filePath).toLowerCase() === '.md')) {
       const stats = statSafe(absolutePath);
       if (!stats) continue;
       results.push({
-        agentId: agent.id,
+        agentId: target.id,
         type: 'memory',
         path: absolutePath,
-        relativePath: path.relative(agent.resolvedWorkspace, absolutePath),
+        relativePath: path.relative(target.path, absolutePath),
         size: stats.size,
         modifiedAt: stats.mtime.toISOString(),
       });

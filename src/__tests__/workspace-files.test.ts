@@ -2,7 +2,7 @@
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getAgentCatalog, listMemoryFiles, readManagedFile, searchManagedFiles, writeManagedFile } from '../workspace-files.js';
+import { getAgentCatalog, getManagedRoots, listMemoryFiles, readManagedFile, searchManagedFiles, writeManagedFile } from '../workspace-files.js';
 
 describe('workspace-files', () => {
   let tempRoot: string;
@@ -71,5 +71,20 @@ describe('workspace-files', () => {
     const results = searchManagedFiles('failover');
     expect(results.length).toBeGreaterThan(0);
     expect(results[0].preview).toContain('failover');
+  });
+
+  it('auto-detects workspace-like directories created outside the agent config', () => {
+    const detectedWorkspace = path.join(tempRoot, 'workspace-nanfeng');
+    fs.mkdirSync(detectedWorkspace, { recursive: true });
+    fs.writeFileSync(path.join(detectedWorkspace, 'AGENTS.md'), '# detected agents', 'utf-8');
+    fs.writeFileSync(path.join(detectedWorkspace, 'SOUL.md'), '# detected soul', 'utf-8');
+    fs.mkdirSync(path.join(detectedWorkspace, 'memory'), { recursive: true });
+    fs.writeFileSync(path.join(detectedWorkspace, 'memory', 'timeline.md'), 'detected memory', 'utf-8');
+
+    const managedRoots = getManagedRoots();
+    expect(managedRoots.some((root) => root.type === 'detected-workspace' && root.path === detectedWorkspace)).toBe(true);
+
+    const memoryFiles = listMemoryFiles();
+    expect(memoryFiles.some((item) => item.agentId.startsWith('detected:') && /timeline\.md$/i.test(item.relativePath))).toBe(true);
   });
 });

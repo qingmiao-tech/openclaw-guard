@@ -97,7 +97,7 @@ function Ensure-CleanPrefix {
     )
 
     $lines = Get-PrefixStatus -PrefixPath $PrefixPath
-    if ($lines.Count -gt 0 -and -not $Bypass) {
+    if (@($lines).Count -gt 0 -and -not $Bypass) {
         $details = ($lines -join "`n")
         throw "Detected uncommitted changes under '$PrefixPath'. Commit or stash them before '$Action'.`n$details"
     }

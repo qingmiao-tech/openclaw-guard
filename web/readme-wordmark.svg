@@ -1,0 +1,21 @@
+<svg width="900" height="120" viewBox="0 0 900 120" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">OpenClaw Guard / 虾护卫</title>
+  <desc id="desc">OpenClaw Guard bilingual wordmark for README branding.</desc>
+  <defs>
+    <linearGradient id="guardGradient" x1="420" y1="32" x2="684" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E6F7FF" />
+      <stop offset="0.55" stop-color="#7DDBFF" />
+      <stop offset="1" stop-color="#33B7FF" />
+    </linearGradient>
+    <filter id="guardGlow" x="396" y="8" width="320" height="100" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0.73  0 0 1 0 0.98  0 0 0 0.3 0" result="glow" />
+      <feBlend in="SourceGraphic" in2="glow" mode="screen" />
+    </filter>
+  </defs>
+  <g>
+    <text x="8" y="78" fill="#F4FBFF" font-family="Bahnschrift, 'Segoe UI', Arial, sans-serif" font-size="62" font-weight="700" letter-spacing="2.5">OPENCLAW</text>
+    <text x="420" y="78" fill="url(#guardGradient)" filter="url(#guardGlow)" font-family="Bahnschrift, 'Segoe UI', Arial, sans-serif" font-size="62" font-weight="700" letter-spacing="2.5">GUARD</text>
+    <text x="680" y="78" fill="#A5D7EE" font-family="'Segoe UI', 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif" font-size="34" font-weight="600" letter-spacing="0.6">/ 虾护卫</text>
+  </g>
+</svg>

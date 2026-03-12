@@ -70,6 +70,7 @@ TAB_LABELS = {
 TAB_ALIASES = {
     'feishu': 'channels',
     'ai': 'models',
+    'memory': 'files',
     'audit': 'security',
     'profiles': 'security',
     'harden': 'security',
@@ -77,7 +78,7 @@ TAB_ALIASES = {
 ADVANCED_TABS = {'notifications', 'activity', 'costs', 'cron'}
 DEFAULT_TABS = [
     'overview', 'system', 'openclaw', 'channels', 'models', 'agents', 'sessions',
-    'files', 'memory', 'search', 'git-sync', 'security', 'logs',
+    'files', 'search', 'git-sync', 'security', 'logs',
     'notifications', 'activity', 'costs', 'cron',
 ]
 
@@ -195,6 +196,8 @@ class GuardUiSmoke:
                 text = (self.page.locator('#guard-panel .empty').first.text_content() or '').strip()
                 if text in {LOADING_TEXT[lang], LOADING_TEXT['zh'], LOADING_TEXT['en']}:
                     raise PlaywrightTimeoutError(f'页签 {tab_id} 停留在 loading')
+            if target_tab == 'files':
+                self._exercise_files_modes(lang)
             panel_text = (self.page.locator('#guard-panel').text_content() or '').strip()
             if len(panel_text) < 8:
                 self.failures.append(SmokeFailure(f'{label} 页内容过少，可能未正常渲染。'))
@@ -216,6 +219,54 @@ class GuardUiSmoke:
     @staticmethod
     def _normalize_tab_id(tab_id: str) -> str:
         return TAB_ALIASES.get(tab_id, tab_id)
+
+    def _exercise_files_modes(self, lang: str) -> None:
+        labels = TAB_LABELS[lang]
+        all_marker = '当前路径' if lang == 'zh' else 'Current Path'
+        memory_marker = '核心记忆' if lang == 'zh' else 'Core Memory'
+        try:
+            self.page.wait_for_selector('[data-files-mode="all"]', timeout=self.args.timeout)
+            self.page.wait_for_selector('[data-files-mode="memory"]', timeout=self.args.timeout)
+            self.page.click('[data-files-mode="memory"]', timeout=self.args.timeout)
+            self._wait_panel_ready(lang)
+            self.page.wait_for_function(
+                """
+                ([mode, marker]) => {
+                    const button = document.querySelector(`[data-files-mode="${mode}"]`);
+                    const panel = document.querySelector('#guard-panel');
+                    return !!button
+                        && button.classList.contains('active')
+                        && !!panel
+                        && (panel.textContent || '').includes(marker);
+                }
+                """,
+                arg=['memory', memory_marker],
+                timeout=self.args.timeout,
+            )
+            panel_text = (self.page.locator('#guard-panel').text_content() or '').strip()
+            if memory_marker not in panel_text and 'SOUL' not in panel_text and 'MEMORY' not in panel_text:
+                self.failures.append(SmokeFailure(f'{labels["files"]} 页切换到核心记忆视图后，未出现预期内容。'))
+            self.page.click('[data-files-mode="all"]', timeout=self.args.timeout)
+            self._wait_panel_ready(lang)
+            self.page.wait_for_function(
+                """
+                ([mode, marker]) => {
+                    const button = document.querySelector(`[data-files-mode="${mode}"]`);
+                    const panel = document.querySelector('#guard-panel');
+                    return !!button
+                        && button.classList.contains('active')
+                        && !!panel
+                        && (panel.textContent || '').includes(marker);
+                }
+                """,
+                arg=['all', all_marker],
+                timeout=self.args.timeout,
+            )
+            panel_text = (self.page.locator('#guard-panel').text_content() or '').strip()
+            if all_marker not in panel_text and labels['files'] not in panel_text:
+                self.failures.append(SmokeFailure(f'{labels["files"]} 页切回全部文件视图后，未恢复预期内容。'))
+        except (PlaywrightTimeoutError, PlaywrightError) as exc:
+            self.failures.append(SmokeFailure(f'{labels["files"]} 页模式切换失败: {exc}'))
 
     def _wait_panel_ready(self, lang: str) -> None:
         loading_tokens = {LOADING_TEXT[lang], LOADING_TEXT['zh'], LOADING_TEXT['en']}

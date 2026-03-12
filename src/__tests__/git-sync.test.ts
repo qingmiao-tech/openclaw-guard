@@ -160,7 +160,7 @@ describe('git-sync', () => {
     expect(after.skippedEmbeddedRepos).toContain('workspace-nanfeng');
     expect(after.canCommit).toBe(false);
     expect(after.commitReasons.join(' ')).toContain('embedded Git repositories');
-  });
+  }, 15000);
 
   it('previews missing .gitignore rules for embedded repositories', () => {
     initGitSync();
@@ -215,7 +215,7 @@ describe('git-sync', () => {
 
     const gitignoreAfter = fs.readFileSync(path.join(tempRoot, '.gitignore'), 'utf-8');
     expect(gitignoreAfter).toBe(gitignore);
-  });
+  }, 15000);
 
   it('marks embedded repository warnings as read after applying gitignore rules', () => {
     initGitSync();

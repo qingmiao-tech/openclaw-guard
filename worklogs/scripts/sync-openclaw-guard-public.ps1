@@ -87,7 +87,7 @@ function Get-PrefixStatus {
 
     $result = Invoke-GitCapture -Args @("status", "--porcelain", "--", $PrefixPath)
     $lines = @($result.Lines | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-    return $lines
+    return @($lines)
 }
 
 function Ensure-CleanPrefix {
@@ -150,7 +150,7 @@ if (-not (Test-Path $prefixFullPath)) {
 
 $target = Resolve-Target -RemoteName $Remote -RemoteLocation $RemoteUrl
 $currentBranch = (Invoke-GitCapture -Args @("branch", "--show-current")).Text.Trim()
-$dirtyPrefixLines = Get-PrefixStatus -PrefixPath $Prefix
+$dirtyPrefixLines = @(Get-PrefixStatus -PrefixPath $Prefix)
 $splitHash = Get-SplitHash -PrefixPath $Prefix -Ref $SourceRef
 $remoteHead = Get-RemoteHead -TargetValue $target.Value -TargetBranch $Branch
 
@@ -164,12 +164,12 @@ Write-Host "Target        : $($target.Label)"
 Write-Host "Target branch : $Branch"
 Write-Host "Split commit  : $splitHash"
 Write-Host ("Remote head   : {0}" -f ($(if ($remoteHead) { $remoteHead } else { "(branch not found yet)" })))
-Write-Host ("Dirty prefix  : {0}" -f ($(if ($dirtyPrefixLines.Count -gt 0) { "$($dirtyPrefixLines.Count) path(s)" } else { "clean" })))
+Write-Host ("Dirty prefix  : {0}" -f ($(if (@($dirtyPrefixLines).Count -gt 0) { "$(@($dirtyPrefixLines).Count) path(s)" } else { "clean" })))
 Write-Host ""
 
 switch ($Action) {
     "Preview" {
-        if ($dirtyPrefixLines.Count -gt 0) {
+        if (@($dirtyPrefixLines).Count -gt 0) {
             Write-Warning "Preview uses committed history only. The following prefix changes are not part of the split yet:"
             $dirtyPrefixLines | ForEach-Object { Write-Host "  $_" }
             Write-Host ""

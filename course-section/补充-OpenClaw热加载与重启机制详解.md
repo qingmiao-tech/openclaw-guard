@@ -4,230 +4,326 @@
 
 ---
 
-## 为什么需要了解这个？
+## 先给结论：别先背原理，先记动作
 
-在日常使用 OpenClaw 的过程中，你一定遇到过这样的困惑：
+很多同学真正想知道的不是“底层 watcher 怎么写”，而是：
 
-- 改了 SOUL.md，需要重启吗？
-- 改了 openclaw.json 里的模型配置，要不要重启？
-- 换了飞书的 appSecret，能热加载吗？
+- 我改了 `SOUL.md`，到底要不要重启？
+- 我改了 `openclaw.json` 的模型配置，要不要重启？
+- 我换了飞书 token，为什么机器人还是不回？
 
-搞清楚哪些改动会立即生效、哪些需要重启，能帮你**节省大量调试时间**，避免"改了半天发现没生效"或"不必要地频繁重启"的尴尬。
+先记住这个**课堂版速查原则**：
 
-本文基于 OpenClaw 源码分析，给你一份明确的答案。
+| 你改了什么 | 课堂建议动作 |
+|------------|--------------|
+| `SOUL.md` / `USER.md` / `IDENTITY.md` / `AGENTS.md` | 不重启，直接开新消息验证 |
+| `MEMORY.md` | 不重启，保存后直接验证 |
+| `openclaw.json` 里的模型 / Agent / 工具 / 路由 | `openclaw config validate` → `openclaw gateway restart` → 新会话验证 |
+| `openclaw.json` 里的渠道配置 | `openclaw config validate` → `openclaw gateway restart` → `openclaw channels status --probe` |
+| `plugins.*` / 插件代码 / `.env` / Gateway 本身配置 | 改完必须重启 Gateway |
+| Guard Web 页面异常 | 先查 Guard Web，自成一条线，不要和 Gateway 混为一谈 |
+
+> 💡 严格从源码看，部分配置属于“下次读取时静默生效”；但为了课堂复现稳定，我们统一要求大多数配置改动后都走一遍 `validate → restart → 验证`。
 
 ---
 
-## 一、Workspace 文件：改了就生效
+## 讲师使用建议
 
-### 涉及文件
+- **开场认知**：这份补充材料不是为了多讲一节理论课，而是帮学员建立“改了什么，就该怎么验证”的稳定习惯。
+- **实操前提醒**：先只分三类来看——工作区文件、`openclaw.json`、渠道/插件/环境变量；不要一上来讨论 watcher 源码。
+- **卡点转场**：一旦学员开始混乱，就回到一个问题：**你刚刚改的到底是哪一类东西？**
+- **复盘收口**：最后一定把课堂统一闭环再讲一遍：`openclaw config validate` → `openclaw gateway restart` → 对应场景验证。
 
-| 文件 | 作用 | 修改后生效方式 |
-|------|------|----------------|
-| SOUL.md | AI 的灵魂/人格定义 | 下一条消息即生效 ✅ |
-| IDENTITY.md | AI 的身份名片（名字、头像、emoji） | 下一条消息即生效 ✅ |
-| USER.md | 用户画像 | 下一条消息即生效 ✅ |
-| AGENTS.md | 工作空间说明 | 下一条消息即生效 ✅ |
-| TOOLS.md | 工具使用备注 | 下一条消息即生效 ✅ |
-| HEARTBEAT.md | 心跳任务定义 | 下一条消息即生效 ✅ |
-| MEMORY.md | 记忆文件 | 实时生效（有文件监听） ✅✅ |
+---
 
-### 技术原理
+## 一、Workspace 文件：大多数都是“下一条消息生效”
 
-这些 Workspace 文件的加载链路如下：
+### 这类文件最适合边改边试
 
+| 文件 | 作用 | 推荐验证方式 |
+|------|------|--------------|
+| `SOUL.md` | 人格 / 语气 / 行为风格 | 发一句“介绍一下你自己” |
+| `IDENTITY.md` | 名字、头像、标签、对外身份 | 看自我介绍和渠道表现 |
+| `USER.md` | 用户画像 / 偏好 | 发一条与你偏好有关的问题 |
+| `AGENTS.md` | 工作方式 / 项目约束 | 看后续执行风格是否变化 |
+| `TOOLS.md` | 工具说明 / 使用提醒 | 让它执行相关工具任务 |
+| `HEARTBEAT.md` | 主动任务定义 | 等待或手动触发对应场景 |
+| `MEMORY.md` | 记忆内容 | 直接问它是否记得新增信息 |
+
+### 课堂动作建议
+
+```text
+编辑文件
+  ↓
+保存
+  ↓
+发一条最小验证消息
 ```
-用户发消息
-  → agent run/session 启动
-    → resolveBootstrapContextForRun()
-      → loadWorkspaceBootstrapFiles()
-        → readFileWithCache() 逐个读取文件
-```
 
-关键在 `readFileWithCache()` 的实现——它使用了**基于 mtime（文件修改时间）的缓存策略**：
+### 为什么一般不用重启
 
-1. 每次调用时，先检查文件的 `mtime`（最后修改时间）
-2. 如果 `mtime` 没变，直接返回缓存内容（避免重复磁盘 IO）
-3. 如果 `mtime` 变了，重新从磁盘读取并更新缓存
+因为这类文件会在运行时被重新读取，尤其是 `MEMORY.md` 还有额外的监听与索引更新机制。
+对学员来说，记住一句就够：
 
-由于 `resolveBootstrapContextForRun()` 在**每次 agent 运行时都会被调用**（在 `attempt.ts`、`compact.ts`、`cli-runner.ts` 中均有调用），所以你对这些文件的任何修改，都会在下一条消息处理时被自动读取。
-
-**MEMORY.md 的特殊待遇：** 除了上述机制外，MEMORY.md 还额外配置了 `chokidar` 文件监听器，用于实时将记忆内容索引到 SQLite 数据库中。这意味着 MEMORY.md 的变更不仅在下一条消息时生效，还会实时触发记忆索引的更新。
+> **Workspace 文件，优先直接验证，不要条件反射重启。**
 
 ---
 
-## 二、配置文件 openclaw.json：分情况
+## 二、配置文件 `openclaw.json`：最容易让人误判
 
-openclaw.json 的变更检测机制比 Workspace 文件更复杂。Gateway 通过 `startGatewayConfigReloader()` 启动了一个 `chokidar` 文件监听器，实时监控 openclaw.json 的变化。当检测到变更时，`buildGatewayReloadPlan()` 会对变更进行分类，决定采取什么行动。
+### 学员最容易踩的坑
 
-配置本身还有一个 **200ms TTL 缓存**（可通过 `OPENCLAW_CONFIG_CACHE_MS` 环境变量调整），`loadConfig()` 在缓存过期后会重新读取文件。
+很多时候不是配置没生效，而是：
 
-默认的重载模式是 **"hybrid"**（混合模式）：能热加载的就热加载，需要重启的就重启。
+- 配置已经生效，但你还在旧会话里测试
+- 配置写错了，但你没先跑 `config validate`
+- 渠道凭证改对了，但 Gateway 没重启
+- Gateway 起来了，但渠道侧还没重新握手
 
-### 热加载（不需要重启）
-
-| 配置项 | 说明 |
-|--------|------|
-| hooks.* | Webhook 和自动化钩子 |
-| cron.* | 定时任务 |
-| agents.defaults.heartbeat | 心跳配置 |
-| browser.* | 浏览器控制 |
-| channels.*.（凭证等） | 渠道账号配置（如飞书 appId/appSecret） |
-
-这些配置项的变更会被 Gateway 的 config reloader 捕获，并在不中断服务的情况下直接应用。
-
-### 需要重启
-
-| 配置项 | 说明 |
-|--------|------|
-| gateway.* | 网关核心设置（端口、TLS、认证等） |
-| plugins.* | 插件配置 |
-| discovery.* | 服务发现 |
-| canvasHost.* | Canvas 主机 |
-
-这些配置涉及底层基础设施，无法在运行时安全地替换，必须通过 `openclaw gateway restart` 重启生效。
-
-### 静默生效（下次读取时自动应用）
-
-| 配置项 | 说明 |
-|--------|------|
-| models.* | 模型配置 |
-| agents.* | Agent 配置 |
-| tools.* | 工具配置 |
-| routing.* | 路由规则 |
-| messages.* | 消息设置 |
-| session.* | 会话设置 |
-| skills.* | 技能配置 |
-| logging.* | 日志设置 |
-| audio.* | 音频设置 |
-| ui.* | UI 设置 |
-
-这些配置项在 `buildGatewayReloadPlan()` 中被归类为 **no-op**——Gateway 不会主动做任何事情，但由于 `loadConfig()` 的 200ms TTL 缓存机制，下次有代码读取这些配置时，会自动拿到最新值。换句话说，它们会在下一次被使用时"静默"生效。
-
----
-
-## 三、插件/扩展：必须重启
-
-插件通过 `loadOpenClawPlugins()` 在 Gateway 启动时一次性加载。这个过程包括：
-
-- 解析 `plugins.*` 配置
-- 加载插件代码（require/import）
-- 执行插件初始化逻辑
-
-由于插件代码在 Node.js 中被 require 后会被模块缓存，**即使你修改了插件的源代码，不重启 Gateway 也不会生效**。
-
-同样，如果你修改了 `openclaw.json` 中的 `plugins.*` 配置（比如启用/禁用某个插件），`buildGatewayReloadPlan()` 会将其归类为"需要重启"。
+### 课堂统一闭环
 
 ```bash
-# 修改插件后，执行重启
+openclaw config validate
 openclaw gateway restart
 ```
 
----
-
-## 四、环境变量 / .env 文件：必须重启
-
-环境变量（包括 `.env` 文件中的变量）在配置读取时被一次性加载到进程环境中。OpenClaw 没有对 `.env` 文件设置文件监听器。
-
-这意味着：
-
-- 修改 `.env` 文件后，必须重启 Gateway
-- 修改系统环境变量后，也必须重启 Gateway
-- 没有任何热加载机制
+如果改的是渠道相关配置，再补：
 
 ```bash
-# 修改 .env 后
-openclaw gateway restart
+openclaw channels status --probe
+```
+
+如果改的是模型相关配置，再补：
+
+```bash
+openclaw models status
 ```
 
 ---
 
-## 五、实用速查表
+## 三、从教学角度，配置改动分三类就够了
 
-| 修改内容 | 生效方式 | 操作 |
-|----------|----------|------|
-| SOUL.md / IDENTITY.md / USER.md 等 | 下一条消息 | 直接编辑保存 |
-| MEMORY.md | 实时 | 直接编辑保存 |
-| openclaw.json 中的 hooks/cron | 自动热加载 | 直接编辑保存 |
-| openclaw.json 中的 models/agents | 下次读取 | 直接编辑保存 |
-| openclaw.json 中的 gateway/plugins | 需要重启 | 编辑后 `openclaw gateway restart` |
-| 插件代码 | 需要重启 | 修改后 `openclaw gateway restart` |
-| .env 环境变量 | 需要重启 | 修改后 `openclaw gateway restart` |
+### 1）热加载型：一般不需要重启，但课程里仍建议做最小验证
+
+常见代表：
+
+- `hooks.*`
+- `cron.*`
+- 部分 `browser.*`
+- 部分 `channels.*` 运行参数
+
+### 2）静默生效型：理论上会在下次读取时自动应用
+
+常见代表：
+
+- `models.*`
+- `agents.*`
+- `tools.*`
+- `routing.*`
+- `messages.*`
+- `session.*`
+- `skills.*`
+- `logging.*`
+- `ui.*`
+
+### 3）必须重启型：不要侥幸
+
+常见代表：
+
+- `gateway.*`
+- `plugins.*`
+- 插件源代码
+- `.env`
+- 系统环境变量
+
+### 为什么课程里不让学员细抠“热 / 静默 / 重启”边界
+
+因为对初学者来说，最需要的是：
+
+1. 会判断问题大概在哪一层
+2. 有固定操作顺序
+3. 每一步都能看到明确反馈
+
+所以我们的课堂口径是：
+
+> **只要你改了配置文件，就先 `validate`；大多数情况下再 `restart`；最后做有针对性的验证。**
 
 ---
 
-## 六、调试小技巧
+## 四、模型配置为什么课堂里也建议重启一次
 
-- **验证 SOUL.md 是否生效：** 修改后发一条"介绍一下你自己"，看 AI 的回复风格是否变化
-- **验证配置变更：** 修改 openclaw.json 后查看 Gateway 日志，会提示 "config change detected" 以及采取的行动（hot-reload / restart / no-op）
-- **查看当前加载的文件：** 使用 `/context list` 命令查看当前会话加载了哪些 Workspace 文件
-- **强制刷新配置缓存：** 如果觉得 200ms TTL 太长（虽然已经很短了），可以通过设置环境变量 `OPENCLAW_CONFIG_CACHE_MS=0` 禁用缓存
+按底层机制看，很多模型配置会在下次读取时自动生效。
+但在教学和排障现场，我们仍建议这样做：
+
+```bash
+openclaw config validate
+openclaw gateway restart
+openclaw models status
+```
+
+然后：
+
+1. 新开一个 session
+2. 发一条最小测试消息
+
+### 这样做的好处
+
+- 避免“到底是旧会话记忆，还是新配置”这种歧义
+- 所有人都走同一套动作，讲师排障更高效
+- 学员能把问题清楚地分到“配置 / 网关 / 会话”三层
 
 ---
 
-## 七、Guard Web 为什么也要分成“启 / 停 / 查”三步
+## 五、渠道配置：改完最怕少最后一步
 
-很多同学会把 `OpenClaw Gateway` 和 `Guard Web` 混成一回事。实际上，它们是两层不同的能力：
+### 一个常见误区
 
-- `Gateway`：OpenClaw 的核心运行服务
-- `Guard Web`：虾护卫的本地运维工作台
+很多人改完渠道配置，只做了：
 
-所以，遇到问题时也要分开处理。
+```bash
+openclaw gateway restart
+```
 
-### 什么时候重启 Gateway，什么时候处理 Guard Web
+然后就直接去给机器人发消息。
+如果这时平台侧权限、pairing、群组可见性还有问题，就会误以为“Gateway 没生效”。
 
-| 场景 | 推荐动作 |
-|------|----------|
-| 改了 `SOUL.md`、`USER.md`、`MEMORY.md` | 不需要重启 |
-| 改了 `openclaw.json` 里的 `gateway.*`、`plugins.*`、`.env` | 重启 Gateway |
-| 页面一直转圈、UI 状态混乱、前端资源没刷新 | 处理 Guard Web |
-| 想确认本地工作台到底有没有运行起来 | 先查 Guard Web 状态 |
+### 正确动作
 
-### 虾护卫的三条脚本分别做什么
+```bash
+openclaw config validate
+openclaw gateway restart
+openclaw channels status --probe
+```
 
-| 脚本 | 作用 |
-|------|------|
-| `start-web` | 先停旧实例，再构建并启动新实例 |
-| `stop-web` | 停止当前后台实例，并等待进程真正退出 |
-| `status-web` | 查看当前端口、PID、访问地址、日志位置 |
+### 这一步到底在帮你确认什么
 
-### 为什么不建议只靠“重新开一个窗口试试”
+- 渠道有没有真的连上
+- 凭证是不是有效
+- 运行中的 Gateway 看到的是不是你刚改的配置
+- 现在该去平台上发消息，还是先回头修配置
 
-因为本地工作台最容易遇到的实际问题，不是“没启动”，而是：
+> 课堂口诀：**改渠道不探测，等于没验收。**
+
+---
+
+## 六、插件 / `.env` / Gateway 核心配置：必须重启
+
+### 这三类不要抱侥幸心理
+
+| 类型 | 为什么必须重启 |
+|------|----------------|
+| 插件配置 / 插件代码 | 插件在 Gateway 启动时加载，改完不会自动替换运行中的模块 |
+| `.env` / 系统环境变量 | 进程启动时读取，运行中不会自动刷新 |
+| `gateway.*` | 端口、绑定、认证这类底层设置不适合热替换 |
+
+### 统一动作
+
+```bash
+openclaw config validate
+openclaw gateway restart
+openclaw gateway health
+```
+
+如果仍不正常，再看：
+
+```bash
+openclaw logs --follow
+openclaw gateway status
+```
+
+---
+
+## 七、Guard Web 和 Gateway 不是一回事
+
+很多同学把这两层混在一起，导致排障方向完全跑偏。
+
+| 层 | 它是什么 | 典型问题 |
+|----|----------|----------|
+| `Gateway` | OpenClaw 核心运行服务 | 模型、渠道、会话、配置不生效 |
+| `Guard Web` | 本地运维工作台 / 页面层 | 页面转圈、前端资源没刷新、端口冲突 |
+
+### 一个很实用的判断方法
+
+- **消息收发、模型调用、渠道连接异常** → 先查 `Gateway`
+- **页面打不开、状态卡住、看起来像 UI 假死** → 再查 `Guard Web`
+
+### 所以 Guard Web 的“启 / 停 / 查”为什么有意义
+
+因为你最常遇到的不是“完全没启动”，而是：
 
 - 旧进程还占着端口
-- 新实例启动时漂移到了其他端口
-- 页面还连着旧实例
-- 你以为已经停掉了，其实后台进程还活着
-
-`start-web` 和 `stop-web` 之所以要做“确认端口释放 / 确认同端口回起”，就是为了解决这类桌面环境最常见的假恢复问题。
-
-### 跨平台使用方式
-
-Windows:
-
-```bat
-start-web.bat
-stop-web.bat
-status-web.bat
-```
-
-macOS / Linux:
-
-```bash
-bash ./start-web.sh
-bash ./stop-web.sh
-bash ./status-web.sh
-```
-
-macOS 也可以直接双击：
-
-- `start-web.command`
-- `stop-web.command`
-- `status-web.command`
-
-> 简单记忆：OpenClaw 配置生效看“是否影响 Gateway”；页面和本地工作台问题，看“虾护卫启停查”。
+- 新实例起到了别的端口
+- 页面连着老实例
+- 你以为刷新了，其实没换进程
 
 ---
 
-> 💡 记住一个简单原则：**Workspace 文件随改随生效，配置文件看情况，插件和环境变量必须重启。**
+## 八、给讲师和学员的统一排障树
+
+### 场景 1：改了人格文件，感觉没生效
+
+```text
+先别重启
+  ↓
+确认文件已经保存
+  ↓
+直接发一条最小验证消息
+  ↓
+还不对，再看是不是在错误的 workspace
+```
+
+### 场景 2：改了模型 / Agent / 工具配置
+
+```text
+openclaw config validate
+  ↓
+openclaw gateway restart
+  ↓
+openclaw models status
+  ↓
+新开 session 验证
+```
+
+### 场景 3：改了渠道凭证，机器人还是不回
+
+```text
+openclaw config validate
+  ↓
+openclaw gateway restart
+  ↓
+openclaw channels status --probe
+  ↓
+再去真实平台发消息
+```
+
+### 场景 4：页面不对，但消息本身正常
+
+```text
+先别动 Gateway
+  ↓
+去查 Guard Web 的启停状态
+  ↓
+必要时重启 Guard Web，而不是误杀 Gateway
+```
+
+---
+
+## 九、最后只记住这一页就够了
+
+### 记忆版结论
+
+| 改动类型 | 记忆口诀 |
+|----------|----------|
+| Workspace 文件 | 改完先直接试 |
+| 配置文件 | 先校验，再重启，再验证 |
+| 渠道配置 | 重启后一定要 probe |
+| 插件 / `.env` / Gateway 核心配置 | 必须重启 |
+| Guard Web 页面问题 | 单独处理，不和 Gateway 混查 |
+
+### 课程里的统一原则
+
+> **先做最小验证，再谈底层原理；先排层级，再排细节。**
+
+如果你只带走一句话，那就是：
+
+> **改内容先试，改配置先验，改底层先重启。**

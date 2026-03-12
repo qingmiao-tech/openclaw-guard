@@ -1,6 +1,6 @@
 # Lab F：模型配置与省钱攻略
 
-> PPT 文稿 | 预计时长：1h | 模块类型：选修 Lab
+> PPT 文稿 | 预计时长：1h | 选修配置 Lab
 
 ---
 
@@ -8,11 +8,11 @@
 
 ### Lab F：模型配置与省钱攻略
 
-**OpenClaw 实战训练营 · 选修 Lab**
+**OpenClaw 实战训练营 · 选修配置 Lab**
 
 预计时长：1 小时
 
-> 今天的目标：搞定模型配置中的常见坑，学会用最低成本接入 Claude 4.6 Opus。
+> 今天的目标：把“能用什么模型、怎么切、怎么省、出了问题先查什么”一次讲清楚。
 
 ---
 
@@ -20,110 +20,229 @@
 
 完成本模块后，你将能够：
 
-1. ✅ **排查** OpenClaw 模型配置报错，理解 contextWindow 和 maxTokens 的含义
-2. ✅ **配置** 中转站 API 接入 Claude 4.6 Opus，实现低成本使用
-3. ✅ **设置** 合理的上下文参数，避免"聊着聊着就挂了"的问题
+1. ✅ **查看** 当前 OpenClaw 实际可用的模型、认证状态与默认模型
+2. ✅ **切换** 默认模型、配置回退链，并完成一次最小可用验证
+3. ✅ **排查** 模型接入中的高频错误：认证失败、模型 ID 错误、上下文过小、切换后仍像旧模型
+
+> 这节课不是讲“模型理论大全”，而是解决一个最实际的问题：**别让模型配置成为你整个 Agent 系统里最不稳定的一环。**
 
 ---
 
-## 第 3 页 · 真实案例：模型上下文报错
+## 第 3 页 · 先建立一个正确心智模型
 
-### 报错现场
+### 模型接入里最容易混的 4 个概念
 
-启动 OpenClaw 后，聊天直接报错：
+| 概念 | 你可以把它理解成什么 | 示例 |
+|------|----------------------|------|
+| Provider | 模型服务入口 / 平台 | `anthropic`、`openai`、`openrouter`、自建兼容网关 |
+| Model | 具体模型 | `anthropic/claude-opus-4-6` |
+| Alias | 你给模型取的快捷名 | `opus`、`cheap` |
+| Fallbacks | 主模型失败后的备用顺序 | `["anthropic/claude-sonnet-4-5", "openai/gpt-5"]` |
 
+### 这节课的统一动作顺序
+
+```text
+先看现在能用什么
+  ↓
+再切默认模型 / 配备用模型
+  ↓
+验证配置
+  ↓
+重启 Gateway
+  ↓
+开一个新会话做验证
 ```
-Model context window too small (4096 tokens). Minimum is 16000.
-[agent/embedded] blocked model (context window too small):
-  custom-localhost-8000/claude-opus-4-6 ctx=4096 (min=16000)
-  source=modelsConfig
-```
 
-### 问题分析
-
-模型本身支持 200K 上下文，但 OpenClaw 读到的是 4096。
-
-关键线索在 `source=modelsConfig` —— 问题出在**配置文件**，不是模型本身。
-
-OpenClaw 从 `~/.openclaw/openclaw.json`（或旧版 `~/.clawdbot/clawdbot.json`）读取模型配置。如果配置里的 `contextWindow` 字段缺失或设置过小，OpenClaw 会用默认值 4096，然后因为低于最低要求 16000 而拒绝使用。
-
----
-
-## 第 4 页 · 配置文件在哪里？
-
-### 配置文件路径
-
-OpenClaw 按以下顺序查找配置文件：
-
-| 优先级 | 路径 | 说明 |
-|--------|------|------|
-| 1 | `OPENCLAW_CONFIG_PATH` 环境变量 | 最高优先级，直接指定 |
-| 2 | `~/.openclaw/openclaw.json` | 新版默认路径 |
-| 3 | `~/.clawdbot/clawdbot.json` | 旧版兼容路径 |
-| 4 | `~/.moldbot/moldbot.json` | 历史遗留路径 |
-
-> 💡 Windows 上 `~` 就是 `C:\Users\你的用户名`
-
-### 查看配置文件
+### 课堂统一闭环
 
 ```bash
-# Linux / macOS
-cat ~/.openclaw/openclaw.json | python3 -m json.tool
-
-# Windows PowerShell
-Get-Content "$env:USERPROFILE\.openclaw\openclaw.json" | python -m json.tool
-
-# 如果找不到，搜索旧版路径
-ls ~/.clawdbot/
-ls ~/.moldbot/
+openclaw models status
+openclaw config validate
+openclaw gateway restart
 ```
 
----
-
-## 第 5 页 · contextWindow 和 maxTokens 详解
-
-### 两个关键参数
-
-| 参数 | 含义 | 比喻 |
-|------|------|------|
-| `contextWindow` | 模型能"看到"的最大 token 数 | 桌子大小 —— 能同时摊开多少资料 |
-| `maxTokens` | 模型单次回复的最大 token 数 | 笔的墨水量 —— 一次能写多长 |
-
-### 各模型参考值
-
-| 模型 | contextWindow | maxTokens |
-|------|--------------|-----------|
-| Claude 4.6 Opus（官方） | 200000 | 32768 |
-| Claude 4.6 Opus（Kiro 渠道） | **150000** | 32768 |
-| Claude Sonnet 4.5 | 200000 | 32768 |
-| GPT-4o | 128000 | 16384 |
-| DeepSeek V3 / R1 | 128000 | 8192 |
-| Qwen Max | 128000 | 8192 |
-
-> ⚠️ Kiro 渠道的上下文约 150K，不是满血 200K。这个差异很关键，后面会详细说。
+> 💡 严格来说，有些模型配置会在“下次读取时静默生效”；但课程里我们统一要求 **validate → restart → 新会话验证**，这样最稳，也最方便排障。
 
 ---
 
-## 第 6 页 · 修复报错：手动改配置
+## 第 3.5 页 · 讲师串场话术
 
-### 找到问题模型
+- **开场认知**：这节不是模型科普课，而是一节“少踩坑、少花钱、会验证”的实操课。
+- **实操前提醒**：让学员坚持一个顺序：先 `status/list` 看清现状，再切模型，再验证，不要一上来手改很多配置。
+- **卡点转场**：模型不工作时，先怀疑模型 ID、provider 认证、fallback 和上下文窗口，不要先怀疑 Prompt 写得不够好。
+- **复盘收口**：这一节结束后，学员至少要知道什么时候该上强模型，什么时候该用便宜模型，以及出了问题先查哪里。
 
-打开配置文件，找到 `models.providers` 下你的 provider：
+---
+
+## 第 4 页 · 第一步：先看当前到底有什么模型可用
+
+### 不要上来就改 JSON，先看现状
+
+```bash
+openclaw models status
+openclaw models list
+```
+
+### 分别看什么
+
+- `openclaw models status`
+  - 当前默认模型是谁
+  - fallback 链有没有配
+  - 当前 provider 认证是不是健康
+- `openclaw models list`
+  - OpenClaw 当前能识别哪些模型
+  - 你想切的模型名到底是不是这个 ID
+
+### 如果你怀疑认证有问题
+
+```bash
+openclaw models status --probe
+```
+
+> ⚠️ `--probe` 会发真实请求，可能消耗 token，也可能触发限流。课堂演示时够用，线上环境不要频繁乱点。
+
+---
+
+## 第 5 页 · 第二步：先学会最小切模型
+
+### 最简单的方式：直接切默认模型
+
+```bash
+openclaw models set anthropic/claude-opus-4-6
+```
+
+或者如果你已经有 alias：
+
+```bash
+openclaw models set opus
+```
+
+### 切完后立刻跑验证闭环
+
+```bash
+openclaw models status
+openclaw config validate
+openclaw gateway restart
+```
+
+### 课程里为什么还要求“新开一个会话”
+
+因为很多同学切完模型以后，会直接在旧会话里问：
+
+> “你现在是什么模型？”
+
+结果它按旧上下文回答，大家就误以为“配置没生效”。
+更稳的做法是：
+
+1. 重启 Gateway
+2. 新开一个 session / 新私聊窗口
+3. 再发一条最小验证消息
+
+---
+
+## 第 6 页 · 第三步：配一个真正可用的自定义 Provider
+
+### 什么时候需要 `models.providers`
+
+- 你要接 **OpenAI 兼容网关**
+- 你要接 **Anthropic 兼容网关**
+- 你要接 **国内中转 / 企业代理 / 自建转发**
+- 你要自己显式声明 `contextWindow`、`maxTokens`、`cost`
+
+### 一个最小 Anthropic 兼容示例
 
 ```json
 {
   "models": {
     "providers": {
-      "custom-localhost-8000": {
-        "baseUrl": "http://localhost:8000",
+      "kiro-proxy": {
+        "baseUrl": "https://your-gateway.example.com/anthropic",
         "apiKey": "sk-xxx",
+        "api": "anthropic-messages",
         "models": [
           {
             "id": "claude-opus-4-6",
             "name": "Claude Opus 4.6",
-            "contextWindow": 4096,    // ← 问题在这里！
-            "maxTokens": 4096         // ← 这个也太小了
+            "contextWindow": 150000,
+            "maxTokens": 32768
           }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "kiro-proxy/claude-opus-4-6"
+      }
+    }
+  }
+}
+```
+
+### 两个关键提醒
+
+1. `primary` 写的是 **`provider/model-id`**
+2. `contextWindow` 和 `maxTokens` 不要乱填，尤其是代理渠道不一定等于官方满血参数
+
+> 💡 如果是 `anthropic-messages` 兼容端点，课程里建议优先写基础根路径，不要自己额外拼 `/v1`；新版通常会做兼容规范化，但少写一步，少一个坑。
+
+---
+
+## 第 7 页 · 最常见的坑：上下文参数写小了
+
+### 真实报错长这样
+
+```text
+Model context window too small (4096 tokens). Minimum is 16000.
+[agent/embedded] blocked model (context window too small)
+source=modelsConfig
+```
+
+### 它不是在骂模型不行，而是在骂你的配置不对
+
+OpenClaw 会参考模型元数据来判断：
+
+- 这个模型最多能处理多少上下文
+- 该什么时候压缩对话
+- 单次回复最多给多少 token
+
+如果你把 `contextWindow` 写成了 `4096`，即使上游其实是 150K / 200K，上层系统也会按 4096 去保护性阻断。
+
+### 一句人话解释两个参数
+
+| 参数 | 作用 | 类比 |
+|------|------|------|
+| `contextWindow` | 模型总共能“看到”多少上下文 | 你的桌面有多大 |
+| `maxTokens` | 模型一次最多能回多长 | 你这次最多能写多少字 |
+
+### 课堂建议
+
+- 不确定时，优先看上游文档或 `/v1/models`
+- 代理渠道不要默认等于官方满血
+- `maxTokens` 不要大于 `contextWindow`
+
+---
+
+## 第 8 页 · 第四步：把“省钱”做成配置，而不是靠运气
+
+### 最值得学员掌握的，不是便宜渠道八卦，而是这三件事
+
+1. **主模型和备用模型分层**
+2. **高价值任务和 routine 任务分层**
+3. **使用量可观测**
+
+### 典型做法：给默认模型加 fallback
+
+```json
+{
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "anthropic/claude-opus-4-6",
+        "fallbacks": [
+          "anthropic/claude-sonnet-4-5",
+          "openai/gpt-5"
         ]
       }
     }
@@ -131,307 +250,133 @@ ls ~/.moldbot/
 }
 ```
 
-### 修改为正确值
+### 什么时候 fallback 真正有用
 
-```json
-{
-  "id": "claude-opus-4-6",
-  "name": "Claude Opus 4.6",
-  "api": "anthropic-messages",
-  "contextWindow": 150000,
-  "maxTokens": 32768,
-  "input": ["text"],
-  "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
-}
-```
+- 主模型认证失败
+- 主模型被限流
+- 主模型调用超时
 
-保存后重启 Gateway：
+### 什么时候它**不会**帮你兜底
+
+- 你把模型 ID 写错了
+- 这个模型根本不在允许列表里
+- 你的 provider 配置结构本身就不合法
+
+> 💡 所以：**fallback 是兜运行时故障，不是兜配置错误。**
+
+---
+
+## 第 9 页 · 省钱的正确姿势
+
+### 推荐的成本分层思路
+
+| 场景 | 建议模型策略 |
+|------|--------------|
+| 主对话 / 复杂推理 / 高价值决策 | 用更强模型做 primary |
+| 定时巡检 / 简单摘要 / routine 任务 | 用更便宜模型单独覆盖 |
+| 自动化 Hook / Cron | 能指定更便宜模型就不要硬吃主模型 |
+| 多 Agent 团队 | 主管强模型，执行型 Agent 用便宜模型 |
+
+### 先学会“看账单体感”，再谈极致优化
 
 ```bash
-pm2 restart openclaw-gw
-# 或
+openclaw status --usage
+```
+
+### 课程里的成本观
+
+- 不鼓励一上来追求“全链路最低价”
+- 先保证稳定、可验证、能复现
+- 再在自动化、子 Agent、批处理任务上做模型降级
+
+> 一句话：**不要为了省 20% 的 token，浪费 3 小时排障。**
+
+---
+
+## 第 10 页 · 高发故障排查表
+
+| 症状 | 先查什么 | 典型原因 |
+|------|----------|----------|
+| `Unknown model` | `openclaw models list` | 模型 ID 写错 / 不在目录里 |
+| `No API provider registered` | provider 配置里有没有 `api` | 自定义 provider 缺字段 |
+| `400 Model Not Exist` | 去上游 `/v1/models` 查实际模型名 | 写了宣传名，不是 API 实际 ID |
+| `No API key found` | `openclaw models status --probe` | provider 凭证没配好 |
+| 切完模型后它还说自己是旧模型 | 是否新开了会话 | 旧 session 上下文在说话 |
+| 聊久了突然挂 | `contextWindow` 是否被写小 | 代理渠道上下文参数填错 |
+
+### 排障优先顺序，别乱
+
+```text
+1. openclaw models status
+2. openclaw models list
+3. openclaw config validate
+4. openclaw gateway restart
+5. 新开一个 session 再测
+```
+
+---
+
+## 第 11 页 · 课堂实操任务
+
+### 任务 1：切换一次默认模型
+
+1. 执行 `openclaw models list`
+2. 选一个你当前环境里确实存在的模型
+3. 执行 `openclaw models set <model-or-alias>`
+4. 执行 `openclaw config validate`
+5. 执行 `openclaw gateway restart`
+6. 开一个新会话，发送：`请先做自我介绍，再总结一下你能帮我做什么`
+
+### 任务 2：给默认模型加一个 fallback
+
+1. 编辑 `~/.openclaw/openclaw.json`
+2. 在 `agents.defaults.model.fallbacks` 中加 1-2 个备用模型
+3. 再跑一次：
+
+```bash
+openclaw config validate
 openclaw gateway restart
+openclaw models status
 ```
 
----
+### 任务 3：识别一个假问题
 
-## 第 7 页 · 修复报错：让小龙虾自己改
+请刻意在旧会话里问一句：
 
-### 更简单的方式
-
-如果你的小龙虾还能对话（比如有其他可用模型），直接发消息：
-
-```
-帮我修改模型配置，把 claude-opus-4-6 的 contextWindow 改成 150000，
-maxTokens 改成 32768，然后重启
+```text
+你现在是什么模型？
 ```
 
-小龙虾会自己找到配置文件、修改、重启。
-
-### 添加新模型也一样
-
-```
-帮我添加一下模型渠道，模型 id 是 claude-opus-4-6，
-apikey 是 sk-xxx，url 是 https://xxx.com，
-使用 Anthropic 格式，设置上下文为 150k，并设置为默认模型
-```
-
-> 💡 「上下文为 150k」这句别漏，漏了就是后面要讲的"聊着聊着就挂了"。
+然后再在**新会话**里问一次，对比差异，理解为什么课程里一直强调“切模型后先新开 session 再验收”。
 
 ---
 
-## 第 8 页 · 为什么要用 Claude？
+## 第 12 页 · 验收自检
 
-### 国产模型 vs Claude 的差距
-
-OpenClaw 对模型的 Agent 能力和"智商"要求很高。你需要模型能：
-
-- 🧠 记住你配过的十几个工具
-- 📋 遵循你写好的工作流程
-- 💬 聊几十上百轮之后还不把前面的配置忘了
-- 🤖 有"人味儿"，不是机械式回答
-
-国产模型最近做的确实不错，但在 Agent 场景下，群友反馈：
-
-> "配好了小龙虾，工具装了，SOP 也给了。但过两天跟失忆一样，之前配的东西全忘了。一问，果然，用的国产模型。"
-
-目前能稳定胜任 OpenClaw Agent 场景的，Claude 4.6 Opus 是最优选。
+- [ ] 我能用 `openclaw models status` 看懂当前默认模型和认证状态
+- [ ] 我能用 `openclaw models list` 找到正确模型 ID
+- [ ] 我完成了一次默认模型切换
+- [ ] 我能跑通 `openclaw config validate`
+- [ ] 我在切模型后执行了 `openclaw gateway restart`
+- [ ] 我知道 fallback 只能兜运行时故障，不能兜配置错误
+- [ ] 我知道切模型后应该开新会话做验证
 
 ---
 
-## 第 9 页 · 便宜 24 倍怎么来的
+## 第 13 页 · 讲师备注：这节课该讲到哪，不该讲到哪
 
-### API 的"旗舰店"和"经销商"
+### 适合讲给学员的
 
-Anthropic 官方 API：**5 美金 / 百万 token**
+- 怎么看当前模型状态
+- 怎么切默认模型
+- 怎么加 fallback
+- 怎么定位 4 类高频模型配置错误
 
-但 Anthropic 有两个大金主：亚马逊云（AWS）和 Google。它们都拿到了 Claude 的授权，模型一模一样，但拿货成本更低。
+### 适合放到补充资料 / 讲师备课的
 
-中转站相当于 API 代购，批量开通经销商会员，把 Claude 的回答包装成标准 API 转卖。支持人民币，国内直连，不用翻墙。
+- provider 内部 auth profile 轮换机制
+- 自动摘要和 compaction 的完整实现细节
+- 允许列表、alias、catalog merge / replace 的底层规则
+- 运行时 `models.json` 快照合并机制
 
-### 目前主流渠道
-
-| 渠道 | 价格 | 倍率 |
-|------|------|------|
-| Anthropic 官方 | 5 美金 / 百万 token | 1x |
-| Claude Code 逆向 | ≈ 1.5 元 = 1 美金额度 | 约 5x |
-| **Kiro 逆向** | **≈ 0.3 元 = 1 美金额度** | **约 24x** |
-
-> ⚠️ 中转站本质是灰产，有风险。建议小额充值，用多少充多少。
-
----
-
-## 第 10 页 · 中转站的坑
-
-### 提前知道的风险
-
-1. **渠道随时可能被封**
-   - Google Antigravity 渠道 2026 年 1 月已大规模封号
-   - Kiro 目前正常，但没人保证什么时候跟进
-
-2. **有掺假的**
-   - 有商家拿便宜的 Kiro 渠道冒充 Claude Code 渠道的价格卖
-   - 选运营久的、口碑好的、价格不离谱的
-
-3. **上下文不是满血**
-   - Kiro 渠道上下文约 150K，不是官方的 200K
-   - 这是最容易踩的坑，下一页详细说
-
-### 选站建议
-
-打开 RelayPulse（relaypulse.top），相当于中转站的"大众点评"，24 小时检测可用率和稳定性。选一家稳定的注册即可。
-
----
-
-## 第 11 页 · 聊着聊着就挂了？
-
-### 这个坑踩的人太多了
-
-OpenClaw 有自动压缩机制，聊久了会把历史对话压缩成精华版腾出空间。
-
-**问题来了：**
-
-- Claude 4.6 Opus 官方上下文 200K
-- OpenClaw 按 200K 来算，到 180K 才准备压缩
-- 但 Kiro 渠道在 **150K 就满了**
-- 结果：到 150K 直接爆了，报错，怎么修都没用
-
-### 表现
-
-聊着聊着突然报错，只能新开会话。问题不在对话内容，在上下文上限。
-
-### 解决方案
-
-配置时把 `contextWindow` 设成 **150000**（而不是 200000）：
-
-```json
-"contextWindow": 150000
-```
-
-OpenClaw 就会在 120K 左右提前压缩，预留 30K 缓冲，不会爆。
-
-> 💡 这就是为什么前面反复强调"上下文设 150K"。
-
----
-
-## 第 12 页 · 实操任务 1：检查当前模型配置
-
-### 操作步骤
-
-1. 找到配置文件：
-   ```bash
-   # Linux/macOS
-   cat ~/.openclaw/openclaw.json | grep -A 10 "contextWindow"
-   
-   # Windows PowerShell
-   Select-String -Path "$env:USERPROFILE\.openclaw\openclaw.json" -Pattern "contextWindow"
-   ```
-
-2. 检查 `contextWindow` 和 `maxTokens` 的值
-
-3. 如果 `contextWindow` 小于 16000 或缺失，按第 6 页的方法修复
-
-4. 重启 Gateway 验证：
-   ```bash
-   openclaw gateway restart
-   ```
-
-5. 发送 `/status` 确认模型正常加载
-
-### ✅ 成功标志
-
-- `/status` 显示当前模型为你配置的模型
-- 能正常对话，不再报 context window 错误
-
----
-
-## 第 13 页 · 实操任务 2：接入中转站 API
-
-### 操作步骤
-
-1. 打开 RelayPulse（relaypulse.top），选一家稳定的中转站注册
-
-2. 在中转站后台：
-   - 进「模型广场」，找 Claude 4.6 Opus，确认价格和渠道
-   - 点「令牌管理」→「添加令牌」，**注意选对分组**（每家命名不同）
-   - 在「API 信息」页面获取连接地址（Base URL）
-
-3. 小额充值测试（建议先充 10-20 元）
-
-4. 配置到 OpenClaw（二选一）：
-
-   **方式 A：让小龙虾自己配**
-   ```
-   帮我添加一下模型渠道，模型 id 是 claude-opus-4-6，
-   apikey 是 sk-xxx，url 是 https://你的中转站地址，
-   使用 Anthropic 格式，设置上下文为 150k，并设置为默认模型
-   ```
-
-   **方式 B：手动改配置文件**
-   编辑 `~/.openclaw/openclaw.json`，在 `models.providers` 下添加：
-   ```json
-   "my-relay": {
-     "baseUrl": "https://你的中转站地址",
-     "apiKey": "sk-你的令牌",
-     "models": [
-       {
-         "id": "claude-opus-4-6",
-         "name": "Claude Opus 4.6",
-         "api": "anthropic-messages",
-         "contextWindow": 150000,
-         "maxTokens": 32768,
-         "input": ["text"],
-         "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
-       }
-     ]
-   }
-   ```
-
-5. 设置为默认模型（在 `agents.defaults.model.primary` 中设置）
-
-6. 重启后发 `/status` 验证
-
-### ✅ 成功标志
-
-- `/status` 显示 Claude 4.6 Opus
-- 能正常对话
-- 长对话（50+ 轮）不会突然报错
-
----
-
-## 第 14 页 · 故障排查速查
-
-| 问题 | 原因 | 解决方案 |
-|------|------|----------|
-| context window too small (4096) | 配置文件中 contextWindow 缺失或太小 | 设置为 150000（Kiro 渠道）或 200000（官方） |
-| 聊着聊着突然报错 | 上下文设了 200K 但渠道只支持 150K | 把 contextWindow 改成 150000 |
-| 模型调不通 | 中转站分组选错了 | 检查令牌的分组是否对应 Kiro 渠道 |
-| 扣的是贵渠道的钱 | 分组选错，走了 Claude Code 渠道 | 重新创建令牌，选对分组 |
-| 找不到配置文件 | 可能在旧版目录 | 检查 `~/.clawdbot/` 或 `~/.moldbot/` |
-| 修改后没生效 | 没重启 Gateway | `pm2 restart openclaw-gw` 或 `openclaw gateway restart` |
-
----
-
-## 第 15 页 · 🔒 安全提示
-
-- **API Key 不要发到群里、截图、提交到 Git**
-  - 泄露 = 别人花你的钱
-- **中转站是灰产，有跑路风险**
-  - 小额充值，用多少充多少
-  - 不要一次充几百块
-- **不要在 soul.md 或对话中暴露 API Key**
-  - 使用环境变量或配置文件管理
-- **定期检查用量**
-  - 在中转站后台查看消耗，设置告警
-
----
-
-## 第 16 页 · 验收自检
-
-- [ ] 能找到 OpenClaw 配置文件的位置
-- [ ] 理解 contextWindow 和 maxTokens 的含义和区别
-- [ ] 能排查并修复 "context window too small" 报错
-- [ ] 知道 Kiro 渠道上下文要设 150K 而不是 200K 的原因
-- [ ] （可选）成功接入中转站 API，能用 Claude 4.6 Opus 正常对话
-
----
-
-## 第 17 页 · 常见问题
-
-**Q：为什么不直接用 Anthropic 官方 API？**
-A：可以用，但贵。5 美金/百万 token，跑几个复杂任务一天几百块。中转站同样的模型便宜 24 倍，适合学习和日常使用。
-
-**Q：Kiro 渠道和官方 API 效果有区别吗？**
-A：模型一样，效果一样。区别是上下文上限（150K vs 200K）和稳定性（中转站可能偶尔波动）。
-
-**Q：国产模型真的不行吗？**
-A：不是不行，是在 OpenClaw 的 Agent 场景下不够用。如果只是简单问答，国产模型够了。但要让 AI 记住十几个工具、遵循复杂工作流、长对话不失忆，目前 Claude 4.6 Opus 是最优选。
-
-**Q：maxTokens 设大了会怎样？**
-A：不会多花钱。maxTokens 是上限，实际用多少算多少。设大只是允许模型在需要时输出更长的回复。
-
-**Q：中转站跑路了怎么办？**
-A：换一家就行。配置只需要改 baseUrl 和 apiKey，模型 id 不变。所以搞懂原理比记住某家中转站更重要。
-
----
-
-## 第 18 页 · 今日总结
-
-### 你学到了 🎉
-
-- 模型配置报错的排查思路：看日志 → 找配置文件 → 改参数 → 重启
-- contextWindow 和 maxTokens 的含义和推荐值
-- Kiro 渠道 150K 上下文的坑和解决方案
-- 低成本接入 Claude 4.6 Opus 的方法
-
-### 一句话总结
-
-> 不要花时间省 token，花时间让 token 烧得更有价值。但把"省"这件事一次性解决掉，后面就能专注于用。
-
----
-
-## 第 19 页 · 延伸阅读
-
-- [RelayPulse 中转站评测](https://relaypulse.top) —— 中转站的"大众点评"，24 小时检测可用率
-- [Anthropic API 文档](https://docs.anthropic.com/en/docs) —— 官方 API 参考
-- [OpenClaw 模型配置文档](https://openclaw.io/docs/models) —— 官方模型配置说明
+> 课程原则不变：**先让学员会切、会验、会排障，再慢慢补系统原理。**

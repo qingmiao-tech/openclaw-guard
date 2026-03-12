@@ -12,223 +12,223 @@
 
 预计时长：1 小时
 
-> 今天的目标：将你的 AI 助手接入 Telegram，随时随地通过手机与 AI 对话。
+> 今天的目标：将你的 AI 助手接入 Telegram，先跑通私聊，再决定要不要放进群里。
 
 ---
 
 ## 第 2 页 · 渠道简介
 
-### 为什么选 Telegram？
+### 为什么 Telegram 适合作为第一个渠道
 
 - 🌍 全球流行的即时通讯应用
-- 🔓 强大的 Bot API，开放性高
-- ⚡ **所有渠道中对接最简单**，无需审核
-- 🎯 适合作为第一个对接的渠道
-
-### 适用场景
-
-- 海外用户社群
-- 个人 AI 助手
-- 自动化通知推送
+- 🔓 Bot API 开放，资料多，排障路径清晰
+- ⚡ 对接门槛低，适合先建立“渠道接入成功”的信心
+- 📱 私聊体验天然适合个人 AI 助手
 
 ### 前置要求
 
-- ✅ Day 2 完成（OpenClaw 已在服务器上运行）
+- ✅ Day 2 完成（OpenClaw 已可正常运行）
 - ✅ 一个 Telegram 账号
 - ✅ 能正常访问 Telegram
+- ✅ 本机或服务器上已能运行 `openclaw config validate`
+
+> 这节课先把 **私聊跑通**。群组、论坛话题、自动回复放到后半段做增强。
 
 ---
 
-## 第 3 页 · 通用对接流程回顾
+## 第 3 页 · 通用四步闭环
 
-### Day 3 学过的四步流程
+### 这节课只做一条最稳的路径
 
+```text
+1. 在 Telegram 侧拿到 Bot Token
+   ↓
+2. 用 OpenClaw CLI 添加 Telegram 渠道
+   ↓
+3. 验证配置 → 重启 Gateway → 探测渠道状态
+   ↓
+4. 私聊机器人，完成 pairing，再开始聊天
 ```
-1. 获取渠道凭证（Bot Token）
-    ↓
-2. 在 OpenClaw 配置文件中填入渠道信息
-    ↓
-3. 重启 Gateway 使配置生效
-    ↓
-4. 验证消息收发
+
+### 本课统一验收顺序
+
+```bash
+openclaw config validate
+openclaw gateway restart
+openclaw channels status --probe
 ```
 
-> 所有渠道都遵循这个流程，只是凭证获取方式不同
+> 💡 以后你接别的渠道，也优先按这个顺序排障。先看配置，再看网关，再看渠道，不要一上来就怀疑模型。
 
 ---
 
-## 第 4 页 · 第一步：创建 Telegram 机器人
+## 第 3.5 页 · 讲师串场话术
 
-### 通过 BotFather 创建
+- **开场认知**：如果学员只做一个渠道，优先做 Telegram，因为它最适合用来建立“完整接入闭环”的信心。
+- **实操前提醒**：今天不是在学 Telegram 生态本身，而是在练一条最标准的渠道接入链路。
+- **卡点转场**：机器人不回复时，先别怪 AI，80% 的问题都在 Bot Token、网络可达性或渠道配置没生效。
+- **复盘收口**：Telegram 跑通之后，学员对后面 Discord、飞书、企业微信的理解会一下子轻很多。
+
+---
+
+## 第 4 页 · 第一步：通过 BotFather 创建机器人
+
+### 操作步骤
 
 1. 打开 Telegram，搜索 `@BotFather`
-2. 发送 `/start` 开始
-3. 发送 `/newbot` 创建新机器人
-4. 输入机器人**显示名称**（如"我的AI助手"）
-5. 输入机器人**用户名**（必须以 `bot` 结尾，如 `my_openclaw_bot`）
-6. 创建成功！BotFather 返回 **Bot Token**
+2. 发送 `/start`
+3. 发送 `/newbot`
+4. 输入机器人**显示名称**
+5. 输入机器人**用户名**（必须以 `bot` 结尾）
+6. 复制返回的 **Bot Token**
 
-### Bot Token 格式
+### Token 示例
 
-```
+```text
 123456789:ABCdefGHIjklMNOpqrsTUVwxyz
 ```
 
-> ⚠️ 妥善保存这个 Token，不要分享给他人！
+> ⚠️ 这是密钥，不要发群里，不要写进公开仓库。
 
 ---
 
-## 第 5 页 · 第二步：配置 OpenClaw
+## 第 5 页 · 第二步：添加 Telegram 渠道
 
-### 编辑配置文件
+### 推荐做法：直接用 CLI 添加
 
 ```bash
-# SSH 连接到服务器
-ssh root@你的服务器IP
-
-# 进入 OpenClaw 工作目录
-# 编辑配置文件
-nano openclaw.json
+openclaw channels add --channel telegram --token <你的BotToken>
 ```
 
-### 添加 Telegram 渠道配置
+### 添加后立刻确认两件事
 
-```json
+```bash
+openclaw channels list
+openclaw config validate
+```
+
+### 如果你喜欢显式配置
+
+也可以把 token 放进配置里的 `channels.telegram.botToken`。但课程推荐优先用 CLI 添加，少手改 JSON，少犯格式错误。
+
+---
+
+## 第 6 页 · 第三步：重启 Gateway 并做健康检查
+
+### 配置改完以后，不要直接去发消息
+
+先跑这一组命令：
+
+```bash
+openclaw config validate
+openclaw gateway restart
+openclaw channels status --probe
+```
+
+### 你希望看到什么
+
+- `config validate` 通过
+- `channels status --probe` 里 Telegram 至少是 `connected` / `ready`
+- 没有明显的 token、DNS、网络错误提示
+
+### 卡住时再看日志
+
+```bash
+openclaw logs --follow
+```
+
+---
+
+## 第 7 页 · 第四步：完成 pairing，跑通第一次私聊
+
+### 测试步骤
+
+1. 在 Telegram 中打开你的机器人
+2. 先发送一条消息，比如：`你好`
+3. 机器人第一次通常会返回一个 **pairing code**
+4. 在服务器上执行：
+
+```bash
+openclaw pairing approve telegram <配对码>
+```
+
+5. 再次给机器人发消息：`请介绍一下你自己`
+6. 继续多轮对话，确认上下文连贯
+
+### ✅ 成功标志
+
+- pairing 通过
+- 私聊中几秒内收到回复
+- 第二条、第三条消息上下文连贯
+
+---
+
+## 第 8 页 · 群组模式（可选增强）
+
+### 跑通私聊以后，再考虑群组
+
+如果你想在群里使用，需要同时考虑两件事：
+
+1. **OpenClaw 侧**：这个群是否允许接入、是否要求 @ 机器人
+2. **Telegram 侧**：BotFather 隐私模式是否关闭，或机器人是否被设为管理员
+
+### 一个常见配置思路
+
+```json5
 {
-  "channels": {
-    "telegram": {
-      "enabled": true,
-      "token": "你的Bot Token"
+  channels: {
+    telegram: {
+      groups: {
+        "-1001234567890": { requireMention: true }
+      }
     }
   }
 }
 ```
 
-> 💡 建议将 Token 存储在环境变量中（参考 Day 11 安全最佳实践）
+> 想让机器人在群里“看见所有消息”，通常还需要在 BotFather 里处理 `/setprivacy`，或者直接给机器人管理员权限。
 
 ---
 
-## 第 6 页 · 第三步：重启 Gateway
+## 第 9 页 · 故障排查速查
 
-### 使配置生效
-
-```bash
-# 重启 Gateway
-pm2 restart openclaw-gw
-
-# 查看日志确认连接成功
-pm2 logs openclaw-gw --lines 20
-```
-
-### 成功标志
-
-日志中应看到类似信息：
-
-```
-Telegram channel connected
-```
-
----
-
-## 第 7 页 · 第四步：验证消息收发
-
-### 测试步骤
-
-1. 在 Telegram 中搜索你的机器人用户名（如 `@my_openclaw_bot`）
-2. 点击进入对话
-3. 发送 `/start` 激活机器人
-4. 发送测试消息："你好，请介绍一下你自己"
-5. 等待 AI 回复（通常几秒内）
-6. 尝试多轮对话
-7. 尝试让 AI 执行任务："帮我查一下今天的天气"
-
-### ✅ 成功标志
-
-- 机器人在几秒内回复消息
-- 回复风格符合 soul.md 定义
-- 多轮对话上下文连贯
-
----
-
-## 第 8 页 · 故障排查速查
-
-| 问题 | 解决方案 |
+| 问题 | 先查什么 |
 |------|----------|
-| 发送消息后无回复 | 检查日志；确认 Token 正确；确认服务器能访问 Telegram API |
-| 日志显示 "Unauthorized" | Token 无效或过期，重新在 BotFather 获取 |
-| 国内服务器无法连接 | Telegram API 在国内可能需要代理或使用海外服务器 |
-| 回复很慢（超过 30 秒） | 检查 AI 模型 API 响应速度；检查网络延迟 |
+| 机器人完全不回复 | `openclaw channels status --probe` 是否看到 Telegram 已连接 |
+| 机器人发了 pairing code，但批准后仍无回复 | 是否批准了正确渠道的 code；可先 `openclaw pairing list telegram` |
+| 日志出现 `Unauthorized` | Bot Token 错了，回 BotFather 重置 |
+| 群里只有 @ 它才理你 | 这是默认安全行为；改 `requireMention` 或群策略 |
+| 关了 @ 仍然不回 | 检查 BotFather 隐私模式，或把机器人设为管理员 |
+| 网络偶发失败 | 检查服务器到 `api.telegram.org` 的 DNS / HTTPS / IPv6 出口 |
 
-### 网络连通性测试
+### 一个高频误区
 
-```bash
-curl https://api.telegram.org
-```
-
----
-
-## 第 9 页 · 进阶配置（可选）
-
-| 配置 | 说明 |
-|------|------|
-| Webhook 模式 | 替代 Polling，提升响应速度（需 HTTPS） |
-| Markdown 格式 | 让 AI 回复支持加粗、链接、代码块 |
-| 群组模式 | 将机器人添加到群组，实现群内 AI 助手 |
-| 命令菜单 | 通过 `/setcommands` 设置快捷命令 |
+很多人是**已经改好了配置**，但没跑 `openclaw gateway restart`，结果以为 Telegram 有问题。先重启网关，再怀疑平台。
 
 ---
 
 ## 第 10 页 · 验收自检
 
-- [ ] 成功通过 BotFather 创建了 Telegram 机器人
-- [ ] 在 openclaw.json 中正确配置了 Telegram 渠道
-- [ ] 在 Telegram 中与 AI 机器人成功完成对话
+- [ ] 已通过 BotFather 创建机器人并拿到 Bot Token
+- [ ] 已成功执行 `openclaw channels add --channel telegram --token ...`
+- [ ] 已跑通 `openclaw config validate`
+- [ ] 已执行 `openclaw gateway restart`
+- [ ] 已在 `openclaw channels status --probe` 中看到 Telegram 正常
+- [ ] 已完成一次 Telegram pairing 并成功私聊
 
 ---
 
-## 第 11 页 · 社区实战案例：Telegram 上养 12 个 AI 员工
+## 第 11 页 · 社区实战案例：Telegram 作为多 Agent 试验场
 
 > 💬 来源：社区多 Agent 实战
 
-### 一个群，6 个 AI，各司其职
+为什么很多人先选 Telegram 做多 Agent 验证？
 
-下面来看一个实战案例——在 Telegram 上搭建 6 个 Bot 组成的 AI 团队，全部拉到一个群里协作：
+- 新建 Bot 快，试错成本低
+- 私聊先跑单 Agent，成功后再扩群组或多 Bot
+- 当你后面做到 Day 13 / Day 14，多 Agent 路由、会话隔离、账号绑定都更容易观察
 
-- 大总管：统一调度
-- 开发助理、内容助理、运营增长、法务助理、财务助理
-
-在群里 @ 谁谁干活——"@开发助理 帮我看看这段代码有没有 bug"，就像在公司群里 @ 同事一样。
-
-### Telegram 多 Agent 的关键配置
-
-每个 Bot 需要在 BotFather 单独创建，然后在 `openclaw.json` 中配置多账户：
-
-```json
-"channels": {
-  "telegram": {
-    "accounts": {
-      "main-bot": { "botToken": "Token1" },
-      "dev-bot": { "botToken": "Token2" },
-      "content-bot": { "botToken": "Token3" }
-    }
-  }
-}
-```
-
-通过 `bindings` 将每个 Bot 绑定到对应的 Agent：
-
-```json
-"bindings": [
-  { "agentId": "main", "match": { "channel": "telegram", "accountId": "main-bot" } },
-  { "agentId": "dev", "match": { "channel": "telegram", "accountId": "dev-bot" } }
-]
-```
-
-### 跨平台记忆
-
-在 Telegram 上聊过的事情，切到飞书它还记得。因为记忆存在 workspace 里，跟渠道无关。
-
-> 💡 Telegram 是搭建多 Agent 团队最简单的起点——无需审核，Bot API 开放性高，适合快速验证多 Agent 架构。
+> 💡 Telegram 最大的价值不是“便宜”，而是“反馈快”。做渠道接入时，最快看到闭环，往往最重要。
 
 ---
 
@@ -236,8 +236,9 @@ curl https://api.telegram.org
 
 ### 今天你完成了 🎉
 
-- 通过 BotFather 创建了 Telegram 机器人
-- 配置了 OpenClaw 的 Telegram 渠道
-- 成功在 Telegram 中与 AI 助手对话
+- 创建了 Telegram 机器人
+- 用 CLI 把 Telegram 渠道接进了 OpenClaw
+- 学会了“配置校验 → 重启网关 → 渠道探测”的闭环
+- 跑通了第一次 Telegram 私聊
 
-> 🎯 Telegram 是最简单的渠道对接，掌握了这个流程，其他渠道也能快速上手！
+> 🎯 如果这是你第一个渠道，建议先稳定用 1-2 天，再去做飞书、Discord 或群组增强。

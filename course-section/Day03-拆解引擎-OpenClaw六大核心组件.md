@@ -21,6 +21,16 @@
 1. ✅ **解释** OpenClaw 核心架构（Gateway、Agent、Channel、Skill、Tools、Memory）
 2. ✅ **识别** 并修改关键配置文件（openclaw.json），理解工作目录结构
 3. ✅ **描述** 渠道对接的通用四步流程
+4. ✅ **说清** `agentId / workspace / sessionKey` 之间的最小关系，理解为什么后面会出现“串线 / 不记得 / 技能不生效”
+
+---
+
+## 第 2.5 页 · 讲师提示语（可直接口播）
+
+- **开场认知**：这节不是讲“大而全架构”，而是给前两天做过的所有操作装上一张最小脑图。
+- **实操前提醒**：只抓最关键的几层：Gateway、Agent、workspace、session、channel，先够用再扩展。
+- **卡点转场**：一旦学员混乱，就带他们重新走一遍“这条消息是怎么从渠道走到模型，再回到用户手里的”。
+- **复盘收口**：今天的目标不是背术语，而是以后遇到问题时，知道该先看哪一层。
 
 ---
 
@@ -33,14 +43,14 @@
 | **Skill** | 📜 技能证书 | 各种专业能力 |
 | **Tools** | 🤲 双手 | 底层执行器，动手干活 |
 | **Memory** | 💾 记忆 | 记住你说过的话和偏好 |
-| **Channel** | 👁️ 感官 | 连接 Telegram、QQ、飞书等 |
+| **Channel** | 👁️ 感官 | 连接 Telegram、Discord、飞书，以及其他企业侧适配渠道 |
 
 ---
 
 ## 第 4 页 · 架构全景图
 
 ```
-用户 (Telegram/QQ/飞书/Cron)
+用户 (Telegram/Discord/飞书/企业适配渠道/Cron)
         ↓
    ┌─────────────────────┐
    │   Gateway 网关       │  ← 消息路由、连接管理
@@ -52,7 +62,7 @@
              ↓
    ┌─────────────────────┐
    │   Agent 智能体       │  ← 理解意图、决策
-   │  soul.md → 人格      │
+   │  SOUL.md → 人格      │
    │  Memory ↔ 记忆       │
    └─────────┬───────────┘
              ↓
@@ -62,6 +72,36 @@
 ```
 
 > 一句话总结：用户发消息 → Gateway 接收路由 → Agent 理解决策 → Skill/Tools 执行 → 返回结果
+
+---
+
+## 第 4.5 页 · 最小心智模型：消息不是直接进模型
+
+很多同学会把 OpenClaw 想成“消息一来，模型直接回答”。真实链路不是这样：
+
+```
+入站消息
+  ↓
+bindings 先决定：这条消息归哪个 agentId
+  ↓
+sessionKey 再决定：这条消息落进哪个会话桶
+  ↓
+workspace 决定：这个 Agent 这轮能读到哪些 SOUL / USER / memory / skills
+  ↓
+模型 + tools 开始真正工作
+```
+
+### 记住这三句话
+
+- **`agentId`** 决定“哪个大脑来处理”
+- **`sessionKey`** 决定“这次对话接着哪条上下文走”
+- **`workspace`** 决定“这个大脑开工前手边能拿到什么资料”
+
+这也是为什么：
+
+- 同一个机器人账号，换了绑定规则后，可能像换了一个人
+- 同一个 Agent，在群聊和私聊里，默认也可能不是同一段上下文
+- 技能明明装好了，但装在别的 workspace 里时，当前 Agent 根本看不到
 
 ---
 
@@ -90,7 +130,7 @@
 
 ### 关键特性
 
-- 参考 **soul.md** 调整回复风格
+- 参考 **SOUL.md** 调整回复风格
 - 读写 **Memory** 维持对话连贯性
 
 ---
@@ -123,7 +163,7 @@
 4. Agent 读取上下文和记忆 → 意图："查询天气"
 5. Agent 调用"天气查询 Skill"
 6. Skill 调用 Web 搜索 Tool → 获取天气数据
-7. Agent 根据 soul.md 风格组织回复
+7. Agent 根据 `SOUL.md` 风格组织回复
 8. 回复 → Gateway → Telegram → 用户看到结果
 ```
 
@@ -144,20 +184,29 @@
 
 ---
 
-## 第 10 页 · 工作目录结构
+## 第 10 页 · 工作区 vs 状态目录
 
 ```
-openclaw 工作目录/
-├── openclaw.json      # 主配置文件
-├── soul.md            # 人格定制文件
-├── memory/            # 记忆存储
-│   ├── core/          # 核心记忆
-│   └── archival/      # 长期记忆
-├── skills/            # 已安装技能
-│   ├── skill-a/
-│   └── skill-b/
-└── logs/              # 运行日志
+~/.openclaw/
+├── openclaw.json                      # 主配置文件
+├── workspace/                         # 默认 Agent 的工作区
+│   ├── AGENTS.md
+│   ├── SOUL.md
+│   ├── USER.md
+│   ├── memory/
+│   └── skills/
+├── skills/                            # 共享 Skills（所有 Agent 可见）
+└── agents/
+    └── main/
+        ├── agent/                     # 每个 Agent 自己的认证/状态目录
+        └── sessions/                  # sessions.json + *.jsonl 会话记录
 ```
+
+### 课堂一定要讲清
+
+- **工作区** 是 Agent 平时“干活的桌面”
+- **`~/.openclaw/openclaw.json`** 是整个系统的总开关
+- **`~/.openclaw/agents/<agentId>/sessions/`** 是排查串线、上下文混乱时最该想到的地方
 
 ---
 
@@ -165,10 +214,12 @@ openclaw 工作目录/
 
 ### 无论对接哪个渠道，都遵循这四步：
 
-1. 🔑 **获取渠道凭证**：在目标平台创建机器人，获取 Token / App ID / Secret
-2. ⚙️ **配置 OpenClaw**：将凭证填入 openclaw.json 的 channels 配置
-3. 🔄 **重启 Gateway**：`pm2 restart openclaw-gw`
-4. ✅ **验证消息收发**：在平台上发消息，确认 AI 能回复
+1. 🔑 **获取渠道凭证**：在目标平台创建机器人 / 应用，拿到 Token / App ID / Secret
+2. ⚙️ **接入 OpenClaw**：优先用 `openclaw onboard` / `openclaw channels add` / 插件安装；最后才手改配置
+3. 🩺 **先做系统级自检**：`openclaw config validate` → `openclaw gateway restart` → `openclaw channels status --probe`
+4. ✅ **再做真实消息验证**：私聊先完成 pairing，再去测群聊 / 多 Bot / 多 Agent
+
+> 课堂口径尽量统一成：**先看配置，再看网关，再看渠道，最后才看聊天界面。**
 
 ---
 
@@ -176,13 +227,13 @@ openclaw 工作目录/
 
 | 渠道 | 难度 | 特点 |
 |------|------|------|
-| **Telegram** | ⭐ 最简单 | BotFather 创建，无需审核 |
-| **Discord** | ⭐ 简单 | Developer Portal 创建 |
-| **QQ** | ⭐⭐⭐ 较复杂 | 需申请资格，有审核 |
-| **飞书** | ⭐⭐⭐ 较复杂 | 需配置事件订阅和权限 |
-| **企业微信** | ⭐⭐⭐ 较复杂 | 需管理员权限 |
+| **Telegram** | ⭐ 最简单 | 官方内置路径清晰；BotFather + pairing 即可起步 |
+| **Discord** | ⭐⭐ 简单 | 官方内置；要特别注意 intents、DM pairing、频道权限 |
+| **飞书** | ⭐⭐⭐ 中等偏复杂 | 先装插件，再建应用、开长连接、发版、pairing |
+| **QQ** | ⭐⭐⭐⭐ 项目型接入 | 更像平台接入项目；审核、适配器、字段口径要先确认 |
+| **企业微信** | ⭐⭐⭐⭐ 企业接入 | 管理员权限、回调可达、可见范围、适配器说明都重要 |
 
-> 💡 建议先从 Telegram 或 Discord 入手
+> 💡 建议先从 `Telegram` 或 `Discord` 入手；`飞书` 作为企业协作增强；`QQ / 企业微信` 更适合带着实际适配器文档做交付型练习。
 
 ---
 
@@ -191,18 +242,21 @@ openclaw 工作目录/
 ### 任务 1：查看并理解配置文件（20 分钟）
 
 ```bash
-cat openclaw.json    # 查看配置
-ls -la               # 查看目录结构
-cat soul.md          # 查看人格设定
+openclaw config file                         # 找到当前生效的配置文件
+openclaw config get agents.defaults.workspace
+openclaw sessions --active 120              # 看最近活跃会话
+ls -la ~/.openclaw                          # 看总目录结构
 ```
 
 ### 任务 2：修改配置项并验证（20 分钟）
 
 ```bash
-cp openclaw.json openclaw.json.bak    # 备份
-nano openclaw.json                     # 修改 model 字段
-pm2 restart openclaw-gw                # 重启
-openclaw tui                           # 测试
+cp ~/.openclaw/openclaw.json ~/.openclaw/openclaw.json.bak
+nano ~/.openclaw/openclaw.json
+openclaw config validate
+openclaw gateway restart
+openclaw gateway health
+openclaw tui
 ```
 
 ---
@@ -212,6 +266,7 @@ openclaw tui                           # 测试
 - [ ] 能描述 Gateway、Agent、Channel、Skill、Tools、Memory 各自的作用
 - [ ] 能找到并读懂 openclaw.json 的关键配置项
 - [ ] 能说出渠道对接的通用四步流程
+- [ ] 能解释 `agentId / workspace / sessionKey` 为什么会影响后面的记忆、技能和多 Agent 路由
 
 ---
 
@@ -225,7 +280,7 @@ openclaw tui                           # 测试
 
 | 组件 | 实际应用 |
 |------|----------|
-| Gateway | 7×24 在线，接入 QQ、Telegram、飞书 |
+| Gateway | 7×24 在线，接入 Telegram、飞书和其他企业侧适配渠道 |
 | Agent | 定义了"小墨"人格，有自己的个人主页 |
 | Skill | 安装了 80+ 社区技能，覆盖办公、开发、内容创作 |
 | Tools | 文件操作、Web 搜索、命令执行全部启用 |
@@ -252,6 +307,6 @@ openclaw tui                           # 测试
 
 ### 明天预告：Day 4
 
-**给 AI 一个灵魂——人格定制 soul.md**
+**给 AI 一个灵魂——人格定制 SOUL.md**
 
 让你的 AI 助手拥有独特的性格和说话风格！

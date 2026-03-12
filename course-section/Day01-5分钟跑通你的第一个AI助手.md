@@ -23,6 +23,16 @@
 1. ✅ **安装** OpenClaw 到本地电脑，并验证安装成功
 2. ✅ **配置** 初始设置，包括选择 AI 模型和配置 API Key
 3. ✅ **使用** TUI 界面与 AI 助手对话，并让 AI 执行简单任务
+4. ✅ **判断** 问题是出在安装、配置，还是 Gateway 未启动
+
+---
+
+## 第 2.5 页 · 讲师提示语（可直接口播）
+
+- **开场认知**：今天先不追求把 OpenClaw 全讲懂，我们只做一件事——让大家真的把它跑起来。
+- **实操前提醒**：这节课的成功标准很简单：装上、配好、能对话、能执行一个小任务。
+- **卡点转场**：如果学员装不上，先查 Node 版本、PATH 和权限，不要一上来就怀疑自己不会用。
+- **复盘收口**：Day 1 最重要的收获不是记住命令，而是建立一个强烈感受——AI 不只是会聊天，它还能动手做事。
 
 ---
 
@@ -82,7 +92,7 @@ OpenClaw 支持多种主流 AI 模型，你可以根据需求和预算选择：
 打开终端，输入以下命令：
 
 ```bash
-node -v    # 查看 Node.js 版本，需要 ≥ 18.x
+node -v    # 查看 Node.js 版本，需要 ≥ 22
 npm -v     # 查看 npm 版本
 ```
 
@@ -92,7 +102,7 @@ npm -v     # 查看 npm 版本
 2. 下载 **LTS 版本**
 3. 安装时确保勾选 "Add to PATH"
 
-> ⚠️ 版本要求：Node.js 18.x 或以上
+> ⚠️ 当前 OpenClaw 运行时要求已经提升，课程统一按 **Node.js 22+** 准备环境。
 
 ---
 
@@ -108,8 +118,19 @@ npm install -g openclaw@latest
 
 ```bash
 openclaw --version
-# 输出类似：openclaw v1.x.x
+# 输出类似：openclaw 2026.x.x
+
+openclaw config validate
+# 输出类似：Config valid
 ```
+
+### 如果你想再多做一步
+
+```bash
+openclaw gateway health
+```
+
+> 💡 如果这里提示 Gateway 不可达，不代表你没装好，通常只是还没完成引导或网关还没启动。
 
 ### 常见问题
 
@@ -140,6 +161,15 @@ openclaw onboard
 - **Anthropic**：https://console.anthropic.com → API Keys
 
 > 💡 大多数服务商提供免费试用额度，足够完成课程学习
+
+### 做完引导后，立刻跑一次自检
+
+```bash
+openclaw config validate
+openclaw gateway health
+```
+
+> 如果 `config validate` 通过，但 `gateway health` 失败，优先检查是否完成了引导、API Key 是否可用、网络是否可达。
 
 ---
 
@@ -202,12 +232,14 @@ type hello.txt      # Windows
 2. `node -v` → 确认 Node.js
 3. `npm install -g openclaw@latest` → 安装
 4. `openclaw --version` → 验证
-5. `openclaw onboard` → 初始化
-6. 选择模型 → 输入 API Key → 完成
+5. `openclaw config validate` → 确认配置结构正常
+6. `openclaw onboard` → 初始化
+7. 选择模型 → 输入 API Key → 完成
 
 ### ✅ 成功标志
 
 - `openclaw --version` 输出版本号
+- `openclaw config validate` 显示配置合法
 - onboard 向导显示"配置成功"
 
 ---
@@ -250,6 +282,7 @@ type hello.txt      # Windows
 |------|----------|
 | npm 安装报权限错误 | 加 `sudo` 或配置 npm prefix |
 | node -v 命令未找到 | 重新安装 Node.js，勾选 Add to PATH |
+| `openclaw config validate` 失败 | 先看报错字段；再运行 `openclaw doctor --fix` 修复可迁移问题 |
 | onboard 网络错误 | 检查网络；配置代理 |
 | API Key 无效 | 重新运行 `openclaw onboard` |
 | TUI 启动失败 | 确认 onboard 已完成；使用现代终端 |
@@ -268,6 +301,7 @@ type hello.txt      # Windows
 ## 第 16 页 · 验收自检
 
 - [ ] 能在终端运行 `openclaw --version` 看到版本号
+- [ ] 能运行 `openclaw config validate` 且通过
 - [ ] 能通过 `openclaw tui` 发送消息并收到 AI 回复
 - [ ] 能让 AI 成功执行一个简单任务（如创建文件）
 

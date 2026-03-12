@@ -22,7 +22,17 @@
 
 1. ✅ **解释** 三层记忆架构（核心记忆、长期记忆、短期记忆）及各层作用
 2. ✅ **使用** 命令行查看、编辑和清除 AI 的记忆内容
-3. ✅ **配置** 记忆系统参数，让 AI 更好地记住重要信息
+3. ✅ **区分** 工作区记忆文件、会话记录、语义记忆索引这三层东西
+4. ✅ **配置** 记忆系统参数，让 AI 更好地记住重要信息
+
+---
+
+## 第 2.5 页 · 讲师提示语（可直接口播）
+
+- **开场认知**：记忆系统的价值，是把 AI 从“一次性工具”变成“能持续认识你的助手”。
+- **实操前提醒**：先让 AI 记住一条简单事实，再验证它能不能说回来，理论放到体验之后讲。
+- **卡点转场**：如果学员觉得“它没记住”，先区分是短期上下文没了，还是持久记忆根本没写进去。
+- **复盘收口**：今天结束后，学员要知道记忆不是黑盒——它能看、能改、能删、能解释。
 
 ---
 
@@ -54,6 +64,28 @@
 │   当前对话中提到的任务和临时信息         │
 └─────────────────────────────────────┘
 ```
+
+---
+
+## 第 4.5 页 · 记忆、工作区、会话，不是一回事
+
+这是 Day 5 最值得讲清的一页，不然后面排障会一直绕圈。
+
+| 你看到的东西 | 典型位置 | 它解决什么问题 |
+|------|------|------|
+| 工作区记忆文件 | `<workspace>/memory/`、`memory.md` | 让 Agent 有长期可读的“笔记” |
+| 会话记录 | `~/.openclaw/agents/<agentId>/sessions/*.jsonl` | 记录每次真实对话发生了什么 |
+| 语义记忆索引 | `openclaw memory status/search` | 让系统能更快检索到相关记忆 |
+
+### 为什么这很重要
+
+- 你在当前聊天里说过的话，**不等于**已经写进长期记忆
+- 你手动改了工作区里的记忆文件，**不等于**当前旧会话立刻感知到了
+- 你有记忆文件，**不等于**语义检索已经建好索引
+
+一句话总结：
+
+> **会话记录负责“发生过什么”，工作区记忆负责“以后还想记得什么”，记忆索引负责“需要时能不能快速找出来”。**
 
 ---
 
@@ -113,25 +145,29 @@
 
 ---
 
-## 第 8 页 · 记忆文件存储结构
+## 第 8 页 · 工作区记忆与会话记录结构
 
-### 目录结构
+### 两个最重要的位置
 
 ```
-memory/
-├── core/              # 核心记忆文件
-│   └── user-info.md   # 用户关键信息
-├── archival/          # 长期记忆文件
-│   ├── project-a.md   # 项目记录
-│   └── notes.md       # 学习笔记
-└── conversations/     # 对话记录
-    └── 2024-01-15.md  # 按日期归档
+<workspace>/
+├── AGENTS.md
+├── SOUL.md
+├── USER.md
+├── memory.md          # 稳定事实 / 长期偏好（可选）
+└── memory/
+    └── 2026-01-15.md  # 每日日志 / 今日笔记
+
+~/.openclaw/agents/<agentId>/sessions/
+├── sessions.json      # 当前 sessionKey -> sessionId 映射
+└── <sessionId>.jsonl  # 真实对话记录
 ```
 
-### 文件格式
+### 课堂解释口径
 
-- Markdown 或 JSON 格式
-- **可直接查看和编辑**——记忆对你完全透明
+- 工作区里的 `memory/` 是你能直接维护的长期资料
+- `sessions/*.jsonl` 更像“流水账”，主要用于排障和回溯
+- `openclaw memory` 命令看的是**检索能力和索引状态**，不是简单列目录
 
 ---
 
@@ -140,14 +176,18 @@ memory/
 ### 通过命令行查看
 
 ```bash
-# 查看核心记忆
-cat memory/core/*.md
+# 查看记忆索引状态
+openclaw memory status --deep
 
-# 查看长期记忆列表
-ls memory/archival/
+# 如有新增文件，顺手重建索引
+openclaw memory index --verbose
 
-# 查看某条长期记忆的内容
-cat memory/archival/project-a.md
+# 搜索某段历史知识
+openclaw memory search "项目进展"
+
+# 查看工作区里的记忆文件
+ls memory/
+cat memory.md
 ```
 
 ### 通过对话查看
@@ -165,8 +205,12 @@ cat memory/archival/project-a.md
 ### 编辑记忆
 
 ```bash
-# 直接编辑记忆文件
-nano memory/core/user-info.md
+# 编辑长期稳定事实
+nano memory.md
+
+# 编辑今天的工作记忆（若不存在可新建）
+mkdir -p memory
+nano memory/2026-01-15.md
 
 # 通过对话让 AI 记住
 # → "请记住我的邮箱是 xxx@example.com"
@@ -202,7 +246,7 @@ rm -rf memory/*
 | 项目 | 说明 |
 |------|------|
 | 作用 | OpenClaw 定期自动执行记忆整理 |
-| 配置文件 | heartbeat.md |
+| 配置文件 | `HEARTBEAT.md` |
 | 默认频率 | 每 30 分钟一次 |
 | 心跳 vs Cron | 心跳是周期性巡检，Cron 是精确定时触发 |
 
@@ -240,13 +284,15 @@ rm -rf memory/*
 ### 操作步骤
 
 1. `ls -la memory/` → 查看记忆目录结构
-2. `cat memory/core/*.md` → 查看核心记忆
+2. `openclaw memory status --deep` → 查看当前记忆索引状态
 3. 手动添加一条记忆：
    ```bash
-   echo "- 用户最喜欢的编程语言是 Python" >> memory/core/preferences.md
+   mkdir -p memory
+   echo "- 用户最喜欢的编程语言是 Python" >> memory/2026-01-15.md
    ```
-4. `pm2 restart openclaw-gw` → 重启 Gateway
-5. `openclaw tui` → 问 AI："你知道我喜欢什么编程语言吗？"
+4. `openclaw memory index --verbose` → 刷新索引
+5. `openclaw memory search "编程语言"` → 看能否搜索到
+6. `openclaw tui` → 开一个新会话再问 AI："你知道我喜欢什么编程语言吗？"
 
 ### ✅ 成功标志
 
@@ -258,10 +304,10 @@ rm -rf memory/*
 
 | 问题 | 解决方案 |
 |------|----------|
-| AI 在新会话中不记得信息 | 检查 memory/ 目录是否有文件；明确说"请记住这个" |
-| memory/ 目录为空 | 正常现象，AI 还没主动写入记忆 |
-| 手动添加的记忆 AI 读不到 | 确认文件路径正确；确认已重启 Gateway |
-| 记忆文件越来越大 | 手动清理过时的记忆文件 |
+| AI 在新会话中不记得信息 | 先确认信息是否真的写进了工作区记忆，而不是只留在当前会话 |
+| `openclaw memory search` 搜不到 | 先执行 `openclaw memory index --verbose` |
+| 手动添加的记忆 AI 读不到 | 确认文件写在当前 Agent 的 workspace，而不是别的 Agent 目录 |
+| 明明聊过，为什么又像失忆 | 去 `~/.openclaw/agents/<agentId>/sessions/` 看看是不是换了新的 sessionKey 或新 sessionId |
 
 ---
 
@@ -270,6 +316,8 @@ rm -rf memory/*
 - **记忆文件可能包含个人信息**
   - 保护好服务器的访问权限
   - 不要将记忆文件分享到公开场合
+- **会话记录也可能包含敏感内容**
+  - `~/.openclaw/agents/<agentId>/sessions/*.jsonl` 往往比 `memory/` 更敏感
 - **清除记忆前先备份**
   - `cp -r memory/ memory-backup/`
 
@@ -278,6 +326,7 @@ rm -rf memory/*
 ## 第 17 页 · 验收自检
 
 - [ ] 能说出三层记忆架构的名称和各自的作用
+- [ ] 能区分工作区记忆、会话记录、记忆索引这三层东西
 - [ ] 能通过命令行查看 memory/ 目录下的记忆文件内容
 - [ ] 成功让 AI 记住了一条信息，并在新会话中验证 AI 仍然记得
 

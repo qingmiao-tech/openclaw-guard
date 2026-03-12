@@ -24,6 +24,16 @@
 2. ✅ **配置** 在一个 Gateway 内创建多个隔离 Agent，每个 Agent 拥有独立人格和技能
 3. ✅ **部署** 在同一台服务器上运行多个 OpenClaw 实例，实现完全隔离
 4. ✅ **实战** 搭建一个"一人公司"场景，包含客服、内容创作、数据分析、项目管理四个 AI 角色
+5. ✅ **说明** `agentId / accountId / sessionKey` 如何分工，知道多 Agent 为什么不会天然串线
+
+---
+
+## 第 2.5 页 · 讲师提示语（可直接口播）
+
+- **开场认知**：多 Agent 不是为了“更酷”，而是为了真正解决一个 Agent 身上角色冲突、模型冲突和渠道冲突的问题。
+- **实操前提醒**：先做两个角色、两条路由跑通，再从 2 个扩成 4 个，不要一开始就堆满团队。
+- **卡点转场**：路由不对时，先看 bindings、accounts 和 workspace，不要一上来反复改人格文件。
+- **复盘收口**：学员这一节最核心的收获，是能说清单实例多角色和多实例单角色各自适合什么场景。
 
 ---
 
@@ -101,22 +111,42 @@ Agent（一个"大脑"）
 
 ---
 
+## 第 5.5 页 · 多 Agent 真正隔离的三层边界
+
+这页是 Day 13 的核心“轻理论卡片”，只讲够用的，不展开源码。
+
+| 层级 | 它是什么 | 你课堂上怎么讲 |
+|------|------|------|
+| `agentId` | 一个独立大脑 | 负责人格、技能、工作区、默认模型 |
+| `accountId` | 一个渠道入口账号 | 负责“从哪个 Bot / 账号进来” |
+| `sessionKey` | 一段具体上下文 | 负责“这次接着哪段会话往下聊” |
+
+一句话记忆：
+
+- **Agent** 是角色
+- **Account** 是入口
+- **Session** 是上下文桶
+
+所以多 Agent 不是“多几个名字”，而是**多套 workspace + 多套 sessions + 可选多账号绑定**。
+
+---
+
 ## 第 6 页 · 实操：创建多 Agent 工作区
 
 ### 步骤 1：使用 CLI 创建 Agent
 
 ```bash
 # 创建高级程序员助理
-openclaw agents add code-architect
+openclaw agents add code-architect --workspace ~/.openclaw/workspace-code-architect
 
 # 创建中医养生顾问
-openclaw agents add tcm-advisor
+openclaw agents add tcm-advisor --workspace ~/.openclaw/workspace-tcm-advisor
 
 # 创建猫管家
-openclaw agents add cat-butler
+openclaw agents add cat-butler --workspace ~/.openclaw/workspace-cat-butler
 
 # 创建内容创作助手
-openclaw agents add content-writer
+openclaw agents add content-writer --workspace ~/.openclaw/workspace-content-writer
 ```
 
 ### 步骤 2：验证创建结果
@@ -215,7 +245,7 @@ content-writer     ~/.openclaw/workspace-content-writer
 你是"喵管"，南柯家四只猫咪的专属管家。你负责记录它们的日常、管理健康档案、整理素材。
 
 ## 四只猫咪档案
-（主人会在 user.md 中补充每只猫的详细信息，包括名字、品种、年龄、性格、健康状况）
+（主人会在 `USER.md` 中补充每只猫的详细信息，包括名字、品种、年龄、性格、健康状况）
 
 ## 性格特点
 - 细心周到，像一个尽职的宠物管家
@@ -440,33 +470,36 @@ OpenClaw 内置了 Profile 机制，自动隔离配置和数据：
 
 ```bash
 # 创建客服实例
-openclaw --profile customer-service onboard
+openclaw --profile customer-service onboard --install-daemon
 # 选择端口 18789，配置客服相关的 Bot Token
 
 # 创建内容创作实例
-openclaw --profile content-writer onboard
+openclaw --profile content-writer onboard --install-daemon
 # 选择端口 18889，配置创作相关的 Bot Token
 
 # 创建数据分析实例
-openclaw --profile data-analyst onboard
+openclaw --profile data-analyst onboard --install-daemon
 # 选择端口 18989，配置分析相关的 Bot Token
 ```
 
-### 启动各实例
+### 如果需要手动补装守护服务
 
 ```bash
-# 安装为系统服务（开机自启）
+# 手动安装并启动各实例的守护服务
 openclaw --profile customer-service gateway install
+openclaw --profile customer-service gateway start
 openclaw --profile content-writer gateway install
+openclaw --profile content-writer gateway start
 openclaw --profile data-analyst gateway install
+openclaw --profile data-analyst gateway start
 ```
 
 ### 检查状态
 
 ```bash
-openclaw --profile customer-service status
-openclaw --profile content-writer status
-openclaw --profile data-analyst status
+openclaw --profile customer-service gateway status
+openclaw --profile content-writer gateway status
+openclaw --profile data-analyst gateway status
 ```
 
 ### ⚠️ 端口规划
@@ -613,7 +646,7 @@ openclaw agents list --bindings
 openclaw channels status --probe
 
 # 3. 检查各 Agent 的会话
-openclaw sessions list
+openclaw sessions --all-agents --active 120
 ```
 
 #### 功能验证
@@ -690,17 +723,23 @@ openclaw sessions list
 ```bash
 # 让猫管家每天晚上 9 点生成猫咪日报
 openclaw cron add --agent cat-butler \
-  --schedule "0 21 * * *" \
+  --name "Cat daily report" \
+  --cron "0 21 * * *" \
+  --session isolated \
   --message "请根据今天的摄像头记录和喂食记录，生成四只猫咪的每日健康日报"
 
 # 让中医顾问每周一早上推送当周养生建议
 openclaw cron add --agent tcm-advisor \
-  --schedule "0 8 * * 1" \
+  --name "Weekly TCM brief" \
+  --cron "0 8 * * 1" \
+  --session isolated \
   --message "根据当前节气和南柯的体质档案，推送本周养生建议，包括饮食、作息和穴位按摩"
 
 # 让程序员助理每天早上推送技术资讯
 openclaw cron add --agent code-architect \
-  --schedule "0 9 * * *" \
+  --name "Daily tech brief" \
+  --cron "0 9 * * *" \
+  --session isolated \
   --message "搜索最新的 AI 应用开发和架构设计相关技术动态，生成今日技术简报"
 ```
 
@@ -727,7 +766,9 @@ Cron 触发猫管家分析
 ```bash
 # 每小时分析一次摄像头截图
 openclaw cron add --agent cat-butler \
-  --schedule "0 * * * *" \
+  --name "Cat cam sweep" \
+  --cron "0 * * * *" \
+  --session isolated \
   --message "检查 ~/cat-cam/ 目录下最新的摄像头截图，分析每只猫的位置和活动状态，如有异常请立即通知我"
 ```
 
@@ -775,20 +816,21 @@ openclaw cron add --agent cat-butler \
 ### 调试命令速查
 
 ```bash
-# 检查整体健康状态
-openclaw doctor
+# 检查配置与 Gateway 健康
+openclaw config validate
+openclaw gateway health
 
 # 查看 Gateway 日志
 openclaw logs --tail 50
 
 # 查看特定 Agent 的会话
-openclaw sessions list --agent cat-butler
+openclaw sessions --agent cat-butler --active 120
 
 # 测试发送消息给特定 Agent
 openclaw agent --agent code-architect --message "测试消息"
 
-# 重新加载配置（无需重启）
-# OpenClaw 会自动监听配置文件变化并热加载
+# 改完配置后手动重启，更稳
+openclaw gateway restart
 ```
 
 ---

@@ -12,188 +12,215 @@
 
 预计时长：1 小时
 
-> 今天的目标：将你的 AI 助手接入 Discord，在社区服务器中提供智能服务。
+> 今天的目标：将你的 AI 助手接入 Discord，先跑通 DM，再验证服务器频道。
 
 ---
 
 ## 第 2 页 · 渠道简介
 
-### 为什么选 Discord？
+### 为什么选 Discord
 
-- 🎮 全球流行的社区通讯平台
-- 👨‍💻 广泛用于开发者社区、学习社群、兴趣小组
-- 🤖 成熟的 Bot API，对接流程简单
-- ⚡ 与 Telegram 类似，较为简单
-
-### 适用场景
-
-- 游戏社区
-- 海外开发者社群
-- 学习小组
-- 兴趣社区
+- 🎮 海外社区、开发者社群常用
+- 🤖 Bot 生态成熟，配套文档完善
+- 🧪 很适合作为“频道隔离会话”的观察场景
+- 🛠️ 后续扩到 Slash Commands、线程、语音都比较自然
 
 ### 前置要求
 
-- ✅ Day 2 完成（OpenClaw 已在服务器上运行）
+- ✅ Day 2 完成（OpenClaw 已可运行）
 - ✅ 一个 Discord 账号
 - ✅ 一个你拥有管理权限的 Discord 服务器
+- ✅ 已能正常执行 `openclaw config validate`
 
 ---
 
-## 第 3 页 · 创建 Discord 机器人
+## 第 3 页 · 这节课的最小成功路径
+
+```text
+1. 在 Discord Developer Portal 创建 Bot
+   ↓
+2. 开启必要 Intents
+   ↓
+3. 用 OpenClaw 配好 token
+   ↓
+4. 先跑通 DM pairing，再测服务器频道
+```
+
+### 本课统一验收顺序
+
+```bash
+openclaw config validate
+openclaw gateway restart
+openclaw channels status --probe
+```
+
+> 先让 DM 成功，再测群组/频道，排障会简单很多。
+
+---
+
+## 第 3.5 页 · 讲师串场话术
+
+- **开场认知**：Discord 虽然接入不算复杂，但它很适合顺手讲清楚“频道权限、DM、intent”这些真实平台差异。
+- **实操前提醒**：让学员先明确自己要验证的是频道回复，还是私聊回复，这两条路径不要混着测。
+- **卡点转场**：机器人在线但不回消息，最常见不是模型问题，而是 Message Content Intent、频道权限或 @ 触发条件没满足。
+- **复盘收口**：Discord 跑通以后，学员对“一个 Agent 在不同场景下为什么会表现不同”会有更直观的理解。
+
+---
+
+## 第 4 页 · 第一步：创建 Discord 机器人
 
 ### 操作步骤
 
-1. 访问 [Discord Developer Portal](https://discord.com/developers/applications)
-2. 点击 "New Application"，输入应用名称
-3. 左侧菜单点击 "Bot"
-4. 点击 "Add Bot" 创建机器人
-5. 点击 "Reset Token" 获取 **Bot Token**（只显示一次！）
-6. 开启以下选项：
-   - ✅ **Message Content Intent**（必须）
-   - ✅ **Server Members Intent**（可选）
+1. 打开 [Discord Developer Portal](https://discord.com/developers/applications)
+2. 点击 **New Application**
+3. 左侧进入 **Bot**
+4. 点击 **Add Bot**
+5. 点击 **Reset Token**，复制 **Bot Token**
 
-> ⚠️ Token 只显示一次，务必立即保存！
+### 必开的 Intents
+
+- ✅ **Message Content Intent**：没有它，机器人可能在线但不回消息
+- ✅ **Server Members Intent**：做成员查找、允许列表时很常用
+
+> ⚠️ Token 只当密钥用；截图、录屏、协作文档里都不要暴露。
 
 ---
 
-## 第 4 页 · 邀请机器人到服务器
+## 第 5 页 · 第二步：邀请机器人进服务器
 
 ### 生成邀请链接
 
-1. 左侧菜单 → "OAuth2" → "URL Generator"
-2. Scopes 勾选 `bot`
-3. Bot Permissions 勾选：
-   - ✅ Send Messages
-   - ✅ Read Message History
-   - ✅ View Channels
-4. 复制生成的 URL
-5. 在浏览器中打开，选择你的服务器并授权
+在 **OAuth2 → URL Generator** 中：
+
+- Scopes 勾选：
+  - `bot`
+  - `applications.commands`
+- Bot Permissions 至少勾选：
+  - `View Channels`
+  - `Send Messages`
+  - `Read Message History`
+  - `Embed Links`
+  - `Attach Files`
+
+### 做完这一步后
+
+- 机器人出现在你的服务器里
+- 你可以右键复制服务器 ID、频道 ID、用户 ID（先开 Discord 开发者模式）
 
 ---
 
-## 第 5 页 · 配置 OpenClaw
+## 第 6 页 · 第三步：把 Discord 渠道加进 OpenClaw
 
-### 编辑配置文件
+### 推荐方式一：直接添加
 
 ```bash
-nano openclaw.json
+openclaw channels add --channel discord --token <你的BotToken>
 ```
 
-### 添加 Discord 渠道配置
-
-```json
-{
-  "channels": {
-    "discord": {
-      "enabled": true,
-      "token": "你的Bot Token"
-    }
-  }
-}
-```
-
-### 重启 Gateway
+### 也可以显式写配置
 
 ```bash
-pm2 restart openclaw-gw
-pm2 logs openclaw-gw --lines 20
+openclaw config set channels.discord.token "\"<你的BotToken>\"" --json
+openclaw config set channels.discord.enabled true --json
 ```
 
-### 成功标志
+### 加完立刻校验
 
-日志中应看到：
-
-```
-Discord channel connected
+```bash
+openclaw channels list
+openclaw config validate
 ```
 
 ---
 
-## 第 6 页 · 验证消息收发
+## 第 7 页 · 第四步：重启、探测、完成 pairing
 
-### 测试步骤
+### 标准闭环
 
-1. 打开 Discord，进入添加了机器人的服务器
-2. 在文字频道中 **@机器人** 发送消息：
+```bash
+openclaw config validate
+openclaw gateway restart
+openclaw channels status --probe
+```
 
-> @AI助手 你好
+### 先跑通 DM
 
-3. 等待 AI 回复
-4. 尝试在机器人的**私信（DM）**中发送消息
-5. 尝试多轮对话
+1. 在 Discord 私信你的机器人：`你好`
+2. 第一次通常会拿到 pairing code
+3. 在服务器执行：
 
-### ✅ 成功标志
+```bash
+openclaw pairing approve discord <配对码>
+```
 
-- 频道和私信中 AI 都能正常回复
-- 回复速度在几秒内
+4. 再发：`请介绍一下你自己`
+
+### 再验证服务器频道
+
+在服务器里 **@机器人** 发一句测试消息，确认它能回。
 
 ---
 
-## 第 7 页 · 故障排查速查
+## 第 8 页 · 频道模式的两个高频坑
 
-| 问题 | 解决方案 |
+### 坑 1：机器人在线，但频道里不回复
+
+优先检查：
+
+- 是否开了 **Message Content Intent**
+- 是否真的 **@ 了机器人**
+- 频道权限里是否有 `View / Send / Read History`
+- 你的配置是不是默认要求 mention
+
+### 坑 2：我明明关了 mention，为什么还是不理我
+
+Discord 侧和 OpenClaw 侧要同时看：
+
+- OpenClaw 的 `groupPolicy` / `guilds` / `channels` 路由是否允许
+- 机器人是否真的在这个频道有权限
+
+> 💡 这类问题不要只盯着“模型有没有回”，本质常常是**事件根本没进来**。
+
+---
+
+## 第 9 页 · 故障排查速查
+
+| 问题 | 先查什么 |
 |------|----------|
-| 机器人显示离线 | 检查日志；确认 Token 正确；测试 `curl https://discord.com/api/v10/gateway` |
-| 在线但不回复 | 确认已开启 Message Content Intent；确认 @了机器人 |
-| 国内连接不稳定 | Discord 在国内可能需要代理，建议用海外服务器 |
-| 回复出现在错误频道 | 检查频道路由配置；确认频道权限 |
+| 机器人显示离线 | token 是否正确；`openclaw channels status --probe` 是否报连接错误 |
+| 在线但 DM 不回复 | 是否完成 pairing；可先 `openclaw pairing list discord` |
+| 频道里不回复 | Message Content Intent、频道权限、是否 @ 机器人 |
+| 只在 DM 正常，频道异常 | `groupPolicy`、guild/channel allowlist、mention 要求 |
+| 命令菜单不出现 | 是否勾选 `applications.commands`；重启 Gateway 后再看 |
 
----
+### 需要进一步定位时
 
-## 第 8 页 · 进阶配置（可选）
-
-| 配置 | 说明 |
-|------|------|
-| 斜杠命令 | 注册 `/ask`、`/help` 等结构化交互 |
-| Embed 消息 | 富文本回复，支持标题、颜色、图片 |
-| 多频道管理 | 不同频道配置不同行为 |
-| 语音频道集成 | AI 接入语音频道进行实时语音对话 |
-
-### 🆕 Discord 语音频道 & 流媒体（v2026.2.21 新特性）
-
-OpenClaw v2026.2.21 版本新增了 Discord 语音频道流媒体支持，AI 助手可以：
-
-- 加入 Discord 语音频道，进行实时语音交互
-- 支持 Discord 语音消息的接收和处理
-- 自定义 Bot 在线状态（Custom Presence）
-
-### 语音频道配置示例
-
-```json
-{
-  "channels": {
-    "discord": {
-      "enabled": true,
-      "token": "你的Bot Token",
-      "voice": {
-        "enabled": true,
-        "autoJoin": false
-      }
-    }
-  }
-}
+```bash
+openclaw logs --follow
 ```
 
-> 💡 语音功能需要在 Discord Developer Portal 中额外开启 Voice 相关的 Intent 权限。
+---
+
+## 第 10 页 · 验收自检
+
+- [ ] 已在 Discord Developer Portal 创建 Bot 并拿到 Token
+- [ ] 已开启 Message Content Intent
+- [ ] 已把机器人邀请进服务器
+- [ ] 已成功把 Discord 渠道加进 OpenClaw
+- [ ] 已跑通 `openclaw config validate`
+- [ ] 已执行 `openclaw gateway restart`
+- [ ] 已在 `openclaw channels status --probe` 中看到 Discord 正常
+- [ ] 已完成一次 DM pairing，并成功在频道里 @ 机器人得到回复
 
 ---
 
-## 第 9 页 · 验收自检
-
-- [ ] 成功在 Discord Developer Portal 创建了机器人
-- [ ] 将机器人邀请到了你的 Discord 服务器
-- [ ] 在 Discord 频道和私信中与 AI 机器人成功完成对话
-
----
-
-## 第 10 页 · 总结
+## 第 11 页 · 总结
 
 ### 今天你完成了 🎉
 
-- 在 Discord Developer Portal 创建了机器人
-- 生成邀请链接并添加到服务器
-- 配置了 OpenClaw 的 Discord 渠道
-- 在 Discord 中与 AI 助手成功对话
+- 创建了 Discord 机器人
+- 学会了 Intents、权限、邀请链接这三件关键事
+- 跑通了 DM pairing
+- 验证了服务器频道里的真实回复链路
 
-> 🎯 Discord 对接和 Telegram 一样简单，非常适合海外社区场景！
+> 🎯 Discord 的真正价值，不只是“能聊天”，而是很适合训练你对会话隔离、频道路由、权限门控的直觉。

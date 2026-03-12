@@ -22,7 +22,16 @@
 
 1. ✅ **安装** 并配置 Browser Relay 扩展，实现 AI 对浏览器的远程控制
 2. ✅ **使用** AI 执行网页操作任务（打开页面、填写表单、提取信息）
-3. ✅ **设计** 基于浏览器自动化的实际应用场景
+3. ✅ **排查** 浏览器连接、快照、扩展附加等常见问题，并为不同场景选择合适模式
+
+---
+
+## 第 2.5 页 · 讲师提示语（可直接口播）
+
+- **开场认知**：浏览器自动化不是炫技，它解决的是网页上那些重复、机械、但又绕不开的动作。
+- **实操前提醒**：今天先验证浏览器连接，再谈网页采集、表单填写和信息整理，不要倒着来。
+- **卡点转场**：网页打不开时，优先查 Node 节点和扩展状态，不要先去改提示词。
+- **复盘收口**：这一节真正的边界感，是让学员知道哪些网页任务适合交给 AI，哪些仍然需要人工确认。
 
 ---
 
@@ -67,6 +76,18 @@ OpenClaw Gateway → Node 节点 → Chrome Browser Relay 扩展
 
 ---
 
+## 第 4.5 页 · 两种浏览器模式，课堂该怎么选
+
+| 模式 | 适合场景 | 优点 | 常见坑 |
+|------|----------|------|--------|
+| Chrome 扩展中继 | 课堂演示、接管你当前标签页 | 上手快、直观、能直接接现有浏览器 | 忘记点扩展、没有 attach 到目标标签页 |
+| OpenClaw 托管浏览器 | 需要隔离环境、扩展模式不稳、Linux 排障 | 独立 profile、更可控、适合标准化演示 | 需要额外启动与检查状态 |
+
+> 课堂默认先用 **Chrome 扩展中继**。
+> 如果学员环境差异大、扩展总是掉线，立刻切到 **OpenClaw 托管浏览器**，不要在扩展问题上耗整节课。
+
+---
+
 ## 第 5 页 · 安装步骤
 
 ### 第一步：安装 OpenClaw Node
@@ -81,15 +102,31 @@ openclaw node restart
 
 ### 第二步：安装 Chrome 扩展
 
-1. `openclaw browser extension install` → 获取扩展文件
+1. `openclaw browser extension install` → 安装扩展文件到稳定目录
+2. `openclaw browser extension path` → 打印扩展所在目录
 2. 打开 Chrome → `chrome://extensions`
 3. 开启"开发者模式"
 4. 点击"加载已解压的扩展程序"
-5. 选择扩展文件夹
+5. 选择上一步打印出来的扩展目录
 
 ### 第三步：确认连接
 
-- 扩展状态显示 **绿色 Ready** ✅
+- 扩展状态显示 **ON / Ready** ✅
+- 可先运行：
+
+```bash
+openclaw browser status
+openclaw browser --browser-profile chrome tabs
+```
+
+### 备用方案：切到 OpenClaw 托管浏览器
+
+```bash
+openclaw browser start --browser-profile openclaw
+openclaw browser status
+```
+
+> 如果你在 Linux 上遇到 Chromium / snap 兼容问题，优先切到托管浏览器或改用官方 Chrome，而不是反复重装扩展。
 
 ---
 
@@ -97,18 +134,24 @@ openclaw node restart
 
 ### 验证 AI 能控制浏览器
 
-1. 确认扩展状态为 Ready
+1. 先执行 `openclaw browser status`，确认浏览器侧已联通
+2. 确认扩展状态为 Ready / ON，或者托管浏览器已经启动
 2. 在 `openclaw tui` 中输入：
 
 > "帮我打开 google.com"
 
 3. 观察浏览器是否自动打开了 Google 页面
+4. 如果已经打开，再继续让 AI：
+   > "请提取当前页面标题，并告诉我你看到的主要内容"
 
 ### 更多测试
 
 - "帮我在这个页面上搜索关键词 OpenClaw"
 - "帮我提取当前页面的标题和主要内容"
 - "帮我截取当前页面的截图"
+
+> 课堂上先测**打开页面 → 读取标题 → 提取正文**三步。
+> 先确认“能连上”，再做复杂自动化，不要一上来就挑战登录、表单、下载。
 
 ---
 
@@ -148,15 +191,18 @@ AI 整理为结构化格式
 ### 操作步骤
 
 1. 在本地电脑上安装 OpenClaw Node
-2. 安装 Browser Relay Chrome 扩展
-3. 确认扩展状态为 Ready（绿色）
-4. `openclaw tui` → "帮我打开 google.com"
-5. 观察浏览器是否自动打开页面
+2. 执行 `openclaw browser extension install`
+3. 执行 `openclaw browser extension path`，按路径加载扩展
+4. 扩展 attach 到目标标签页，确认状态为 Ready / ON
+5. 执行 `openclaw browser status`
+6. `openclaw tui` → "帮我打开 google.com"
+7. 如果扩展模式不稳，改用 `openclaw browser start --browser-profile openclaw`
 
 ### ✅ 成功标志
 
 - 扩展状态为 Ready
 - AI 成功控制浏览器打开指定网页
+- 知道什么时候该从“扩展模式”切到“托管浏览器模式”
 
 ---
 
@@ -169,7 +215,8 @@ AI 整理为结构化格式
 3. 告诉 AI：
    > "请访问当前页面，提取页面标题和主要内容，生成一份摘要"
 4. 观察 AI 的操作过程和输出结果
-5. 尝试更复杂的任务
+5. 如果提取失败，先重新 attach 扩展，再重试
+6. 尝试更复杂的任务
 
 ### ✅ 成功标志
 
@@ -182,18 +229,22 @@ AI 整理为结构化格式
 
 | 问题 | 解决方案 |
 |------|----------|
-| 扩展状态不是 Ready | 确认 Node 节点已启动；刷新扩展页面 |
-| AI 说无法访问浏览器 | 确认 Node 节点在线；检查连接状态 |
-| AI 无法读取页面内容 | 确认扩展已 attach 到当前页面；刷新重试 |
-| 操作超时 | 检查网络速度；简化操作指令 |
+| 扩展状态不是 Ready / ON | 确认 Node 节点已启动；刷新扩展；重新 attach 到当前标签页 |
+| AI 说无法访问浏览器 | 先跑 `openclaw browser status`；确认 Node 节点在线、浏览器已联通 |
+| AI 无法读取页面内容 | 确认扩展已 attach 到当前页面；先让 AI 读标题，不要直接做复杂操作 |
+| 页面刚跳转后点击失败 | 重新获取页面快照 / 重新描述页面；导航后旧 ref 可能失效 |
+| Linux 上浏览器总连不上 | 避免 snap Chromium，优先切官方 Chrome 或 `openclaw browser start --browser-profile openclaw` |
+| 报 Playwright 不可用 | 说明当前环境缺浏览器自动化依赖；先退回基础读取/截图，或补装完整浏览器支持环境 |
 
 ---
 
 ## 第 12 页 · 🔒 安全提示
 
+- **不要直接拿日常主浏览器做高风险自动化**：优先用单独 profile 或托管浏览器
 - **浏览器控制权限**：不要在包含敏感信息的页面（如网银）上启用 Browser Relay
 - **避免自动登录敏感账户**：不要让 AI 操作涉及资金、密码的页面
 - **注意隐私**：AI 可以读取页面内容，避免在含有隐私信息的页面上使用
+- **登录类操作先人工完成**：课堂建议“人工登录 + AI 后续操作”，不要把账号密码交给 AI
 
 ---
 
@@ -202,6 +253,8 @@ AI 整理为结构化格式
 - [ ] Browser Relay 扩展安装成功，状态为 Ready
 - [ ] 成功让 AI 控制浏览器打开指定网页
 - [ ] 完成了一次网页信息采集任务
+- [ ] 知道扩展中继与托管浏览器两种模式的区别
+- [ ] 碰到连接异常时，会先执行 `openclaw browser status`
 
 ---
 

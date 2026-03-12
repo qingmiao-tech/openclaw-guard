@@ -27,6 +27,15 @@
 
 ---
 
+## 第 2.5 页 · 讲师提示语（可直接口播）
+
+- **开场认知**：安全运维不是给高手学的“附加题”，而是让 AI 助手可以长期稳定运行、不把你拖进反复救火的基础动作。
+- **实操前提醒**：这一节不要讲太多抽象安全理论，优先让学员真正做 4 件事：管好 Key、收紧权限、会看状态、会查日志。
+- **卡点转场**：学员一旦遇到问题，先重复课堂口令：先看 `openclaw status`，再看 `openclaw gateway health`，最后盯 `openclaw logs --follow`。
+- **复盘收口**：今天的目标不是“系统绝对安全”，而是“风险有边界、问题可恢复、故障能定位”。
+
+---
+
 ## 第 3 页 · API Key 安全管理
 
 ### 风险
@@ -108,6 +117,34 @@ sudo ufw status                 # 查看状态
 
 ---
 
+## 第 5.2 页 · 执行审批与 `/elevated`：什么时候该放，什么时候别放
+
+### 三种执行安全级别
+
+| 模式 | 含义 | 课堂建议 |
+|------|------|----------|
+| deny | 一律不允许主机执行 | 最安全，适合纯聊天 Agent |
+| allowlist | 只允许允许列表中的命令 | **推荐默认**，兼顾安全与可用性 |
+| full | 放开所有命令 | 只在完全信任、完全理解后使用 |
+
+### `/elevated` 四种状态要讲清
+
+| 指令 | 含义 | 风险提示 |
+|------|------|----------|
+| `/elevated off` | 关闭提权 | 默认回到普通状态 |
+| `/elevated on` / `/elevated ask` | 允许在主机执行，但仍保留审批 | 适合需要人工确认的课堂演示 |
+| `/elevated full` | 主机执行 + 跳过 exec 审批 | **不要作为课堂默认值** |
+
+### 三个讲师必须反复强调的边界
+
+1. `tools.deny` 仍然高于提权指令，**被禁掉的工具不会因为 `/elevated` 自动复活**
+2. `/elevated full` 只是“方便”，不是“正确默认值”
+3. 真正高风险的场景，优先用 **allowlist + on-miss**，而不是一把梭 `full`
+
+> 一句话记忆：**默认用 allowlist，临时用 ask，慎用 full。**
+
+---
+
 ## 第 5.5 页 · 🚨 供应链安全：ClawHub 恶意技能危机
 
 ### 真实威胁：不是假设，是正在发生的事
@@ -127,7 +164,7 @@ sudo ufw status                 # 查看状态
 | 1 | 保持 OpenClaw 最新版本 | `npm update -g openclaw` |
 | 2 | 安装前用 skill-vetting 审查技能 | 让 AI 执行安全扫描 |
 | 3 | 检查技能权限要求 | 权限与功能不匹配 = 🚩 红旗 |
-| 4 | 定期审查已安装技能 | `openclaw skill list` 并逐一检查 |
+| 4 | 定期审查已安装技能 | `openclaw skills list` 并逐一检查 |
 | 5 | 启用 Agent Sandbox | 限制 Agent 的系统访问范围 |
 | 6 | 监控异常网络请求 | 检查是否有未知的外部连接 |
 
@@ -141,7 +178,7 @@ openclaw --version
 npm update -g openclaw
 
 # 更新后重启 Gateway
-pm2 restart openclaw-gw
+openclaw gateway restart
 
 # 查看更新日志确认安全补丁
 openclaw changelog
@@ -322,24 +359,60 @@ firejail --private=/home/openclaw-agent \
 ### 常用监控命令
 
 ```bash
+# 快速总览
+openclaw status
+
+# 查看 Gateway 服务状态
+openclaw gateway status
+
+# 配置校验
+openclaw config validate
+
+# Gateway 健康检查
+openclaw gateway health
+
 # 查看 Gateway 日志
-pm2 logs openclaw-gw
+openclaw logs --follow
+
+# 完整诊断（适合截图发给讲师）
+openclaw status --all
 
 # 查看系统资源
 free -h     # 内存
 df -h       # 磁盘
 htop        # CPU 和进程
-
-# 进程资源监控
-pm2 monit
-
-# 清空日志（防止过大）
-pm2 flush
 ```
 
 ### 日志轮转
 
 设置日志自动轮转，避免日志文件无限增长
+
+---
+
+## 第 7.2 页 · 上线前的健康检查与回退顺序
+
+### 推荐的检查顺序
+
+```bash
+# 1) 先看配置是否合法
+openclaw config validate
+
+# 2) 再看 Gateway 是否健康
+openclaw gateway health
+
+# 3) 最后看最近日志
+openclaw logs --follow
+```
+
+### 如果刚改完配置就出问题
+
+1. **先停手，不要继续叠加修改**
+2. 看 `config validate` 报错位置
+3. 看 `gateway health` 是否变红
+4. 查看最近日志
+5. 必要时恢复上一个可用配置，再重启 Gateway
+
+> 安全运维不是“出事后再修”，而是**每次改完都先验证、能出问题时有回退顺序**。
 
 ---
 
@@ -393,13 +466,13 @@ status-web.bat --port 18090
 ### 遇到问题不要慌，按顺序排查
 
 ```
-第一步：看日志 → pm2 logs openclaw-gw --lines 100
+第一步：看状态 → openclaw status / openclaw gateway health
     ↓
-第二步：查资源 → free -h / df -h / top
+第二步：看日志 → openclaw logs --follow
     ↓
-第三步：测网络 → ping google.com / curl API地址
+第三步：查资源 → free -h / df -h / top
     ↓
-第四步：查配置 → cat openclaw.json | python3 -m json.tool
+第四步：查配置 → openclaw config validate
 ```
 
 > 🎯 排查口诀：**日志 → 资源 → 网络 → 配置**，四步走完问题清
@@ -423,13 +496,16 @@ status-web.bat --port 18090
 2. 配置防火墙：`sudo ufw allow 22/tcp && sudo ufw enable`
 3. 检查是否使用非 root 用户运行
 4. 配置工具权限：在 openclaw.json 中设置 `tools.deny`
-5. `pm2 restart openclaw-gw` → 验证配置生效
+5. 执行 `openclaw config validate`
+6. 执行 `openclaw gateway health`
+7. `openclaw gateway restart` → 验证配置生效
 
 ### ✅ 成功标志
 
 - API Key 不再硬编码在配置文件中
 - 防火墙已启用
 - 不必要的工具权限已被限制
+- 知道何时应该使用 `allowlist / ask`，何时不该直接上 `full`
 
 ---
 
@@ -437,17 +513,21 @@ status-web.bat --port 18090
 
 ### 操作步骤
 
-1. `pm2 status` → 查看 Gateway 状态
-2. `pm2 logs openclaw-gw --lines 50` → 查看日志
-3. `free -h` → 检查内存
-4. `df -h` → 检查磁盘
-5. `ping google.com` → 测试网络
-6. `status-web` → 确认 Guard Web 是否真的在目标端口运行
-7. 如发现问题，按故障排查手册处理
+1. `openclaw status` → 查看整体状态
+2. `openclaw gateway status` → 查看 Gateway 服务状态
+3. `openclaw config validate` → 检查配置是否合法
+4. `openclaw gateway health` → 看 Gateway 是否健康
+5. `openclaw logs --follow` → 查看实时日志
+6. `free -h` → 检查内存
+7. `df -h` → 检查磁盘
+8. `ping google.com` → 测试网络
+9. `status-web` → 确认 Guard Web 是否真的在目标端口运行
+10. 如发现问题，按“状态 → 日志 → 资源 → 配置”手册处理
 
 ### ✅ 成功标志
 
 - 熟悉故障排查的基本流程和常用命令
+- 能独立完成一次“配置校验 → 健康检查 → 日志定位”的诊断闭环
 
 ---
 
@@ -455,10 +535,13 @@ status-web.bat --port 18090
 
 | 用途 | 命令 |
 |------|------|
-| 进程状态 | `pm2 status` |
-| 实时日志 | `pm2 logs openclaw-gw` |
-| 重启 Gateway | `pm2 restart openclaw-gw` |
-| 资源监控 | `pm2 monit` |
+| 快速总览 | `openclaw status` |
+| Gateway 服务 | `openclaw gateway status` |
+| 配置校验 | `openclaw config validate` |
+| Gateway 健康 | `openclaw gateway health` |
+| 实时日志 | `openclaw logs --follow` |
+| 完整诊断 | `openclaw status --all` |
+| 重启 Gateway | `openclaw gateway restart` |
 | Guard Web 状态 | `status-web.bat` / `bash ./status-web.sh` |
 | Guard Web 重启 | `start-web.bat` / `bash ./start-web.sh` |
 | Guard Web 停止 | `stop-web.bat` / `bash ./stop-web.sh` |
@@ -478,8 +561,10 @@ status-web.bat --port 18090
 2. SSH 密钥登录，禁用密码
 3. 防火墙仅开放必要端口
 4. Agent 权限最小化
-5. 敏感信息不通过 AI 对话传输
-6. 定期更新系统和 OpenClaw
+5. 优先使用 `allowlist + ask`，慎用 `/elevated full`
+6. 每次改配置后先跑 `config validate` 和 `gateway health`
+7. 敏感信息不通过 AI 对话传输
+8. 定期更新系统和 OpenClaw
 
 ---
 
@@ -491,6 +576,8 @@ status-web.bat --port 18090
 - [ ] 已将 OpenClaw 更新到最新版本，确认安全补丁已应用
 - [ ] 了解 ClawHub 供应链安全风险，能说出恶意技能的识别方法
 - [ ] 配置了 Agent 权限边界（tools.deny），遵循最小权限原则
+- [ ] 能解释 `/elevated on|ask|full` 的区别，知道为什么默认不推荐 `full`
+- [ ] 会执行 `openclaw config validate` 和 `openclaw gateway health`
 - [ ] 了解日常开发机部署 OpenClaw 的六层安全防护体系
 - [ ] 能根据使用场景选择合适的权限分级配置
 

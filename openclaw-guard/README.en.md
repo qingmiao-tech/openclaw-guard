@@ -1,25 +1,21 @@
-<table>
-<tr>
-<td width="104">
-  <img src="./web/logo.png" alt="OpenClaw Guard logo" width="88" />
-</td>
-<td>
-  <h1>OpenClaw Guard</h1>
-  <p><strong>The native OpenClaw operations and security workbench with built-in armor and recovery.</strong></p>
-  <p><a href="./README.md">中文</a> | <a href="./README.en.md">English</a></p>
-</td>
-</tr>
-</table>
+<p align="center">
+  <img src="./web/logo.png" alt="OpenClaw Guard logo" width="76" />
+  <img src="./web/readme-wordmark.svg" alt="OpenClaw Guard / 虾护卫" width="540" />
+</p>
 
-<p>
-  <a href="https://github.com/qingmiao-tech/openclaw-guard/actions/workflows/ci.yml"><img alt="Build" src="https://github.com/qingmiao-tech/openclaw-guard/actions/workflows/ci.yml/badge.svg" /></a>
-  <a href="https://github.com/qingmiao-tech/openclaw-guard/releases"><img alt="Release" src="https://img.shields.io/badge/release-ready-2563eb?logo=github" /></a>
-  <a href="https://github.com/qingmiao-tech/openclaw-guard/blob/main/package.json"><img alt="Version" src="https://img.shields.io/github/package-json/v/qingmiao-tech/openclaw-guard?color=0ea5e9" /></a>
-  <a href="https://github.com/qingmiao-tech/openclaw-guard/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/qingmiao-tech/openclaw-guard?color=22c55e" /></a>
+<p align="center"><strong>The native OpenClaw operations and security workbench with built-in armor and recovery.</strong></p>
+
+<p align="center"><a href="./README.md">中文</a> · <a href="./README.en.md">English</a></p>
+
+<p align="center">
+  <a href="https://github.com/qingmiao-tech/openclaw-guard/actions/workflows/ci.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/qingmiao-tech/openclaw-guard/ci.yml?branch=main&style=for-the-badge&label=build" /></a>
+  <a href="https://github.com/qingmiao-tech/openclaw-guard/releases"><img alt="Release" src="https://img.shields.io/badge/release-ready-2563eb?style=for-the-badge&logo=github" /></a>
+  <a href="https://github.com/qingmiao-tech/openclaw-guard/blob/main/package.json"><img alt="Version" src="https://img.shields.io/github/package-json/v/qingmiao-tech/openclaw-guard?style=for-the-badge&label=version&color=0ea5e9" /></a>
+  <a href="https://github.com/qingmiao-tech/openclaw-guard/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/qingmiao-tech/openclaw-guard?style=for-the-badge&label=license&color=22c55e" /></a>
 </p>
 
 <p align="center">
-  <img src="./web/readme-hero.png" alt="OpenClaw Guard hero banner" width="1200" />
+  <img src="./web/readme-hero.png" alt="OpenClaw Guard hero banner" />
 </p>
 
 OpenClaw Guard is the native operations and security workbench for OpenClaw, built with armor and a recovery path: layered security presets reduce overreach risks, agent assets such as memory and personality Markdown files are managed in one place, and deep Git sync lets you experiment freely and restore fast.

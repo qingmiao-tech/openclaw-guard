@@ -1,4 +1,6 @@
-﻿# OpenClaw Guard / 虾护卫
+# OpenClaw Guard / 虾护卫
+
+[中文](./README.md) | [English](./README.en.md)
 
 OpenClaw Guard 是 OpenClaw 的原生运维与安全工作台，统一承接安装检测、Guard Web 启停、Gateway 服务管理、Git 同步、缓存预热、运行态查看与安全配置。
 

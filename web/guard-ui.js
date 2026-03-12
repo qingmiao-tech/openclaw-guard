@@ -250,6 +250,8 @@
     memoryOriginal: '',
     filesViewData: null,
     memoryViewData: null,
+    memoryFilterQuery: '',
+    memoryKindFilter: 'all',
     searchQuery: '',
     searchResults: [],
     notificationFilter: 'all',
@@ -5771,15 +5773,109 @@
     return file.type || file.relativePath || file.path || '';
   }
 
+  function normalizeMemoryKindFilter(value) {
+    return ['docs', 'notes'].includes(value) ? value : 'all';
+  }
+
+  function getMemoryFileKind(file) {
+    return file?.type === 'memory' ? 'notes' : 'docs';
+  }
+
+  function getMemoryFilterLabel(kind) {
+    if (kind === 'docs') return state.lang === 'zh' ? '核心文档' : 'Core Docs';
+    if (kind === 'notes') return state.lang === 'zh' ? '记忆片段' : 'Memory Notes';
+    return state.lang === 'zh' ? '全部' : 'All';
+  }
+
+  function getMemoryAgentLabel(agentId) {
+    const normalized = String(agentId || '').trim();
+    if (!normalized) return state.lang === 'zh' ? '未分组' : 'Ungrouped';
+    if (!normalized.startsWith('detected:')) return normalized;
+    const suffix = normalized.slice('detected:'.length) || 'workspace';
+    return state.lang === 'zh' ? `自动发现：${suffix}` : `Auto-detected: ${suffix}`;
+  }
+
+  function getFilteredMemoryFiles(files) {
+    const normalizedKind = normalizeMemoryKindFilter(state.memoryKindFilter);
+    const query = String(state.memoryFilterQuery || '').trim().toLowerCase();
+    return (files || [])
+      .filter((file) => {
+        if (normalizedKind !== 'all' && getMemoryFileKind(file) !== normalizedKind) {
+          return false;
+        }
+        if (!query) return true;
+        const haystack = [
+          file.agentId,
+          file.type,
+          file.relativePath,
+          file.path,
+        ].join(' ').toLowerCase();
+        return haystack.includes(query);
+      })
+      .sort((left, right) => {
+        const leftAgent = String(left.agentId || '');
+        const rightAgent = String(right.agentId || '');
+        if (leftAgent !== rightAgent) return leftAgent.localeCompare(rightAgent);
+        const leftKind = getMemoryFileKind(left);
+        const rightKind = getMemoryFileKind(right);
+        if (leftKind !== rightKind) return leftKind.localeCompare(rightKind);
+        return renderMemoryFileEntryLabel(left).localeCompare(renderMemoryFileEntryLabel(right));
+      });
+  }
+
+  function groupMemoryFilesByAgent(files) {
+    const groups = new Map();
+    for (const file of files || []) {
+      const key = String(file.agentId || '');
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key).push(file);
+    }
+    return Array.from(groups.entries())
+      .map(([agentId, groupFiles]) => ({
+        agentId,
+        label: getMemoryAgentLabel(agentId),
+        files: groupFiles,
+        docsCount: groupFiles.filter((file) => getMemoryFileKind(file) === 'docs').length,
+        notesCount: groupFiles.filter((file) => getMemoryFileKind(file) === 'notes').length,
+      }))
+      .sort((left, right) => left.label.localeCompare(right.label));
+  }
+
+  function refreshFilesMemoryView(options = {}) {
+    if (state.activeTab !== 'files' || state.filesMode !== 'memory' || !state.memoryViewData) return;
+    syncMemoryEditorDraftState();
+    updatePanelSection('files-summary', renderFilesMemorySummaryHtml(state.memoryViewData));
+    updatePanelSection('files-workspace', renderFilesMemoryWorkspaceHtml(state.memoryViewData));
+    bindFilesMemoryView();
+    cacheFilesPanelFromState();
+    if (options.focusFilter) {
+      const input = document.getElementById('memory-filter-query');
+      if (input) {
+        const cursor = typeof options.cursor === 'number' ? options.cursor : String(input.value || '').length;
+        input.focus();
+        input.setSelectionRange?.(cursor, cursor);
+      }
+    }
+  }
+
   function renderFilesMemorySummaryHtml(data) {
     const files = data.files || [];
+    const filteredFiles = getFilteredMemoryFiles(files);
     const memoryAgentCount = new Set(files.map((file) => file.agentId).filter(Boolean)).size;
     const rootDocCount = files.filter((file) => file.type !== 'memory').length;
     const memoryFolderCount = files.filter((file) => file.type === 'memory').length;
+    const filterSummary = state.memoryKindFilter !== 'all' || state.memoryFilterQuery
+      ? (state.lang === 'zh'
+        ? `${getMemoryFilterLabel(state.memoryKindFilter)} · “${state.memoryFilterQuery || '全部'}”`
+        : `${getMemoryFilterLabel(state.memoryKindFilter)} · "${state.memoryFilterQuery || 'all'}"`)
+      : (state.lang === 'zh' ? '未启用筛选' : 'No filter applied');
     return `
       <div class="grid">
         ${metricCard(state.lang === 'zh' ? '记忆文件数' : 'Memory Files', formatNumber(files.length), state.lang === 'zh' ? `${formatNumber(rootDocCount)} 个核心文件 / ${formatNumber(memoryFolderCount)} 个记忆分片` : `${formatNumber(rootDocCount)} core files / ${formatNumber(memoryFolderCount)} memory notes`)}
         ${metricCard(state.lang === 'zh' ? '覆盖 Agent' : 'Covered Agents', formatNumber(memoryAgentCount), state.lang === 'zh' ? '包含记忆文件的 Agent' : 'agents with managed memory files')}
+        ${metricCard(state.lang === 'zh' ? '当前显示' : 'Visible Now', formatNumber(filteredFiles.length), filterSummary, filteredFiles.length === files.length ? 'success' : 'warn')}
         ${metricCard(state.lang === 'zh' ? '当前打开' : 'Current File', state.memoryFile ? '1' : '0', state.memoryFile ? (state.memoryFile.relativePath || state.memoryFile.path) : (state.lang === 'zh' ? '还没有打开文件' : 'no file opened yet'), state.memoryFile ? 'success' : 'warn')}
       </div>
       ${renderPageTip({
@@ -5794,9 +5890,28 @@
 
   function renderFilesMemoryWorkspaceHtml(data) {
     const files = data.files || [];
-    const listHtml = files.length
-      ? files.map((file) => `<button type="button" class="${state.memoryFile?.path === file.path ? 'active' : ''}" data-memory-file="${escapeHtml(file.path)}"><strong>${escapeHtml(renderMemoryFileEntryLabel(file))}</strong><div class="muted small">${escapeHtml(file.agentId)} · ${escapeHtml(file.relativePath || file.path)}</div></button>`).join('')
-      : emptyState(state.lang === 'zh' ? '暂时还没有发现记忆文件。' : 'No memory files have been found yet.');
+    const filteredFiles = getFilteredMemoryFiles(files);
+    const groupedFiles = groupMemoryFilesByAgent(filteredFiles);
+    const listHtml = groupedFiles.length
+      ? `<div class="list" style="margin-top:14px;">${groupedFiles.map((group) => `
+          <div class="list-item" style="display:block;">
+            <div class="row" style="justify-content:space-between; align-items:flex-start;">
+              <div>
+                <strong>${escapeHtml(group.label)}</strong>
+                ${group.label !== group.agentId ? `<div class="muted small" style="margin-top:6px;">${escapeHtml(group.agentId || '-')}</div>` : ''}
+              </div>
+              <span class="pill">${formatNumber(group.files.length)}</span>
+            </div>
+            <div class="tag-list" style="margin-top:10px;">
+              <span class="chip">${escapeHtml(getMemoryFilterLabel('docs'))} ${formatNumber(group.docsCount)}</span>
+              <span class="chip">${escapeHtml(getMemoryFilterLabel('notes'))} ${formatNumber(group.notesCount)}</span>
+            </div>
+            <div class="split-list" style="margin-top:12px;">
+              ${group.files.map((file) => `<button type="button" class="${state.memoryFile?.path === file.path ? 'active' : ''}" data-memory-file="${escapeHtml(file.path)}"><strong>${escapeHtml(renderMemoryFileEntryLabel(file))}</strong><div class="muted small">${escapeHtml(file.relativePath || file.path)}</div></button>`).join('')}
+            </div>
+          </div>
+        `).join('')}</div>`
+      : emptyState(state.lang === 'zh' ? '当前筛选条件下没有匹配的核心记忆文件。' : 'No core memory files match the current filters.');
 
     const editor = state.memoryFile ? `
       <div class="card">
@@ -5808,6 +5923,7 @@
           </div>
           <div class="toolbar tight">
             <button class="action-btn" type="button" data-memory-action="reload">${escapeHtml(t('reload'))}</button>
+            <button class="action-btn subtle" type="button" data-memory-action="reveal-in-files">${escapeHtml(state.lang === 'zh' ? '在全部文件中定位' : 'Reveal in All Files')}</button>
             <button class="action-btn primary" type="button" data-memory-action="save">${escapeHtml(t('save'))}</button>
           </div>
         </div>
@@ -5818,8 +5934,16 @@
     return `
       <div class="two-col">
         <div class="card">
-          <div class="muted small" style="margin-bottom:12px;">${escapeHtml(state.lang === 'zh' ? '这里优先展示所有关键记忆文件，方便你快速校对 Agent 的人格、说明与长期记忆。' : 'This mode prioritizes every key memory file so you can quickly review agent personality, instructions, and long-term memory.')}</div>
-          <div class="split-list">${listHtml}</div>
+          <div class="toolbar tight">
+            <input id="memory-filter-query" value="${escapeHtml(state.memoryFilterQuery || '')}" placeholder="${escapeHtml(state.lang === 'zh' ? '搜索 Agent / 文件名 / 路径' : 'Filter by agent / file / path')}" />
+          </div>
+          <div class="tag-list" style="margin-top:12px;">
+            <button type="button" class="chip ${state.memoryKindFilter === 'all' ? 'active' : ''}" data-memory-filter-kind="all">${escapeHtml(getMemoryFilterLabel('all'))}</button>
+            <button type="button" class="chip ${state.memoryKindFilter === 'docs' ? 'active' : ''}" data-memory-filter-kind="docs">${escapeHtml(getMemoryFilterLabel('docs'))}</button>
+            <button type="button" class="chip ${state.memoryKindFilter === 'notes' ? 'active' : ''}" data-memory-filter-kind="notes">${escapeHtml(getMemoryFilterLabel('notes'))}</button>
+          </div>
+          <div class="muted small" style="margin-top:12px;">${escapeHtml(state.lang === 'zh' ? `这里按 Agent 分组展示核心记忆，当前显示 ${formatNumber(filteredFiles.length)} / ${formatNumber(files.length)} 个文件。` : `Core memory is grouped by agent here. Showing ${formatNumber(filteredFiles.length)} of ${formatNumber(files.length)} files.`)}</div>
+          ${listHtml}
         </div>
         ${editor}
       </div>
@@ -5937,6 +6061,22 @@
 
   function bindFilesMemoryView() {
     bindFilesModeActions();
+    document.querySelectorAll('[data-memory-filter-kind]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const nextKind = normalizeMemoryKindFilter(button.getAttribute('data-memory-filter-kind'));
+        if (nextKind === state.memoryKindFilter) return;
+        state.memoryKindFilter = nextKind;
+        refreshFilesMemoryView();
+      });
+    });
+    document.getElementById('memory-filter-query')?.addEventListener('input', (event) => {
+      const input = event.currentTarget;
+      state.memoryFilterQuery = input?.value || '';
+      refreshFilesMemoryView({
+        focusFilter: true,
+        cursor: input?.selectionStart ?? String(state.memoryFilterQuery || '').length,
+      });
+    });
     document.querySelectorAll('[data-memory-file]').forEach((button) => {
       button.addEventListener('click', async () => {
         const confirmed = await confirmEditorSwitch('memory');
@@ -5971,6 +6111,19 @@
         state.memoryOriginal = normalizeEditorText(content);
         showToast(result.message || 'OK');
         cacheFilesPanelFromState();
+      } catch (error) {
+        showToast(error.message || String(error), 'error');
+      }
+    });
+    document.querySelector('[data-memory-action="reveal-in-files"]')?.addEventListener('click', async () => {
+      if (!state.memoryFile?.path) return;
+      try {
+        const confirmed = await confirmEditorSwitch('memory');
+        if (!confirmed) return;
+        await openManagedFile(state.memoryFile.path, 'file');
+        state.filesPath = getParentDirectory(state.memoryFile.path) || state.filesPath;
+        state.filesMode = 'all';
+        await loadFiles();
       } catch (error) {
         showToast(error.message || String(error), 'error');
       }

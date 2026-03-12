@@ -243,10 +243,17 @@ class GuardUiSmoke:
                 arg=['memory', memory_marker],
                 timeout=self.args.timeout,
             )
+            self.page.wait_for_selector('#memory-filter-query', timeout=self.args.timeout)
             panel_text = (self.page.locator('#guard-panel').text_content() or '').strip()
             if memory_marker not in panel_text and 'SOUL' not in panel_text and 'MEMORY' not in panel_text:
                 self.failures.append(SmokeFailure(f'{labels["files"]} 页切换到核心记忆视图后，未出现预期内容。'))
-            self.page.click('[data-files-mode="all"]', timeout=self.args.timeout)
+            memory_files = self.page.locator('[data-memory-file]')
+            if memory_files.count():
+                memory_files.first.click(timeout=self.args.timeout)
+                self.page.wait_for_selector('[data-memory-action="reveal-in-files"]', timeout=self.args.timeout)
+                self.page.click('[data-memory-action="reveal-in-files"]', timeout=self.args.timeout)
+            else:
+                self.page.click('[data-files-mode="all"]', timeout=self.args.timeout)
             self._wait_panel_ready(lang)
             self.page.wait_for_function(
                 """

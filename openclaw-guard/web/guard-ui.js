@@ -80,12 +80,16 @@
         core: '核心工作台',
         coreHint: '首发阶段优先展示运维、模型、安全和同步这些主路径。',
         workspace: '工作区工具',
-        workspaceHint: '处理文件、记忆与检索时再进入这里，避免首屏过载。',
+        workspaceHint: '文件编辑、核心记忆与检索都收在这里，避免首屏过载。',
         advanced: '高级功能',
         advancedHint: '通知、活动、成本和 Cron 收进这里，主要用于排障与深度配置。',
         advancedCollapsed: '这些页面先折叠起来，只有在需要深度排查或高级配置时再展开。',
         showAdvanced: '显示高级功能',
         hideAdvanced: '收起高级功能',
+      },
+      fileModes: {
+        all: '全部文件',
+        memory: '核心记忆',
       },
       desc: {
         overview: '先看整体状态、风险和提醒，再决定是否需要进入运维、会话或 Git 同步。',
@@ -98,7 +102,7 @@
         agents: '查看每个 Agent 的工作区、模型和文档准备情况，确认团队是否就绪。',
         sessions: '查看会话数量、Token 使用和运行状态，判断是否存在异常或成本压力。',
         activity: '回看最近发生的操作、变更和告警，快速了解系统刚刚做了什么。',
-        files: '浏览并编辑受控目录中的文件，用于查看说明、修配置或处理工作区内容。',
+        files: '浏览并编辑受控目录中的文件，也可切到“核心记忆”视图集中维护 SOUL、USER、AGENTS、MEMORY。',
         memory: '查看和维护 SOUL、USER、AGENTS、MEMORY 等关键记忆文件。',
         search: '按关键词搜索工作区和记忆内容，快速找到需要的配置、文档或记录。',
         costs: '查看模型、Agent 和会话的成本估算，帮助控制整体消耗。',
@@ -183,12 +187,16 @@
         core: 'Core Workbench',
         coreHint: 'Keep the launch version focused on operations, models, security, and sync.',
         workspace: 'Workspace Tools',
-        workspaceHint: 'Open this group when you need file editing, memory maintenance, or search.',
+        workspaceHint: 'File editing, core memory maintenance, and search live here so the main navigation stays focused.',
         advanced: 'Advanced',
         advancedHint: 'Notifications, activity, costs, and Cron live here so the primary navigation stays focused.',
         advancedCollapsed: 'These pages stay tucked away until you need deeper diagnostics or advanced configuration.',
         showAdvanced: 'Show Advanced',
         hideAdvanced: 'Hide Advanced',
+      },
+      fileModes: {
+        all: 'All Files',
+        memory: 'Core Memory',
       },
       desc: {
         overview: 'Start here to check overall health, risks, and recent reminders before taking action elsewhere.',
@@ -201,7 +209,7 @@
         agents: 'Review each agent workspace, model, and document readiness to confirm the team is prepared.',
         sessions: 'Check session counts, token usage, and runtime status to spot anomalies or rising costs.',
         activity: 'Look back at recent operations, changes, and warnings to understand what just happened.',
-        files: 'Browse and edit files inside managed folders to inspect docs, fix configs, or work on workspace content.',
+        files: 'Browse and edit managed workspace files, or switch into the core memory view for SOUL, USER, AGENTS, and MEMORY.',
         memory: 'Review and maintain key memory files such as SOUL, USER, AGENTS, and MEMORY.',
         search: 'Search across managed workspaces and memory files to quickly find the config, doc, or note you need.',
         costs: 'Review estimated costs by model, agent, and session to keep usage under control.',
@@ -219,12 +227,13 @@
   const TAB_ALIAS_MAP = {
     feishu: 'channels',
     ai: 'models',
+    memory: 'files',
     audit: 'security',
     profiles: 'security',
     harden: 'security',
   };
   const CORE_TABS = ['overview', 'system', 'openclaw', 'channels', 'models', 'agents', 'sessions', 'git-sync', 'security', 'logs'];
-  const WORKSPACE_TOOL_TABS = ['files', 'memory', 'search'];
+  const WORKSPACE_TOOL_TABS = ['files', 'search'];
   const ADVANCED_TABS = ['notifications', 'activity', 'costs', 'cron'];
   const TAB_ORDER = [...CORE_TABS, ...WORKSPACE_TOOL_TABS, ...ADVANCED_TABS];
 
@@ -234,11 +243,13 @@
     authToken: localStorage.getItem(STORAGE_TOKEN) || null,
     authEnabled: null, // null = 尚未检测
     filesPath: '',
+    filesMode: 'all',
     currentFile: null,
     fileOriginal: '',
     memoryFile: null,
     memoryOriginal: '',
     filesViewData: null,
+    memoryViewData: null,
     searchQuery: '',
     searchResults: [],
     notificationFilter: 'all',
@@ -282,6 +293,68 @@
     const key = String(tabId || '').trim();
     const normalized = TAB_ALIAS_MAP[key] || key;
     return TAB_ORDER.includes(normalized) ? normalized : 'overview';
+  }
+
+  function normalizeFilesMode(mode) {
+    return mode === 'memory' ? 'memory' : 'all';
+  }
+
+  function getActiveFilesEditorMode() {
+    return state.filesMode === 'memory' ? 'memory' : 'file';
+  }
+
+  function isMemoryManagedPath(targetPath) {
+    const normalized = String(targetPath || '').replace(/\\/g, '/');
+    const baseName = normalized.split('/').pop() || '';
+    if (['SOUL.md', 'USER.md', 'AGENTS.md', 'MEMORY.md'].includes(baseName)) return true;
+    return /\/memory\/.+\.md$/i.test(normalized);
+  }
+
+  function getParentDirectory(targetPath) {
+    const normalized = String(targetPath || '').replace(/\\/g, '/').replace(/\/+$/, '');
+    if (!normalized) return '';
+    const parts = normalized.split('/');
+    parts.pop();
+    return parts.join('/') || '';
+  }
+
+  function renderFilesModeActionsHtml() {
+    return `
+      <div class="toolbar tight">
+        <button type="button" class="chip ${state.filesMode === 'all' ? 'active' : ''}" data-files-mode="all">${escapeHtml(t('fileModes.all'))}</button>
+        <button type="button" class="chip ${state.filesMode === 'memory' ? 'active' : ''}" data-files-mode="memory">${escapeHtml(t('fileModes.memory'))}</button>
+      </div>
+    `;
+  }
+
+  async function updateFilesMode(nextMode, options = {}) {
+    const normalized = normalizeFilesMode(nextMode);
+    if (normalized === state.filesMode && state.activeTab !== 'files') {
+      state.filesMode = normalized;
+      return true;
+    }
+    if (normalized === state.filesMode) return true;
+    if (!options.skipConfirm) {
+      const confirmed = await confirmEditorSwitch(getActiveFilesEditorMode());
+      if (!confirmed) return false;
+    }
+    state.filesMode = normalized;
+    if (state.activeTab === 'files') {
+      await loadFiles();
+    }
+    return true;
+  }
+
+  function bindFilesModeActions() {
+    document.querySelectorAll('[data-files-mode]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        try {
+          await updateFilesMode(button.getAttribute('data-files-mode'));
+        } catch (error) {
+          showToast(error.message || String(error), 'error');
+        }
+      });
+    });
   }
 
   function isAdvancedTab(tabId) {
@@ -3066,6 +3139,35 @@
     const loadingLabel = state.lang === 'zh' ? '正在准备页面结构与数据区域…' : 'Preparing the layout and data slots…';
     if (tabId === 'search') return;
     if (tabId === 'files') {
+      if (state.filesMode === 'memory') {
+        setPanel(t('tabs.files'), t('desc.files'), `
+          <div class="toolbar">
+            ${skeletonButton('140px')}
+            ${skeletonButton('140px')}
+          </div>
+          <div class="grid" style="margin-top:14px;">
+            ${loadingMetricCard(state.lang === 'zh' ? '记忆文件数' : 'Memory Files')}
+            ${loadingMetricCard(state.lang === 'zh' ? '覆盖 Agent' : 'Covered Agents')}
+            ${loadingMetricCard(state.lang === 'zh' ? '当前打开' : 'Current File')}
+          </div>
+          <div class="two-col" style="margin-top:14px;">
+            <div class="card guard-loading-card">
+              <h3>${escapeHtml(state.lang === 'zh' ? '核心记忆列表' : 'Core Memory')}</h3>
+              <div class="split-list" style="margin-top:12px;">
+                ${Array.from({ length: 6 }, (_, index) => `
+                  <div class="guard-skeleton-entry">
+                    ${skeletonLine(index % 2 === 0 ? '44%' : '52%', '16px')}
+                    ${skeletonLine('90%', '12px')}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            ${loadingCard(state.lang === 'zh' ? '记忆编辑器' : 'Memory Editor', loadingLabel)}
+          </div>
+        `, renderFilesModeActionsHtml());
+        bindFilesModeActions();
+        return;
+      }
       setPanel(t('tabs.files'), t('desc.files'), `
         <div class="toolbar">
           ${skeletonButton('148px')}
@@ -3088,26 +3190,8 @@
           </div>
           ${loadingCard(state.lang === 'zh' ? '文件编辑器' : 'Editor', loadingLabel)}
         </div>
-      `);
-      return;
-    }
-    if (tabId === 'memory') {
-      setPanel(t('tabs.memory'), t('desc.memory'), `
-        <div class="two-col">
-          <div class="card guard-loading-card">
-            <h3>${escapeHtml(state.lang === 'zh' ? '记忆文件' : 'Memory Files')}</h3>
-            <div class="split-list" style="margin-top:12px;">
-              ${Array.from({ length: 6 }, (_, index) => `
-                <div class="guard-skeleton-entry">
-                  ${skeletonLine(index % 2 === 0 ? '44%' : '52%', '16px')}
-                  ${skeletonLine('90%', '12px')}
-                </div>
-              `).join('')}
-            </div>
-          </div>
-          ${loadingCard(state.lang === 'zh' ? '记忆编辑器' : 'Memory Editor', loadingLabel)}
-        </div>
-      `);
+      `, renderFilesModeActionsHtml());
+      bindFilesModeActions();
       return;
     }
     if (tabId === 'channels' || tabId === 'models' || tabId === 'cron') {
@@ -5605,6 +5689,15 @@
     };
   }
 
+  function syncMemoryEditorDraftState() {
+    const editor = document.getElementById('memory-editor');
+    if (!editor || !state.memoryFile) return;
+    state.memoryFile = {
+      ...state.memoryFile,
+      content: editor.value,
+    };
+  }
+
   function renderFileEntryLabel(entry) {
     if (!entry?.isDirectory) return entry?.name || '';
     return `${state.lang === 'zh' ? '[目录]' : '[DIR]'} ${entry.name}`;
@@ -5672,7 +5765,69 @@
     `;
   }
 
+  function renderMemoryFileEntryLabel(file) {
+    if (!file) return '';
+    if (file.type === 'memory') return file.relativePath || file.path || '';
+    return file.type || file.relativePath || file.path || '';
+  }
+
+  function renderFilesMemorySummaryHtml(data) {
+    const files = data.files || [];
+    const memoryAgentCount = new Set(files.map((file) => file.agentId).filter(Boolean)).size;
+    const rootDocCount = files.filter((file) => file.type !== 'memory').length;
+    const memoryFolderCount = files.filter((file) => file.type === 'memory').length;
+    return `
+      <div class="grid">
+        ${metricCard(state.lang === 'zh' ? '记忆文件数' : 'Memory Files', formatNumber(files.length), state.lang === 'zh' ? `${formatNumber(rootDocCount)} 个核心文件 / ${formatNumber(memoryFolderCount)} 个记忆分片` : `${formatNumber(rootDocCount)} core files / ${formatNumber(memoryFolderCount)} memory notes`)}
+        ${metricCard(state.lang === 'zh' ? '覆盖 Agent' : 'Covered Agents', formatNumber(memoryAgentCount), state.lang === 'zh' ? '包含记忆文件的 Agent' : 'agents with managed memory files')}
+        ${metricCard(state.lang === 'zh' ? '当前打开' : 'Current File', state.memoryFile ? '1' : '0', state.memoryFile ? (state.memoryFile.relativePath || state.memoryFile.path) : (state.lang === 'zh' ? '还没有打开文件' : 'no file opened yet'), state.memoryFile ? 'success' : 'warn')}
+      </div>
+      ${renderPageTip({
+        title: state.lang === 'zh' ? '核心记忆视图' : 'Core Memory View',
+        tone: 'info',
+        body: state.lang === 'zh'
+          ? '这里集中维护 SOUL、USER、AGENTS、MEMORY 以及 memory/ 下的长期记忆片段。切回“全部文件”后，你会回到原来的工作区浏览路径。'
+          : 'This view centralizes SOUL, USER, AGENTS, MEMORY, and long-term notes under memory/. Switch back to All Files to return to your previous workspace path.',
+      })}
+    `;
+  }
+
+  function renderFilesMemoryWorkspaceHtml(data) {
+    const files = data.files || [];
+    const listHtml = files.length
+      ? files.map((file) => `<button type="button" class="${state.memoryFile?.path === file.path ? 'active' : ''}" data-memory-file="${escapeHtml(file.path)}"><strong>${escapeHtml(renderMemoryFileEntryLabel(file))}</strong><div class="muted small">${escapeHtml(file.agentId)} · ${escapeHtml(file.relativePath || file.path)}</div></button>`).join('')
+      : emptyState(state.lang === 'zh' ? '暂时还没有发现记忆文件。' : 'No memory files have been found yet.');
+
+    const editor = state.memoryFile ? `
+      <div class="card">
+        <div class="panel-head" style="margin-bottom:12px;">
+          <div>
+            <h3>${escapeHtml(state.memoryFile.relativePath || state.memoryFile.path)}</h3>
+            <p>${escapeHtml(state.memoryFile.path)}</p>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '修改后记得保存，这些内容会直接影响对应 Agent 的行为和长期记忆。' : 'Remember to save after editing. These files directly affect agent behavior and long-term memory.')}</div>
+          </div>
+          <div class="toolbar tight">
+            <button class="action-btn" type="button" data-memory-action="reload">${escapeHtml(t('reload'))}</button>
+            <button class="action-btn primary" type="button" data-memory-action="save">${escapeHtml(t('save'))}</button>
+          </div>
+        </div>
+        <textarea id="memory-editor">${escapeHtml(state.memoryFile.content || '')}</textarea>
+      </div>
+    ` : `<div class="card">${emptyState(state.lang === 'zh' ? '先从左侧选择一个记忆文件，再在右侧查看或编辑。' : 'Select a memory file on the left to view or edit it here.')}</div>`;
+
+    return `
+      <div class="two-col">
+        <div class="card">
+          <div class="muted small" style="margin-bottom:12px;">${escapeHtml(state.lang === 'zh' ? '这里优先展示所有关键记忆文件，方便你快速校对 Agent 的人格、说明与长期记忆。' : 'This mode prioritizes every key memory file so you can quickly review agent personality, instructions, and long-term memory.')}</div>
+          <div class="split-list">${listHtml}</div>
+        </div>
+        ${editor}
+      </div>
+    `;
+  }
+
   function bindFilesView(data) {
+    bindFilesModeActions();
     document.querySelectorAll('[data-root-path]').forEach((button) => {
       button.addEventListener('click', async () => {
         const confirmed = await confirmEditorSwitch('file');
@@ -5780,7 +5935,74 @@
     });
   }
 
+  function bindFilesMemoryView() {
+    bindFilesModeActions();
+    document.querySelectorAll('[data-memory-file]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const confirmed = await confirmEditorSwitch('memory');
+        if (!confirmed) return;
+        try {
+          await openManagedFile(button.getAttribute('data-memory-file'), 'memory');
+          await loadFiles();
+        } catch (error) {
+          showToast(error.message || String(error), 'error');
+        }
+      });
+    });
+
+    document.querySelector('[data-memory-action="reload"]')?.addEventListener('click', async () => {
+      if (!state.memoryFile?.path) return;
+      try {
+        const confirmed = await confirmEditorSwitch('memory');
+        if (!confirmed) return;
+        await openManagedFile(state.memoryFile.path, 'memory');
+        await loadFiles();
+      } catch (error) {
+        showToast(error.message || String(error), 'error');
+      }
+    });
+
+    document.querySelector('[data-memory-action="save"]')?.addEventListener('click', async () => {
+      if (!state.memoryFile?.path) return;
+      try {
+        const content = document.getElementById('memory-editor').value;
+        const result = await postJson('/api/files/content', { path: state.memoryFile.path, content });
+        state.memoryFile.content = content;
+        state.memoryOriginal = normalizeEditorText(content);
+        showToast(result.message || 'OK');
+        cacheFilesPanelFromState();
+      } catch (error) {
+        showToast(error.message || String(error), 'error');
+      }
+    });
+  }
+
   function cacheFilesPanelFromState() {
+    if (state.filesMode === 'memory') {
+      if (!state.memoryViewData) {
+        rememberCurrentPanelRender('files');
+        return;
+      }
+      syncMemoryEditorDraftState();
+      const memorySections = [
+        {
+          id: 'files-summary',
+          title: state.lang === 'zh' ? '核心记忆摘要' : 'Core Memory Summary',
+          html: renderFilesMemorySummaryHtml(state.memoryViewData),
+        },
+        {
+          id: 'files-workspace',
+          title: state.lang === 'zh' ? '核心记忆工作区' : 'Core Memory Workspace',
+          html: renderFilesMemoryWorkspaceHtml(state.memoryViewData),
+        },
+      ];
+      state.renderCache.files = {
+        html: buildPanelMarkup(t('tabs.files'), t('desc.files'), renderPanelSectionsMarkup(memorySections), renderFilesModeActionsHtml()),
+        bind: () => bindFilesMemoryView(state.memoryViewData),
+        cachedAt: new Date().toISOString(),
+      };
+      return;
+    }
     if (!state.filesViewData) {
       rememberCurrentPanelRender('files');
       return;
@@ -5799,13 +6021,16 @@
       },
     ];
     state.renderCache.files = {
-      html: buildPanelMarkup(t('tabs.files'), t('desc.files'), renderPanelSectionsMarkup(sections)),
+      html: buildPanelMarkup(t('tabs.files'), t('desc.files'), renderPanelSectionsMarkup(sections), renderFilesModeActionsHtml()),
       bind: () => bindFilesView(state.filesViewData),
       cachedAt: new Date().toISOString(),
     };
   }
 
   async function loadFiles() {
+    if (state.filesMode === 'memory') {
+      return await loadMemory();
+    }
     const viewTabId = 'files';
     const queryPath = state.filesPath ? `?path=${encodeURIComponent(state.filesPath)}` : '';
     const data = await apiRequest(`/api/files${queryPath}`);
@@ -5817,7 +6042,7 @@
     setPanelSections(t('tabs.files'), t('desc.files'), [
       { id: 'files-summary', title: state.lang === 'zh' ? '文件摘要' : 'File Summary', html: renderFilesSummaryHtml(data) },
       { id: 'files-workspace', title: state.lang === 'zh' ? '文件工作区' : 'File Workspace', html: loadingCard(state.lang === 'zh' ? '文件工作区' : 'File Workspace', state.lang === 'zh' ? '正在分步填充文件树与编辑器…' : 'Rendering the file tree and editor in phases…') },
-    ]);
+    ], renderFilesModeActionsHtml());
 
     requestAnimationFrame(() => {
       if (state.activeTab !== viewTabId) return;
@@ -5828,67 +6053,22 @@
   }
 
   async function loadMemory() {
+    const viewTabId = 'files';
     const data = await apiRequest('/api/memory');
-    const files = data.files || [];
-    const memoryAgentCount = new Set(files.map((file) => file.agentId).filter(Boolean)).size;
-    const listHtml = files.length ? files.map((file) => `<button type="button" class="${state.memoryFile?.path === file.path ? 'active' : ''}" data-memory-file="${escapeHtml(file.path)}"><strong>${escapeHtml(file.type)}</strong><div class="muted small">${escapeHtml(file.agentId)} · ${escapeHtml(file.relativePath || file.path)}</div></button>`).join('') : emptyState(state.lang === 'zh' ? '暂时还没有发现记忆文件。' : 'No memory files have been found yet.');
-    const editor = state.memoryFile ? `
-      <div class="card">
-        <div class="panel-head" style="margin-bottom:12px;">
-          <div>
-            <h3>${escapeHtml(state.memoryFile.relativePath || state.memoryFile.path)}</h3>
-            <p>${escapeHtml(state.memoryFile.path)}</p>
-            <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '修改后记得保存，这些内容会直接影响对应 Agent 的行为和长期记忆。' : 'Remember to save after editing. These files directly affect the agent behavior and long-term memory.')}</div>
-          </div>
-          <div class="toolbar tight">
-            <button class="action-btn" data-memory-action="reload">${escapeHtml(t('reload'))}</button>
-            <button class="action-btn primary" data-memory-action="save">${escapeHtml(t('save'))}</button>
-          </div>
-        </div>
-        <textarea id="memory-editor">${escapeHtml(state.memoryFile.content || '')}</textarea>
-      </div>
-    ` : `<div class="card">${emptyState(state.lang === 'zh' ? '先从左侧选择一个记忆文件，再在右侧查看或编辑。' : 'Select a memory file on the left to view or edit it here.')}</div>`;
+    if (state.activeTab !== viewTabId || state.filesMode !== 'memory') return;
+    clearTabRefreshHint(viewTabId);
+    state.memoryViewData = data;
 
-    setPanel(t('tabs.memory'), t('desc.memory'), `
-      <div class="grid">
-        ${metricCard(state.lang === 'zh' ? '记忆文件数' : 'Memory Files', formatNumber(files.length), state.lang === 'zh' ? '当前已扫描' : 'currently scanned')}
-        ${metricCard(state.lang === 'zh' ? '覆盖 Agent' : 'Covered Agents', formatNumber(memoryAgentCount), state.lang === 'zh' ? '包含记忆文件的 Agent' : 'agents with memory files')}
-        ${metricCard(state.lang === 'zh' ? '当前打开' : 'Current File', state.memoryFile ? '1' : '0', state.memoryFile ? (state.memoryFile.relativePath || state.memoryFile.path) : (state.lang === 'zh' ? '还没有打开文件' : 'no file opened yet'), state.memoryFile ? 'success' : 'warn')}
-      </div>
-      <div class="card" style="margin-top:14px;">
-        <div class="muted small">${escapeHtml(state.lang === 'zh' ? '这里集中维护 SOUL、USER、AGENTS、MEMORY 等关键文件。修改这些文件前，建议先确认你正在编辑的是正确的 Agent。' : 'This page centralizes SOUL, USER, AGENTS, MEMORY, and related files. Before editing, make sure you are working on the correct agent.')}</div>
-      </div>
-      <div class="two-col" style="margin-top:14px;"><div class="card"><div class="split-list">${listHtml}</div></div>${editor}</div>
-    `);
+    setPanelSections(t('tabs.files'), t('desc.files'), [
+      { id: 'files-summary', title: state.lang === 'zh' ? '核心记忆摘要' : 'Core Memory Summary', html: renderFilesMemorySummaryHtml(data) },
+      { id: 'files-workspace', title: state.lang === 'zh' ? '核心记忆工作区' : 'Core Memory Workspace', html: loadingCard(state.lang === 'zh' ? '核心记忆工作区' : 'Core Memory Workspace', state.lang === 'zh' ? '正在分步填充记忆文件与编辑器…' : 'Rendering memory files and editor in phases…') },
+    ], renderFilesModeActionsHtml());
 
-    document.querySelectorAll('[data-memory-file]').forEach((button) => {
-      button.addEventListener('click', async () => {
-        const confirmed = await confirmEditorSwitch('memory');
-        if (!confirmed) return;
-        try {
-          await openManagedFile(button.getAttribute('data-memory-file'), 'memory');
-          await loadMemory();
-        } catch (error) {
-          showToast(error.message || String(error), 'error');
-        }
-      });
-    });
-    document.querySelector('[data-memory-action="reload"]')?.addEventListener('click', async () => {
-      if (!state.memoryFile?.path) return;
-      await openManagedFile(state.memoryFile.path, 'memory');
-      await loadMemory();
-    });
-    document.querySelector('[data-memory-action="save"]')?.addEventListener('click', async () => {
-      if (!state.memoryFile?.path) return;
-      try {
-        const content = document.getElementById('memory-editor').value;
-        const result = await postJson('/api/files/content', { path: state.memoryFile.path, content });
-        state.memoryFile.content = content;
-        state.memoryOriginal = normalizeEditorText(content);
-        showToast(result.message || 'OK');
-      } catch (error) {
-        showToast(error.message || String(error), 'error');
-      }
+    requestAnimationFrame(() => {
+      if (state.activeTab !== viewTabId || state.filesMode !== 'memory') return;
+      updatePanelSection('files-workspace', renderFilesMemoryWorkspaceHtml(data));
+      bindFilesMemoryView();
+      rememberCurrentPanelRender(viewTabId, () => bindFilesMemoryView());
     });
   }
 
@@ -5900,7 +6080,7 @@
           <button class="action-btn primary" data-search-action="run">${escapeHtml(t('search'))}</button>
         </div>
       </div>
-      <div class="list">${state.searchResults.length ? state.searchResults.map((item) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(item.relativePath || item.path)}</strong><span class="muted">L${escapeHtml(item.line)}</span></div><div>${escapeHtml(item.preview)}</div><div class="toolbar tight" style="margin-top:12px;"><button class="action-btn" data-search-open="${escapeHtml(item.path)}">${state.lang === 'zh' ? '在文件页打开' : 'Open in Files'}</button></div></div>`).join('') : emptyState(state.lang === 'zh' ? '输入关键词开始搜索。' : 'Enter a query to search.')}</div>
+      <div class="list">${state.searchResults.length ? state.searchResults.map((item) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(item.relativePath || item.path)}</strong><span class="muted">L${escapeHtml(item.line)}</span></div><div>${escapeHtml(item.preview)}</div><div class="toolbar tight" style="margin-top:12px;"><button class="action-btn" data-search-open="${escapeHtml(item.path)}">${state.lang === 'zh' ? '在工作区打开' : 'Open in Workspace'}</button></div></div>`).join('') : emptyState(state.lang === 'zh' ? '输入关键词开始搜索。' : 'Enter a query to search.')}</div>
     `;
     setPanel(t('tabs.search'), t('desc.search'), body);
 
@@ -5922,8 +6102,16 @@
     document.querySelectorAll('[data-search-open]').forEach((button) => {
       button.addEventListener('click', async () => {
         try {
-          await openManagedFile(button.getAttribute('data-search-open'), 'file');
-          state.filesPath = state.currentFile?.path ? state.currentFile.path.split(/[/\\]/).slice(0, -1).join('\\') : state.filesPath;
+          const targetPath = button.getAttribute('data-search-open') || '';
+          const useMemoryMode = isMemoryManagedPath(targetPath);
+          if (useMemoryMode) {
+            state.filesMode = 'memory';
+            await openManagedFile(targetPath, 'memory');
+          } else {
+            state.filesMode = 'all';
+            await openManagedFile(targetPath, 'file');
+            state.filesPath = getParentDirectory(state.currentFile?.path || targetPath) || state.filesPath;
+          }
           setActiveTab('files');
         } catch (error) {
           showToast(error.message || String(error), 'error');
@@ -7362,7 +7550,6 @@
       if (active === 'sessions') return await loadSessions();
       if (active === 'activity') return await loadActivity();
       if (active === 'files') return await loadFiles();
-      if (active === 'memory') return await loadMemory();
       if (active === 'search') return await loadSearch();
       if (active === 'costs') return await loadCosts();
       if (active === 'cron') return await loadCron();
@@ -7380,11 +7567,15 @@
 
   const initialHash = (location.hash || '').replace(/^#/, '');
   const storedTab = localStorage.getItem(STORAGE_TAB) || 'overview';
+  state.filesMode = initialHash === 'memory' || (!initialHash && storedTab === 'memory') ? 'memory' : 'all';
   const normalizedStoredTab = normalizeTabId(storedTab === 'feishu' ? 'channels' : storedTab);
   if (initialHash === 'feishu') {
     state.channelSelectedId = 'feishu';
     state.activeTab = 'channels';
     history.replaceState(null, '', '#channels');
+  } else if (initialHash === 'memory') {
+    state.activeTab = 'files';
+    history.replaceState(null, '', '#files');
   } else {
     state.activeTab = normalizeTabId(initialHash || normalizedStoredTab);
     if (initialHash && state.activeTab !== initialHash) {
@@ -7394,11 +7585,21 @@
   if (!TAB_ORDER.includes(state.activeTab)) state.activeTab = 'overview';
   if (isAdvancedTab(state.activeTab)) persistAdvancedNav(true);
 
-  window.addEventListener('hashchange', () => {
+  window.addEventListener('hashchange', async () => {
     const next = (location.hash || '').replace(/^#/, '');
     if (next === 'feishu') {
       state.channelSelectedId = 'feishu';
       setActiveTab('channels');
+      return;
+    }
+    if (next === 'memory') {
+      if (state.activeTab === 'files') {
+        await updateFilesMode('memory');
+        history.replaceState(null, '', '#files');
+        return;
+      }
+      state.filesMode = 'memory';
+      setActiveTab('files');
       return;
     }
     const normalizedNext = normalizeTabId(next);

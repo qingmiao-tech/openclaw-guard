@@ -481,9 +481,21 @@ export function restartService(): ServiceActionResult {
 }
 
 export function getLogs(lines = 100): string[] {
-  const result = runOpenClaw(['logs', '--lines', String(lines)]);
-  if (result.success) {
-    return result.output.split(/\r?\n/).filter(Boolean);
+  const candidates = [
+    ['logs', '--plain', '--limit', String(lines)],
+    ['logs', '--limit', String(lines)],
+    ['logs', '--lines', String(lines)],
+  ];
+  let failureOutput = '';
+  for (const args of candidates) {
+    const result = runOpenClaw(args);
+    if (result.success) {
+      return result.output.split(/\r?\n/).filter(Boolean);
+    }
+    failureOutput = result.output;
+    if (!/unknown option/i.test(result.output)) {
+      break;
+    }
   }
-  return [`获取日志失败: ${result.output}`];
+  return [`获取日志失败: ${failureOutput}`];
 }

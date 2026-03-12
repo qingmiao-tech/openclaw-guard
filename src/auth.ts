@@ -185,7 +185,7 @@ interface RateEntry {
 const ipRateMap = new Map<string, RateEntry>();
 
 /** 定期清理过期条目，防止内存泄漏 */
-setInterval(() => {
+const rateCleanupTimer = setInterval(() => {
   const now = Date.now();
   for (const [ip, entry] of ipRateMap) {
     if (now - entry.windowStart > RATE_WINDOW_MS * 3 && now > entry.lockedUntil) {
@@ -193,6 +193,7 @@ setInterval(() => {
     }
   }
 }, 120_000);
+rateCleanupTimer.unref?.();
 
 /**
  * 检查 IP 是否允许登录尝试。

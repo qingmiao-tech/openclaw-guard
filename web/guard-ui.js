@@ -56,7 +56,6 @@
         overview: '驾驶舱',
         system: '运维',
         openclaw: 'OpenClaw',
-        feishu: '飞书',
         channels: '渠道',
         ai: 'AI',
         notifications: '通知',
@@ -78,7 +77,6 @@
         overview: '先看整体状态、风险和提醒，再决定是否需要进入运维、会话或 Git 同步。',
         system: '在这里启动、停止或排查 Guard 与 Gateway，并查看路径、环境变量和运行信息。',
         openclaw: '查看 OpenClaw 是否已安装、当前版本，以及是否需要更新或打开控制台。',
-        feishu: '检查飞书接入是否可用，并补全机器人、凭据和连接配置。',
         channels: '查看各渠道是否已启用、账号是否完整，以及消息能否正常进入系统。',
         ai: '查看当前模型和备选模型，按需要调整 Provider、主模型和回退设置。',
         notifications: '集中处理提醒、错误和同步结果；可筛选、标记已读或批量清理。',
@@ -146,7 +144,6 @@
         overview: 'Cockpit',
         system: 'Operations',
         openclaw: 'OpenClaw',
-        feishu: 'Feishu',
         channels: 'Channels',
         ai: 'AI',
         notifications: 'Notifications',
@@ -168,7 +165,6 @@
         overview: 'Start here to check overall health, risks, and recent reminders before taking action elsewhere.',
         system: 'Start, stop, or troubleshoot Guard and Gateway here, then review paths, environment variables, and runtime details.',
         openclaw: 'Check whether OpenClaw is installed, which version is running, and whether updates or the console are available.',
-        feishu: 'Verify that Feishu integration is ready and complete the bot, credential, or connection setup if needed.',
         channels: 'Review which channels are enabled, whether accounts are complete, and whether messages can enter the system correctly.',
         ai: 'Review the current model setup and adjust the provider, primary model, and fallback options when needed.',
         notifications: 'Handle reminders, errors, and sync results in one place with filters, read states, and bulk cleanup.',
@@ -190,7 +186,7 @@
   };
 
   const TAB_ORDER = [
-    'overview', 'system', 'openclaw', 'feishu', 'channels', 'ai', 'notifications',
+    'overview', 'system', 'openclaw', 'channels', 'ai', 'notifications',
     'agents', 'sessions', 'activity', 'files', 'memory', 'search', 'costs',
     'cron', 'git-sync', 'audit', 'profiles', 'harden', 'logs'
   ];
@@ -1055,6 +1051,40 @@
       'port-scan': { zh: '端口探测', en: 'Port Scan' },
       none: { zh: '未记录', en: 'None' },
     });
+  }
+
+  function getWebBackgroundScenarioLabel(value) {
+    return translateMappedLabel(value, {
+      'managed-running': { zh: '托管运行中', en: 'Managed & Running' },
+      'unmanaged-running': { zh: '未托管实例运行中', en: 'Running Without Guard Management' },
+      stopped: { zh: '未运行', en: 'Stopped' },
+    });
+  }
+
+  function getWebBackgroundNextActionLabel(value) {
+    return translateMappedLabel(value, {
+      'open-workbench': { zh: '直接访问工作台', en: 'Open The Workbench' },
+      'adopt-or-stop': { zh: '先接管或先停止', en: 'Adopt Or Stop First' },
+      'start-web': { zh: '启动后台服务', en: 'Start Background Service' },
+    });
+  }
+
+  function getWebBackgroundNextActionHelp(value) {
+    const map = {
+      'open-workbench': {
+        zh: '当前实例已被虾护卫托管，可直接打开工作台或按需停止。',
+        en: 'The current instance is managed by Guard. Open the workbench directly or stop it if needed.',
+      },
+      'adopt-or-stop': {
+        zh: '当前端口上已有未托管实例，请先决定接管它，或先停止后再启动新实例。',
+        en: 'There is already an unmanaged instance on this port. Adopt it first, or stop it before starting a new one.',
+      },
+      'start-web': {
+        zh: '当前未检测到 Guard Web 进程，建议直接启动后台服务。',
+        en: 'No Guard Web instance is running right now. Start the background service first.',
+      },
+    };
+    return map[value]?.[state.lang] || '-';
   }
 
   function getRuntimeAlertLevelLabel(value) {
@@ -2903,7 +2933,7 @@
       `);
       return;
     }
-    if (tabId === 'agents' || tabId === 'sessions' || tabId === 'activity' || tabId === 'audit' || tabId === 'profiles' || tabId === 'harden' || tabId === 'logs' || tabId === 'feishu') {
+    if (tabId === 'agents' || tabId === 'sessions' || tabId === 'activity' || tabId === 'audit' || tabId === 'profiles' || tabId === 'harden' || tabId === 'logs') {
       setPanel(t(`tabs.${tabId}`), t(`desc.${tabId}`), `
         <div class="grid">
           ${loadingMetricCard(state.lang === 'zh' ? '摘要 1' : 'Summary 1')}
@@ -3222,13 +3252,15 @@
     const infoPromise = apiRequest('/api/info');
     const servicePromise = apiRequest('/api/service/status');
     const webStatusPromise = apiRequest('/api/web-background/status');
+    const webReportPromise = apiRequest('/api/web-background/report').catch(() => null);
     const guardRestartPromise = apiRequest('/api/guard/restart-status').catch(() => ({ phase: 'idle' }));
     const envPromise = apiRequest('/api/env').catch(() => ({}));
     const prewarmStatusPromise = apiRequest('/api/cache-prewarm/status').catch(() => ({ phase: 'idle', tasks: [] }));
 
-    const [service, webStatus, guardRestartStatus, envMap, prewarmStatus] = await Promise.all([
+    const [service, webStatus, webReportPayload, guardRestartStatus, envMap, prewarmStatus] = await Promise.all([
       servicePromise,
       webStatusPromise,
+      webReportPromise,
       guardRestartPromise,
       envPromise,
       prewarmStatusPromise,
@@ -3239,14 +3271,60 @@
     const quickServiceActionMeta = getServiceActionMeta(service.action || {});
     const quickGuardRestartMeta = getGuardRestartMeta(guardRestartStatus);
     const quickPrewarmMeta = getPrewarmMeta(prewarmStatus);
+    const webReport = webReportPayload || {
+      running: webStatus.running,
+      pid: webStatus.pid,
+      port: webStatus.port,
+      managed: webStatus.managed,
+      source: webStatus.source,
+      primaryUrl: `http://127.0.0.1:${webStatus.port}/`,
+      workbenchUrl: `http://127.0.0.1:${webStatus.port}/workbench`,
+      nextAction: webStatus.running ? (webStatus.managed ? 'open-workbench' : 'adopt-or-stop') : 'start-web',
+      scenario: webStatus.running ? (webStatus.managed ? 'managed-running' : 'unmanaged-running') : 'stopped',
+      pidFile: webStatus.pidFile || '-',
+      logPaths: {
+        stdout: '-',
+        stderr: '-',
+      },
+    };
+    const webScenarioLabel = getWebBackgroundScenarioLabel(webReport.scenario);
+    const webNextActionLabel = getWebBackgroundNextActionLabel(webReport.nextAction);
+    const webNextActionHelp = getWebBackgroundNextActionHelp(webReport.nextAction);
+    const webSourceLabel = getRuntimeSourceLabel(webReport.source);
 
     updatePanelSection('system-summary', `
       <div class="grid">
         ${metricCard('Gateway', getRunStateLabel(service.running), `PID ${service.pid || '-'}`, service.running ? 'success' : 'danger')}
-        ${metricCard('Guard Web', getRunStateLabel(webStatus.running), webStatus.running ? `PID ${webStatus.pid || '-'}` : '-', webStatus.running ? 'success' : 'warn')}
+        ${metricCard('Guard Web', getRunStateLabel(webReport.running), webReport.running ? `PID ${webReport.pid || '-'}` : '-', webReport.running ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '托管来源' : 'Tracking Source', webSourceLabel, webScenarioLabel, webReport.managed ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '下一步建议' : 'Recommended Next Step', webNextActionLabel, webNextActionHelp)}
         ${metricCard(state.lang === 'zh' ? 'Guard 重启任务' : 'Guard Restart Task', quickGuardRestartMeta.phaseLabel, guardRestartStatus?.newPid ? `PID ${guardRestartStatus.newPid}` : '-', quickGuardRestartMeta.pillClass)}
         ${metricCard(state.lang === 'zh' ? '本地 Env' : 'Local Env', formatNumber(envEntries.length), state.lang === 'zh' ? '已读取本地键数量' : 'loaded local keys')}
         ${metricCard(state.lang === 'zh' ? '缓存预热' : 'Cache Prewarm', quickPrewarmMeta.phaseLabel, prewarmStatus?.lastDurationMs ? `${prewarmStatus.lastDurationMs} ms` : '-', quickPrewarmMeta.pillClass)}
+      </div>
+      <div class="grid">
+        <div class="card accent-info">
+          <h3>${state.lang === 'zh' ? 'Guard Web 摘要' : 'Guard Web Summary'}</h3>
+          ${keyValueGrid([
+            { label: state.lang === 'zh' ? '当前地址' : 'Primary URL', value: webReport.primaryUrl || '-' },
+            { label: state.lang === 'zh' ? '工作台地址' : 'Workbench URL', value: webReport.workbenchUrl || '-' },
+            { label: state.lang === 'zh' ? '监听端口' : 'Listening Port', value: webReport.port || '-' },
+            { label: 'PID', value: webReport.pid || '-' },
+            { label: state.lang === 'zh' ? '状态场景' : 'Scenario', value: webScenarioLabel },
+            { label: state.lang === 'zh' ? '托管来源' : 'Tracking Source', value: webSourceLabel, help: webNextActionHelp },
+          ])}
+          ${renderAdvancedDisclosure({
+            title: state.lang === 'zh' ? '运行记录与日志（高级）' : 'Runtime Record & Logs (Advanced)',
+            description: state.lang === 'zh'
+              ? '这里只放长路径和运行记录，避免在首屏堆叠过多诊断信息。'
+              : 'Long paths and runtime record details live here so the first screen stays focused on the summary.',
+            bodyHtml: keyValueGrid([
+              { label: state.lang === 'zh' ? 'PID 记录文件' : 'PID Record File', value: webReport.pidFile || '-' },
+              { label: state.lang === 'zh' ? '输出日志' : 'Stdout Log', value: webReport.logPaths?.stdout || '-' },
+              { label: state.lang === 'zh' ? '错误日志' : 'Stderr Log', value: webReport.logPaths?.stderr || '-' },
+            ]),
+          })}
+        </div>
       </div>
     `);
     updatePanelSection('system-services', `
@@ -3278,15 +3356,15 @@
     const info = await infoPromise;
     if (state.activeTab !== viewTabId) return;
     const currentPid = Number(info.pid || 0);
-    const isCurrentInstance = !!(webStatus.running && webStatus.pid && currentPid && webStatus.pid === currentPid);
-    const isCurrentManaged = isCurrentInstance && webStatus.managed;
-    const isOtherProcess = !!(webStatus.running && webStatus.pid && !isCurrentInstance);
+    const isCurrentInstance = !!(webReport.running && webReport.pid && currentPid && webReport.pid === currentPid);
+    const isCurrentManaged = isCurrentInstance && webReport.managed;
+    const isOtherProcess = !!(webReport.running && webReport.pid && !isCurrentInstance);
     const serviceActionMeta = getServiceActionMeta(service.action || {});
     const guardRestartMeta = getGuardRestartMeta(guardRestartStatus);
     const prewarmMeta = getPrewarmMeta(prewarmStatus);
     const serviceBusy = serviceActionMeta.phase === 'running';
     const guardRestartBusy = guardRestartMeta.phase === 'running';
-    const trackingSourceLabel = getRuntimeSourceLabel(webStatus.source);
+    const trackingSourceLabel = getRuntimeSourceLabel(webReport.source);
 
     let webPrimaryLabel = state.lang === 'zh' ? '后台启动 Guard Web' : 'Start Guard Web in Background';
     let webPrimaryHint = state.lang === 'zh'
@@ -3308,8 +3386,8 @@
     } else if (isOtherProcess) {
       webPrimaryLabel = state.lang === 'zh' ? '已有其他 Guard Web 实例' : 'Another Guard Web Is Running';
       webPrimaryHint = state.lang === 'zh'
-        ? `端口 ${webStatus.port} 已经被另一个 Guard Web 占用。请先停掉它，再决定是否启动新的实例。`
-        : `Port ${webStatus.port} is already occupied by another Guard Web instance. Stop it before starting a new one.`;
+          ? `端口 ${webReport.port} 已经被另一个 Guard Web 占用。请先停掉它，再决定是否启动新的实例。`
+          : `Port ${webReport.port} is already occupied by another Guard Web instance. Stop it before starting a new one.`;
       webPrimaryDisabled = true;
     }
 
@@ -3347,7 +3425,7 @@
         openclaw: info.openclaw,
       },
       gateway: service,
-      web: webStatus,
+      web: webReport,
       guardRestart: guardRestartStatus,
       envKeys: envEntries.map(([key]) => key),
     };
@@ -3361,7 +3439,7 @@
     const body = `
       <div class="grid">
         ${metricCard('Gateway', getRunStateLabel(service.running), `PID ${service.pid || '-'}`, service.running ? 'success' : 'danger')}
-        ${metricCard('Guard Web', getRunStateLabel(webStatus.running), webStatus.running ? `PID ${webStatus.pid || '-'}` : '-', webStatus.running ? 'success' : 'warn')}
+        ${metricCard('Guard Web', getRunStateLabel(webReport.running), webReport.running ? `PID ${webReport.pid || '-'}` : '-', webReport.running ? 'success' : 'warn')}
         ${metricCard('Node.js', info.nodeVersion || '-', info.arch || '-')}
         ${metricCard('OpenClaw', getInstallStateLabel(info.openclaw?.installed), info.openclaw?.version || '-', info.openclaw?.installed ? 'success' : 'warn')}
         ${metricCard(state.lang === 'zh' ? '本地 Env' : 'Local Env', formatNumber(envEntries.length), info.envPath || '-')}
@@ -3391,7 +3469,7 @@
             { label: 'openclaw.json', value: info.configPath || '-' },
             { label: '.env', value: info.envPath || '-' },
             { label: state.lang === 'zh' ? '当前工作台进程' : 'Current Workbench Process', value: info.pid || '-' },
-            { label: state.lang === 'zh' ? '当前监听端口' : 'Current Port', value: webStatus.port || '-' },
+            { label: state.lang === 'zh' ? '当前监听端口' : 'Current Port', value: webReport.port || '-' },
           ])}
           <div class="sub-card" style="margin-top:14px;">
             <div class="row" style="justify-content:space-between;">
@@ -3414,7 +3492,7 @@
             <button class="action-btn" type="button" data-service-action="restart" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('restart'))} Gateway</button>
             <button class="action-btn danger" type="button" data-service-action="stop" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('stop'))} Gateway</button>
             <button class="action-btn ${webPrimaryDisabled ? '' : 'primary'}" type="button" data-service-action="start-web" ${webPrimaryDisabled ? 'disabled' : ''}>${escapeHtml(webPrimaryLabel)}</button>
-            <button class="action-btn danger" type="button" data-service-action="stop-web" ${webStatus.running ? '' : 'disabled'}>${escapeHtml(t('stopWeb'))}</button>
+            <button class="action-btn danger" type="button" data-service-action="stop-web" ${webReport.running ? '' : 'disabled'}>${escapeHtml(t('stopWeb'))}</button>
             <button class="action-btn" type="button" data-service-action="restart-guard" ${guardRestartBusy ? 'disabled' : ''}>${escapeHtml(t('restartGuard'))}</button>
             <button class="action-btn" type="button" data-service-action="restart-guard-with-gateway" ${(guardRestartBusy || serviceBusy) ? 'disabled' : ''}>${escapeHtml(t('restartGuardWithGateway'))}</button>
           </div>
@@ -3452,38 +3530,40 @@
             <div class="list-item">
               <div class="row" style="justify-content:space-between;">
                 <strong>${state.lang === 'zh' ? '检测结果' : 'Detection Result'}</strong>
-                <span class="pill ${webStatus.running ? 'success' : 'warn'}">${escapeHtml(getRunStateLabel(webStatus.running))}</span>
+                <span class="pill ${webReport.running ? 'success' : 'warn'}">${escapeHtml(getRunStateLabel(webReport.running))}</span>
               </div>
               <div class="muted small" style="margin-top:8px;">
-                ${escapeHtml(webStatus.running
-                  ? (state.lang === 'zh' ? `当前检测到 PID ${webStatus.pid || '-'} 正在监听端口 ${webStatus.port}。` : `PID ${webStatus.pid || '-'} is listening on port ${webStatus.port}.`)
+                ${escapeHtml(webReport.running
+                  ? (state.lang === 'zh'
+                    ? `当前检测到 PID ${webReport.pid || '-'} 正在监听端口 ${webReport.port}，可直接访问 ${webReport.workbenchUrl}。`
+                    : `PID ${webReport.pid || '-'} is listening on port ${webReport.port}. Open ${webReport.workbenchUrl} to access the workbench.`)
                   : (state.lang === 'zh' ? '当前端口没有 Guard Web 进程在监听。' : 'No Guard Web process is listening on this port right now.'))}
               </div>
             </div>
             <div class="list-item">
               <div class="row" style="justify-content:space-between;">
                 <strong>${state.lang === 'zh' ? '托管来源' : 'Tracking Source'}</strong>
-                <span class="pill ${webStatus.managed ? 'success' : 'warn'}">${escapeHtml(trackingSourceLabel)}</span>
+                <span class="pill ${webReport.managed ? 'success' : 'warn'}">${escapeHtml(trackingSourceLabel)}</span>
               </div>
               <div class="muted small" style="margin-top:8px;">
-                ${escapeHtml(webStatus.managed
-                  ? (state.lang === 'zh' ? '该实例已经被 Guard 写入后台运行记录。' : 'This instance is already tracked by Guard background runtime records.')
+                ${escapeHtml(webReport.managed
+                  ? (state.lang === 'zh' ? '该实例已经被 Guard 写入后台运行记录，可直接按托管实例处理。' : 'This instance is already tracked by Guard background runtime records and can be handled as a managed service.')
                   : (state.lang === 'zh' ? '当前只是通过端口扫描识别到进程，还没有进入 Guard 托管。' : 'This instance is currently detected by port scan only and is not under Guard management yet.'))}
               </div>
             </div>
             <div class="list-item">
               <div class="row" style="justify-content:space-between;">
-                <strong>${state.lang === 'zh' ? '运行记录文件' : 'Runtime Record File'}</strong>
-                <span class="chip">${escapeHtml(webStatus.port || '-')}</span>
+                <strong>${state.lang === 'zh' ? '下一步建议' : 'Recommended Next Step'}</strong>
+                <span class="chip">${escapeHtml(webNextActionLabel)}</span>
               </div>
-              <div class="muted small" style="margin-top:8px;">${escapeHtml(webStatus.pidFile || '-')}</div>
+              <div class="muted small" style="margin-top:8px;">${escapeHtml(webNextActionHelp)}</div>
             </div>
           </div>
           <div class="sub-card" style="margin-top:14px;">
             <h3 style="margin-bottom:10px;">${state.lang === 'zh' ? '手动命令参考' : 'Manual Commands'}</h3>
             <div class="command-list">
+              <code>openclaw-guard web-status --port ${webReport.port}</code>
               <code>npm run web:bg:start</code>
-              <code>npm run web:bg:status</code>
               <code>npm run web:bg:stop</code>
             </div>
             <div class="muted small" style="margin-top:10px;">
@@ -3974,78 +4054,6 @@
     }
   }
 
-  async function loadFeishu() {
-    const [config, plugin] = await Promise.all([
-      apiRequest('/api/feishu/config'),
-      apiRequest('/api/feishu/plugin'),
-    ]);
-
-    const body = `
-      <div class="grid">
-        ${metricCard(state.lang === 'zh' ? '插件状态' : 'Plugin', plugin.installed ? (state.lang === 'zh' ? '已安装' : 'Installed') : (state.lang === 'zh' ? '未安装' : 'Missing'), plugin.version || (state.lang === 'zh' ? '已检测到配置' : 'configuration detected'), plugin.installed ? 'success' : 'warn')}
-        ${metricCard(state.lang === 'zh' ? '接入域名' : 'Domain', config.domain || 'feishu', config.connectionMode || '-')}
-        ${metricCard(state.lang === 'zh' ? '群聊策略' : 'Group Policy', config.groupPolicy || '-', config.dmPolicy || '-')}
-        ${metricCard(state.lang === 'zh' ? '回复方式' : 'Response Mode', config.streaming ? (state.lang === 'zh' ? '流式回复' : 'Streaming') : (state.lang === 'zh' ? '普通回复' : 'Standard'), config.renderMode || '-')}
-      </div>
-      <div class="card">
-        <h3>${state.lang === 'zh' ? '什么时候来这里' : 'When To Use This Page'}</h3>
-        <div class="status">${escapeHtml(state.lang === 'zh'
-          ? '当你需要补全飞书机器人凭据、调整连接方式，或确认插件是否安装正确时，请使用这一页。'
-          : 'Use this page when you need to complete Feishu bot credentials, change the connection mode, or verify that the plugin was installed correctly.')}</div>
-      </div>
-      <div class="card">
-        <h3>${state.lang === 'zh' ? '飞书接入配置' : 'Feishu Connection Settings'}</h3>
-        <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '保存后会直接更新当前机器上的飞书配置。敏感字段会按原样保存，请确认粘贴的是正确值。' : 'Saving will update the Feishu settings on this machine immediately. Sensitive fields are stored as-is, so make sure the values are correct before saving.')}</div>
-        <div class="form-grid" id="feishu-form">
-          <div class="field"><label>appId</label><input name="appId" value="${escapeHtml(config.appId || '')}"></div>
-          <div class="field"><label>appSecret</label><input name="appSecret" value="${escapeHtml(config.appSecret || '')}"></div>
-          <div class="field"><label>encryptKey</label><input name="encryptKey" value="${escapeHtml(config.encryptKey || '')}"></div>
-          <div class="field"><label>verificationToken</label><input name="verificationToken" value="${escapeHtml(config.verificationToken || '')}"></div>
-          <div class="field"><label>domain</label><input name="domain" value="${escapeHtml(config.domain || 'feishu')}"></div>
-          <div class="field"><label>connectionMode</label><input name="connectionMode" value="${escapeHtml(config.connectionMode || 'websocket')}"></div>
-          <div class="field"><label>webhookHost</label><input name="webhookHost" value="${escapeHtml(config.webhookHost || '')}"></div>
-          <div class="field"><label>webhookPort</label><input name="webhookPort" value="${escapeHtml(config.webhookPort || '')}"></div>
-          <div class="field"><label>dmPolicy</label><input name="dmPolicy" value="${escapeHtml(config.dmPolicy || '')}"></div>
-          <div class="field"><label>groupPolicy</label><input name="groupPolicy" value="${escapeHtml(config.groupPolicy || '')}"></div>
-          <div class="field"><label>renderMode</label><input name="renderMode" value="${escapeHtml(config.renderMode || '')}"></div>
-          <div class="field"><label>whisperModel</label><input name="whisperModel" value="${escapeHtml(config.whisperModel || '')}"></div>
-        </div>
-        <div class="row" style="margin-top:14px; gap:18px;">
-          <label><input type="checkbox" id="feishu-require-mention" ${config.requireMention ? 'checked' : ''}> ${state.lang === 'zh' ? '仅在被提及时回复' : 'Reply only when mentioned'}</label>
-          <label><input type="checkbox" id="feishu-streaming" ${config.streaming ? 'checked' : ''}> ${state.lang === 'zh' ? '开启流式回复' : 'Enable streaming replies'}</label>
-        </div>
-        <div class="toolbar tight" style="margin-top:14px;">
-          <button class="action-btn primary" type="button" data-feishu-action="save">${escapeHtml(t('save'))}</button>
-          <button class="action-btn" type="button" data-feishu-action="reload">${escapeHtml(t('reload'))}</button>
-        </div>
-        ${renderAdvancedDisclosure({
-          title: state.lang === 'zh' ? '查看当前原始配置' : 'View Current Raw Configuration',
-          description: state.lang === 'zh' ? '只有在核对字段或排查配置异常时，再展开这份原始配置。' : 'Expand this only when you need to verify the raw fields or troubleshoot a configuration issue.',
-          bodyHtml: `<pre>${prettyJson(config || {})}</pre>`,
-        })}
-      </div>
-    `;
-
-    setPanel(t('tabs.feishu'), t('desc.feishu'), body);
-    document.querySelector('[data-feishu-action="reload"]')?.addEventListener('click', () => loadFeishu());
-    document.querySelector('[data-feishu-action="save"]')?.addEventListener('click', async () => {
-      const form = document.getElementById('feishu-form');
-      const payload = {};
-      form.querySelectorAll('input').forEach((input) => {
-        if (input.name) payload[input.name] = input.value.trim();
-      });
-      payload.requireMention = document.getElementById('feishu-require-mention').checked;
-      payload.streaming = document.getElementById('feishu-streaming').checked;
-      try {
-        const result = await postJson('/api/feishu/config', payload);
-        showToast(result.message || 'OK');
-        loadFeishu();
-      } catch (error) {
-        showToast(error.message || String(error), 'error');
-      }
-    });
-  }
-
   async function loadChannels() {
     const [channels, channelDefs] = await Promise.all([
       apiRequest('/api/channels'),
@@ -4087,6 +4095,30 @@
     };
     const envKeys = Object.keys(selected.config || {}).filter((key) => key.startsWith('env:'));
     const configKeys = Object.keys(selected.config || {}).filter((key) => !key.startsWith('env:'));
+    const isFeishuChannel = selected.id === 'feishu';
+    const feishuDomain = selected.config?.domain || 'feishu';
+    const feishuConnectionMode = selected.config?.connectionMode || 'websocket';
+    const feishuGroupPolicy = selected.config?.groupPolicy || '-';
+    const feishuDmPolicy = selected.config?.dmPolicy || '-';
+    const feishuResponseMode = selected.config?.streaming
+      ? (state.lang === 'zh' ? '流式回复' : 'Streaming')
+      : (state.lang === 'zh' ? '普通回复' : 'Standard');
+    const feishuRenderMode = selected.config?.renderMode || '-';
+
+    function getChannelStatusMessage() {
+      if (isFeishuChannel) {
+        return selected.enabled
+          ? (state.lang === 'zh'
+            ? '飞书作为官方渠道统一在这里维护。保存后会直接更新当前机器上的接入配置和回复策略。'
+            : 'Feishu is maintained here as an official channel. Saving updates the live connection settings and reply behavior on this machine immediately.')
+          : (state.lang === 'zh'
+            ? '飞书当前处于停用状态。你可以先补齐机器人凭据与接入方式，再决定是否启用。'
+            : 'Feishu is currently disabled. Complete the bot credentials and connection mode first, then decide whether to enable it.');
+      }
+      return selected.enabled
+        ? (state.lang === 'zh' ? '保存后会直接更新当前消息入口配置。' : 'Saving here updates the live channel configuration immediately.')
+        : (state.lang === 'zh' ? '这个消息入口当前停用中。可以先补齐配置，再决定是否启用。' : 'This channel is currently disabled. Finish the settings first, then decide whether to enable it.');
+    }
 
     function renderChannelField(fieldName, fieldValue, kind = 'config') {
       const value = fieldValue ?? '';
@@ -4179,6 +4211,13 @@
               <div>
                 <h3>${escapeHtml(selected.name || selected.id)}</h3>
                 <p>${escapeHtml(selected.id)}</p>
+                <div class="muted small" style="margin-top:8px;">${escapeHtml(isFeishuChannel
+                  ? (state.lang === 'zh'
+                    ? '飞书在开源版中作为官方消息入口维护，后续如有扩展插件能力，会通过通用插件加载机制接入。'
+                    : 'Feishu is maintained as an official channel in the public release. Future plugin-based enhancements will arrive through a generic extension loader.')
+                  : (state.lang === 'zh'
+                    ? '内置消息入口，建议直接在渠道页维护。'
+                    : 'Built-in channel entry, best maintained directly from Channels.'))}</div>
               </div>
               <div class="tag-list">
                 <span class="pill ${selected.enabled ? 'success' : 'warn'}">${escapeHtml(selected.enabled ? (state.lang === 'zh' ? '正在接收' : 'Enabled') : (state.lang === 'zh' ? '已停用' : 'Disabled'))}</span>
@@ -4186,9 +4225,7 @@
               </div>
             </div>
             <div class="status ${selected.enabled ? '' : 'warn'}" style="margin-bottom:14px;">
-              ${escapeHtml(selected.enabled
-                ? (state.lang === 'zh' ? '保存后会直接更新当前消息入口配置。' : 'Saving here updates the live channel configuration immediately.')
-                : (state.lang === 'zh' ? '这个消息入口当前停用中。可以先补齐配置，再决定是否启用。' : 'This channel is currently disabled. Finish the settings first, then decide whether to enable it.'))}
+              ${escapeHtml(getChannelStatusMessage())}
             </div>
             <div class="form-grid" id="channel-config-form">
               ${editorFields || emptyState(state.lang === 'zh' ? '这个消息入口当前没有可编辑字段。' : 'There are no editable fields for this channel right now.')}
@@ -4205,6 +4242,15 @@
             <div class="grid">
               ${metricCard(state.lang === 'zh' ? '普通字段' : 'Config Fields', formatNumber(configKeys.length), configKeys.join(', ') || '-')}
               ${metricCard(state.lang === 'zh' ? 'Env 字段' : 'Env Fields', formatNumber(envKeys.length), envKeys.join(', ') || '-')}
+              ${isFeishuChannel
+                ? metricCard(state.lang === 'zh' ? '接入域名' : 'Domain', feishuDomain, feishuConnectionMode)
+                : ''}
+              ${isFeishuChannel
+                ? metricCard(state.lang === 'zh' ? '群聊策略' : 'Group Policy', feishuGroupPolicy, feishuDmPolicy)
+                : ''}
+              ${isFeishuChannel
+                ? metricCard(state.lang === 'zh' ? '回复方式' : 'Response Mode', feishuResponseMode, feishuRenderMode)
+                : ''}
             </div>
             ${renderAdvancedDisclosure({
               title: state.lang === 'zh' ? '查看原始配置' : 'View Raw Configuration',
@@ -6746,7 +6792,6 @@
       if (active === 'overview') return await loadOverview();
       if (active === 'system') return await loadSystem();
       if (active === 'openclaw') return await loadOpenClawTab();
-      if (active === 'feishu') return await loadFeishu();
       if (active === 'channels') return await loadChannels();
       if (active === 'ai') return await loadAI();
       if (active === 'notifications') return await loadNotifications();
@@ -6773,11 +6818,24 @@
   }
 
   const initialHash = (location.hash || '').replace(/^#/, '');
-  state.activeTab = TAB_ORDER.includes(initialHash) ? initialHash : (localStorage.getItem(STORAGE_TAB) || 'overview');
+  const storedTab = localStorage.getItem(STORAGE_TAB) || 'overview';
+  const normalizedStoredTab = storedTab === 'feishu' ? 'channels' : storedTab;
+  if (initialHash === 'feishu') {
+    state.channelSelectedId = 'feishu';
+    state.activeTab = 'channels';
+    history.replaceState(null, '', '#channels');
+  } else {
+    state.activeTab = TAB_ORDER.includes(initialHash) ? initialHash : normalizedStoredTab;
+  }
   if (!TAB_ORDER.includes(state.activeTab)) state.activeTab = 'overview';
 
   window.addEventListener('hashchange', () => {
     const next = (location.hash || '').replace(/^#/, '');
+    if (next === 'feishu') {
+      state.channelSelectedId = 'feishu';
+      setActiveTab('channels');
+      return;
+    }
     if (TAB_ORDER.includes(next) && next !== state.activeTab) {
       setActiveTab(next, false);
     }

@@ -12,6 +12,7 @@ export interface GuardLayout {
 }
 
 let cachedLayout: GuardLayout | null = null;
+let cachedLayoutKey: string | null = null;
 
 export function resolveUserPath(inputPath: string): string {
   const trimmed = String(inputPath || '').trim();
@@ -39,6 +40,10 @@ export function getGuardSecretsDir(): string {
   return path.join(getGuardDir(), 'secrets');
 }
 
+function getLayoutCacheKey(baseDir: string): string {
+  return path.resolve(baseDir);
+}
+
 function createLayout(baseDir: string): GuardLayout {
   const guardDir = ensureDir(baseDir);
   const stateDir = ensureDir(path.join(guardDir, 'state'));
@@ -58,15 +63,20 @@ function createLayout(baseDir: string): GuardLayout {
 }
 
 export function ensureGuardLayout(): GuardLayout {
-  if (cachedLayout) return cachedLayout;
-
   const preferredDir = getGuardDir();
+  const preferredKey = getLayoutCacheKey(preferredDir);
+  if (cachedLayout && cachedLayoutKey === preferredKey) return cachedLayout;
+
   try {
     cachedLayout = createLayout(preferredDir);
+    cachedLayoutKey = preferredKey;
     return cachedLayout;
   } catch {
     const fallbackDir = path.resolve(process.cwd(), '.guard-runtime', 'openclaw-state');
+    const fallbackKey = getLayoutCacheKey(fallbackDir);
+    if (cachedLayout && cachedLayoutKey === fallbackKey) return cachedLayout;
     cachedLayout = createLayout(fallbackDir);
+    cachedLayoutKey = fallbackKey;
     return cachedLayout;
   }
 }

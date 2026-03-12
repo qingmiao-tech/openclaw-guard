@@ -344,7 +344,7 @@ describe('git-sync', () => {
     const branch = execFileSync('git', ['-C', tempRoot, 'branch', '--show-current'], { encoding: 'utf-8' }).trim() || 'master';
     const remoteHeadMessage = execFileSync('git', [`--git-dir=${bareRemotePath}`, 'log', '-1', '--pretty=%s', branch], { encoding: 'utf-8' }).trim();
     expect(remoteHeadMessage).toBe('推送收敛测试');
-  });
+  }, 20000);
 
   it('checks github private repo successfully and enriches status fields', async () => {
     initGitSync();

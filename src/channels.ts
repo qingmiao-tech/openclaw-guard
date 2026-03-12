@@ -1,4 +1,4 @@
-﻿import { loadConfig, saveConfig, readEnvValue, writeEnvValue, removeEnvValue } from './config.js';
+import { loadConfig, saveConfig, readEnvValue, writeEnvValue, removeEnvValue } from './config.js';
 
 export interface ChannelInfo {
   id: string;

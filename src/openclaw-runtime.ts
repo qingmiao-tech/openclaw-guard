@@ -207,6 +207,13 @@ const RUNTIME_SNAPSHOT_CACHE_KEY = 'openclaw-runtime-snapshot-v2';
 const CRON_STATUS_CACHE_KEY = 'openclaw-cron-status-v1';
 const CRON_SNAPSHOT_CACHE_KEY = 'openclaw-cron-snapshot-v1';
 
+function shouldBypassCache(...envKeys: string[]): boolean {
+  return envKeys.some((envKey) => {
+    const value = process.env[envKey];
+    return typeof value === 'string' && value.trim().length > 0;
+  });
+}
+
 function extractJsonPayload(text: string): unknown | null {
   const input = text.trim();
   if (!input) return null;
@@ -784,6 +791,9 @@ function buildCronSnapshot(): CronSnapshot {
 }
 
 export function getRuntimeSnapshot(): RuntimeSnapshot {
+  if (shouldBypassCache('OPENCLAW_GUARD_MOCK_STATUS_JSON')) {
+    return buildRuntimeSnapshot();
+  }
   return getPersistentCachedValue(RUNTIME_SNAPSHOT_CACHE_KEY, {
     ttlMs: 15_000,
     staleIfErrorMs: 24 * 60 * 60 * 1000,
@@ -793,6 +803,9 @@ export function getRuntimeSnapshot(): RuntimeSnapshot {
 }
 
 export function getCronStatusSummary(): CronStatusSummary {
+  if (shouldBypassCache('OPENCLAW_GUARD_MOCK_CRON_STATUS_JSON')) {
+    return buildCronStatusSummary();
+  }
   return getPersistentCachedValue(CRON_STATUS_CACHE_KEY, {
     ttlMs: 20_000,
     staleIfErrorMs: 24 * 60 * 60 * 1000,
@@ -802,6 +815,9 @@ export function getCronStatusSummary(): CronStatusSummary {
 }
 
 export function getCronSnapshot(): CronSnapshot {
+  if (shouldBypassCache('OPENCLAW_GUARD_MOCK_CRON_JSON', 'OPENCLAW_GUARD_MOCK_CRON_STATUS_JSON')) {
+    return buildCronSnapshot();
+  }
   return getPersistentCachedValue(CRON_SNAPSHOT_CACHE_KEY, {
     ttlMs: 20_000,
     staleIfErrorMs: 24 * 60 * 60 * 1000,

@@ -26,8 +26,13 @@ function getCacheFile(key: string): string {
   return path.join(getCacheDir(), `${sanitizeFileName(key)}.json`);
 }
 
+function getScopedMemoryKey(key: string): string {
+  return `${getCacheFile(key)}::${key}`;
+}
+
 function readEntry<T>(key: string): PersistentCacheEntry<T> | null {
-  const cached = memoryCache.get(key);
+  const scopedKey = getScopedMemoryKey(key);
+  const cached = memoryCache.get(scopedKey);
   if (cached) return cached as PersistentCacheEntry<T>;
 
   const filePath = getCacheFile(key);
@@ -37,7 +42,7 @@ function readEntry<T>(key: string): PersistentCacheEntry<T> | null {
   if (!entry || typeof entry.updatedAt !== 'string' || typeof entry.expiresAt !== 'string') {
     return null;
   }
-  memoryCache.set(key, entry as PersistentCacheEntry<unknown>);
+  memoryCache.set(scopedKey, entry as PersistentCacheEntry<unknown>);
   return entry;
 }
 
@@ -49,13 +54,13 @@ function writeEntry<T>(key: string, value: T, ttlMs: number): T {
     expiresAt: new Date(now + Math.max(0, ttlMs)).toISOString(),
     value,
   };
-  memoryCache.set(key, entry as PersistentCacheEntry<unknown>);
+  memoryCache.set(getScopedMemoryKey(key), entry as PersistentCacheEntry<unknown>);
   writeJsonFile(getCacheFile(key), entry);
   return value;
 }
 
 export function invalidatePersistentCache(key: string): void {
-  memoryCache.delete(key);
+  memoryCache.delete(getScopedMemoryKey(key));
   const filePath = getCacheFile(key);
   if (fs.existsSync(filePath)) {
     try {

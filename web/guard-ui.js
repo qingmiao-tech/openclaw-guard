@@ -3204,31 +3204,33 @@
     const advancedVisible = state.showAdvancedNav || isAdvancedTab(active);
     app.innerHTML = `
       <div class="guard-shell">
-        <header class="guard-header">
-          <div class="guard-header-inner">
-            <div class="guard-header-top">
-              <div class="guard-brand">
-                <div class="guard-badge">
-                  <img class="guard-badge-logo" src="/ui/logo.png" alt="OpenClaw Guard logo" />
-                </div>
-                <div class="guard-title">
-                  <h1>${escapeHtml(t('appTitle'))}</h1>
-                  <p>${escapeHtml(t('appSubtitle'))}</p>
-                </div>
+        <header class="guard-chrome">
+          <div class="guard-chrome-inner">
+            <div class="guard-brand">
+              <div class="guard-badge">
+                <img class="guard-badge-logo" src="/ui/logo.png" alt="OpenClaw Guard logo" />
               </div>
-              <div class="guard-actions">
-                <div class="lang-switch">
-                  <button type="button" data-lang="zh" class="${state.lang === 'zh' ? 'active' : ''}">中文</button>
-                  <button type="button" data-lang="en" class="${state.lang === 'en' ? 'active' : ''}">EN</button>
-                </div>
-                <button class="action-btn" type="button" data-global-action="refresh">${escapeHtml(t('refresh'))}</button>
-                <button class="action-btn" type="button" data-global-action="restart-guard">${escapeHtml(t('restartGuard'))}</button>
-                ${state.authToken ? `<button class="action-btn" type="button" data-global-action="change-pwd">${escapeHtml(t('changePassword'))}</button>` : ''}
-                ${state.authToken ? `<button class="action-btn danger" type="button" data-global-action="logout">${escapeHtml(t('logout'))}</button>` : ''}
-                <button class="action-btn danger" type="button" data-global-action="stop-web">${escapeHtml(t('stopWeb'))}</button>
+              <div class="guard-title">
+                <h1>${escapeHtml(t('appTitle'))}</h1>
+                <p>${escapeHtml(t('appSubtitle'))}</p>
               </div>
             </div>
-            <div class="guard-tabs-wrap">
+            <div class="guard-actions">
+              <div class="lang-switch">
+                <button type="button" data-lang="zh" class="${state.lang === 'zh' ? 'active' : ''}">中文</button>
+                <button type="button" data-lang="en" class="${state.lang === 'en' ? 'active' : ''}">EN</button>
+              </div>
+              <button class="action-btn" type="button" data-global-action="refresh">${escapeHtml(t('refresh'))}</button>
+              <button class="action-btn" type="button" data-global-action="restart-guard">${escapeHtml(t('restartGuard'))}</button>
+              ${state.authToken ? `<button class="action-btn" type="button" data-global-action="change-pwd">${escapeHtml(t('changePassword'))}</button>` : ''}
+              ${state.authToken ? `<button class="action-btn subtle" type="button" data-global-action="logout">${escapeHtml(t('logout'))}</button>` : ''}
+              <button class="action-btn warn" type="button" data-global-action="stop-web">${escapeHtml(t('stopWeb'))}</button>
+            </div>
+          </div>
+        </header>
+        <div class="guard-body">
+          <aside class="guard-sidebar">
+            <div class="guard-sidebar-inner">
               <nav class="guard-nav-stack" id="guard-nav">
                 ${renderNavSection({
                   id: 'core',
@@ -3252,17 +3254,19 @@
                   active,
                   collapsed: !advancedVisible,
                   collapsedHtml: escapeHtml(t('nav.advancedCollapsed')),
-                  actionsHtml: `<button type="button" class="action-btn" data-nav-action="toggle-advanced">${escapeHtml(advancedVisible ? t('nav.hideAdvanced') : t('nav.showAdvanced'))}</button>`,
+                  actionsHtml: `<button type="button" class="action-btn subtle" data-nav-action="toggle-advanced">${escapeHtml(advancedVisible ? t('nav.hideAdvanced') : t('nav.showAdvanced'))}</button>`,
                 })}
               </nav>
             </div>
-          </div>
-        </header>
-        <main class="guard-main">
-          <div class="guard-main-inner">
-            <div id="guard-panel"><div class="empty">${escapeHtml(t('loading'))}</div></div>
-          </div>
-        </main>
+          </aside>
+          <section class="guard-workspace">
+          <main class="guard-main">
+            <div class="guard-main-inner">
+              <div id="guard-panel"><div class="empty">${escapeHtml(t('loading'))}</div></div>
+            </div>
+          </main>
+          </section>
+        </div>
         <div id="guard-toast" class="toast"></div>
       </div>
     `;

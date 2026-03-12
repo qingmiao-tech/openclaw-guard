@@ -3174,6 +3174,48 @@
     return tabs.map((tabId) => `<button type="button" class="guard-tab ${tabId === active ? 'active' : ''}" data-tab="${tabId}">${escapeHtml(t(`tabs.${tabId}`))}</button>`).join('');
   }
 
+  function getToolbarIconSvg(iconName) {
+    if (iconName === 'refresh') {
+      return `
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M16.2 10A6.2 6.2 0 1 1 14 5.28" />
+          <path d="M16.2 3.8v4.4h-4.4" />
+        </svg>
+      `;
+    }
+    if (iconName === 'password') {
+      return `
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <rect x="4.5" y="9" width="11" height="7" rx="2.2" />
+          <path d="M7 9V7.7A3 3 0 0 1 10 4.7a3 3 0 0 1 3 3V9" />
+          <circle cx="10" cy="12.4" r="1.05" fill="currentColor" stroke="none" />
+        </svg>
+      `;
+    }
+    return `
+      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M8.2 5.2H5.8A1.8 1.8 0 0 0 4 7v6a1.8 1.8 0 0 0 1.8 1.8h2.4" />
+        <path d="M11.2 6.3 15 10l-3.8 3.7" />
+        <path d="M8.2 10H15" />
+      </svg>
+    `;
+  }
+
+  function renderToolbarIconButton(action, label, iconName) {
+    return `
+      <button
+        class="guard-icon-btn"
+        type="button"
+        data-global-action="${escapeHtml(action)}"
+        aria-label="${escapeHtml(label)}"
+        title="${escapeHtml(label)}"
+        data-tooltip="${escapeHtml(label)}"
+      >
+        ${getToolbarIconSvg(iconName)}
+      </button>
+    `;
+  }
+
   function renderNavSection(options) {
     const {
       id,
@@ -3220,11 +3262,11 @@
                 <button type="button" data-lang="zh" class="${state.lang === 'zh' ? 'active' : ''}">中文</button>
                 <button type="button" data-lang="en" class="${state.lang === 'en' ? 'active' : ''}">EN</button>
               </div>
-              <button class="action-btn" type="button" data-global-action="refresh">${escapeHtml(t('refresh'))}</button>
-              <button class="action-btn" type="button" data-global-action="restart-guard">${escapeHtml(t('restartGuard'))}</button>
-              ${state.authToken ? `<button class="action-btn" type="button" data-global-action="change-pwd">${escapeHtml(t('changePassword'))}</button>` : ''}
-              ${state.authToken ? `<button class="action-btn subtle" type="button" data-global-action="logout">${escapeHtml(t('logout'))}</button>` : ''}
-              <button class="action-btn warn" type="button" data-global-action="stop-web">${escapeHtml(t('stopWeb'))}</button>
+              <div class="guard-icon-actions">
+                ${renderToolbarIconButton('refresh', t('refresh'), 'refresh')}
+                ${state.authToken ? renderToolbarIconButton('change-pwd', t('changePassword'), 'password') : ''}
+                ${state.authToken ? renderToolbarIconButton('logout', t('logout'), 'logout') : ''}
+              </div>
             </div>
           </div>
         </header>
@@ -3299,31 +3341,12 @@
       });
     });
     app.querySelector('[data-global-action="refresh"]')?.addEventListener('click', () => loadActiveTab(true));
-    app.querySelector('[data-global-action="restart-guard"]')?.addEventListener('click', () => triggerGuardRestart(false));
     app.querySelector('[data-global-action="change-pwd"]')?.addEventListener('click', () => showChangePwdDialog());
     app.querySelector('[data-global-action="logout"]')?.addEventListener('click', async () => {
       try { await postJson('/api/auth/logout', {}); } catch { /* 忽略 */ }
       state.authToken = null;
       localStorage.removeItem(STORAGE_TOKEN);
       renderLoginPage();
-    });
-    app.querySelector('[data-global-action="stop-web"]')?.addEventListener('click', async () => {
-      const confirmed = await showConfirmDialog({
-        title: state.lang === 'zh' ? '停止后台服务' : 'Stop Background Service',
-        message: state.lang === 'zh' ? '确认停止当前 Guard Web 服务？' : 'Stop the current Guard Web service?',
-        description: state.lang === 'zh'
-          ? '停止后当前页面会失去连接，需要你重新启动 Guard Web 才能恢复。'
-          : 'The page will disconnect until Guard Web is started again.',
-        confirmText: state.lang === 'zh' ? '确认停止' : 'Stop service',
-        tone: 'danger',
-      });
-      if (!confirmed) return;
-      try {
-        const result = await postJson('/api/web-background/stop', {});
-        showToast(result.message || (state.lang === 'zh' ? '停止命令已发送。' : 'Stop command sent.'));
-      } catch (error) {
-        showToast(error.message || String(error), 'error');
-      }
     });
   }
 
@@ -3735,43 +3758,33 @@
         ${metricCard('OpenClaw', getInstallStateLabel(info.openclaw?.installed), info.openclaw?.version || '-', info.openclaw?.installed ? 'success' : 'warn')}
         ${metricCard(state.lang === 'zh' ? '本地 Env' : 'Local Env', formatNumber(envEntries.length), info.envPath || '-')}
       </div>
-      <div class="grid">
-        <div class="card accent-info">
-          <h3>${state.lang === 'zh' ? '什么时候来这里' : 'When To Use This Page'}</h3>
-          <div class="status">${escapeHtml(state.lang === 'zh'
-            ? '当你需要启动、停止、重启或排查 Guard 和 Gateway，或者查看路径、环境变量与运行信息时，请使用这一页。'
-            : 'Use this page when you need to start, stop, restart, or troubleshoot Guard and Gateway, or when you need paths, environment variables, and runtime details.')}</div>
-          <div class="sub-card" style="margin-top:14px;">
-            <strong>${state.lang === 'zh' ? '推荐用法' : 'Recommended Flow'}</strong>
-            <div class="muted small" style="margin-top:8px; line-height:1.7;">
-              ${escapeHtml(state.lang === 'zh'
-                ? '先在驾驶舱确认整体状态，再到这里处理服务和环境问题；如果还需要继续排查，可以再进入会话、审计或 Git 同步页面。'
-                : 'Check the overall state in the cockpit first, then handle service and environment issues here. If you need deeper diagnosis, continue into Sessions, Audit, or Git Sync.')}
-            </div>
+      <div class="context-note">
+        <strong>${state.lang === 'zh' ? '什么时候来这里' : 'When To Use This Page'}</strong>
+        <span>${escapeHtml(state.lang === 'zh'
+          ? '需要启动、停止、重启或排查 Guard / Gateway 时进入这里。推荐顺序：先看驾驶舱，再回来处理服务与环境问题；需要深查时再去会话、安全或 Git 同步。'
+          : 'Use this page to start, stop, restart, or troubleshoot Guard and Gateway. Recommended flow: check the cockpit first, come back here for service and environment work, then continue into Sessions, Security, or Git Sync only when you need deeper diagnosis.')}</span>
+      </div>
+      <div class="card accent-info panel-focus-target" id="system-paths-card">
+        <h3>${state.lang === 'zh' ? '本机路径与配置位置' : 'Local Paths & Config Locations'}</h3>
+        ${keyValueGrid([
+          { label: state.lang === 'zh' ? '平台' : 'Platform', value: info.platform || '-' },
+          { label: state.lang === 'zh' ? '用户' : 'User', value: info.user || '-' },
+          { label: 'Home', value: info.home || '-' },
+          { label: 'OpenClaw Dir', value: info.openclawDir || '-' },
+          { label: 'openclaw.json', value: info.configPath || '-' },
+          { label: '.env', value: info.envPath || '-' },
+          { label: state.lang === 'zh' ? '当前工作台进程' : 'Current Workbench Process', value: info.pid || '-' },
+          { label: state.lang === 'zh' ? '当前监听端口' : 'Current Port', value: webReport.port || '-' },
+        ])}
+        <div class="sub-card" style="margin-top:14px;">
+          <div class="row" style="justify-content:space-between;">
+            <strong>${state.lang === 'zh' ? '这些路径分别做什么' : 'What These Paths Are For'}</strong>
+            <span class="pill success">${state.lang === 'zh' ? '当前工作台' : 'Current Workbench'}</span>
           </div>
-        </div>
-        <div class="card accent-info panel-focus-target" id="system-paths-card">
-          <h3>${state.lang === 'zh' ? '本机路径与配置位置' : 'Local Paths & Config Locations'}</h3>
-          ${keyValueGrid([
-            { label: state.lang === 'zh' ? '平台' : 'Platform', value: info.platform || '-' },
-            { label: state.lang === 'zh' ? '用户' : 'User', value: info.user || '-' },
-            { label: 'Home', value: info.home || '-' },
-            { label: 'OpenClaw Dir', value: info.openclawDir || '-' },
-            { label: 'openclaw.json', value: info.configPath || '-' },
-            { label: '.env', value: info.envPath || '-' },
-            { label: state.lang === 'zh' ? '当前工作台进程' : 'Current Workbench Process', value: info.pid || '-' },
-            { label: state.lang === 'zh' ? '当前监听端口' : 'Current Port', value: webReport.port || '-' },
-          ])}
-          <div class="sub-card" style="margin-top:14px;">
-            <div class="row" style="justify-content:space-between;">
-              <strong>${state.lang === 'zh' ? '这些路径分别做什么' : 'What These Paths Are For'}</strong>
-              <span class="pill success">${state.lang === 'zh' ? '当前工作台' : 'Current Workbench'}</span>
-            </div>
-            <div class="muted small" style="margin-top:8px; line-height:1.7;">
-              ${escapeHtml(state.lang === 'zh'
-                ? 'openclaw.json 保存模型、渠道和 Agent 的主要配置；.env 保存只适合留在本机的密钥、令牌和账号变量，供渠道接入和 Git 同步等功能复用。'
-                : 'openclaw.json stores the main model, channel, and agent settings. The .env file stores machine-local secrets, tokens, and account values used by channels, Git sync, and related features.')}
-            </div>
+          <div class="muted small" style="margin-top:8px; line-height:1.7;">
+            ${escapeHtml(state.lang === 'zh'
+              ? 'openclaw.json 保存模型、渠道和 Agent 的主要配置；.env 保存只适合留在本机的密钥、令牌和账号变量，供渠道接入和 Git 同步等功能复用。'
+              : 'openclaw.json stores the main model, channel, and agent settings. The .env file stores machine-local secrets, tokens, and account values used by channels, Git sync, and related features.')}
           </div>
         </div>
       </div>
@@ -3781,9 +3794,9 @@
           <div class="toolbar">
             <button class="action-btn primary" type="button" data-service-action="start" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('start'))} Gateway</button>
             <button class="action-btn" type="button" data-service-action="restart" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('restart'))} Gateway</button>
-            <button class="action-btn danger" type="button" data-service-action="stop" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('stop'))} Gateway</button>
+            <button class="action-btn warn" type="button" data-service-action="stop" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('stop'))} Gateway</button>
             <button class="action-btn ${webPrimaryDisabled ? '' : 'primary'}" type="button" data-service-action="start-web" ${webPrimaryDisabled ? 'disabled' : ''}>${escapeHtml(webPrimaryLabel)}</button>
-            <button class="action-btn danger" type="button" data-service-action="stop-web" ${webReport.running ? '' : 'disabled'}>${escapeHtml(t('stopWeb'))}</button>
+            <button class="action-btn warn" type="button" data-service-action="stop-web" ${webReport.running ? '' : 'disabled'}>${escapeHtml(t('stopWeb'))}</button>
             <button class="action-btn" type="button" data-service-action="restart-guard" ${guardRestartBusy ? 'disabled' : ''}>${escapeHtml(t('restartGuard'))}</button>
             <button class="action-btn" type="button" data-service-action="restart-guard-with-gateway" ${(guardRestartBusy || serviceBusy) ? 'disabled' : ''}>${escapeHtml(t('restartGuardWithGateway'))}</button>
           </div>

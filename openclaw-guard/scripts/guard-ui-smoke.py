@@ -25,6 +25,7 @@ TAB_LABELS = {
         'feishu': '飞书',
         'channels': '渠道',
         'ai': 'AI',
+        'models': '模型',
         'notifications': '通知',
         'agents': 'Agent',
         'sessions': '会话',
@@ -35,6 +36,7 @@ TAB_LABELS = {
         'costs': '成本',
         'cron': 'Cron',
         'git-sync': 'Git 同步',
+        'security': '安全',
         'audit': '审计',
         'profiles': '预设',
         'harden': '加固',
@@ -47,6 +49,7 @@ TAB_LABELS = {
         'feishu': 'Feishu',
         'channels': 'Channels',
         'ai': 'AI',
+        'models': 'Models',
         'notifications': 'Notifications',
         'agents': 'Agents',
         'sessions': 'Sessions',
@@ -57,16 +60,25 @@ TAB_LABELS = {
         'costs': 'Costs',
         'cron': 'Cron',
         'git-sync': 'Git Sync',
+        'security': 'Security',
         'audit': 'Audit',
         'profiles': 'Profiles',
         'harden': 'Harden',
         'logs': 'Logs',
     },
 }
+TAB_ALIASES = {
+    'feishu': 'channels',
+    'ai': 'models',
+    'audit': 'security',
+    'profiles': 'security',
+    'harden': 'security',
+}
+ADVANCED_TABS = {'notifications', 'activity', 'costs', 'cron'}
 DEFAULT_TABS = [
-    'overview', 'system', 'openclaw', 'feishu', 'channels', 'ai', 'notifications',
-    'agents', 'sessions', 'activity', 'files', 'memory', 'search', 'costs',
-    'cron', 'git-sync', 'audit', 'profiles', 'harden', 'logs',
+    'overview', 'system', 'openclaw', 'channels', 'models', 'agents', 'sessions',
+    'files', 'memory', 'search', 'git-sync', 'security', 'logs',
+    'notifications', 'activity', 'costs', 'cron',
 ]
 
 
@@ -154,25 +166,28 @@ class GuardUiSmoke:
         try:
             self.page.wait_for_selector('[data-tab]', timeout=self.args.timeout)
             self.page.wait_for_selector('#guard-panel', timeout=self.args.timeout)
+            self.page.wait_for_selector('.guard-icon-actions [data-global-action="refresh"]', timeout=self.args.timeout)
         except PlaywrightTimeoutError as exc:
             self.failures.append(SmokeFailure(f'工作台骨架未正常渲染: {exc}'))
 
     def _verify_language_labels(self, lang: str) -> None:
         expected = TAB_LABELS[lang]
         nav_text = ' '.join(self.page.locator('[data-tab]').all_text_contents())
-        for key in ('overview', 'system', 'notifications', 'logs'):
+        for key in ('overview', 'system', 'security', 'logs'):
             label = expected[key]
             if label not in nav_text:
                 self.failures.append(SmokeFailure(f'{lang} 导航文案缺失: {label}'))
 
     def _open_tab(self, tab_id: str, lang: str) -> None:
-        selector = f'[data-tab="{tab_id}"]'
-        label = TAB_LABELS[lang].get(tab_id, tab_id)
+        target_tab = self._normalize_tab_id(tab_id)
+        self._ensure_tab_visible(target_tab)
+        selector = f'[data-tab="{target_tab}"]'
+        label = TAB_LABELS[lang].get(target_tab, TAB_LABELS[lang].get(tab_id, tab_id))
         try:
             self.page.click(selector, timeout=self.args.timeout)
             self.page.wait_for_function(
                 "(target) => window.location.hash === '#' + target || !!document.querySelector(`[data-tab=\"${target}\"].active`)",
-                arg=tab_id,
+                arg=target_tab,
                 timeout=self.args.timeout,
             )
             self._wait_panel_ready(lang)
@@ -185,6 +200,22 @@ class GuardUiSmoke:
                 self.failures.append(SmokeFailure(f'{label} 页内容过少，可能未正常渲染。'))
         except (PlaywrightTimeoutError, PlaywrightError) as exc:
             self.failures.append(SmokeFailure(f'{label} 页打开失败: {exc}'))
+
+    def _ensure_tab_visible(self, tab_id: str) -> None:
+        if tab_id not in ADVANCED_TABS:
+            return
+        if self.page.locator(f'[data-tab="{tab_id}"]').count():
+            return
+        toggle = self.page.locator('[data-nav-action="toggle-advanced"]')
+        if not toggle.count():
+            self.failures.append(SmokeFailure(f'找不到展开高级功能的入口，无法打开 {tab_id}'))
+            return
+        toggle.click()
+        self.page.wait_for_selector(f'[data-tab="{tab_id}"]', timeout=self.args.timeout)
+
+    @staticmethod
+    def _normalize_tab_id(tab_id: str) -> str:
+        return TAB_ALIASES.get(tab_id, tab_id)
 
     def _wait_panel_ready(self, lang: str) -> None:
         loading_tokens = {LOADING_TEXT[lang], LOADING_TEXT['zh'], LOADING_TEXT['en']}

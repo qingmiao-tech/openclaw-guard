@@ -11,6 +11,12 @@
   --orange: #f97316;
   --red: #ef4444;
   --purple: #8b5cf6;
+  --action-warn-bg: rgba(245, 158, 11, 0.10);
+  --action-warn-border: rgba(245, 158, 11, 0.22);
+  --action-warn-text: #fcd88f;
+  --action-danger-bg: rgba(244, 114, 182, 0.10);
+  --action-danger-border: rgba(244, 114, 182, 0.22);
+  --action-danger-text: #f9c8da;
   --shadow: 0 20px 48px rgba(15, 23, 42, 0.35);
   --radius: 18px;
 }
@@ -93,6 +99,11 @@ a { color: #93c5fd; }
   padding-bottom: 32px;
 }
 .guard-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
+.guard-icon-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
 .lang-switch { display: inline-flex; gap: 6px; padding: 4px; border: 1px solid var(--border); border-radius: 999px; background: rgba(15,23,42,.6); }
 .lang-switch button { border: 0; background: transparent; color: var(--muted); padding: 8px 12px; border-radius: 999px; }
 .lang-switch button.active { background: var(--blue); color: #fff; }
@@ -116,11 +127,109 @@ a { color: #93c5fd; }
   color: #dbe5f4;
 }
 .action-btn.warn {
-  background: rgba(217,119,6,.12);
-  border-color: rgba(245,158,11,.24);
-  color: #fde68a;
+  background: var(--action-warn-bg);
+  border-color: var(--action-warn-border);
+  color: var(--action-warn-text);
 }
-.action-btn.danger { background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.22); color: #fecaca; }
+.action-btn.warn:hover,
+.action-btn.warn:focus-visible {
+  border-color: rgba(245,158,11,.34);
+  background: rgba(245,158,11,.16);
+  color: #ffe3a7;
+}
+.action-btn.danger {
+  background: var(--action-danger-bg);
+  border-color: var(--action-danger-border);
+  color: var(--action-danger-text);
+}
+.action-btn.danger:hover,
+.action-btn.danger:focus-visible {
+  border-color: rgba(244,114,182,.32);
+  background: rgba(244,114,182,.15);
+  color: #ffd7e6;
+}
+.guard-icon-btn {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  border: 1px solid rgba(148,163,184,.16);
+  background: rgba(15,23,42,.72);
+  color: #d7e5ff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color .16s ease, background .16s ease, color .16s ease, transform .16s ease;
+}
+.guard-icon-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.guard-icon-btn:hover {
+  border-color: rgba(96,165,250,.34);
+  background: rgba(30,41,59,.92);
+  color: #f8fbff;
+  transform: translateY(-1px);
+}
+.guard-icon-btn:focus-visible {
+  outline: none;
+  border-color: rgba(96,165,250,.38);
+  background: rgba(30,41,59,.92);
+  color: #f8fbff;
+  box-shadow: 0 0 0 3px rgba(96,165,250,.12);
+}
+.guard-icon-btn::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%) translateY(6px);
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(148,163,184,.18);
+  background: rgba(15,23,42,.96);
+  color: #e6eefb;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .16s ease, transform .16s ease;
+}
+.guard-icon-btn:hover::after,
+.guard-icon-btn:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.context-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(96,165,250,.18);
+  background: linear-gradient(180deg, rgba(15,23,42,.56), rgba(15,23,42,.34));
+  color: #dce7f8;
+}
+.context-note strong {
+  flex: 0 0 auto;
+  font-size: 13px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #93c5fd;
+}
+.context-note span {
+  flex: 1 1 auto;
+  color: var(--muted);
+  line-height: 1.6;
+}
 .guard-nav-stack { display: grid; gap: 12px; }
 .guard-nav-section {
   padding: 14px 15px;
@@ -463,11 +572,22 @@ textarea.guard-modal-input {
   .lang-switch {
     width: 100%;
   }
+  .guard-icon-btn,
+  .guard-icon-actions {
+    width: auto;
+  }
   .lang-switch {
     justify-content: center;
   }
   .guard-actions {
     gap: 8px;
+  }
+  .guard-icon-actions {
+    justify-content: flex-start;
+  }
+  .context-note {
+    flex-direction: column;
+    gap: 6px;
   }
 }
 .form-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }

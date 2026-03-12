@@ -18,6 +18,7 @@ EMPTY_NOTIFICATION_TEXT = {
     'zh': '没有符合筛选条件的通知',
     'en': 'No notifications match the current filters',
 }
+ADVANCED_TABS = {'notifications', 'activity', 'costs', 'cron'}
 
 
 @dataclass
@@ -86,6 +87,7 @@ class GuardUiInteractions:
         )
 
     def _open_tab(self, tab_id: str) -> None:
+        self._ensure_tab_visible(tab_id)
         self.page.click(f'[data-tab="{tab_id}"]', timeout=self.args.timeout)
         self.page.wait_for_function(
             "(target) => window.location.hash === '#' + target || !!document.querySelector(`[data-tab=\"${target}\"].active`)",
@@ -93,6 +95,17 @@ class GuardUiInteractions:
             timeout=self.args.timeout,
         )
         self._wait_panel_ready()
+
+    def _ensure_tab_visible(self, tab_id: str) -> None:
+        if tab_id not in ADVANCED_TABS:
+            return
+        if self.page.locator(f'[data-tab="{tab_id}"]').count():
+            return
+        toggle = self.page.locator('[data-nav-action="toggle-advanced"]')
+        if not toggle.count():
+            raise PlaywrightTimeoutError(f'找不到高级功能展开按钮，无法打开 {tab_id}')
+        toggle.click()
+        self.page.wait_for_selector(f'[data-tab="{tab_id}"]', timeout=self.args.timeout)
 
     def _wait_panel_ready(self) -> None:
         deadline = time.time() + (self.args.timeout / 1000)

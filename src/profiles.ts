@@ -1,7 +1,3 @@
-/**
- * 权限配置 Profile 管理
- * 根据使用场景生成对应的 openclaw.json 权限配置
- */
 import fs from 'node:fs';
 import path from 'node:path';
 import { getOpenClawDir } from './platform.js';
@@ -14,7 +10,7 @@ export interface ToolsConfig {
 export interface SecurityProfile {
   name: string;
   description: string;
-  riskLevel: '🟢 无风险' | '🟢 低风险' | '🟡 中风险' | '🟠 需防护' | '🔴 高风险';
+  riskLevel: '🟢 无风险' | '🟡 低风险' | '🟠 中风险' | '🔴 需防护' | '⛔ 高风险';
   tools: ToolsConfig;
   recommendations: string[];
 }
@@ -22,86 +18,81 @@ export interface SecurityProfile {
 export const PROFILES: Record<string, SecurityProfile> = {
   chat: {
     name: '纯聊天模式',
-    description: '仅允许对话，不允许任何文件或命令操作',
+    description: '仅允许对话，不允许任何文件操作、命令执行或自动化动作。',
     riskLevel: '🟢 无风险',
     tools: {
       deny: ['group:fs', 'group:runtime', 'group:ui', 'group:automation'],
       allow: ['group:web', 'group:memory'],
     },
     recommendations: [
-      '适合纯问答、头脑风暴场景',
-      '无需额外安全配置',
+      '适合问答、头脑风暴和说明文档解读。',
+      '一般不需要额外的系统级安全动作。',
     ],
   },
   readonly: {
     name: '只读辅助模式',
-    description: '允许读取文件和搜索，不允许写入和执行命令',
-    riskLevel: '🟢 低风险',
+    description: '允许读取文件和搜索内容，但不允许写入、命令执行或自动化动作。',
+    riskLevel: '🟡 低风险',
     tools: {
       deny: ['group:fs:write', 'group:runtime', 'group:ui', 'group:automation'],
       allow: ['group:fs:read', 'group:web', 'group:memory'],
     },
     recommendations: [
-      '适合代码审查、文档查阅场景',
-      '建议限定可读取的目录范围',
+      '适合代码审查、文档查阅和只读检索场景。',
+      '建议同时收紧可读取的工作区范围。',
     ],
   },
   coding: {
     name: '开发辅助模式',
-    description: '允许文件读写，不允许命令执行',
-    riskLevel: '🟡 中风险',
+    description: '允许读写工作区文件，但不允许命令执行和浏览器自动化。',
+    riskLevel: '🟠 中风险',
     tools: {
       deny: ['group:runtime', 'group:ui'],
       allow: ['group:fs', 'group:web', 'group:memory'],
     },
     recommendations: [
-      '建议创建专用用户运行 OpenClaw',
-      '限定文件操作的工作目录',
-      '保护 ~/.ssh、~/.gnupg 等敏感目录',
+      '适合文档整理、配置修改和轻量代码编辑。',
+      '建议限制工作区范围，不要把整个 Home 目录暴露给 Guard。',
+      '请把 ~/.ssh、浏览器数据、云凭证等敏感目录排除在工作区之外。',
     ],
   },
   devops: {
     name: '全能开发模式',
-    description: '允许文件操作和命令执行，适合开发部署场景',
-    riskLevel: '🟠 需防护',
+    description: '允许文件操作和命令执行，适合受控的开发、构建与部署场景。',
+    riskLevel: '🔴 需防护',
     tools: {
       allow: ['group:fs', 'group:runtime', 'group:web', 'group:memory'],
     },
     recommendations: [
-      '强烈建议使用 Docker 沙箱部署',
-      '必须创建专用低权限用户',
-      '使用专用 deploy key 替代个人 Git 凭证',
-      '配置网络隔离，限制对本地服务的访问',
-      '定期审查命令执行日志',
+      '更适合短时、受控的排障或交付场景，不建议长期默认开启。',
+      '如果需要长期后台运行，建议结合容器或独立低权限账户。',
+      '建议为 Git 同步使用 deploy key 或最小权限 token。',
     ],
   },
   full: {
     name: '完全信任模式',
-    description: '开放全部权限，包括浏览器操作和自动化',
-    riskLevel: '🔴 高风险',
+    description: '开放全部工具权限，包括浏览器操作和自动化任务。',
+    riskLevel: '⛔ 高风险',
     tools: {
       allow: ['group:fs', 'group:runtime', 'group:web', 'group:memory', 'group:ui', 'group:automation'],
     },
     recommendations: [
-      '⚠️ 仅在完全信任且隔离的环境中使用',
-      '必须使用 Docker 沙箱 + 独立用户',
-      '必须配置网络隔离',
-      '必须定期审计所有操作日志',
-      '不建议在日常开发机上使用此模式',
+      '仅建议在完全信任且具备隔离条件的环境中使用。',
+      '更适合容器、虚拟机或独立测试机，不建议在日常主力开发机上长期启用。',
+      '启用前请确认网络、凭证和工作区边界都已单独收紧。',
     ],
   },
 };
 
-/** 将 profile 应用到 openclaw.json */
 export function applyProfile(profileName: string, configPath?: string): { success: boolean; message: string } {
   const profile = PROFILES[profileName];
   if (!profile) {
-    return { success: false, message: `未知的 profile: ${profileName}` };
+    return { success: false, message: `未知的权限模式: ${profileName}` };
   }
 
   const targetPath = configPath || path.join(getOpenClawDir(), 'openclaw.json');
-
   let config: Record<string, unknown> = {};
+
   if (fs.existsSync(targetPath)) {
     try {
       config = JSON.parse(fs.readFileSync(targetPath, 'utf-8'));
@@ -110,7 +101,6 @@ export function applyProfile(profileName: string, configPath?: string): { succes
     }
   }
 
-  // 更新 tools 配置
   config.tools = profile.tools;
 
   try {
@@ -119,18 +109,16 @@ export function applyProfile(profileName: string, configPath?: string): { succes
       fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(targetPath, JSON.stringify(config, null, 2), 'utf-8');
-    return { success: true, message: `已应用 "${profile.name}" 配置到 ${targetPath}` };
-  } catch (err) {
-    return { success: false, message: `写入配置失败: ${err}` };
+    return { success: true, message: `已将“${profile.name}”写入 ${targetPath}` };
+  } catch (error) {
+    return { success: false, message: `写入配置失败: ${error}` };
   }
 }
 
-/** 列出所有可用 profile */
 export function listProfiles(): SecurityProfile[] {
   return Object.values(PROFILES);
 }
 
-/** 获取指定 profile */
 export function getProfile(name: string): SecurityProfile | undefined {
   return PROFILES[name];
 }

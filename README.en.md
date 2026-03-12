@@ -2,7 +2,7 @@
 
 [中文](./README.md) | [English](./README.en.md)
 
-OpenClaw Guard is the native operations and security workbench for OpenClaw. It brings installation checks, Guard Web lifecycle management, Gateway service control, Git sync, cache prewarm, runtime inspection, and security configuration into one place.
+OpenClaw Guard is the native operations and security workbench for OpenClaw, built with armor and a recovery path: layered security presets reduce overreach risks, agent assets such as memory and personality Markdown files are managed in one place, and deep Git sync lets you experiment freely and restore fast.
 
 The current product shape is a lightweight Node CLI plus a native web workbench. It no longer depends on the older Mission Control sidecar approach.
 

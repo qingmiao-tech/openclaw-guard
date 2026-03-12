@@ -2,7 +2,7 @@
 
 [中文](./README.md) | [English](./README.en.md)
 
-OpenClaw Guard 是 OpenClaw 的原生运维与安全工作台，统一承接安装检测、Guard Web 启停、Gateway 服务管理、Git 同步、缓存预热、运行态查看与安全配置。
+OpenClaw Guard 是 OpenClaw 的原生运维与安全工作台，自带“防弹衣”与“复活甲”：以内置多档安全预设隔离越权风险，统一管理 Agent 的记忆、性格等 Markdown 资产，并结合 Git 深度同步，让你进可自由折腾，退可一键重生。
 
 当前形态以轻量 Node CLI + 原生 Web 工作台为主，不再依赖外部 Mission Control 侧挂。
 

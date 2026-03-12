@@ -19,6 +19,34 @@ export interface WebBackgroundStatus {
   pidFile: string;
 }
 
+export interface WebBackgroundLogPaths {
+  stdout: string;
+  stderr: string;
+}
+
+export interface WebBackgroundPaths {
+  runtimeDir: string;
+  pidFile: string;
+  logPaths: WebBackgroundLogPaths;
+}
+
+export type WebBackgroundScenario = 'managed-running' | 'unmanaged-running' | 'stopped';
+export type WebBackgroundNextAction = 'open-workbench' | 'adopt-or-stop' | 'start-web';
+
+export interface WebBackgroundReport {
+  running: boolean;
+  pid: number | null;
+  port: number;
+  managed: boolean;
+  source: 'pid-file' | 'port-scan' | 'none';
+  primaryUrl: string;
+  workbenchUrl: string;
+  nextAction: WebBackgroundNextAction;
+  scenario: WebBackgroundScenario;
+  pidFile: string;
+  logPaths: WebBackgroundLogPaths;
+}
+
 export interface WebBackgroundActionResult {
   success: boolean;
   message: string;
@@ -33,6 +61,8 @@ interface ListeningSocket {
 }
 
 const BACKGROUND_START_TIMEOUT_MS = 10_000;
+const STDOUT_LOG_FILE = 'guard-web.out.log';
+const STDERR_LOG_FILE = 'guard-web.err.log';
 let cleanupHooksRegistered = false;
 
 function getProjectRoot(): string {
@@ -52,6 +82,22 @@ function getRuntimeDir(): string {
 
 function getPidFile(): string {
   return path.join(getRuntimeDir(), 'guard-web.pid.json');
+}
+
+function getLogPaths(): WebBackgroundLogPaths {
+  const runtimeDir = getRuntimeDir();
+  return {
+    stdout: path.join(runtimeDir, STDOUT_LOG_FILE),
+    stderr: path.join(runtimeDir, STDERR_LOG_FILE),
+  };
+}
+
+export function getWebBackgroundPaths(): WebBackgroundPaths {
+  return {
+    runtimeDir: getRuntimeDir(),
+    pidFile: getPidFile(),
+    logPaths: getLogPaths(),
+  };
 }
 
 function readRuntimeRecord(): WebRuntimeRecord | null {
@@ -258,6 +304,99 @@ export function getWebBackgroundStatus(port: number): WebBackgroundStatus {
     managed: false,
     pidFile,
   };
+}
+
+function resolveWebBackgroundScenario(status: WebBackgroundStatus): WebBackgroundScenario {
+  if (status.running && status.managed) return 'managed-running';
+  if (status.running) return 'unmanaged-running';
+  return 'stopped';
+}
+
+function resolveWebBackgroundNextAction(scenario: WebBackgroundScenario): WebBackgroundNextAction {
+  if (scenario === 'managed-running') return 'open-workbench';
+  if (scenario === 'unmanaged-running') return 'adopt-or-stop';
+  return 'start-web';
+}
+
+function buildLoopbackUrl(port: number, suffix = ''): string {
+  return `http://127.0.0.1:${port}${suffix}`;
+}
+
+export function getWebBackgroundReport(port: number): WebBackgroundReport {
+  const status = getWebBackgroundStatus(port);
+  const paths = getWebBackgroundPaths();
+  const scenario = resolveWebBackgroundScenario(status);
+  return {
+    running: status.running,
+    pid: status.pid,
+    port: status.port,
+    managed: status.managed,
+    source: status.source,
+    primaryUrl: buildLoopbackUrl(status.port, '/'),
+    workbenchUrl: buildLoopbackUrl(status.port, '/workbench'),
+    nextAction: resolveWebBackgroundNextAction(scenario),
+    scenario,
+    pidFile: status.pidFile || paths.pidFile,
+    logPaths: paths.logPaths,
+  };
+}
+
+function getSourceLabel(source: WebBackgroundStatus['source'], lang: 'zh' | 'en'): string {
+  const labels = {
+    'pid-file': { zh: 'PID 记录文件', en: 'PID record file' },
+    'port-scan': { zh: '端口扫描', en: 'Port scan' },
+    none: { zh: '未检测到来源', en: 'No source detected' },
+  };
+  return labels[source][lang];
+}
+
+function getNextActionMessage(report: WebBackgroundReport, lang: 'zh' | 'en'): string {
+  if (report.nextAction === 'open-workbench') {
+    return lang === 'zh'
+      ? 'Guard Web 已被托管并正在运行，可直接访问工作台或按需停止后台服务。'
+      : 'Guard Web is managed and running. Open the workbench directly or stop the background service if needed.';
+  }
+  if (report.nextAction === 'adopt-or-stop') {
+    return lang === 'zh'
+      ? '当前端口上存在未纳入 Guard 托管的实例。请先决定接管它，或先停止后再启动新的实例。'
+      : 'An unmanaged instance is already listening on this port. Either adopt it into Guard management or stop it before starting a new one.';
+  }
+  return lang === 'zh'
+    ? '当前未检测到 Guard Web 进程，下一步建议启动后台服务。'
+    : 'No Guard Web process is running. The recommended next step is to start the background service.';
+}
+
+export function formatWebBackgroundReport(report: WebBackgroundReport, lang: 'zh' | 'en' = 'zh'): string {
+  const runningLine = report.running
+    ? (lang === 'zh' ? 'Guard Web 正在后台运行。' : 'Guard Web is running in the background.')
+    : (lang === 'zh' ? '当前未检测到 Guard Web 后台服务。' : 'No Guard Web background service is currently running.');
+  const pidLine = report.pid
+    ? (lang === 'zh' ? `进程 PID: ${report.pid}` : `Process PID: ${report.pid}`)
+    : (lang === 'zh' ? '进程 PID: -' : 'Process PID: -');
+  const managedLine = lang === 'zh'
+    ? `是否由虾护卫托管: ${report.managed ? '是' : '否'}`
+    : `Managed by Guard: ${report.managed ? 'yes' : 'no'}`;
+  const nextActionLabel = lang === 'zh' ? '下一步建议' : 'Recommended next step';
+  const sourceLabel = lang === 'zh' ? '状态来源' : 'Status source';
+  const primaryLabel = lang === 'zh' ? '当前地址' : 'Primary URL';
+  const workbenchLabel = lang === 'zh' ? '工作台地址' : 'Workbench URL';
+  const portLabel = lang === 'zh' ? '监听端口' : 'Listening port';
+  const pidFileLabel = lang === 'zh' ? 'PID 记录文件' : 'PID record file';
+  const stdoutLabel = lang === 'zh' ? '输出日志' : 'Stdout log';
+  const stderrLabel = lang === 'zh' ? '错误日志' : 'Stderr log';
+  return [
+    `[INFO] ${runningLine}`,
+    `[INFO] ${primaryLabel}: ${report.primaryUrl}`,
+    `[INFO] ${workbenchLabel}: ${report.workbenchUrl}`,
+    `[INFO] ${portLabel}: ${report.port}`,
+    `[INFO] ${pidLine}`,
+    `[INFO] ${managedLine}`,
+    `[INFO] ${sourceLabel}: ${getSourceLabel(report.source, lang)}`,
+    `[INFO] ${nextActionLabel}: ${getNextActionMessage(report, lang)}`,
+    `[INFO] ${pidFileLabel}: ${report.pidFile}`,
+    `[INFO] ${stdoutLabel}: ${report.logPaths.stdout}`,
+    `[INFO] ${stderrLabel}: ${report.logPaths.stderr}`,
+  ].join('\n');
 }
 
 export function stopWebBackgroundService(options: {

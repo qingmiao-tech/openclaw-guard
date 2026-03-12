@@ -19,6 +19,8 @@ import { getGitSyncStatus, initGitSync, connectGitRemote, saveGitTokenAuth, chec
 import { summarizeCosts } from './costs.js';
 import { getCachePrewarmStatus, runCachePrewarm } from './cache-prewarm.js';
 import { getGuardRestartStatus, runGuardRestartTask, scheduleGuardRestart } from './guard-restart.js';
+import { formatMachineInitResult, runMachineInit } from './machine-init.js';
+import { formatWebBackgroundReport, getWebBackgroundReport, getWebBackgroundStatus, startWebBackgroundService, stopWebBackgroundService } from './web-background.js';
 
 const program = new Command();
 
@@ -90,10 +92,23 @@ function printAuditSummary(results: AuditResult[]) {
   console.log(chalk.bold(`汇总: PASS ${pass} / WARN ${warn} / FAIL ${fail}`));
 }
 
+function getCliVersion(): string {
+  try {
+    const packageJsonPath = new URL('../package.json', import.meta.url);
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8')) as { version?: string };
+    if (typeof packageJson.version === 'string' && packageJson.version.trim()) {
+      return packageJson.version.trim();
+    }
+  } catch {
+    // Fall back to the current public release line if package metadata is unavailable.
+  }
+  return '0.9.0';
+}
+
 program
   .name('openclaw-guard')
   .description('OpenClaw Guard：安全审计、配置管理、原生工作台与 Git 同步中心')
-  .version('2.0.0');
+  .version(getCliVersion());
 
 program.command('audit')
   .description('运行安全审计')
@@ -170,6 +185,8 @@ program.command('info').description('查看系统与 OpenClaw 基础信息').act
   console.log(`已安装: ${openclaw.installed ? `是 (${openclaw.version || 'unknown'})` : '否'}`);
   console.log(`最新版本: ${openclaw.latestVersion || '-'}`);
   console.log(`安装路径: ${openclaw.binPath || '-'}`);
+  console.log(`检测来源: ${openclaw.detectedSource}`);
+  console.log(`托管前缀: ${openclaw.managedPrefix}`);
 });
 
 const serviceCmd = program.command('service').description('Gateway 服务管理');
@@ -535,9 +552,114 @@ gitSyncCmd.command('sync').description('提交并推送')
   .option('-m, --message <message>', '提交说明')
   .action((opts: { message?: string }) => printAction(syncGitSync(opts.message)));
 
+program.command('init-machine')
+  .description('初始化当前机器的 Guard 运行环境')
+  .option('--install-openclaw', '安装或修复 OpenClaw CLI')
+  .option('--start-web', '在完成初始化后启动 Guard Web')
+  .option('-p, --port <port>', 'Guard Web 端口', '18088')
+  .option('--managed-prefix <path>', '指定 Guard 托管 npm 前缀')
+  .option('--json', '输出 JSON')
+  .option('--dry-run', '只预演步骤，不写入系统')
+  .action(async (opts: {
+    installOpenclaw?: boolean;
+    startWeb?: boolean;
+    port?: string;
+    managedPrefix?: string;
+    json?: boolean;
+    dryRun?: boolean;
+  }) => {
+    const result = await runMachineInit({
+      installOpenClaw: opts.installOpenclaw === true,
+      startWeb: opts.startWeb === true,
+      port: Number(opts.port || 18088),
+      managedPrefix: opts.managedPrefix,
+      dryRun: opts.dryRun === true,
+    });
+    if (opts.json) {
+      printJson(result);
+      if (!result.ok) process.exitCode = 1;
+      return;
+    }
+    console.log(formatMachineInitResult(result));
+    if (!result.ok) process.exitCode = 1;
+  });
+
 program.command('web').description('启动 Web 管理界面').option('-p, --port <port>', '端口', '18088').action((opts: { port: string }) => {
   startServer(Number(opts.port || 18088));
 });
+
+program.command('web-status')
+  .description('查看 Guard Web 后台运行报告')
+  .option('-p, --port <port>', '端口', '18088')
+  .option('--lang <lang>', 'zh | en', 'zh')
+  .option('--json', '输出 JSON')
+  .action((opts: { port?: string; lang?: string; json?: boolean }) => {
+    const report = getWebBackgroundReport(Number(opts.port || 18088));
+    if (opts.json) {
+      printJson(report);
+      return;
+    }
+    const lang = opts.lang === 'en' ? 'en' : 'zh';
+    console.log(formatWebBackgroundReport(report, lang));
+  });
+
+const webBackgroundCmd = program.command('web-background').description('内部 Guard Web 后台运行管理');
+webBackgroundCmd.command('status')
+  .description('查看原始后台状态')
+  .option('-p, --port <port>', '端口', '18088')
+  .option('--json', '输出 JSON')
+  .action((opts: { port?: string; json?: boolean }) => {
+    const status = getWebBackgroundStatus(Number(opts.port || 18088));
+    if (opts.json) {
+      printJson(status);
+      return;
+    }
+    printJson(status);
+  });
+webBackgroundCmd.command('report')
+  .description('查看标准后台状态报告')
+  .option('-p, --port <port>', '端口', '18088')
+  .option('--json', '输出 JSON')
+  .action((opts: { port?: string; json?: boolean }) => {
+    const report = getWebBackgroundReport(Number(opts.port || 18088));
+    if (opts.json) {
+      printJson(report);
+      return;
+    }
+    printJson(report);
+  });
+webBackgroundCmd.command('start')
+  .description('启动 Guard Web 后台服务')
+  .option('-p, --port <port>', '端口', '18088')
+  .option('--current-pid <pid>', '当前 Guard Web PID')
+  .option('--json', '输出 JSON')
+  .action(async (opts: { port?: string; currentPid?: string; json?: boolean }) => {
+    const result = await startWebBackgroundService({
+      port: Number(opts.port || 18088),
+      currentPid: parseOptionalNumber(opts.currentPid),
+    });
+    if (opts.json) {
+      printJson(result);
+      return;
+    }
+    printAction(result);
+  });
+webBackgroundCmd.command('stop')
+  .description('停止 Guard Web 后台服务')
+  .option('-p, --port <port>', '端口', '18088')
+  .option('--current-pid <pid>', '当前 Guard Web PID')
+  .option('--json', '输出 JSON')
+  .action((opts: { port?: string; currentPid?: string; json?: boolean }) => {
+    const result = stopWebBackgroundService({
+      port: Number(opts.port || 18088),
+      currentPid: parseOptionalNumber(opts.currentPid),
+    });
+    if (opts.json) {
+      printJson(result);
+      return;
+    }
+    printAction(result);
+  });
 
 const guardCmd = program.command('guard').description('Guard Web 运行管理');
 guardCmd.command('status').description('查看 Guard 完整重启状态').action(() => {
@@ -629,8 +751,9 @@ program.command('service-task')
 program.command('openclaw-task')
   .description('执行后台 OpenClaw 安装任务')
   .requiredOption('--mode <mode>', 'install / update')
+  .option('--managed-prefix <path>', '指定 Guard 托管 npm 前缀')
   .option('--json', '输出 JSON 状态')
-  .action((opts: { mode: string; json?: boolean }) => {
+  .action((opts: { mode: string; managedPrefix?: string; json?: boolean }) => {
     const mode = opts.mode === 'install' || opts.mode === 'update'
       ? opts.mode as OpenClawTaskMode
       : null;
@@ -648,7 +771,7 @@ program.command('openclaw-task')
       return;
     }
 
-    const result = runOpenClawTask(mode);
+    const result = runOpenClawTask(mode, { managedPrefix: opts.managedPrefix });
     if (opts.json) {
       printJson(result);
       return;
@@ -705,4 +828,16 @@ program.command('guard-task')
     if (!ok) process.exitCode = 1;
   });
 
-program.parse();
+const keepAliveCommands = new Set(['web']);
+const shouldKeepAlive = keepAliveCommands.has(process.argv[2] || '');
+
+program.parseAsync()
+  .then(() => {
+    if (!shouldKeepAlive) {
+      process.exit(process.exitCode ?? 0);
+    }
+  })
+  .catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });

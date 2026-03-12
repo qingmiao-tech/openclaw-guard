@@ -1,0 +1,121 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Package version to release. Leave empty to use package.json.
+        required: false
+        default: ''
+        type: string
+      npm_tag:
+        description: npm dist-tag to publish under.
+        required: true
+        default: latest
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    name: Publish npm package and GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - name: Validate branch
+        shell: bash
+        run: |
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "Releases must be created from main. Current ref: ${GITHUB_REF}" >&2
+            exit 1
+          fi
+
+      - name: Validate npm token
+        shell: bash
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "${NPM_TOKEN}" ]; then
+            echo "NPM_TOKEN secret is required to publish." >&2
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          INPUT_VERSION="${{ github.event.inputs.version }}"
+
+          if [ -n "${INPUT_VERSION}" ] && [ "${INPUT_VERSION}" != "${PACKAGE_VERSION}" ]; then
+            echo "workflow_dispatch version (${INPUT_VERSION}) does not match package.json (${PACKAGE_VERSION})." >&2
+            exit 1
+          fi
+
+          if ! [[ "${PACKAGE_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "package.json version is not a valid semver: ${PACKAGE_VERSION}" >&2
+            exit 1
+          fi
+
+          TAG_NAME="v${PACKAGE_VERSION}"
+          if git ls-remote --exit-code --tags origin "${TAG_NAME}" >/dev/null 2>&1; then
+            echo "Tag ${TAG_NAME} already exists on origin." >&2
+            exit 1
+          fi
+
+          echo "package_version=${PACKAGE_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "tag_name=${TAG_NAME}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Verify package contents
+        run: npm run pack:dry-run
+
+      - name: Pack tarball
+        id: pack
+        shell: bash
+        run: |
+          TARBALL="$(npm pack --json | node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync(0, 'utf8')); process.stdout.write(data[0].filename);")"
+          echo "tarball=${TARBALL}" >> "${GITHUB_OUTPUT}"
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish "${{ steps.pack.outputs.tarball }}" --access public --provenance --tag "${{ github.event.inputs.npm_tag }}"
+
+      - name: Create and push git tag
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.version.outputs.tag_name }}"
+          git push origin "${{ steps.version.outputs.tag_name }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag_name }}
+          name: OpenClaw Guard ${{ steps.version.outputs.tag_name }}
+          generate_release_notes: true
+          files: ${{ steps.pack.outputs.tarball }}

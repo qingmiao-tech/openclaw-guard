@@ -78,7 +78,7 @@ import {
     getCachedSessionOverview,
 } from './runtime-view-store.js';
 import { getLogs, getServiceActionStatus, getServiceStatus, restartService, startService, stopService } from './service-mgr.js';
-import { getWebBackgroundStatus, registerBackgroundProcess, startWebBackgroundService, stopWebBackgroundService } from './web-background.js';
+import { getWebBackgroundReport, getWebBackgroundStatus, registerBackgroundProcess, startWebBackgroundService, stopWebBackgroundService } from './web-background.js';
 import { getCompatibilityPage } from './web-ui.js';
 import { getWorkbenchPage } from './workbench-ui.js';
 import {
@@ -98,11 +98,11 @@ const WEB_DIR = path.resolve(__dirname, '..', 'web');
 
 function resolveStaticAsset(...segments: string[]) {
   const candidates = [
+    path.resolve(WEB_DIR, ...segments.slice(1)),
     path.resolve(__dirname, '..', 'src', ...segments),
     path.resolve(__dirname, ...segments),
     path.resolve(process.cwd(), 'src', ...segments),
     path.resolve(process.cwd(), ...segments),
-    path.resolve(WEB_DIR, ...segments.slice(1)),
   ];
   return candidates.find((candidate) => fs.existsSync(candidate)) ?? candidates[0];
 }
@@ -437,6 +437,10 @@ export function startServer(port: number) {
         }
         if (pathname === '/api/web-background/status') {
           jsonResponse(res, getWebBackgroundStatus(currentPort));
+          return;
+        }
+        if (pathname === '/api/web-background/report') {
+          jsonResponse(res, getWebBackgroundReport(currentPort));
           return;
         }
         if (pathname === '/api/web-background/start' && req.method === 'POST') {

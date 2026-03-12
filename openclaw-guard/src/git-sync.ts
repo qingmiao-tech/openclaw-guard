@@ -1082,11 +1082,8 @@ function clearActiveOAuthFlow(): void {
 }
 
 export function getGitSyncStatus(): GitSyncStatus {
-  return getPersistentCachedValue(GIT_SYNC_STATUS_CACHE_KEY, {
-    ttlMs: 15_000,
-    staleIfErrorMs: 2 * 60_000,
-    loader: () => buildStatus(),
-  });
+  invalidatePersistentCache(GIT_SYNC_STATUS_CACHE_KEY);
+  return buildStatus();
 }
 
 function scheduleGitStatusRefresh(reason: string): void {

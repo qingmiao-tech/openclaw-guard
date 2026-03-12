@@ -1,20 +1,55 @@
 {
   "name": "openclaw-guard",
-  "version": "2.0.0",
+  "version": "0.9.0",
   "description": "OpenClaw Guard management toolkit",
   "type": "module",
   "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qingmiao-tech/openclaw-guard.git"
+  },
+  "homepage": "https://github.com/qingmiao-tech/openclaw-guard",
+  "bugs": {
+    "url": "https://github.com/qingmiao-tech/openclaw-guard/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "openclaw-guard": "dist/index.js"
   },
+  "files": [
+    "dist",
+    "web",
+    "scripts/restart-web.mjs",
+    "scripts/status-web.mjs",
+    "scripts/stop-web.mjs",
+    "scripts/web-background.mjs",
+    "start-web.bat",
+    "start-web.command",
+    "start-web.sh",
+    "status-web.bat",
+    "status-web.command",
+    "status-web.sh",
+    "stop-web.bat",
+    "stop-web.command",
+    "stop-web.sh",
+    "install.sh",
+    "install.ps1",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
   "scripts": {
-    "build": "tsc",
+    "clean:dist": "node scripts/clean-dist.mjs",
+    "build": "npm run clean:dist && tsc",
     "dev": "node scripts/dev-runner.mjs",
     "dev:tsx": "tsx src/index.ts web --port 18088",
     "dev:dist": "npm run build && node dist/index.js web --port 18088",
     "dev:cli": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest run",
+    "pack:dry-run": "npm pack --dry-run",
     "web": "tsx src/index.ts web --port 18088",
     "web:bg:start": "npm run build && node scripts/web-background.mjs start --port 18088",
     "web:bg:stop": "node scripts/web-background.mjs stop --port 18088",
@@ -24,7 +59,9 @@
     "ui:smoke:with-web": "node scripts/run-ui-smoke.mjs",
     "web:bg:restart": "node scripts/restart-web.mjs",
     "web:bg:down": "node scripts/stop-web.mjs",
-    "web:bg:show-status": "node scripts/status-web.mjs"
+    "web:bg:show-status": "node scripts/status-web.mjs",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm test"
   },
   "keywords": [
     "openclaw",
@@ -34,6 +71,9 @@
     "config"
   ],
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "chalk": "^5.3.0",
     "commander": "^12.1.0",

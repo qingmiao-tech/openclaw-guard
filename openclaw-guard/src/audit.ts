@@ -1,7 +1,14 @@
-﻿import fs from 'node:fs';
+import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
-import { detectPlatform, getSensitivePaths, getHomeDir, getCurrentUser, type Platform } from './platform.js';
+import {
+  detectPlatform,
+  getCurrentUser,
+  getHomeDir,
+  getOpenClawDir,
+  getSensitivePaths,
+  type Platform,
+} from './platform.js';
 
 export interface AuditResult {
   category: string;
@@ -11,236 +18,277 @@ export interface AuditResult {
   fix?: string;
 }
 
-function auditSensitivePaths(platform: Platform): AuditResult[] {
+const DEDICATED_USER = 'openclaw-agent';
+const HIGH_RISK_TOOL_GROUPS = ['group:runtime', 'group:ui', 'group:automation'];
+
+function quotePath(targetPath: string) {
+  return `"${targetPath}"`;
+}
+
+function commandExists(command: string) {
+  try {
+    execSync(command, { stdio: 'pipe', windowsHide: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function collectRuntimeUserAudit(platform: Platform): AuditResult[] {
+  const currentUser = getCurrentUser();
+  const isPrivileged = currentUser === 'root' || /^administrator$/i.test(currentUser);
   const results: AuditResult[] = [];
-  const paths = getSensitivePaths(platform);
 
-  for (const targetPath of paths) {
-    if (!fs.existsSync(targetPath)) continue;
+  results.push({
+    category: '用户隔离',
+    item: '当前运行账号',
+    status: isPrivileged ? 'fail' : 'pass',
+    message: isPrivileged
+      ? `当前正在以 ${currentUser} 运行 Guard，越权风险较高。`
+      : `当前运行账号为 ${currentUser}，符合“非 root / 非 Administrator”基线。`,
+    fix: isPrivileged
+      ? (platform === 'windows'
+        ? '请改用普通本地账户启动 Guard；若计划长期后台运行，再额外创建独立低权限账户。'
+        : '请改用普通用户启动 Guard；若计划长期托管，再额外创建独立低权限账户。')
+      : undefined,
+  });
 
+  const dedicatedUserExists = platform === 'windows'
+    ? commandExists(`net user ${DEDICATED_USER}`)
+    : commandExists(`id ${DEDICATED_USER}`);
+
+  results.push({
+    category: '用户隔离',
+    item: '独立低权限账户（高级）',
+    status: dedicatedUserExists ? 'pass' : 'warn',
+    message: dedicatedUserExists
+      ? `已检测到 ${DEDICATED_USER}，适合长期后台运行或共享机器场景。`
+      : (platform === 'windows'
+        ? '尚未检测到独立低权限账户。对单人机器这不是基础阻塞项，但若要长期后台运行或多人共用设备，建议补齐。'
+        : '尚未检测到独立低权限账户。对日常单机开发这不是基础阻塞项，但若要长期托管或共享机器，建议补齐。'),
+    fix: dedicatedUserExists
+      ? undefined
+      : (platform === 'windows'
+        ? `net user ${DEDICATED_USER} * /add`
+        : `sudo adduser ${DEDICATED_USER}`),
+  });
+
+  return results;
+}
+
+function collectSensitivePathAudit(platform: Platform): AuditResult[] {
+  const sensitivePaths = getSensitivePaths(platform).filter((targetPath) => fs.existsSync(targetPath));
+  if (!sensitivePaths.length) {
+    return [{
+      category: '文件权限',
+      item: '常见敏感目录',
+      status: 'pass',
+      message: '当前未发现常见敏感目录，或这些目录尚未在当前账号下创建。',
+    }];
+  }
+
+  if (platform === 'windows') {
+    const preview = sensitivePaths.slice(0, 4).map((targetPath) => path.basename(targetPath)).join('、');
+    return [{
+      category: '文件权限',
+      item: '敏感目录 ACL（Windows）',
+      status: 'warn',
+      message: `检测到 ${sensitivePaths.length} 处常见敏感目录（例如 ${preview}）。当前不会自动解析 Windows ACL，请确认 Guard 运行账号对这些目录没有读取权限。`,
+      fix: '优先确保当前 Guard 不是以 Administrator 运行；如需长期后台运行，再为独立低权限账户显式收紧 ACL。',
+    }];
+  }
+
+  return sensitivePaths.map((targetPath) => {
     try {
       const stat = fs.statSync(targetPath);
-      if (platform !== 'windows') {
-        const mode = stat.mode & 0o777;
-        const groupRead = mode & 0o040;
-        const otherRead = mode & 0o004;
-
-        if (groupRead || otherRead) {
-          results.push({
-            category: '文件权限',
-            item: targetPath,
-            status: 'warn',
-            message: `权限过宽 (${mode.toString(8)})，其他用户仍可读取。`,
-            fix: `chmod 700 "${targetPath}"`,
-          });
-        } else {
-          results.push({
-            category: '文件权限',
-            item: targetPath,
-            status: 'pass',
-            message: `权限正常 (${mode.toString(8)})。`,
-          });
-        }
-      } else {
-        results.push({
-          category: '文件权限',
-          item: targetPath,
-          status: 'warn',
-          message: '敏感目录存在，请确认 openclaw-agent 用户没有读取权限。',
-          fix: `icacls "${targetPath}" /deny openclaw-agent:(OI)(CI)(R)`,
-        });
-      }
-    } catch {
-      results.push({
+      const mode = stat.mode & 0o777;
+      const groupOrOtherBits = mode & 0o077;
+      return {
         category: '文件权限',
         item: targetPath,
-        status: 'pass',
-        message: '当前无法访问该路径，通常说明权限已经被额外限制。',
-      });
+        status: groupOrOtherBits ? 'warn' : 'pass',
+        message: groupOrOtherBits
+          ? `权限偏宽 (${mode.toString(8)})，组用户或其他用户仍可能访问该路径。`
+          : `权限正常 (${mode.toString(8)})。`,
+        fix: groupOrOtherBits ? `chmod 700 ${quotePath(targetPath)}` : undefined,
+      } satisfies AuditResult;
+    } catch {
+      return {
+        category: '文件权限',
+        item: targetPath,
+        status: 'warn',
+        message: '当前无法可靠读取该路径权限，请手动确认它没有暴露给其他账号。',
+      } satisfies AuditResult;
     }
-  }
-
-  return results;
+  });
 }
 
-function auditDedicatedUser(platform: Platform): AuditResult[] {
+function collectEnvAudit(platform: Platform): AuditResult[] {
   const results: AuditResult[] = [];
-  const currentUser = getCurrentUser();
+  const envLocations = [
+    path.join(getHomeDir(), '.env'),
+    path.resolve(process.cwd(), '.env'),
+  ].filter((targetPath, index, list) => list.indexOf(targetPath) === index);
 
-  if (currentUser === 'root' || currentUser === 'Administrator') {
+  const existingEnvFiles = envLocations.filter((targetPath) => fs.existsSync(targetPath));
+  if (!existingEnvFiles.length) {
     results.push({
-      category: '用户隔离',
-      item: '运行用户',
-      status: 'fail',
-      message: `当前正在以 ${currentUser} 身份运行，风险较高。`,
-      fix: platform === 'windows'
-        ? 'net user openclaw-agent 密码 /add'
-        : 'sudo adduser openclaw-agent',
+      category: '凭证安全',
+      item: '.env 文件',
+      status: 'pass',
+      message: '当前未发现常见 .env 文件。',
     });
   } else {
-    results.push({
-      category: '用户隔离',
-      item: '运行用户',
-      status: 'pass',
-      message: `当前运行用户为 ${currentUser}，不是 root / Administrator。`,
-    });
-  }
-
-  try {
-    if (platform === 'windows') {
-      execSync('net user openclaw-agent', { stdio: 'pipe', windowsHide: true });
-    } else {
-      execSync('id openclaw-agent', { stdio: 'pipe', windowsHide: true });
-    }
-
-    results.push({
-      category: '用户隔离',
-      item: '专用用户',
-      status: 'pass',
-      message: '已检测到 openclaw-agent 专用用户。',
-    });
-  } catch {
-    results.push({
-      category: '用户隔离',
-      item: '专用用户',
-      status: 'warn',
-      message: '尚未检测到 openclaw-agent 专用用户。',
-      fix: platform === 'windows'
-        ? 'net user openclaw-agent 密码 /add'
-        : 'sudo adduser openclaw-agent',
-    });
-  }
-
-  return results;
-}
-
-function auditEnvFiles(): AuditResult[] {
-  const results: AuditResult[] = [];
-  const home = getHomeDir();
-  const envLocations = [
-    path.join(home, '.env'),
-    '.env',
-  ];
-
-  for (const envPath of envLocations) {
-    if (!fs.existsSync(envPath)) continue;
-
-    try {
-      const stat = fs.statSync(envPath);
-      const mode = stat.mode & 0o777;
-      if (mode & 0o044) {
+    existingEnvFiles.forEach((envPath) => {
+      if (platform === 'windows') {
         results.push({
           category: '凭证安全',
           item: envPath,
           status: 'warn',
-          message: '.env 文件仍对其他用户可读。',
-          fix: `chmod 600 "${envPath}"`,
+          message: '已发现 .env 文件。当前不会自动解析 Windows ACL，请确认只有当前用户或受控账号可读。',
+          fix: '确认仓库已忽略 .env，并在需要时用“属性 -> 安全”或 icacls 收紧权限。',
         });
-      } else {
+        return;
+      }
+
+      try {
+        const mode = fs.statSync(envPath).mode & 0o777;
+        const groupOrOtherBits = mode & 0o077;
         results.push({
           category: '凭证安全',
           item: envPath,
-          status: 'pass',
-          message: '.env 文件权限正常。',
+          status: groupOrOtherBits ? 'warn' : 'pass',
+          message: groupOrOtherBits
+            ? `.env 文件权限偏宽 (${mode.toString(8)})。`
+            : '.env 文件权限正常。',
+          fix: groupOrOtherBits ? `chmod 600 ${quotePath(envPath)}` : undefined,
+        });
+      } catch {
+        results.push({
+          category: '凭证安全',
+          item: envPath,
+          status: 'warn',
+          message: '无法读取 .env 权限信息，请手动检查访问范围。',
         });
       }
-    } catch {
-      // ignore invalid stat failure
-    }
+    });
   }
 
-  if (fs.existsSync('.gitignore')) {
-    const gitignore = fs.readFileSync('.gitignore', 'utf-8');
-    if (!gitignore.includes('.env')) {
-      results.push({
-        category: '凭证安全',
-        item: '.gitignore',
-        status: 'fail',
-        message: '.gitignore 中未包含 .env，存在凭证误提交风险。',
-        fix: '在 .gitignore 中添加 .env',
-      });
-    }
-  }
-
-  return results;
-}
-
-function auditOpenClawConfig(): AuditResult[] {
-  const results: AuditResult[] = [];
-  const possiblePaths = [
-    'openclaw.json',
-    path.join(getHomeDir(), '.openclaw', 'openclaw.json'),
-  ];
-
-  let configPath: string | null = null;
-  for (const candidate of possiblePaths) {
-    if (fs.existsSync(candidate)) {
-      configPath = candidate;
-      break;
-    }
-  }
-
-  if (!configPath) {
+  const gitignorePath = path.resolve(process.cwd(), '.gitignore');
+  if (!fs.existsSync(gitignorePath)) {
     results.push({
-      category: 'OpenClaw 配置',
-      item: 'openclaw.json',
-      status: 'warn',
-      message: '未找到 openclaw.json 配置文件。',
+      category: '凭证安全',
+      item: '.gitignore',
+      status: existingEnvFiles.length ? 'warn' : 'pass',
+      message: existingEnvFiles.length
+        ? '当前目录存在 .env 文件，但未检测到 .gitignore，请确认不会误提交凭证。'
+        : '当前目录未检测到 .gitignore，也未发现常见 .env 文件。',
+      fix: existingEnvFiles.length ? '建议在 .gitignore 中加入 .env' : undefined,
     });
     return results;
   }
 
-  try {
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
+  const ignoresEnv = /(^|[\r\n])\.env($|[\r\n])/.test(gitignoreContent) || /(^|[\r\n])\.env\.\*($|[\r\n])/.test(gitignoreContent);
+  results.push({
+    category: '凭证安全',
+    item: '.gitignore',
+    status: ignoresEnv ? 'pass' : 'fail',
+    message: ignoresEnv
+      ? '.gitignore 已覆盖 .env，凭证误提交风险较低。'
+      : '.gitignore 未覆盖 .env，存在凭证误提交风险。',
+    fix: ignoresEnv ? undefined : '请在 .gitignore 中加入 .env',
+  });
 
-    if (!config.tools?.deny || config.tools.deny.length === 0) {
-      results.push({
-        category: 'OpenClaw 配置',
-        item: '工具权限',
-        status: 'warn',
-        message: '未配置 tools.deny，Agent 当前拥有过宽的工具权限。',
-        fix: '在 openclaw.json 中添加 "tools": { "deny": ["group:runtime"] }',
-      });
-    } else {
-      results.push({
-        category: 'OpenClaw 配置',
-        item: '工具权限',
-        status: 'pass',
-        message: `已配置 ${config.tools.deny.length} 条工具拒绝规则。`,
-      });
-    }
+  return results;
+}
 
-    const configStr = JSON.stringify(config);
-    const keyPatterns = [/sk-[a-zA-Z0-9]{20,}/, /key-[a-zA-Z0-9]{20,}/];
-    const hasHardcodedKey = keyPatterns.some((pattern) => pattern.test(configStr));
+function collectOpenClawConfigAudit(): AuditResult[] {
+  const configCandidates = [
+    path.resolve(process.cwd(), 'openclaw.json'),
+    path.join(getOpenClawDir(), 'openclaw.json'),
+  ].filter((targetPath, index, list) => list.indexOf(targetPath) === index);
 
-    if (hasHardcodedKey) {
-      results.push({
-        category: 'OpenClaw 配置',
-        item: 'API Key',
-        status: 'fail',
-        message: '检测到硬编码 API Key，存在泄露风险。',
-        fix: '请把 API Key 迁移到环境变量。',
-      });
-    }
-  } catch {
-    results.push({
+  const configPath = configCandidates.find((candidate) => fs.existsSync(candidate));
+  if (!configPath) {
+    return [{
       category: 'OpenClaw 配置',
       item: 'openclaw.json',
       status: 'warn',
-      message: '配置文件解析失败。',
-    });
+      message: '未找到 openclaw.json，无法确认工具权限边界。',
+      fix: '请先生成 openclaw.json，再根据你的使用场景配置 tools.allow / tools.deny。',
+    }];
   }
 
-  return results;
+  try {
+    const raw = fs.readFileSync(configPath, 'utf-8');
+    const config = JSON.parse(raw) as {
+      tools?: {
+        allow?: unknown;
+        deny?: unknown;
+      };
+    };
+
+    const allow = Array.isArray(config.tools?.allow) ? config.tools?.allow.map(String) : [];
+    const deny = Array.isArray(config.tools?.deny) ? config.tools?.deny.map(String) : [];
+
+    const results: AuditResult[] = [{
+      category: 'OpenClaw 配置',
+      item: '工具权限基线',
+      status: allow.length || deny.length ? 'pass' : 'warn',
+      message: allow.length || deny.length
+        ? `已检测到 tools.allow (${allow.length}) / tools.deny (${deny.length}) 规则。`
+        : '当前没有显式的 tools.allow / tools.deny 规则，工具边界不够清晰。',
+      fix: allow.length || deny.length ? undefined : '建议先套用一个权限模式，再按需要微调 openclaw.json。',
+    }];
+
+    const enabledHighRiskGroups = HIGH_RISK_TOOL_GROUPS.filter((group) => allow.includes(group));
+    results.push({
+      category: 'OpenClaw 配置',
+      item: '高风险工具组',
+      status: enabledHighRiskGroups.length ? 'warn' : 'pass',
+      message: enabledHighRiskGroups.length
+        ? `已放开 ${enabledHighRiskGroups.join('、')}。这适合受控场景，但不建议作为默认长期配置。`
+        : '未发现 runtime / ui / automation 这些高风险工具组被显式放开。',
+      fix: enabledHighRiskGroups.length
+        ? '若当前并不需要执行命令、浏览器自动化或自动任务，请回退到更严格的权限模式。'
+        : undefined,
+    });
+
+    const hasHardcodedKey = [
+      /sk-[a-zA-Z0-9]{20,}/,
+      /key-[a-zA-Z0-9]{20,}/,
+      /Bearer\s+[A-Za-z0-9._-]{20,}/,
+    ].some((pattern) => pattern.test(raw));
+
+    results.push({
+      category: 'OpenClaw 配置',
+      item: '硬编码凭证',
+      status: hasHardcodedKey ? 'fail' : 'pass',
+      message: hasHardcodedKey
+        ? '检测到疑似硬编码凭证，请尽快迁移到环境变量或受控凭证文件。'
+        : '未发现明显的硬编码凭证痕迹。',
+      fix: hasHardcodedKey ? '请把 API Key / Token 移出 openclaw.json，改用环境变量注入。' : undefined,
+    });
+
+    return results;
+  } catch {
+    return [{
+      category: 'OpenClaw 配置',
+      item: 'openclaw.json',
+      status: 'warn',
+      message: '配置文件解析失败，无法确认当前工具权限与凭证风险。',
+      fix: '请检查 openclaw.json 是否为有效 JSON。',
+    }];
+  }
 }
 
 export function runFullAudit(): AuditResult[] {
   const platform = detectPlatform();
   return [
-    ...auditDedicatedUser(platform),
-    ...auditSensitivePaths(platform),
-    ...auditEnvFiles(),
-    ...auditOpenClawConfig(),
+    ...collectRuntimeUserAudit(platform),
+    ...collectSensitivePathAudit(platform),
+    ...collectEnvAudit(platform),
+    ...collectOpenClawConfigAudit(),
   ];
 }

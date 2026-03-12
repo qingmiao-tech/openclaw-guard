@@ -1,7 +1,4 @@
-/**
- * 系统加固模块 - 生成跨平台的加固脚本
- */
-import { detectPlatform, getSensitivePaths, getHomeDir, type Platform } from './platform.js';
+import { detectPlatform, getHomeDir, type Platform } from './platform.js';
 
 export interface HardenStep {
   title: string;
@@ -10,192 +7,202 @@ export interface HardenStep {
   optional: boolean;
 }
 
-/** 生成创建专用用户的步骤 */
-function createUserSteps(): HardenStep {
+function getWorkspaceRoot(platform: Platform) {
+  const home = getHomeDir();
+  if (platform === 'windows') {
+    return `${home}\\openclaw-workspace`;
+  }
+  return `${home}/openclaw-workspace`;
+}
+
+function createBaselineAccountStep(): HardenStep {
   return {
-    title: '创建专用用户 openclaw-agent',
-    description: '隔离 OpenClaw 运行环境，限制其系统权限',
+    title: '使用非管理员账户运行 Guard',
+    description: '所有平台的第一原则都一样：先避免用 root / Administrator 直接运行。独立低权限账户属于高级选项，不是每台机器的默认硬要求。',
     optional: false,
     commands: {
       linux: [
-        'sudo adduser --disabled-password --gecos "OpenClaw Agent" openclaw-agent',
-        'sudo chown -R openclaw-agent:openclaw-agent /home/openclaw-agent',
+        'whoami',
+        '# 确认当前输出不是 root；若是 root，请切回普通用户后再启动 openclaw-guard',
+      ],
+      macos: [
+        'whoami',
+        '# 确认当前输出不是 root；若是 root，请切回普通用户后再启动 openclaw-guard',
+      ],
+      windows: [
+        'whoami',
+        ':: 确认当前不是 Administrator；请优先使用普通本地账户启动 openclaw-guard',
+      ],
+    },
+  };
+}
+
+function createWorkspaceBoundaryStep(): HardenStep {
+  const linuxWorkspace = getWorkspaceRoot('linux');
+  const macWorkspace = getWorkspaceRoot('macos');
+  const winWorkspace = getWorkspaceRoot('windows');
+  return {
+    title: '收紧工作区边界',
+    description: '只把需要让 Agent 接触的项目目录放进工作区，不要直接把整个 Home 目录暴露给 Guard。',
+    optional: false,
+    commands: {
+      linux: [
+        `mkdir -p "${linuxWorkspace}"`,
+        `ln -s /path/to/your/project "${linuxWorkspace}/project"`,
+        '# 只链接需要交给 Agent 操作的项目目录',
+      ],
+      macos: [
+        `mkdir -p "${macWorkspace}"`,
+        `ln -s /path/to/your/project "${macWorkspace}/project"`,
+        '# 只链接需要交给 Agent 操作的项目目录',
+      ],
+      windows: [
+        `mkdir "${winWorkspace}"`,
+        `mklink /D "${winWorkspace}\\project" "C:\\path\\to\\your\\project"`,
+        ':: 仅把需要让 Agent 接触的目录放入工作区',
+      ],
+    },
+  };
+}
+
+function createSecretsBoundaryStep(): HardenStep {
+  const home = getHomeDir();
+  return {
+    title: '把凭证和浏览器数据排除在工作区之外',
+    description: '基础安全并不要求你立刻改 ACL，而是先确保 SSH、Git 凭证、云凭证和浏览器数据没有被纳入 Agent 工作区。',
+    optional: false,
+    commands: {
+      linux: [
+        `ls -ld "${home}/.ssh" "${home}/.gnupg" "${home}/.aws" "${home}/.kube" 2>/dev/null`,
+        '# 确认这些目录不在 Guard 工作区或链接目录之下',
+      ],
+      macos: [
+        `ls -ld "${home}/.ssh" "${home}/.gnupg" "${home}/.aws" "${home}/.kube" 2>/dev/null`,
+        `ls -ld "${home}/Library/Application Support/Google/Chrome" 2>/dev/null`,
+        '# 确认敏感目录和浏览器数据不在 Guard 工作区或链接目录之下',
+      ],
+      windows: [
+        'dir "%USERPROFILE%\\.ssh" "%USERPROFILE%\\.aws" "%USERPROFILE%\\.kube"',
+        'dir "%USERPROFILE%\\AppData\\Local\\Google\\Chrome\\User Data"',
+        ':: 确认这些目录没有被作为工作区暴露给 Guard',
+      ],
+    },
+  };
+}
+
+function createDedicatedAccountStep(): HardenStep {
+  return {
+    title: '为长期运行准备独立低权限账户（高级）',
+    description: '如果你计划把 Guard 长时间放在后台运行，或者机器会被多人共用，可以额外准备一个独立低权限账户。',
+    optional: true,
+    commands: {
+      linux: [
+        'sudo adduser --disabled-password --gecos "OpenClaw Guard" openclaw-agent',
+        'sudo -u openclaw-agent mkdir -p /home/openclaw-agent',
       ],
       macos: [
         'sudo dscl . -create /Users/openclaw-agent',
         'sudo dscl . -create /Users/openclaw-agent UserShell /bin/bash',
         'sudo dscl . -create /Users/openclaw-agent NFSHomeDirectory /Users/openclaw-agent',
         'sudo mkdir -p /Users/openclaw-agent',
-        'sudo chown -R openclaw-agent /Users/openclaw-agent',
       ],
       windows: [
         'net user openclaw-agent * /add',
-        ':: 注意：不要将此用户加入 Administrators 组',
+        ':: 不要把此账号加入 Administrators 组',
       ],
     },
   };
 }
 
-/** 生成保护敏感目录的步骤 */
-function protectSensitiveDirsSteps(): HardenStep {
+function createGitCredentialStep(): HardenStep {
   return {
-    title: '保护敏感目录',
-    description: '确保 openclaw-agent 无法访问 SSH 密钥、Git 凭证、浏览器数据等',
-    optional: false,
-    commands: {
-      linux: [
-        `chmod 700 ${getHomeDir()}/.ssh`,
-        `chmod 600 ${getHomeDir()}/.ssh/*`,
-        `chmod 700 ${getHomeDir()}/.gnupg 2>/dev/null || true`,
-        `chmod 600 ${getHomeDir()}/.git-credentials 2>/dev/null || true`,
-      ],
-      macos: [
-        `chmod 700 ${getHomeDir()}/.ssh`,
-        `chmod 600 ${getHomeDir()}/.ssh/*`,
-        `chmod 700 ${getHomeDir()}/.gnupg 2>/dev/null || true`,
-        `chmod 600 ${getHomeDir()}/.git-credentials 2>/dev/null || true`,
-      ],
-      windows: [
-        `icacls "%USERPROFILE%\\.ssh" /deny openclaw-agent:(OI)(CI)(R)`,
-        `icacls "%USERPROFILE%\\.gnupg" /deny openclaw-agent:(OI)(CI)(R)`,
-        `icacls "%USERPROFILE%\\.git-credentials" /deny openclaw-agent:(R)`,
-      ],
-    },
-  };
-}
-
-/** 生成工作目录配置步骤 */
-function setupWorkspaceSteps(): HardenStep {
-  return {
-    title: '配置工作目录白名单',
-    description: '只将需要 AI 操作的项目目录链接到 openclaw-agent 的 home 下',
-    optional: false,
-    commands: {
-      linux: [
-        'sudo -u openclaw-agent mkdir -p /home/openclaw-agent/workspace',
-        'sudo -u openclaw-agent ln -s /path/to/your/project /home/openclaw-agent/workspace/project',
-        '# 替换 /path/to/your/project 为实际项目路径',
-      ],
-      macos: [
-        'sudo -u openclaw-agent mkdir -p /Users/openclaw-agent/workspace',
-        'sudo -u openclaw-agent ln -s /path/to/your/project /Users/openclaw-agent/workspace/project',
-        '# 替换 /path/to/your/project 为实际项目路径',
-      ],
-      windows: [
-        'runas /user:openclaw-agent "mkdir C:\\Users\\openclaw-agent\\workspace"',
-        'mklink /D C:\\Users\\openclaw-agent\\workspace\\project "C:\\path\\to\\your\\project"',
-        ':: 替换路径为实际项目路径',
-      ],
-    },
-  };
-}
-
-/** 生成 Docker 沙箱部署步骤 */
-function dockerSandboxSteps(): HardenStep {
-  return {
-    title: 'Docker 沙箱部署（推荐）',
-    description: '使用 Docker 容器隔离 OpenClaw，最安全的方案',
+    title: '为 Git 同步准备最小权限凭证（高级）',
+    description: '如果要启用 Git Sync，建议使用 deploy key 或最小权限 token，不要直接复用个人主账号凭证。',
     optional: true,
     commands: {
       linux: [
-        'docker run -d \\',
-        '  --name openclaw-guard \\',
-        '  -v /path/to/projects:/workspace \\',
-        '  -v /path/to/.env:/app/.env:ro \\',
-        '  --user 1001:1001 \\',
-        '  --network=bridge \\',
-        '  --memory=2g \\',
-        '  --cpus=2 \\',
-        '  node:22-slim',
+        'ssh-keygen -t ed25519 -C "openclaw-guard" -f ~/.ssh/openclaw_guard_ed25519 -N ""',
+        'cat ~/.ssh/openclaw_guard_ed25519.pub',
+        '# 将公钥添加到目标仓库的 deploy key（只读或最小写入权限）',
       ],
       macos: [
-        'docker run -d \\',
-        '  --name openclaw-guard \\',
-        '  -v /path/to/projects:/workspace \\',
-        '  -v /path/to/.env:/app/.env:ro \\',
-        '  --user 1001:1001 \\',
-        '  --network=bridge \\',
-        '  --memory=2g \\',
-        '  --cpus=2 \\',
-        '  node:22-slim',
+        'ssh-keygen -t ed25519 -C "openclaw-guard" -f ~/.ssh/openclaw_guard_ed25519 -N ""',
+        'cat ~/.ssh/openclaw_guard_ed25519.pub',
+        '# 将公钥添加到目标仓库的 deploy key（只读或最小写入权限）',
       ],
       windows: [
-        'docker run -d ^',
-        '  --name openclaw-guard ^',
-        '  -v C:\\path\\to\\projects:/workspace ^',
-        '  -v C:\\path\\to\\.env:/app/.env:ro ^',
-        '  --user 1001:1001 ^',
-        '  --network=bridge ^',
-        '  --memory=2g ^',
-        '  --cpus=2 ^',
-        '  node:22-slim',
+        'ssh-keygen -t ed25519 -C openclaw-guard -f "%USERPROFILE%\\.ssh\\openclaw_guard_ed25519" -N ""',
+        'type "%USERPROFILE%\\.ssh\\openclaw_guard_ed25519.pub"',
+        ':: 将公钥添加到目标仓库的 deploy key（只读或最小写入权限）',
       ],
     },
   };
 }
 
-/** 生成 Git 凭证保护步骤 */
-function gitCredentialSteps(): HardenStep {
+function createSandboxStep(): HardenStep {
   return {
-    title: 'Git 凭证保护',
-    description: '为 AI 创建专用的受限 Git 凭证，不使用个人 token',
-    optional: false,
+    title: '使用容器或沙箱隔离（高级）',
+    description: '当你需要更强的主机隔离时，再进入容器、虚拟机或系统沙箱。这一步是增强项，不是所有用户的基础门槛。',
+    optional: true,
     commands: {
       linux: [
-        '# 为 openclaw-agent 生成专用 SSH key（仅用于特定仓库）',
-        'sudo -u openclaw-agent ssh-keygen -t ed25519 -C "openclaw-agent" -f /home/openclaw-agent/.ssh/id_ed25519 -N ""',
-        '# 将公钥添加为 GitHub/GitLab 的 deploy key（只读权限）',
-        'cat /home/openclaw-agent/.ssh/id_ed25519.pub',
+        'docker run -it --rm \\',
+        '  -v /path/to/projects:/workspace \\',
+        '  -e OPENCLAW_STATE_DIR=/workspace/.openclaw \\',
+        '  --user 1001:1001 \\',
+        '  node:22-slim bash',
       ],
       macos: [
-        'sudo -u openclaw-agent ssh-keygen -t ed25519 -C "openclaw-agent" -f /Users/openclaw-agent/.ssh/id_ed25519 -N ""',
-        'cat /Users/openclaw-agent/.ssh/id_ed25519.pub',
+        'docker run -it --rm \\',
+        '  -v /path/to/projects:/workspace \\',
+        '  -e OPENCLAW_STATE_DIR=/workspace/.openclaw \\',
+        '  --user 1001:1001 \\',
+        '  node:22-slim bash',
       ],
       windows: [
-        'runas /user:openclaw-agent "ssh-keygen -t ed25519 -C openclaw-agent"',
-        'type C:\\Users\\openclaw-agent\\.ssh\\id_ed25519.pub',
-        ':: 将公钥添加为仓库的 deploy key',
+        'docker run -it --rm ^',
+        '  -v C:\\path\\to\\projects:/workspace ^',
+        '  -e OPENCLAW_STATE_DIR=/workspace/.openclaw ^',
+        '  --user 1001:1001 ^',
+        '  node:22-slim cmd',
+        ':: 也可以考虑 Windows Sandbox 或独立开发虚拟机',
       ],
     },
   };
 }
 
-/** 获取所有加固步骤 */
 export function getAllHardenSteps(): HardenStep[] {
   return [
-    createUserSteps(),
-    protectSensitiveDirsSteps(),
-    setupWorkspaceSteps(),
-    gitCredentialSteps(),
-    dockerSandboxSteps(),
+    createBaselineAccountStep(),
+    createWorkspaceBoundaryStep(),
+    createSecretsBoundaryStep(),
+    createDedicatedAccountStep(),
+    createGitCredentialStep(),
+    createSandboxStep(),
   ];
 }
 
-/** 生成当前平台的加固脚本 */
 export function generateHardenScript(platform?: Platform): string {
-  const p = platform || detectPlatform();
+  const resolvedPlatform = platform || detectPlatform();
   const steps = getAllHardenSteps();
+  const comment = resolvedPlatform === 'windows' ? '::' : '#';
   const lines: string[] = [];
 
-  const comment = p === 'windows' ? '::' : '#';
-  const shebang = p === 'windows' ? '@echo off' : '#!/bin/bash';
-
-  lines.push(shebang);
-  lines.push(`${comment} OpenClaw Guard - 系统安全加固脚本`);
-  lines.push(`${comment} 平台: ${p}`);
-  lines.push(`${comment} 生成时间: ${new Date().toISOString()}`);
+  lines.push(resolvedPlatform === 'windows' ? '@echo off' : '#!/usr/bin/env bash');
+  lines.push(`${comment} OpenClaw Guard - Host Hardening Guide`);
+  lines.push(`${comment} Platform: ${resolvedPlatform}`);
+  lines.push(`${comment} Generated: ${new Date().toISOString()}`);
+  lines.push(`${comment} Review every command before running it on your machine.`);
   lines.push('');
 
-  for (const step of steps) {
+  steps.forEach((step) => {
     lines.push(`${comment} ========================================`);
-    lines.push(`${comment} ${step.title}${step.optional ? '（可选）' : ''}`);
+    lines.push(`${comment} ${step.title}${step.optional ? ' (Optional)' : ''}`);
     lines.push(`${comment} ${step.description}`);
     lines.push(`${comment} ========================================`);
-    for (const cmd of step.commands[p]) {
-      lines.push(cmd);
-    }
+    step.commands[resolvedPlatform].forEach((command) => lines.push(command));
     lines.push('');
-  }
+  });
 
   return lines.join('\n');
 }

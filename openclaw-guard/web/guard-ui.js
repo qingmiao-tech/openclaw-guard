@@ -5,6 +5,7 @@
   const STORAGE_LANG = 'openclaw-guard.lang';
   const STORAGE_TAB = 'openclaw-guard.active-tab';
   const STORAGE_TOKEN = 'openclaw-guard.token';
+  const STORAGE_SHOW_ADVANCED = 'openclaw-guard.show-advanced';
 
   const I18N = {
     zh: {
@@ -58,6 +59,7 @@
         openclaw: 'OpenClaw',
         channels: '渠道',
         ai: 'AI',
+        models: '模型',
         notifications: '通知',
         agents: 'Agent',
         sessions: '会话',
@@ -68,10 +70,22 @@
         costs: '成本',
         cron: 'Cron',
         'git-sync': 'Git 同步',
+        security: '安全',
         audit: '审计',
         profiles: '预设',
         harden: '加固',
         logs: '日志'
+      },
+      nav: {
+        core: '核心工作台',
+        coreHint: '首发阶段优先展示运维、模型、安全和同步这些主路径。',
+        workspace: '工作区工具',
+        workspaceHint: '处理文件、记忆与检索时再进入这里，避免首屏过载。',
+        advanced: '高级功能',
+        advancedHint: '通知、活动、成本和 Cron 收进这里，主要用于排障与深度配置。',
+        advancedCollapsed: '这些页面先折叠起来，只有在需要深度排查或高级配置时再展开。',
+        showAdvanced: '显示高级功能',
+        hideAdvanced: '收起高级功能',
       },
       desc: {
         overview: '先看整体状态、风险和提醒，再决定是否需要进入运维、会话或 Git 同步。',
@@ -79,6 +93,7 @@
         openclaw: '查看 OpenClaw 是否已安装、当前版本，以及是否需要更新或打开控制台。',
         channels: '查看各渠道是否已启用、账号是否完整，以及消息能否正常进入系统。',
         ai: '查看当前模型和备选模型，按需要调整 Provider、主模型和回退设置。',
+        models: '配置 Provider、主模型和回退模型，让当前机器的模型策略更清晰、更可控。',
         notifications: '集中处理提醒、错误和同步结果；可筛选、标记已读或批量清理。',
         agents: '查看每个 Agent 的工作区、模型和文档准备情况，确认团队是否就绪。',
         sessions: '查看会话数量、Token 使用和运行状态，判断是否存在异常或成本压力。',
@@ -89,6 +104,7 @@
         costs: '查看模型、Agent 和会话的成本估算，帮助控制整体消耗。',
         cron: '查看定时任务是否正常运行，并按需要启停、触发或编辑任务。',
         'git-sync': '管理 .openclaw 的私有仓同步，检查权限、授权和提交状态是否正常。',
+        security: '把安全检查、权限模式和主机加固指南放在同一页，减少误解并形成连续操作路径。',
         audit: '查看安全检查结果，并优先处理高风险问题。',
         profiles: '套用安全预设，快速调整当前机器的权限与行为。',
         harden: '按当前系统获取加固建议和脚本，减少误操作与越权风险。',
@@ -146,6 +162,7 @@
         openclaw: 'OpenClaw',
         channels: 'Channels',
         ai: 'AI',
+        models: 'Models',
         notifications: 'Notifications',
         agents: 'Agents',
         sessions: 'Sessions',
@@ -156,10 +173,22 @@
         costs: 'Costs',
         cron: 'Cron',
         'git-sync': 'Git Sync',
+        security: 'Security',
         audit: 'Audit',
         profiles: 'Profiles',
         harden: 'Hardening',
         logs: 'Logs'
+      },
+      nav: {
+        core: 'Core Workbench',
+        coreHint: 'Keep the launch version focused on operations, models, security, and sync.',
+        workspace: 'Workspace Tools',
+        workspaceHint: 'Open this group when you need file editing, memory maintenance, or search.',
+        advanced: 'Advanced',
+        advancedHint: 'Notifications, activity, costs, and Cron live here so the primary navigation stays focused.',
+        advancedCollapsed: 'These pages stay tucked away until you need deeper diagnostics or advanced configuration.',
+        showAdvanced: 'Show Advanced',
+        hideAdvanced: 'Hide Advanced',
       },
       desc: {
         overview: 'Start here to check overall health, risks, and recent reminders before taking action elsewhere.',
@@ -167,6 +196,7 @@
         openclaw: 'Check whether OpenClaw is installed, which version is running, and whether updates or the console are available.',
         channels: 'Review which channels are enabled, whether accounts are complete, and whether messages can enter the system correctly.',
         ai: 'Review the current model setup and adjust the provider, primary model, and fallback options when needed.',
+        models: 'Configure providers, primary routing, and fallback models so this machine follows a clear model strategy.',
         notifications: 'Handle reminders, errors, and sync results in one place with filters, read states, and bulk cleanup.',
         agents: 'Review each agent workspace, model, and document readiness to confirm the team is prepared.',
         sessions: 'Check session counts, token usage, and runtime status to spot anomalies or rising costs.',
@@ -177,6 +207,7 @@
         costs: 'Review estimated costs by model, agent, and session to keep usage under control.',
         cron: 'Check whether scheduled jobs are healthy, then start, stop, trigger, or edit them as needed.',
         'git-sync': 'Manage private .openclaw repository sync and confirm that auth, permissions, and commit status are healthy.',
+        security: 'Combine security checks, permission modes, and host hardening guidance in one place so the flow is easier to understand.',
         audit: 'Review security findings and focus on the highest-risk items first.',
         profiles: 'Apply security profiles to quickly adjust how this machine behaves.',
         harden: 'Get platform-specific hardening guidance and scripts to reduce mistakes and over-permission.',
@@ -185,11 +216,17 @@
     }
   };
 
-  const TAB_ORDER = [
-    'overview', 'system', 'openclaw', 'channels', 'ai', 'notifications',
-    'agents', 'sessions', 'activity', 'files', 'memory', 'search', 'costs',
-    'cron', 'git-sync', 'audit', 'profiles', 'harden', 'logs'
-  ];
+  const TAB_ALIAS_MAP = {
+    feishu: 'channels',
+    ai: 'models',
+    audit: 'security',
+    profiles: 'security',
+    harden: 'security',
+  };
+  const CORE_TABS = ['overview', 'system', 'openclaw', 'channels', 'models', 'agents', 'sessions', 'git-sync', 'security', 'logs'];
+  const WORKSPACE_TOOL_TABS = ['files', 'memory', 'search'];
+  const ADVANCED_TABS = ['notifications', 'activity', 'costs', 'cron'];
+  const TAB_ORDER = [...CORE_TABS, ...WORKSPACE_TOOL_TABS, ...ADVANCED_TABS];
 
   const state = {
     lang: localStorage.getItem(STORAGE_LANG) || 'zh',
@@ -235,10 +272,26 @@
     pendingPanelFocus: null,
     renderCache: {},
     tabRefreshHints: {},
+    showAdvancedNav: localStorage.getItem(STORAGE_SHOW_ADVANCED) === '1',
   };
 
   let activeDialog = null;
   const CACHEABLE_TABS = new Set(['notifications', 'agents', 'sessions', 'files']);
+
+  function normalizeTabId(tabId) {
+    const key = String(tabId || '').trim();
+    const normalized = TAB_ALIAS_MAP[key] || key;
+    return TAB_ORDER.includes(normalized) ? normalized : 'overview';
+  }
+
+  function isAdvancedTab(tabId) {
+    return ADVANCED_TABS.includes(normalizeTabId(tabId));
+  }
+
+  function persistAdvancedNav(value) {
+    state.showAdvancedNav = !!value;
+    localStorage.setItem(STORAGE_SHOW_ADVANCED, state.showAdvancedNav ? '1' : '0');
+  }
 
   function t(key) {
     const parts = key.split('.');
@@ -874,11 +927,16 @@
   }
 
   function setActiveTab(tabId, updateHash = true) {
+    const nextTab = normalizeTabId(tabId);
     const previousTab = state.activeTab;
-    if (previousTab && previousTab !== tabId) {
+    if (previousTab && previousTab !== nextTab) {
       preserveCurrentTabSnapshot(previousTab);
     }
-    state.activeTab = TAB_ORDER.includes(tabId) ? tabId : 'overview';
+    if (isAdvancedTab(nextTab) && !state.showAdvancedNav) {
+      persistAdvancedNav(true);
+      renderShell();
+    }
+    state.activeTab = nextTab;
     localStorage.setItem(STORAGE_TAB, state.activeTab);
     if (updateHash) {
       history.replaceState(null, '', `#${state.activeTab}`);
@@ -3035,7 +3093,7 @@
       `);
       return;
     }
-    if (tabId === 'channels' || tabId === 'ai' || tabId === 'cron') {
+    if (tabId === 'channels' || tabId === 'models' || tabId === 'cron') {
       setPanel(t(`tabs.${tabId}`), t(`desc.${tabId}`), `
         <div class="toolbar">
           ${skeletonButton('112px')}
@@ -3050,6 +3108,14 @@
           ${loadingCard(state.lang === 'zh' ? '详情区域' : 'Detail Area', loadingLabel)}
         </div>
       `);
+      return;
+    }
+    if (tabId === 'security') {
+      setPanelSections(t('tabs.security'), t('desc.security'), [
+        { id: 'security-audit', title: state.lang === 'zh' ? '安全检查' : 'Security Checks', html: loadingCard(state.lang === 'zh' ? '安全检查' : 'Security Checks', loadingLabel) },
+        { id: 'security-modes', title: state.lang === 'zh' ? '权限模式' : 'Permission Modes', html: loadingCard(state.lang === 'zh' ? '权限模式' : 'Permission Modes', loadingLabel) },
+        { id: 'security-hardening', title: state.lang === 'zh' ? '主机加固指南' : 'Host Hardening Guide', html: loadingCard(state.lang === 'zh' ? '主机加固指南' : 'Host Hardening Guide', loadingLabel) },
+      ]);
       return;
     }
     if (tabId === 'notifications') {
@@ -3085,7 +3151,7 @@
       `);
       return;
     }
-    if (tabId === 'agents' || tabId === 'sessions' || tabId === 'activity' || tabId === 'audit' || tabId === 'profiles' || tabId === 'harden' || tabId === 'logs') {
+    if (tabId === 'agents' || tabId === 'sessions' || tabId === 'activity' || tabId === 'logs') {
       setPanel(t(`tabs.${tabId}`), t(`desc.${tabId}`), `
         <div class="grid">
           ${loadingMetricCard(state.lang === 'zh' ? '摘要 1' : 'Summary 1')}
@@ -3104,8 +3170,38 @@
     `);
   }
 
+  function renderNavButtons(tabs, active) {
+    return tabs.map((tabId) => `<button type="button" class="guard-tab ${tabId === active ? 'active' : ''}" data-tab="${tabId}">${escapeHtml(t(`tabs.${tabId}`))}</button>`).join('');
+  }
+
+  function renderNavSection(options) {
+    const {
+      id,
+      title,
+      hint,
+      tabs,
+      active,
+      actionsHtml = '',
+      collapsed = false,
+      collapsedHtml = '',
+    } = options;
+    return `
+      <section class="guard-nav-section ${collapsed ? 'is-collapsed' : ''}" data-nav-section="${escapeHtml(id)}">
+        <div class="guard-nav-meta">
+          <div class="guard-nav-copy">
+            <div class="guard-nav-kicker">${escapeHtml(title)}</div>
+            <div class="guard-nav-note">${escapeHtml(hint)}</div>
+          </div>
+          ${actionsHtml ? `<div class="guard-nav-actions">${actionsHtml}</div>` : ''}
+        </div>
+        ${collapsed ? `<div class="guard-nav-collapsed">${collapsedHtml}</div>` : `<div class="guard-tabs">${renderNavButtons(tabs, active)}</div>`}
+      </section>
+    `;
+  }
+
   function renderShell() {
     const active = state.activeTab || 'overview';
+    const advancedVisible = state.showAdvancedNav || isAdvancedTab(active);
     app.innerHTML = `
       <div class="guard-shell">
         <header class="guard-header">
@@ -3133,8 +3229,31 @@
               </div>
             </div>
             <div class="guard-tabs-wrap">
-              <nav class="guard-tabs" id="guard-nav">
-                ${TAB_ORDER.map((tabId) => `<button type="button" class="guard-tab ${tabId === active ? 'active' : ''}" data-tab="${tabId}">${escapeHtml(t(`tabs.${tabId}`))}</button>`).join('')}
+              <nav class="guard-nav-stack" id="guard-nav">
+                ${renderNavSection({
+                  id: 'core',
+                  title: t('nav.core'),
+                  hint: t('nav.coreHint'),
+                  tabs: CORE_TABS,
+                  active,
+                })}
+                ${renderNavSection({
+                  id: 'workspace',
+                  title: t('nav.workspace'),
+                  hint: t('nav.workspaceHint'),
+                  tabs: WORKSPACE_TOOL_TABS,
+                  active,
+                })}
+                ${renderNavSection({
+                  id: 'advanced',
+                  title: t('nav.advanced'),
+                  hint: t('nav.advancedHint'),
+                  tabs: ADVANCED_TABS,
+                  active,
+                  collapsed: !advancedVisible,
+                  collapsedHtml: escapeHtml(t('nav.advancedCollapsed')),
+                  actionsHtml: `<button type="button" class="action-btn" data-nav-action="toggle-advanced">${escapeHtml(advancedVisible ? t('nav.hideAdvanced') : t('nav.showAdvanced'))}</button>`,
+                })}
               </nav>
             </div>
           </div>
@@ -3150,6 +3269,22 @@
 
     app.querySelectorAll('[data-tab]').forEach((button) => {
       button.addEventListener('click', () => setActiveTab(button.getAttribute('data-tab')));
+    });
+    app.querySelectorAll('[data-nav-action="toggle-advanced"]').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (isAdvancedTab(state.activeTab) && advancedVisible) {
+          state.activeTab = 'overview';
+          localStorage.setItem(STORAGE_TAB, state.activeTab);
+          history.replaceState(null, '', '#overview');
+          persistAdvancedNav(false);
+          renderShell();
+          loadActiveTab();
+          return;
+        }
+        persistAdvancedNav(!advancedVisible);
+        renderShell();
+        loadActiveTab();
+      });
     });
     app.querySelectorAll('[data-lang]').forEach((button) => {
       button.addEventListener('click', () => {
@@ -4760,7 +4895,7 @@
       </div>
     `;
 
-    setPanel(t('tabs.ai'), t('desc.ai'), body);
+    setPanel(t('tabs.models'), t('desc.models'), body);
 
     document.querySelectorAll('[data-ai-picker-select], [data-ai-select-provider]').forEach((button) => {
       button.addEventListener('click', () => {
@@ -6908,76 +7043,191 @@
     }
   }
 
-  async function loadAudit() {
-    const data = await apiRequest('/api/audit');
+  function getSecurityModeMeta(profileKey) {
+    if (profileKey === 'chat') {
+      return {
+        label: state.lang === 'zh' ? '最严格' : 'Most Strict',
+        pillClass: 'success',
+      };
+    }
+    if (profileKey === 'readonly') {
+      return {
+        label: state.lang === 'zh' ? '只读优先' : 'Read-first',
+        pillClass: 'success',
+      };
+    }
+    if (profileKey === 'coding') {
+      return {
+        label: state.lang === 'zh' ? '平衡' : 'Balanced',
+        pillClass: 'warn',
+      };
+    }
+    if (profileKey === 'devops') {
+      return {
+        label: state.lang === 'zh' ? '高权限' : 'Elevated',
+        pillClass: 'warn',
+      };
+    }
+    return {
+      label: state.lang === 'zh' ? '高风险' : 'High Risk',
+      pillClass: 'danger',
+    };
+  }
+
+  function renderSecurityAuditSection(data) {
     const groups = {};
     (data.results || []).forEach((item) => {
       if (!groups[item.category]) groups[item.category] = [];
       groups[item.category].push(item);
     });
-    const body = `
-      <div class="grid">
+    return `
+      <div class="card accent-info">
+        <h3>${state.lang === 'zh' ? '安全检查（Beta）' : 'Security Checks (Beta)'}</h3>
+        <div class="status warn">${escapeHtml(state.lang === 'zh'
+          ? '这一部分更像建议型检查，而不是安全达标证明。优先处理失败项，其次处理警告项。'
+          : 'This section behaves like advisory checks, not a formal proof of compliance. Handle failures first, then warnings.')}</div>
+      </div>
+      <div class="grid" style="margin-top:14px;">
         ${metricCard(state.lang === 'zh' ? '通过项' : 'Pass', formatNumber(data.summary?.pass || 0), state.lang === 'zh' ? '当前无需处理' : 'no action needed', 'success')}
         ${metricCard(state.lang === 'zh' ? '警告项' : 'Warning', formatNumber(data.summary?.warn || 0), state.lang === 'zh' ? '建议尽快检查' : 'recommended to review', 'warn')}
         ${metricCard(state.lang === 'zh' ? '失败项' : 'Fail', formatNumber(data.summary?.fail || 0), state.lang === 'zh' ? '需要优先处理' : 'highest priority', 'danger')}
       </div>
-      <div class="card">
-        <h3>${state.lang === 'zh' ? '如何查看这一页' : 'How To Read This Page'}</h3>
-        <div class="status">${escapeHtml(state.lang === 'zh' ? '优先处理失败项，其次处理警告项。通过项通常不需要操作，只用来确认当前状态。' : 'Handle failed checks first, then warnings. Passed checks are mainly here so you can confirm what is already safe.')}</div>
+      <div class="stack" style="margin-top:14px;">
+        ${Object.entries(groups).map(([category, items]) => `
+          <div class="card">
+            <h3>${escapeHtml(category)}</h3>
+            <div class="list" style="margin-top:12px;">
+              ${items.map((item) => `
+                <div class="list-item">
+                  <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+                    <strong>${escapeHtml(item.item)}</strong>
+                    <span class="pill ${getAuditStatusClass(item.status)}">${escapeHtml(getAuditStatusLabel(item.status))}</span>
+                  </div>
+                  <div style="margin-top:8px;">${escapeHtml(item.message)}</div>
+                  ${item.fix ? `<div class="muted small" style="margin-top:8px;">${escapeHtml((state.lang === 'zh' ? '建议处理：' : 'Suggested fix: ') + item.fix)}</div>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `).join('') || emptyState(state.lang === 'zh' ? '当前没有审计结果。' : 'No audit results are available right now.')}
       </div>
-      <div class="stack">${Object.entries(groups).map(([category, items]) => `<div class="card"><h3>${escapeHtml(category)}</h3><div class="list">${items.map((item) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(item.item)}</strong><span class="pill ${getAuditStatusClass(item.status)}">${escapeHtml(getAuditStatusLabel(item.status))}</span></div><div>${escapeHtml(item.message)}</div>${item.fix ? `<div class="muted small">${escapeHtml((state.lang === 'zh' ? '建议处理：' : 'Suggested fix: ') + item.fix)}</div>` : ''}</div>`).join('')}</div></div>`).join('') || emptyState(state.lang === 'zh' ? '当前没有审计结果。' : 'No audit results are available right now.')}</div>
     `;
-    setPanel(t('tabs.audit'), t('desc.audit'), body);
   }
 
-  async function loadProfiles() {
-    const profiles = await apiRequest('/api/profiles');
-    const body = profiles.length ? `
-      <div class="card">
-        <h3>${state.lang === 'zh' ? '如何选择预设' : 'How To Choose A Profile'}</h3>
-        <div class="status">${escapeHtml(state.lang === 'zh' ? '预设会批量调整这台机器的安全行为。若你希望更稳妥，优先选择更严格的预设；若你更看重灵活性，再考虑较宽松的选项。' : 'Profiles change this machine in batches. Choose a stricter profile when you want stronger guardrails, and pick a looser one only if you need more flexibility.')}</div>
+  function renderSecurityModesSection(profiles) {
+    return profiles.length ? `
+      <div class="card accent-warn">
+        <h3>${state.lang === 'zh' ? '权限模式' : 'Permission Modes'}</h3>
+        <div class="status warn">${escapeHtml(state.lang === 'zh'
+          ? '这些模式当前只会更新 OpenClaw 的工具权限配置，不会自动创建系统账户、修改 ACL、启用 Docker 或完成整机加固。'
+          : 'These modes currently update only the OpenClaw tool-permission config. They do not automatically create system users, change ACLs, enable Docker, or complete host hardening.')}</div>
       </div>
-      <div class="grid">${profiles.map((profile) => `<div class="card"><div class="row" style="justify-content:space-between"><h3>${escapeHtml(profile.name)}</h3><span class="pill">${escapeHtml(getRiskLevelLabel(profile.riskLevel || profile.key))}</span></div><p>${escapeHtml(profile.description || '')}</p><div class="list">${(profile.recommendations || []).map((item) => `<div class="list-item">${escapeHtml(item)}</div>`).join('')}</div><div class="toolbar tight" style="margin-top:12px;"><button class="action-btn primary" data-profile-key="${escapeHtml(profile.key)}">${state.lang === 'zh' ? '应用到本机' : 'Apply To This Machine'}</button></div></div>`).join('')}</div>
-    ` : emptyState(state.lang === 'zh' ? '当前没有可用的安全预设。' : 'No security profiles are available right now.');
-    setPanel(t('tabs.profiles'), t('desc.profiles'), body);
-    document.querySelectorAll('[data-profile-key]').forEach((button) => {
+      <div class="grid" style="margin-top:14px;">
+        ${profiles.map((profile) => {
+          const meta = getSecurityModeMeta(profile.key);
+          const allowRules = Array.isArray(profile.tools?.allow) ? profile.tools.allow : [];
+          const denyRules = Array.isArray(profile.tools?.deny) ? profile.tools.deny : [];
+          return `
+            <div class="card">
+              <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+                <h3>${escapeHtml(profile.name)}</h3>
+                <span class="pill ${meta.pillClass}">${escapeHtml(meta.label)}</span>
+              </div>
+              <p>${escapeHtml(profile.description || '')}</p>
+              <div class="list" style="margin-top:12px;">
+                ${(profile.recommendations || []).map((item) => `<div class="list-item">${escapeHtml(item)}</div>`).join('')}
+              </div>
+              ${renderAdvancedDisclosure({
+                title: state.lang === 'zh' ? '查看权限变更范围' : 'View Permission Scope',
+                description: state.lang === 'zh' ? '这里显示该模式会写入 openclaw.json 的工具规则。' : 'This shows the tool rules that will be written into openclaw.json.',
+                bodyHtml: `<pre>${escapeHtml([
+                  `allow: ${allowRules.length ? allowRules.join(', ') : '(none)'}`,
+                  `deny: ${denyRules.length ? denyRules.join(', ') : '(none)'}`,
+                ].join('\n'))}</pre>`,
+              })}
+              <div class="toolbar tight" style="margin-top:12px;">
+                <button class="action-btn primary" data-security-profile-key="${escapeHtml(profile.key)}">${state.lang === 'zh' ? '应用权限模式' : 'Apply Permission Mode'}</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    ` : emptyState(state.lang === 'zh' ? '当前没有可用的权限模式。' : 'No permission modes are available right now.');
+  }
+
+  function renderSecurityHardeningSection(data) {
+    const steps = Array.isArray(data.steps) ? data.steps : [];
+    const hardenStepsHtml = steps.map((step) => `
+      <div class="list-item">
+        <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+          <strong>${escapeHtml(step.title || step.id || '-')}</strong>
+          <span class="pill ${step.optional ? '' : 'warn'}">${escapeHtml(step.optional ? (state.lang === 'zh' ? '可选' : 'Optional') : (state.lang === 'zh' ? '建议' : 'Recommended'))}</span>
+        </div>
+        <div style="margin-top:8px;">${escapeHtml(step.description || '')}</div>
+        ${renderAdvancedDisclosure({
+          title: state.lang === 'zh' ? '查看命令与脚本' : 'View Commands',
+          description: state.lang === 'zh' ? '只有在你准备执行这一步时，再展开查看对应命令。' : 'Expand this only when you are ready to run the commands for this step.',
+          bodyHtml: `<pre>${escapeHtml((step.commands || []).join('\n') || (state.lang === 'zh' ? '当前没有附带命令。' : 'No commands are attached to this step.'))}</pre>`,
+          marginTop: 12,
+        })}
+      </div>
+    `).join('');
+    return `
+      <div class="card">
+        <h3>${state.lang === 'zh' ? '主机加固指南（Beta）' : 'Host Hardening Guide (Beta)'}</h3>
+        <div class="status">${escapeHtml(state.lang === 'zh'
+          ? '基线建议在所有平台都一样：尽量使用非管理员账户运行，并限制工作区范围。Windows 上的“独立低权限账户”更适合长期后台运行或共享机器场景，不应作为所有用户的默认强制项。'
+          : 'The baseline is the same on every platform: prefer non-admin execution and keep the workspace boundary tight. On Windows, a dedicated low-privilege account is better treated as an advanced option for long-running or shared-machine setups, not a blanket default requirement.')}</div>
+      </div>
+      <div class="toolbar tight" style="margin-top:14px;">
+        <button class="chip ${state.hardenPlatform === 'windows' ? 'active' : ''}" data-security-platform="windows">Windows</button>
+        <button class="chip ${state.hardenPlatform === 'macos' ? 'active' : ''}" data-security-platform="macos">macOS</button>
+        <button class="chip ${state.hardenPlatform === 'linux' ? 'active' : ''}" data-security-platform="linux">Linux</button>
+        <a class="action-btn primary" href="/api/harden/script?platform=${encodeURIComponent(state.hardenPlatform)}">${state.lang === 'zh' ? '下载脚本' : 'Download Script'}</a>
+      </div>
+      <div class="list" style="margin-top:14px;">${hardenStepsHtml || emptyState(state.lang === 'zh' ? '当前平台还没有可显示的加固步骤。' : 'No hardening steps are available for this platform right now.')}</div>
+    `;
+  }
+
+  function bindSecurityView() {
+    document.querySelectorAll('[data-security-profile-key]').forEach((button) => {
       button.addEventListener('click', async () => {
         try {
-          const result = await postJson('/api/profiles/apply', { profile: button.getAttribute('data-profile-key') });
+          const result = await postJson('/api/profiles/apply', { profile: button.getAttribute('data-security-profile-key') });
           showToast(result.message || 'OK');
         } catch (error) {
           showToast(error.message || String(error), 'error');
         }
       });
     });
+    document.querySelectorAll('[data-security-platform]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.hardenPlatform = button.getAttribute('data-security-platform') || state.hardenPlatform;
+        loadSecurity();
+      });
+    });
   }
 
-  async function loadHarden() {
+  async function loadSecurity() {
+    const viewTabId = 'security';
     if (!state.hardenPlatform) {
       state.hardenPlatform = navigator.platform.toLowerCase().includes('win') ? 'windows' : navigator.platform.toLowerCase().includes('mac') ? 'macos' : 'linux';
     }
-    const data = await apiRequest(`/api/harden/steps?platform=${encodeURIComponent(state.hardenPlatform)}`);
-    const hardenStepsHtml = (data.steps || []).map((step) => `<div class="list-item"><div class="row" style="justify-content:space-between"><strong>${escapeHtml(step.title || step.id)}</strong><span class="pill">${escapeHtml(getRiskLevelLabel(step.category || step.risk || 'step'))}</span></div><div>${escapeHtml(step.description || '')}</div>${renderAdvancedDisclosure({ title: state.lang === 'zh' ? '查看命令与脚本' : 'View Commands', description: state.lang === 'zh' ? '只有在你准备执行这一步时，再展开查看对应命令。' : 'Expand this when you are ready to run the commands for this step.', bodyHtml: `<pre>${escapeHtml((step.commands || []).join('\n') || (state.lang === 'zh' ? '当前没有附带命令。' : 'No commands are attached to this step.'))}</pre>`, marginTop: 12 })}</div>`).join('');
-    const body = `
-      <div class="card">
-        <h3>${state.lang === 'zh' ? '如何使用加固建议' : 'How To Use Hardening Guidance'}</h3>
-        <div class="status">${escapeHtml(state.lang === 'zh' ? '先选择你当前使用的系统，再按步骤逐项执行。若你希望批量执行，可以直接下载脚本。' : 'Choose the platform you are using, then follow the steps one by one. If you prefer to batch them, download the script directly.')}</div>
-      </div>
-      <div class="toolbar tight">
-        <button class="chip ${state.hardenPlatform === 'windows' ? 'active' : ''}" data-harden-platform="windows">Windows</button>
-        <button class="chip ${state.hardenPlatform === 'macos' ? 'active' : ''}" data-harden-platform="macos">macOS</button>
-        <button class="chip ${state.hardenPlatform === 'linux' ? 'active' : ''}" data-harden-platform="linux">Linux</button>
-        <a class="action-btn primary" href="/api/harden/script?platform=${encodeURIComponent(state.hardenPlatform)}">${state.lang === 'zh' ? '下载脚本' : 'Download Script'}</a>
-      </div>
-      <div class="list">${hardenStepsHtml || emptyState(state.lang === 'zh' ? '当前平台还没有可显示的加固步骤。' : 'No hardening steps are available for this platform right now.')}</div>
-    `;
-    setPanel(t('tabs.harden'), t('desc.harden'), body);
-    document.querySelectorAll('[data-harden-platform]').forEach((button) => {
-      button.addEventListener('click', () => {
-        state.hardenPlatform = button.getAttribute('data-harden-platform');
-        loadHarden();
-      });
-    });
+    setPanelSections(t('tabs.security'), t('desc.security'), [
+      { id: 'security-audit', title: state.lang === 'zh' ? '安全检查' : 'Security Checks', html: loadingCard(state.lang === 'zh' ? '安全检查' : 'Security Checks', state.lang === 'zh' ? '正在读取安全检查结果…' : 'Loading security checks…') },
+      { id: 'security-modes', title: state.lang === 'zh' ? '权限模式' : 'Permission Modes', html: loadingCard(state.lang === 'zh' ? '权限模式' : 'Permission Modes', state.lang === 'zh' ? '正在读取可用模式…' : 'Loading available modes…') },
+      { id: 'security-hardening', title: state.lang === 'zh' ? '主机加固指南' : 'Host Hardening Guide', html: loadingCard(state.lang === 'zh' ? '主机加固指南' : 'Host Hardening Guide', state.lang === 'zh' ? '正在读取平台加固建议…' : 'Loading platform guidance…') },
+    ]);
+    const [auditData, profiles, hardenData] = await Promise.all([
+      apiRequest('/api/audit'),
+      apiRequest('/api/profiles'),
+      apiRequest(`/api/harden/steps?platform=${encodeURIComponent(state.hardenPlatform)}`),
+    ]);
+    if (state.activeTab !== viewTabId) return;
+    updatePanelSection('security-audit', renderSecurityAuditSection(auditData));
+    updatePanelSection('security-modes', renderSecurityModesSection(Array.isArray(profiles) ? profiles : []));
+    updatePanelSection('security-hardening', renderSecurityHardeningSection(hardenData));
+    bindSecurityView();
   }
 
   async function loadLogs() {
@@ -7031,7 +7281,7 @@
       if (active === 'system') return await loadSystem();
       if (active === 'openclaw') return await loadOpenClawTab();
       if (active === 'channels') return await loadChannels();
-      if (active === 'ai') return await loadAI();
+      if (active === 'models') return await loadAI();
       if (active === 'notifications') return await loadNotifications();
       if (active === 'agents') return await loadAgents();
       if (active === 'sessions') return await loadSessions();
@@ -7042,9 +7292,7 @@
       if (active === 'costs') return await loadCosts();
       if (active === 'cron') return await loadCron();
       if (active === 'git-sync') return await loadGitSync();
-      if (active === 'audit') return await loadAudit();
-      if (active === 'profiles') return await loadProfiles();
-      if (active === 'harden') return await loadHarden();
+      if (active === 'security') return await loadSecurity();
       if (active === 'logs') return await loadLogs();
       return await loadOverview();
     } catch (error) {
@@ -7057,15 +7305,19 @@
 
   const initialHash = (location.hash || '').replace(/^#/, '');
   const storedTab = localStorage.getItem(STORAGE_TAB) || 'overview';
-  const normalizedStoredTab = storedTab === 'feishu' ? 'channels' : storedTab;
+  const normalizedStoredTab = normalizeTabId(storedTab === 'feishu' ? 'channels' : storedTab);
   if (initialHash === 'feishu') {
     state.channelSelectedId = 'feishu';
     state.activeTab = 'channels';
     history.replaceState(null, '', '#channels');
   } else {
-    state.activeTab = TAB_ORDER.includes(initialHash) ? initialHash : normalizedStoredTab;
+    state.activeTab = normalizeTabId(initialHash || normalizedStoredTab);
+    if (initialHash && state.activeTab !== initialHash) {
+      history.replaceState(null, '', `#${state.activeTab}`);
+    }
   }
   if (!TAB_ORDER.includes(state.activeTab)) state.activeTab = 'overview';
+  if (isAdvancedTab(state.activeTab)) persistAdvancedNav(true);
 
   window.addEventListener('hashchange', () => {
     const next = (location.hash || '').replace(/^#/, '');
@@ -7074,8 +7326,9 @@
       setActiveTab('channels');
       return;
     }
-    if (TAB_ORDER.includes(next) && next !== state.activeTab) {
-      setActiveTab(next, false);
+    const normalizedNext = normalizeTabId(next);
+    if (normalizedNext !== state.activeTab) {
+      setActiveTab(normalizedNext, normalizedNext === next ? false : true);
     }
   });
 

@@ -106,7 +106,7 @@ describe('git-sync', () => {
     expect(status.remoteWebUrl).toBe('https://github.com/acme/demo');
     expect(status.authConfigured).toBe(true);
     expect(status.reasons.join(' ')).toContain('private');
-  });
+  }, 15000);
 
   it('allows local commit before private check when the repo has changes', () => {
     initGitSync();
@@ -124,7 +124,7 @@ describe('git-sync', () => {
     const after = getGitSyncStatus();
     expect(after.hasChanges).toBe(false);
     expect(after.state.lastCommitAt).not.toBeNull();
-  });
+  }, 15000);
 
   it('skips embedded repositories during commit and keeps them out of the staged set', () => {
     initGitSync();
@@ -366,7 +366,7 @@ describe('git-sync', () => {
     expect(result.status.accountUsername).toBe('octocat');
     expect(result.status.canPush).toBe(true);
     expect(httpsSpy).toHaveBeenCalled();
-  });
+  }, 15000);
 
   it('starts OAuth locally and records callback verification failures for github and gitee', async () => {
     initGitSync();

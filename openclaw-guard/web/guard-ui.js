@@ -3048,6 +3048,8 @@
       ? (state.lang === 'zh' ? '安装' : 'Install')
       : mode === 'update'
         ? (state.lang === 'zh' ? '更新' : 'Update')
+        : mode === 'rollback'
+          ? (state.lang === 'zh' ? '回退' : 'Rollback')
         : (state.lang === 'zh' ? '待命' : 'Idle');
     const phase = actionState?.phase || 'idle';
     const phaseLabel = phase === 'running'
@@ -3070,7 +3072,7 @@
       phase,
       phaseLabel,
       pillClass,
-      message: actionState?.message || (state.lang === 'zh' ? '当前没有 OpenClaw 安装任务。' : 'No OpenClaw installation task is active.'),
+      message: actionState?.message || (state.lang === 'zh' ? '当前没有 OpenClaw 生命周期任务。' : 'No OpenClaw lifecycle task is active.'),
     };
   }
 
@@ -5264,6 +5266,7 @@
   }
 
   async function loadOpenClawTab(options = {}) {
+    return loadOpenClawTabV2(options);
     const viewTabId = 'openclaw';
     const reuseExisting = options.reuseExisting === true;
     if (!reuseExisting) {
@@ -5478,6 +5481,257 @@
     } else {
       clearOpenClawPollTimer();
     }
+  }
+
+  async function loadOpenClawTabV2(options = {}) {
+    const viewTabId = 'openclaw';
+    const reuseExisting = options.reuseExisting === true;
+    if (!reuseExisting) {
+      setPanelSections(t('tabs.openclaw'), t('desc.openclaw'), [
+        { id: 'openclaw-summary', title: state.lang === 'zh' ? '当前状态' : 'Current State' },
+        { id: 'openclaw-primary', title: state.lang === 'zh' ? '推荐动作' : 'Recommended Action' },
+        { id: 'openclaw-runtime', title: state.lang === 'zh' ? '任务进度' : 'Task Progress' },
+        { id: 'openclaw-advanced', title: state.lang === 'zh' ? '高级能力' : 'Advanced Controls' },
+      ]);
+    }
+
+    const [status, targets] = await Promise.all([
+      apiRequest('/api/openclaw/status'),
+      apiRequest('/api/openclaw/targets').catch(() => ({
+        channels: ['stable', 'beta', 'dev'],
+        packageVersions: [],
+        quickRollbackTarget: null,
+        recentGitTags: [],
+        history: [],
+      })),
+    ]);
+
+    const actionMeta = getOpenClawActionMeta(status.action);
+    const isRunning = actionMeta.phase === 'running';
+    const installBlockers = Array.isArray(status.installBlockers) ? status.installBlockers.filter(Boolean) : [];
+    const platformNotes = Array.isArray(status.platformNotes) ? status.platformNotes.filter(Boolean) : [];
+    const logTail = Array.isArray(status.action?.logTail) ? status.action.logTail.filter(Boolean) : [];
+    const historyItems = Array.isArray(targets.history) ? targets.history : [];
+    const versionOptions = Array.isArray(targets.packageVersions) ? targets.packageVersions : [];
+    const recentTags = Array.isArray(targets.recentGitTags) ? targets.recentGitTags : [];
+    const quickRollback = targets.quickRollbackTarget || null;
+    const installKindLabel = status.installKind === 'git'
+      ? (state.lang === 'zh' ? '源码检出' : 'Source Checkout')
+      : status.installKind === 'package'
+        ? (state.lang === 'zh' ? '包安装' : 'Package Install')
+        : (state.lang === 'zh' ? '未识别' : 'Unknown');
+    const updaterLabel = status.effectiveUpdater === 'official-cli'
+      ? (state.lang === 'zh' ? '官方同源更新' : 'Official in-place updater')
+      : status.effectiveUpdater === 'git-direct'
+        ? (state.lang === 'zh' ? '源码直连回退' : 'Direct git rollback')
+        : (state.lang === 'zh' ? 'Guard 托管修复' : 'Guard bootstrap repair');
+    const primaryAction = status.installed ? 'update' : 'install';
+    const primaryLabel = status.installed
+      ? (state.lang === 'zh' ? '更新到推荐版本' : 'Update to Recommended Version')
+      : (state.lang === 'zh' ? '安装 / 修复 OpenClaw' : 'Install / Repair OpenClaw');
+    const versionDetail = status.installed
+      ? (status.updateAvailable
+        ? (state.lang === 'zh' ? `当前 ${status.version || '-'}，推荐 ${status.latestVersion || '-'}` : `Current ${status.version || '-'}, recommended ${status.latestVersion || '-'}`)
+        : (state.lang === 'zh' ? `当前 ${status.version || '-'}` : `Current ${status.version || '-'}`))
+      : (state.lang === 'zh' ? '当前未检测到可用的 OpenClaw CLI。' : 'No working OpenClaw CLI was detected.');
+    const installReadyDetail = status.installReady
+      ? (status.installTargetBinaryPath || status.installTargetBinDir || (state.lang === 'zh' ? '环境检查通过' : 'Environment check passed'))
+      : (installBlockers[0] || (state.lang === 'zh' ? '需要先处理安装前置条件' : 'Resolve install blockers first'));
+    const lastHistory = status.lastHistoryEntry
+      ? `${status.lastHistoryEntry.kind} · ${formatDate(status.lastHistoryEntry.finishedAt)}`
+      : (state.lang === 'zh' ? '暂无由 Guard 记录的历史' : 'No Guard-managed history yet');
+    const detachedHint = status.installKind === 'git' && status.officialStatus?.git?.branch === 'HEAD'
+      ? `<div class="status warn" style="margin-top:12px;">${escapeHtml(state.lang === 'zh' ? '当前处于 detached HEAD。完成历史点排查后，请在高级区切回正常渠道、分支或标签。' : 'The repo is currently on a detached HEAD. Use the advanced controls to return to a normal channel, branch, or tag when you are done.')}</div>`
+      : '';
+
+    const body = `
+      <div class="grid">
+        ${metricCard(state.lang === 'zh' ? '安装状态' : 'Install State', status.installed ? (state.lang === 'zh' ? '已安装' : 'Installed') : (state.lang === 'zh' ? '未安装' : 'Missing'), versionDetail, status.installed ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '更新渠道' : 'Update Channel', status.updateChannel || '-', status.updateChannelSource || (state.lang === 'zh' ? '来自 Guard 检测' : 'Detected by Guard'), status.updateChannel ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '更新方式' : 'Update Strategy', updaterLabel, `${installKindLabel} · ${status.packageManager || '-'}`, status.officialStatusAvailable ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? '当前任务' : 'Current Task', actionMeta.phaseLabel, `${actionMeta.modeLabel} · ${formatRelative(status.action?.lastUpdatedAt || status.action?.startedAt)}`, actionMeta.pillClass)}
+      </div>
+      <div class="grid">
+        <div class="card">
+          <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+            <div>
+              <h3>${state.lang === 'zh' ? '推荐动作' : 'Recommended Action'}</h3>
+              <div class="muted small" style="margin-top:8px;">${escapeHtml(status.installed
+                ? (state.lang === 'zh' ? '默认主按钮只做推荐更新。复杂能力放在高级区里，避免把普通用户一上来就扔进版本细节。' : 'The primary button only handles the recommended update. Version-level controls stay in the advanced area so new users do not start with internals.')
+                : (state.lang === 'zh' ? '当前先把 OpenClaw 安装好或修复好。之后 Guard 会继续沿原安装来源做更新和回退。' : 'Install or repair OpenClaw first. After that, Guard keeps following the original install path for updates and rollback.'))}</div>
+              <div class="muted small" style="margin-top:8px;">${escapeHtml(actionMeta.message)}</div>
+            </div>
+            <span class="pill ${actionMeta.pillClass}">${escapeHtml(actionMeta.phaseLabel)}</span>
+          </div>
+          <div class="toolbar tight" style="margin-top:14px;">
+            <button class="action-btn primary" type="button" data-openclaw-action="${primaryAction}" ${isRunning ? 'disabled' : ''}>${primaryLabel}</button>
+            ${quickRollback ? `<button class="action-btn" type="button" data-openclaw-action="quick-rollback" ${isRunning ? 'disabled' : ''}>${state.lang === 'zh' ? '恢复到上一版本' : 'Restore Previous Version'}</button>` : ''}
+            <button class="action-btn" type="button" data-openclaw-action="copy-command">${state.lang === 'zh' ? '复制托管安装命令' : 'Copy Managed Install Command'}</button>
+          </div>
+          <div class="list" style="margin-top:14px;">
+            <div class="list-item"><div class="row" style="justify-content:space-between"><strong>${state.lang === 'zh' ? '当前来源' : 'Detected Source'}</strong><span class="pill ${status.binPath ? 'success' : 'warn'}">${escapeHtml(status.detectedSource || '-')}</span></div><div class="muted small">${escapeHtml(status.binPath || '-')}</div></div>
+            <div class="list-item"><div class="row" style="justify-content:space-between"><strong>${state.lang === 'zh' ? '安装根目录' : 'Install Root'}</strong><span class="pill">${escapeHtml(installKindLabel)}</span></div><div class="muted small">${escapeHtml(status.updateRoot || status.managedPrefix || '-')}</div></div>
+            <div class="list-item"><div class="row" style="justify-content:space-between"><strong>Node / npm</strong><span class="pill ${(status.npmVersion && status.nodeVersion) ? 'success' : 'warn'}">${escapeHtml(status.npmVersion ? (state.lang === 'zh' ? '环境正常' : 'Ready') : (state.lang === 'zh' ? '缺少 npm' : 'npm missing'))}</span></div><div class="muted small">${escapeHtml(`Node ${status.nodeVersion || '-'} · npm ${status.npmVersion || '-'}`)}</div><div class="muted small">${escapeHtml(status.npmPrefix || '-')}</div></div>
+            <div class="list-item"><div class="row" style="justify-content:space-between"><strong>${state.lang === 'zh' ? '最近历史' : 'Latest History'}</strong><span class="pill ${status.quickRollbackAvailable ? 'success' : ''}">${escapeHtml(status.quickRollbackAvailable ? (state.lang === 'zh' ? '可快速回退' : 'Quick rollback ready') : (state.lang === 'zh' ? '先完成一次更新' : 'Need one Guard update first'))}</span></div><div class="muted small">${escapeHtml(lastHistory)}</div></div>
+          </div>
+          ${detachedHint}
+          ${installBlockers.length ? `<div class="status warn" style="margin-top:12px;">${escapeHtml(installBlockers[0])}</div>` : ''}
+        </div>
+        <div class="card">
+          <h3>${state.lang === 'zh' ? '任务进度' : 'Task Progress'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这里会保留最近一次安装、更新或回退的摘要与日志线索。' : 'This card keeps the latest install, update, or rollback summary together with the last useful logs.')}</div>
+          <div class="list" style="margin-top:14px;">
+            <div class="list-item"><strong>${state.lang === 'zh' ? '运行说明' : 'Summary'}</strong><div style="margin-top:8px;">${escapeHtml(actionMeta.message)}</div>${status.action?.error ? `<div class="muted small" style="margin-top:8px; color:#b42318;">${escapeHtml(status.action.error)}</div>` : ''}</div>
+            <div class="list-item"><strong>${state.lang === 'zh' ? '时间线' : 'Timeline'}</strong><div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? `开始 ${formatDate(status.action?.startedAt)} · 更新 ${formatDate(status.action?.lastUpdatedAt)} · 结束 ${formatDate(status.action?.finishedAt)}` : `Started ${formatDate(status.action?.startedAt)} · Updated ${formatDate(status.action?.lastUpdatedAt)} · Finished ${formatDate(status.action?.finishedAt)}`)}</div></div>
+            <div class="list-item"><strong>${state.lang === 'zh' ? '最近日志' : 'Recent Log'}</strong><div style="margin-top:8px;">${logTail.length ? `<pre>${escapeHtml(logTail.join('\n'))}</pre>` : emptyState(state.lang === 'zh' ? '当前还没有任务日志。' : 'No lifecycle task log yet.')}</div></div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const advancedHtml = `
+      <div class="grid">
+        <div class="card">
+          <h3>${state.lang === 'zh' ? '高级能力' : 'Advanced Controls'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '推荐更新之外的能力都放在这里，例如切渠道、指定版本、回到旧版本，或执行源码检出回退。' : 'Everything beyond the recommended update lives here: switch channels, pick a version, restore an older release, or run a source-checkout rollback.')}</div>
+          ${renderAdvancedDisclosure({
+            title: state.lang === 'zh' ? '展开高级能力' : 'Expand Advanced Controls',
+            description: state.lang === 'zh' ? '普通用户通常只需要上面的主按钮；这里只在你确实要管版本、渠道或历史点时再展开。' : 'Most users only need the primary button above. Expand this when you truly need version-, channel-, or history-level control.',
+            bodyHtml: `
+              <div class="list">
+                <div class="list-item">
+                  <strong>${state.lang === 'zh' ? '渠道切换' : 'Channel Switch'}</strong>
+                  <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这会沿当前安装来源执行官方更新。源码检出用户通常用它切换 stable / beta / dev。' : 'This follows the current install source and runs the official updater. Source-checkout users typically use it to switch between stable / beta / dev.')}</div>
+                  <div class="toolbar tight" style="margin-top:12px;">${(Array.isArray(targets.channels) ? targets.channels : ['stable', 'beta', 'dev']).map((channel) => `<button class="action-btn" type="button" data-openclaw-action="apply-channel" data-channel="${escapeHtml(channel)}" ${isRunning || !status.officialStatusAvailable ? 'disabled' : ''}>${escapeHtml(channel)}</button>`).join('')}</div>
+                </div>
+                <div class="list-item">
+                  <strong>${state.lang === 'zh' ? '指定版本' : 'Choose a Version'}</strong>
+                  <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '适合 package 安装场景。你可以指定一个版本更新过去，也可以配合“恢复到上一版本”回到最近的已知稳定版本。' : 'Best for package installs. Pick a version directly, or combine it with “Restore Previous Version” to move back to a recent known-good release.')}</div>
+                  <div class="row" style="gap:10px; margin-top:12px; align-items:center;">
+                    <select id="openclaw-version-select" ${isRunning || !versionOptions.length ? 'disabled' : ''}>
+                      <option value="">${state.lang === 'zh' ? '选择一个版本' : 'Select a version'}</option>
+                      ${versionOptions.map((version) => `<option value="${escapeHtml(version)}">${escapeHtml(version)}</option>`).join('')}
+                    </select>
+                    <button class="action-btn" type="button" data-openclaw-action="apply-version" ${isRunning || !versionOptions.length ? 'disabled' : ''}>${state.lang === 'zh' ? '更新到这个版本' : 'Update to This Version'}</button>
+                    ${quickRollback ? `<button class="action-btn" type="button" data-openclaw-action="quick-rollback" ${isRunning ? 'disabled' : ''}>${state.lang === 'zh' ? '恢复到上一版本' : 'Restore Previous Version'}</button>` : ''}
+                  </div>
+                  ${quickRollback ? `<div class="muted small" style="margin-top:8px;">${escapeHtml(quickRollback.label || '')}</div>` : ''}
+                </div>
+                <div class="list-item">
+                  <strong>${state.lang === 'zh' ? '源码检出高级回退' : 'Advanced Git Rollback'}</strong>
+                  <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这里只适合源码检出用户。执行前必须保持 clean worktree，且回退后可能进入 detached HEAD。' : 'This section is for source-checkout users only. The worktree must stay clean, and the repo may end up in detached HEAD after rollback.')}</div>
+                  <div class="row" style="gap:10px; margin-top:12px; align-items:center;">
+                    <select id="openclaw-history-select" ${isRunning || !historyItems.length ? 'disabled' : ''}>
+                      <option value="">${state.lang === 'zh' ? '按 Guard 历史记录选择' : 'Pick a Guard history entry'}</option>
+                      ${historyItems.map((item) => `<option value="${escapeHtml(item.id || '')}">${escapeHtml(`${item.kind || 'history'} · ${item.finishedAt || item.startedAt || '-'}`)}</option>`).join('')}
+                    </select>
+                    <input id="openclaw-git-ref" type="text" placeholder="${state.lang === 'zh' ? '标签 / ref / sha' : 'tag / ref / sha'}" ${isRunning || status.installKind !== 'git' ? 'disabled' : ''}>
+                    <input id="openclaw-git-date" type="text" placeholder="${state.lang === 'zh' ? '日期，例如 2026-03-01' : 'date, e.g. 2026-03-01'}" ${isRunning || status.installKind !== 'git' ? 'disabled' : ''}>
+                    <button class="action-btn" type="button" data-openclaw-action="git-rollback" ${isRunning || status.installKind !== 'git' ? 'disabled' : ''}>${state.lang === 'zh' ? '回到这个历史点' : 'Rollback to This Point'}</button>
+                  </div>
+                  ${recentTags.length ? `<div class="muted small" style="margin-top:8px;">${escapeHtml((state.lang === 'zh' ? '近期标签: ' : 'Recent tags: ') + recentTags.slice(0, 6).join(', '))}</div>` : ''}
+                </div>
+              </div>
+            `,
+          })}
+        </div>
+        <div class="card">
+          <h3>${state.lang === 'zh' ? '诊断与原始状态' : 'Diagnostics and Raw State'}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '安装阻塞项、平台差异、原始状态 JSON 都放在这里。需要排障时再展开即可。' : 'Install blockers, platform notes, and the raw JSON contract live here. Expand them only when you need diagnostics.')}</div>
+          ${installBlockers.length ? `<div class="status warn" style="margin-top:12px;">${escapeHtml(installBlockers[0])}</div>` : `<div class="status" style="margin-top:12px;">${escapeHtml(installReadyDetail)}</div>`}
+          ${platformNotes.length ? `<div class="list" style="margin-top:12px;">${platformNotes.map((item) => `<div class="list-item">${escapeHtml(item)}</div>`).join('')}</div>` : ''}
+          <div class="toolbar tight" style="margin-top:14px;">
+            <button class="action-btn" type="button" data-openclaw-action="copy-command">${state.lang === 'zh' ? '复制托管安装命令' : 'Copy Managed Install Command'}</button>
+            <button class="action-btn" type="button" data-openclaw-action="copy-status">${state.lang === 'zh' ? '复制状态 JSON' : 'Copy Status JSON'}</button>
+            <button class="action-btn" type="button" data-openclaw-action="copy-targets">${state.lang === 'zh' ? '复制目标 JSON' : 'Copy Targets JSON'}</button>
+          </div>
+          ${renderAdvancedDisclosure({
+            title: state.lang === 'zh' ? '展开原始状态与目标目录' : 'Expand Raw Status and Target Catalog',
+            description: state.lang === 'zh' ? '只有在需要进一步排查 PATH、安装来源、版本目录或历史回退时，再展开这一块。' : 'Expand this only when you need to inspect PATH detection, install source, version catalog, or rollback history in raw JSON form.',
+            bodyHtml: `<pre>${prettyJson({ status, targets })}</pre>`,
+          })}
+        </div>
+      </div>
+    `;
+
+    setPanel(t('tabs.openclaw'), t('desc.openclaw'), body + advancedHtml);
+    const bindOpenClawActions = () => {
+      document.querySelectorAll('[data-openclaw-action]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const action = button.getAttribute('data-openclaw-action');
+          if (!action) return;
+          try {
+            if (action === 'copy-command') {
+              await copyTextValue(status.installCommand || 'npm install -g openclaw@latest', { successMessage: state.lang === 'zh' ? '托管安装命令已复制。' : 'Managed install command copied.' });
+              return;
+            }
+            if (action === 'copy-status') {
+              await copyTextValue(JSON.stringify(status, null, 2), { successMessage: state.lang === 'zh' ? '状态 JSON 已复制。' : 'Status JSON copied.' });
+              return;
+            }
+            if (action === 'copy-targets') {
+              await copyTextValue(JSON.stringify(targets, null, 2), { successMessage: state.lang === 'zh' ? '目标目录 JSON 已复制。' : 'Target catalog JSON copied.' });
+              return;
+            }
+            let endpoint = '/api/openclaw/update';
+            let payload = {};
+            let confirmOptions = null;
+            if (action === 'install') endpoint = '/api/openclaw/install';
+            if (action === 'apply-channel') payload = { channel: button.getAttribute('data-channel') || '' };
+            if (action === 'apply-version') {
+              const select = document.getElementById('openclaw-version-select');
+              const version = select?.value || '';
+              if (!version) {
+                showToast(state.lang === 'zh' ? '先选择一个版本。' : 'Choose a version first.', 'error');
+                return;
+              }
+              payload = { tag: version };
+            }
+            if (action === 'quick-rollback') {
+              endpoint = '/api/openclaw/rollback';
+              payload = quickRollback?.historyId ? { historyId: quickRollback.historyId } : (quickRollback?.version ? { version: quickRollback.version } : {});
+              confirmOptions = {
+                title: state.lang === 'zh' ? '恢复到上一版本' : 'Restore Previous Version',
+                message: state.lang === 'zh' ? '这会在当前安装来源上创建一次非破坏式回退。确认继续吗？' : 'This creates a non-destructive rollback on the current install source. Continue?',
+              };
+            }
+            if (action === 'git-rollback') {
+              endpoint = '/api/openclaw/rollback';
+              const historySelect = document.getElementById('openclaw-history-select');
+              const refInput = document.getElementById('openclaw-git-ref');
+              const dateInput = document.getElementById('openclaw-git-date');
+              payload = {
+                historyId: historySelect?.value || undefined,
+                gitRef: refInput?.value?.trim() || undefined,
+                gitDate: dateInput?.value?.trim() || undefined,
+              };
+              if (!payload.historyId && !payload.gitRef && !payload.gitDate) {
+                showToast(state.lang === 'zh' ? '先选择一个历史记录、标签 / ref / sha，或输入日期。' : 'Pick a history entry, a ref/tag/sha, or enter a date first.', 'error');
+                return;
+              }
+              confirmOptions = {
+                title: state.lang === 'zh' ? '执行源码高级回退' : 'Run Advanced Git Rollback',
+                message: state.lang === 'zh' ? '这只适合源码检出用户。Guard 会要求 clean worktree，且回退后可能进入 detached HEAD。确认继续吗？' : 'This is for source-checkout users only. Guard requires a clean worktree and the repo may end up in detached HEAD. Continue?',
+              };
+            }
+            if (confirmOptions) {
+              const confirmed = await showConfirmDialog({ ...confirmOptions, confirmText: state.lang === 'zh' ? '继续执行' : 'Continue', tone: 'warn' });
+              if (!confirmed) return;
+            }
+            const result = await postJson(endpoint, payload);
+            const ok = result?.success !== false;
+            showToast(result?.message || 'OK', ok ? 'success' : 'error');
+            await loadOpenClawTab();
+          } catch (error) {
+            showToast(error.message || String(error), 'error');
+          }
+        });
+      });
+    };
+    bindOpenClawActions();
+    rememberCurrentPanelRender(viewTabId, bindOpenClawActions);
+    if (isRunning) scheduleOpenClawStatusPoll();
+    else clearOpenClawPollTimer();
   }
 
   async function loadChannels() {

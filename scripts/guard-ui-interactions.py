@@ -14,13 +14,6 @@ from playwright.sync_api import sync_playwright
 DEFAULT_URL = 'http://127.0.0.1:18088/'
 DEFAULT_TIMEOUT_MS = 15000
 
-EMPTY_NOTIFICATION_TEXT = {
-    'zh': '没有符合筛选条件的通知',
-    'en': 'No notifications match the current filters',
-}
-ADVANCED_TABS = {'notifications', 'activity', 'costs', 'cron'}
-
-
 @dataclass
 class InteractionFailure:
     message: str
@@ -52,15 +45,24 @@ class GuardUiInteractions:
         self._ensure_authenticated()
         for lang in self._languages_to_test():
             self._switch_lang(lang)
+            self._exercise_chrome_controls(lang)
             self._exercise_notifications(lang)
             self._exercise_files(lang)
+            self._exercise_security(lang)
             self._exercise_git_sync(lang)
         self._report_runtime_errors()
         return 0 if not self.failures else 1
 
     def _goto(self) -> None:
         self.page.goto(self.args.url, wait_until='domcontentloaded', timeout=self.args.timeout)
-        self.page.wait_for_load_state('networkidle', timeout=self.args.timeout)
+        self._wait_for_shell_or_login()
+
+    def _wait_for_shell_or_login(self) -> None:
+        self.page.wait_for_function(
+            "() => !!document.querySelector('[data-tab]') || !!document.querySelector('#guard-login-form')",
+            timeout=self.args.timeout,
+        )
+        self.page.wait_for_timeout(300)
 
     def _ensure_authenticated(self) -> None:
         if not self.page.locator('#guard-login-form').count():
@@ -71,23 +73,64 @@ class GuardUiInteractions:
         self.page.fill('#guard-login-pwd', self.args.password)
         self.page.click('#guard-login-btn')
         self.page.wait_for_selector('[data-tab]', timeout=self.args.timeout)
-        self.page.wait_for_load_state('networkidle', timeout=self.args.timeout)
+        self.page.wait_for_timeout(300)
 
     def _languages_to_test(self) -> Iterable[str]:
         if self.args.lang == 'both':
             return ('zh', 'en')
         return (self.args.lang,)
 
-    def _switch_lang(self, lang: str) -> None:
-        self.page.click(f'.lang-switch [data-lang="{lang}"]', timeout=self.args.timeout)
+    def _open_top_menu(self, menu_id: str) -> None:
+        self.page.click(f'[data-top-menu-trigger="{menu_id}"]', timeout=self.args.timeout, force=True)
         self.page.wait_for_function(
-            "(target) => document.documentElement && Array.from(document.querySelectorAll('[data-lang]')).some((node) => node.classList.contains('active') && node.getAttribute('data-lang') === target)",
-            arg=lang,
+            "(menuId) => !!document.querySelector(`[data-top-menu=\"${menuId}\"].open`)",
+            arg=menu_id,
             timeout=self.args.timeout,
         )
 
+    def _switch_lang(self, lang: str) -> None:
+        try:
+            self._open_top_menu('lang')
+            self.page.click(f'[data-top-menu="lang"].open [data-lang="{lang}"]', timeout=self.args.timeout, force=True)
+            self.page.wait_for_function(
+                "(target) => window.localStorage.getItem('openclaw-guard.lang') === target",
+                arg=lang,
+                timeout=self.args.timeout,
+            )
+            self.page.wait_for_function(
+                "(target) => Array.from(document.querySelectorAll('[data-tab]')).some((node) => (node.textContent || '').trim() === target || (node.textContent || '').includes(target))",
+                arg='Home' if lang == 'en' else '首页',
+                timeout=self.args.timeout,
+            )
+            self.page.wait_for_function(
+                "(menuId) => !document.querySelector(`[data-top-menu=\"${menuId}\"].open`)",
+                arg='lang',
+                timeout=self.args.timeout,
+            )
+            self.page.wait_for_timeout(250)
+        except (PlaywrightTimeoutError, PlaywrightError) as exc:
+            self.failures.append(InteractionFailure(f'{lang} 语言切换测试失败: {exc}'))
+
+    def _exercise_chrome_controls(self, lang: str) -> None:
+        try:
+            target_theme = 'dark' if lang == 'zh' else 'light'
+            self._open_top_menu('theme')
+            self.page.click(f'[data-top-menu="theme"].open [data-theme-pref="{target_theme}"]', timeout=self.args.timeout)
+            self.page.wait_for_function(
+                "(pref) => document.documentElement.dataset.themePreference === pref",
+                arg=target_theme,
+                timeout=self.args.timeout,
+            )
+            self._open_top_menu('theme')
+            self.page.click('[data-top-menu="theme"].open [data-theme-pref="auto"]', timeout=self.args.timeout)
+            self.page.wait_for_function(
+                "() => document.documentElement.dataset.themePreference === 'auto'",
+                timeout=self.args.timeout,
+            )
+        except (PlaywrightTimeoutError, PlaywrightError) as exc:
+            self.failures.append(InteractionFailure(f'{lang} 顶部控制交互测试失败: {exc}'))
+
     def _open_tab(self, tab_id: str) -> None:
-        self._ensure_tab_visible(tab_id)
         self.page.click(f'[data-tab="{tab_id}"]', timeout=self.args.timeout)
         self.page.wait_for_function(
             "(target) => window.location.hash === '#' + target || !!document.querySelector(`[data-tab=\"${target}\"].active`)",
@@ -96,23 +139,15 @@ class GuardUiInteractions:
         )
         self._wait_panel_ready()
 
-    def _ensure_tab_visible(self, tab_id: str) -> None:
-        if tab_id not in ADVANCED_TABS:
-            return
-        if self.page.locator(f'[data-tab="{tab_id}"]').count():
-            return
-        toggle = self.page.locator('[data-nav-action="toggle-advanced"]')
-        if not toggle.count():
-            raise PlaywrightTimeoutError(f'找不到高级功能展开按钮，无法打开 {tab_id}')
-        toggle.click()
-        self.page.wait_for_selector(f'[data-tab="{tab_id}"]', timeout=self.args.timeout)
-
     def _wait_panel_ready(self) -> None:
         deadline = time.time() + (self.args.timeout / 1000)
         while time.time() < deadline:
             panel = self.page.locator('#guard-panel')
             if not panel.count():
                 time.sleep(0.1)
+                continue
+            if self.page.locator('#guard-panel .guard-loading-card').count():
+                time.sleep(0.2)
                 continue
             text = (panel.text_content() or '').strip()
             empty_locator = self.page.locator('#guard-panel .empty').first
@@ -138,14 +173,21 @@ class GuardUiInteractions:
     def _exercise_notifications(self, lang: str) -> None:
         try:
             self._open_tab('notifications')
+            self.page.evaluate("() => document.querySelector('[data-notify-view=\"reminders\"]')?.click()")
+            self.page.wait_for_selector('[data-notify-view="reminders"].active', timeout=self.args.timeout)
             self.page.wait_for_selector('#notify-search', timeout=self.args.timeout)
-            self.page.fill('#notify-search', '__guard_ui_no_match__')
-            self.page.wait_for_timeout(350)
+            self.page.evaluate("() => document.querySelector('[data-notify-view=\"timeline\"]')?.click()")
             self.page.wait_for_function(
-                "(needle) => (document.querySelector('#guard-panel')?.textContent || '').includes(needle)",
-                arg=EMPTY_NOTIFICATION_TEXT[lang],
+                "() => !!document.querySelector('[data-notify-view=\"timeline\"].active')",
                 timeout=self.args.timeout,
             )
+            self.page.evaluate("() => document.querySelector('[data-notify-view=\"reminders\"]')?.click()")
+            self.page.wait_for_function(
+                "() => !!document.querySelector('[data-notify-view=\"reminders\"].active')",
+                timeout=self.args.timeout,
+            )
+            self.page.fill('#notify-search', 'session')
+            self.page.wait_for_timeout(250)
             self.page.fill('#notify-search', '')
             self.page.wait_for_timeout(250)
             clear_button = self.page.locator('[data-notify-bulk="clear-all"]')
@@ -200,6 +242,26 @@ class GuardUiInteractions:
             self._wait_for_file_editor(second_path)
         except (PlaywrightTimeoutError, PlaywrightError) as exc:
             self.failures.append(InteractionFailure(f'{lang} 文件交互测试失败: {exc}'))
+
+    def _exercise_security(self, lang: str) -> None:
+        try:
+            self._open_tab('security')
+            self.page.wait_for_selector('[data-security-view="audit"]', timeout=self.args.timeout)
+            self.page.click('[data-security-view="modes"]')
+            self.page.wait_for_selector('[data-security-view="modes"].active', timeout=self.args.timeout)
+            self.page.wait_for_timeout(350)
+            self.page.click('[data-security-view="hardening"]')
+            self.page.wait_for_selector('[data-security-view="hardening"].active', timeout=self.args.timeout)
+            self.page.wait_for_selector('[data-security-platform]', timeout=self.args.timeout)
+            self.page.click('[data-security-view="audit"]')
+            self.page.wait_for_selector('[data-security-view="audit"].active', timeout=self.args.timeout)
+            self.page.wait_for_timeout(350)
+            panel_text = (self.page.locator('#guard-panel').text_content() or '').strip()
+            expected = '安全检查' if lang == 'zh' else 'Security Checks'
+            if expected not in panel_text:
+                raise PlaywrightTimeoutError(f'安全页切回审计后未出现预期文案: {expected}')
+        except (PlaywrightTimeoutError, PlaywrightError) as exc:
+            self.failures.append(InteractionFailure(f'{lang} 安全页交互测试失败: {exc}'))
 
     def _find_two_files(self) -> Optional[List[str]]:
         visited_dirs = set()
@@ -263,20 +325,39 @@ class GuardUiInteractions:
     def _exercise_git_sync(self, lang: str) -> None:
         try:
             self._open_tab('git-sync')
+            self.page.wait_for_selector('[data-git-sync-view="recovery"]', timeout=self.args.timeout)
+            self.page.wait_for_selector('[data-recovery-action="save"]', timeout=self.args.timeout)
+            self.page.evaluate("() => document.querySelector('[data-git-sync-view=\"advanced\"]')?.click()")
+            self.page.wait_for_selector('[data-git-sync-view="advanced"].active', timeout=self.args.timeout)
+            self.page.wait_for_selector('[data-git-sync-advanced-view="overview"]', timeout=self.args.timeout)
+            self.page.evaluate("() => document.querySelector('[data-git-sync-advanced-view=\"scope\"]')?.click()")
+            self.page.wait_for_selector('[data-git-sync-advanced-view="scope"].active', timeout=self.args.timeout)
+            self.page.wait_for_selector('[data-git-action="copy-stageable-list"]', timeout=self.args.timeout)
+            self.page.evaluate("() => document.querySelector('[data-git-sync-advanced-view=\"gitignore\"]')?.click()")
+            self.page.wait_for_selector('[data-git-sync-advanced-view="gitignore"].active', timeout=self.args.timeout)
             self.page.wait_for_selector('[data-git-action="preview-gitignore"]', timeout=self.args.timeout)
             self.page.click('[data-git-action="preview-gitignore"]')
             self.page.wait_for_timeout(500)
             self.page.click('[data-git-action="copy-embedded-guide"]')
             self.page.wait_for_timeout(400)
+            self.page.evaluate("() => document.querySelector('[data-git-sync-advanced-view=\"auth\"]')?.click()")
+            self.page.wait_for_selector('[data-git-sync-advanced-view="auth"].active', timeout=self.args.timeout)
+            self.page.wait_for_selector('[data-git-action="connect"]', timeout=self.args.timeout)
+            self.page.evaluate("() => document.querySelector('[data-git-sync-advanced-view=\"overview\"]')?.click()")
+            self.page.wait_for_selector('[data-git-sync-advanced-view="overview"].active', timeout=self.args.timeout)
+            self.page.wait_for_selector('[data-git-action="check-sync"]', timeout=self.args.timeout)
+            self.page.evaluate("() => document.querySelector('[data-git-sync-view=\"recovery\"]')?.click()")
+            self.page.wait_for_selector('[data-git-sync-view="recovery"].active', timeout=self.args.timeout)
+            self.page.wait_for_selector('[data-recovery-action="save"]', timeout=self.args.timeout)
             if self.page.locator('.guard-modal-overlay').count():
                 self._dismiss_modal_if_present()
             toast = self.page.locator('#guard-toast')
             if toast.count():
                 toast_text = (toast.text_content() or '').strip()
                 if toast_text and 'error' in (toast.get_attribute('class') or ''):
-                    raise PlaywrightTimeoutError(f'Git 同步提示返回错误: {toast_text}')
+                    raise PlaywrightTimeoutError(f'备份与恢复提示返回错误: {toast_text}')
         except (PlaywrightTimeoutError, PlaywrightError) as exc:
-            self.failures.append(InteractionFailure(f'{lang} Git 同步交互测试失败: {exc}'))
+            self.failures.append(InteractionFailure(f'{lang} 备份与恢复交互测试失败: {exc}'))
 
     def _report_runtime_errors(self) -> None:
         for item in self.console_errors:

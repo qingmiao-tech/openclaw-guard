@@ -73,6 +73,7 @@ import { clearNotifications, clearReadNotifications, getNotificationSummary, mar
 import { detectOpenClaw, scheduleOpenClawTask } from './openclaw.js';
 import { detectPlatform, getCurrentUser, getHomeDir, getOpenClawDir } from './platform.js';
 import { applyProfile, PROFILES } from './profiles.js';
+import { getRecoveryOverview, listRecoveryPoints, restoreRecoveryPoint, saveRecoveryPoint } from './recovery.js';
 import {
     getCachedCostSummary,
     getCachedDashboardOverview,
@@ -793,6 +794,30 @@ export function startServer(port: number) {
         if (pathname === '/api/git-sync/sync' && req.method === 'POST') {
           const body = await readJsonBody(req);
           jsonResponse(res, syncGitSync(typeof body.message === 'string' ? body.message : undefined));
+          return;
+        }
+        if (pathname === '/api/recovery/overview' && req.method === 'GET') {
+          jsonResponse(res, getRecoveryOverview());
+          return;
+        }
+        if (pathname === '/api/recovery/points' && req.method === 'GET') {
+          const limitRaw = Number(url.searchParams.get('limit') || '20');
+          const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 100) : 20;
+          jsonResponse(res, { items: listRecoveryPoints(limit) });
+          return;
+        }
+        if (pathname === '/api/recovery/save' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          jsonResponse(res, saveRecoveryPoint(typeof body.label === 'string' ? body.label : undefined));
+          return;
+        }
+        if (pathname === '/api/recovery/restore' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          if (typeof body.commitSha !== 'string' || !body.commitSha.trim()) {
+            jsonResponse(res, { success: false, message: 'commitSha is required' }, 400);
+            return;
+          }
+          jsonResponse(res, restoreRecoveryPoint(body.commitSha));
           return;
         }
 

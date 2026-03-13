@@ -107,7 +107,7 @@ function getCliVersion(): string {
 
 program
   .name('openclaw-guard')
-  .description('OpenClaw Guard：安全审计、配置管理、原生工作台与 Git 同步中心')
+  .description('OpenClaw Guard：安全审计、配置管理、原生工作台与备份恢复中心')
   .version(getCliVersion());
 
 program.command('audit')
@@ -469,14 +469,14 @@ cronCmd.command('disable <jobId>').description('停用定时任务').action((job
 cronCmd.command('run <jobId>').description('手动触发定时任务').action((jobId: string) => printAction(runCronJob(jobId)));
 cronCmd.command('remove <jobId>').description('删除定时任务').action((jobId: string) => printAction(removeCronJob(jobId)));
 
-const gitSyncCmd = program.command('git-sync').description('Git 私有仓同步中心');
-gitSyncCmd.command('status').description('查看同步状态').option('--json', '输出 JSON').action((opts: { json?: boolean }) => {
+const gitSyncCmd = program.command('git-sync').description('备份与恢复控制台（含高级 Git 能力）');
+gitSyncCmd.command('status').description('查看备份与恢复状态').option('--json', '输出 JSON').action((opts: { json?: boolean }) => {
   const status = getGitSyncStatus();
   if (opts.json) {
     printJson(status);
     return;
   }
-  console.log(chalk.bold('\nGit 同步状态\n'));
+  console.log(chalk.bold('\n备份与恢复状态\n'));
   console.log(`仓库目录: ${status.repoPath}`);
   console.log(`已初始化: ${status.repoInitialized ? '是' : '否'}`);
   console.log(`远程仓库: ${status.remoteUrl || '-'}`);
@@ -499,8 +499,8 @@ gitSyncCmd.command('status').description('查看同步状态').option('--json', 
     console.log(chalk.yellow(`阻断原因: ${status.reasons.join('；')}`));
   }
 });
-gitSyncCmd.command('init').description('初始化 .openclaw 为 Git 仓库').action(() => printAction(initGitSync()));
-gitSyncCmd.command('connect').description('绑定远程仓库')
+gitSyncCmd.command('init').description('初始化 .openclaw 保护仓库').action(() => printAction(initGitSync()));
+gitSyncCmd.command('connect').description('绑定远程私有仓库')
   .requiredOption('--remote-url <url>', '远程仓库地址')
   .option('--provider <provider>', 'github | gitee')
   .option('--remote-name <name>', '远程名', 'origin')
@@ -511,7 +511,7 @@ gitSyncCmd.command('connect').description('绑定远程仓库')
       remoteName: opts.remoteName,
     }));
   });
-const gitAuthCmd = gitSyncCmd.command('auth').description('Git 认证管理');
+const gitAuthCmd = gitSyncCmd.command('auth').description('云端保护认证管理');
 gitAuthCmd.command('token').description('保存 HTTPS Token')
   .requiredOption('--token <token>', 'HTTPS Token')
   .option('--provider <provider>', 'github | gitee')
@@ -544,11 +544,11 @@ gitAuthCmd.command('login').description('通过浏览器发起 OAuth 授权')
     printAction(result);
   });
 gitSyncCmd.command('check').description('校验远程仓库是否 private').action(async () => printAction(await checkGitRemotePrivate()));
-gitSyncCmd.command('commit').description('提交本地变更')
+gitSyncCmd.command('commit').description('提交当前保护点（高级 Git）')
   .option('-m, --message <message>', '提交说明')
   .action((opts: { message?: string }) => printAction(commitGitSync(opts.message)));
 gitSyncCmd.command('push').description('推送到远程 private 仓库').action(() => printAction(pushGitSync()));
-gitSyncCmd.command('sync').description('提交并推送')
+gitSyncCmd.command('sync').description('提交并推送当前保护点')
   .option('-m, --message <message>', '提交说明')
   .action((opts: { message?: string }) => printAction(syncGitSync(opts.message)));
 

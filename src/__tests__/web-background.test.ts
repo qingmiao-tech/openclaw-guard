@@ -61,6 +61,23 @@ describe('web-background', () => {
     expect(report.nextAction).toBe('adopt-or-stop');
   });
 
+  it('keeps port-specific queries from being hijacked by another managed instance', () => {
+    vi.stubEnv('OPENCLAW_GUARD_MOCK_LISTENING_JSON', JSON.stringify([
+      { pid: process.pid, port: 18088 },
+    ]));
+    registerBackgroundProcess(18088, process.pid);
+
+    const status = getWebBackgroundStatus(18089);
+    const report = getWebBackgroundReport(18089);
+
+    expect(status.running).toBe(false);
+    expect(status.pid).toBeNull();
+    expect(status.port).toBe(18089);
+    expect(status.source).toBe('none');
+    expect(report.primaryUrl).toBe('http://127.0.0.1:18089/');
+    expect(report.workbenchUrl).toBe('http://127.0.0.1:18089/workbench');
+  });
+
   it('returns self-exit when stopping the current managed process', () => {
     vi.stubEnv('OPENCLAW_GUARD_MOCK_LISTENING_JSON', JSON.stringify([
       { pid: process.pid, port: 18088 },

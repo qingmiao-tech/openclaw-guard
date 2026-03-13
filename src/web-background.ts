@@ -256,35 +256,38 @@ export function registerBackgroundProcess(port: number, pid = process.pid): void
 export function getWebBackgroundStatus(port: number): WebBackgroundStatus {
   const pidFile = getPidFile();
   const record = readRuntimeRecord();
+  const portPid = findPidByPort(port);
 
   if (record) {
     if (isPidAlive(record.pid)) {
-      return {
-        running: true,
-        pid: record.pid,
-        port: resolveTrackedPort(record.pid, record.port),
-        source: 'pid-file',
-        managed: record.managed,
-        pidFile,
-      };
-    }
+      const trackedPort = portPid === record.pid ? port : resolveTrackedPort(record.pid, record.port);
+      if (trackedPort === port || record.port === port || portPid === record.pid) {
+        return {
+          running: true,
+          pid: record.pid,
+          port: trackedPort,
+          source: 'pid-file',
+          managed: record.managed,
+          pidFile,
+        };
+      }
+    } else {
+      const pidFromRecordedPort = findPidByPort(record.port);
+      if (pidFromRecordedPort && record.port === port) {
+        return {
+          running: true,
+          pid: pidFromRecordedPort,
+          port: record.port,
+          source: 'pid-file',
+          managed: record.managed,
+          pidFile,
+        };
+      }
 
-    const pidFromRecordedPort = findPidByPort(record.port);
-    if (pidFromRecordedPort) {
-      return {
-        running: true,
-        pid: pidFromRecordedPort,
-        port: record.port,
-        source: 'pid-file',
-        managed: record.managed,
-        pidFile,
-      };
+      clearWebRuntimeRecord(record.pid);
     }
-
-    clearWebRuntimeRecord(record.pid);
   }
 
-  const portPid = findPidByPort(port);
   if (portPid) {
     return {
       running: true,

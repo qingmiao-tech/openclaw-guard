@@ -7,7 +7,6 @@ import { URL, URLSearchParams } from 'node:url';
 import { getOpenClawDir } from './platform.js';
 import { ensureDir, ensureGuardLayout, isoNow, readJsonFile, writeJsonFile } from './guard-state.js';
 import { addNotification, markNotificationsMatching } from './notifications.js';
-import { runCommand } from './openclaw-runtime.js';
 import { getPersistentCachedValue, invalidatePersistentCache } from './persistent-cache.js';
 
 export type GitProvider = 'github' | 'gitee';
@@ -356,30 +355,23 @@ let activeOAuthServer: http.Server | null = null;
 let activeOAuthTimeout: NodeJS.Timeout | null = null;
 
 function runGit(args: string[], extraEnv?: NodeJS.ProcessEnv) {
-  if (extraEnv && Object.keys(extraEnv).length > 0) {
-    const result = spawnSync('git', args, {
-      encoding: 'utf-8',
-      timeout: 60000,
-      shell: process.platform === 'win32',
-      windowsHide: true,
-      env: {
-        ...process.env,
-        ...extraEnv,
-      },
-    });
+  const result = spawnSync('git', args, {
+    encoding: 'utf-8',
+    timeout: 60000,
+    shell: false,
+    windowsHide: true,
+    env: extraEnv ? { ...process.env, ...extraEnv } : process.env,
+  });
 
-    return {
-      success: result.status === 0 && !result.error,
-      command: 'git',
-      args,
-      exitCode: result.status,
-      stdout: result.stdout || '',
-      stderr: result.stderr || '',
-      error: result.error?.message,
-    };
-  }
-
-  return runCommand('git', args, 60000);
+  return {
+    success: result.status === 0 && !result.error,
+    command: 'git',
+    args,
+    exitCode: result.status,
+    stdout: result.stdout || '',
+    stderr: result.stderr || '',
+    error: result.error?.message,
+  };
 }
 
 function repoPath(): string {
@@ -1370,7 +1362,7 @@ function generateCommitMessage(): string {
   const dd = `${now.getDate()}`.padStart(2, '0');
   const hh = `${now.getHours()}`.padStart(2, '0');
   const mi = `${now.getMinutes()}`.padStart(2, '0');
-  return `同步 OpenClaw 配置 ${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+  return `guard: checkpoint ${yyyy}-${mm}-${dd} ${hh}:${mi}`;
 }
 
 function getReadyStatus(): GitSyncStatus {

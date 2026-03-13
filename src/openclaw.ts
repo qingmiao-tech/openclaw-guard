@@ -627,6 +627,29 @@ export function scheduleOpenClawTask(
     };
   }
 
+  const execution = resolveInstallExecution(status, mode);
+  if (execution.skip) {
+    const finalAction = saveTaskState({
+      mode,
+      phase: execution.error ? 'error' : 'completed',
+      pid: null,
+      startedAt: nowIso(),
+      finishedAt: nowIso(),
+      message: execution.message,
+      error: execution.error || null,
+      logTail: execution.error ? [execution.error] : [],
+    });
+    invalidateOpenClawCaches(options.managedPrefix);
+    const refreshedStatus = detectOpenClaw(options);
+    return {
+      success: finalAction.phase !== 'error',
+      scheduled: false,
+      message: finalAction.message || execution.message,
+      status: refreshedStatus,
+      action: refreshedStatus.action,
+    };
+  }
+
   const command = resolveTaskCommand(mode, options);
   if (!command) {
     const failed = saveTaskState({
@@ -673,12 +696,14 @@ export function scheduleOpenClawTask(
       logTail: [],
     });
     invalidateOpenClawCaches(options.managedPrefix);
+    const refreshedStatus = detectOpenClaw(options);
+    const currentAction = refreshedStatus.action;
     return {
-      success: true,
-      scheduled: true,
-      message: running.message || '后台安装任务已发起。',
-      status: detectOpenClaw(options),
-      action: running,
+      success: currentAction.phase !== 'error',
+      scheduled: currentAction.phase === 'running' && currentAction.pid === running.pid,
+      message: currentAction.message || running.message || '后台安装任务已发起。',
+      status: refreshedStatus,
+      action: currentAction,
     };
   } catch (error) {
     const failed = saveTaskState({

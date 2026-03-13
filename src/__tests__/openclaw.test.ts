@@ -25,10 +25,12 @@ vi.mock('node:child_process', () => ({
 describe('openclaw', () => {
   let tempRoot = '';
   let externalBinary = '';
+  let processKillSpy: ReturnType<typeof vi.spyOn> | null = null;
 
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    processKillSpy = vi.spyOn(process, 'kill').mockImplementation(() => true as never);
 
     tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'openclaw-guard-openclaw-'));
     externalBinary = path.join(tempRoot, 'external', 'openclaw.cmd');
@@ -38,9 +40,10 @@ describe('openclaw', () => {
     mocks.detectPlatform.mockReturnValue('windows');
     mocks.getHomeDir.mockImplementation(() => tempRoot);
     mocks.getOpenClawDir.mockImplementation(() => path.join(tempRoot, '.openclaw'));
-    mocks.spawn.mockImplementation(() => {
-      throw new Error('spawn should not be called for skipped update');
-    });
+    mocks.spawn.mockImplementation(() => ({
+      pid: 43210,
+      unref: vi.fn(),
+    }));
     mocks.spawnSync.mockImplementation((command: string, args: string[] = []) => {
       if (command === 'npm' && args[0] === '--version') {
         return { status: 0, stdout: '10.9.3', stderr: '', error: null };
@@ -54,6 +57,32 @@ describe('openclaw', () => {
       if (path.resolve(command) === path.resolve(externalBinary) && args[0] === '--version') {
         return { status: 0, stdout: 'openclaw 2026.2.25', stderr: '', error: null };
       }
+      if (path.resolve(command) === path.resolve(externalBinary) && args[0] === 'update' && args[1] === 'status' && args[2] === '--json') {
+        return {
+          status: 0,
+          stdout: JSON.stringify({
+            update: {
+              root: 'E:\\ProgramFiles\\nvm\\node_global\\node_modules\\openclaw',
+              installKind: 'package',
+              packageManager: 'pnpm',
+            },
+            channel: {
+              value: 'stable',
+              source: 'default',
+              label: 'stable (default)',
+            },
+            availability: {
+              available: true,
+              latestVersion: '2026.3.12',
+              hasGitUpdate: false,
+              hasRegistryUpdate: true,
+              gitBehind: null,
+            },
+          }),
+          stderr: '',
+          error: null,
+        };
+      }
       throw new Error(`unexpected spawnSync call: ${command} ${args.join(' ')}`);
     });
 
@@ -62,29 +91,29 @@ describe('openclaw', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs();
+    processKillSpy?.mockRestore();
+    processKillSpy = null;
     fs.rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  it('returns a final error state when update is skipped for a PATH-managed install', async () => {
+  it('schedules an official in-place update for a PATH-managed install', async () => {
     const { scheduleOpenClawTask } = await import('../openclaw.js');
 
     const result = scheduleOpenClawTask('update');
 
-    expect(result.success).toBe(false);
-    expect(result.scheduled).toBe(false);
+    expect(result.success).toBe(true);
+    expect(result.scheduled).toBe(true);
     expect(result.status.installed).toBe(true);
     expect(result.status.version).toBe('2026.2.25');
     expect(result.status.detectedSource).toBe('path');
-    expect(result.message).toContain('PATH');
-    expect(result.message).toContain('OpenClaw');
-    expect(result.message).toContain('Guard');
-    expect(result.action.phase).toBe('error');
-    expect(result.action.error).toContain('Guard');
-    expect(result.status.action.phase).toBe('error');
-    expect(result.status.action.error).toBe(result.action.error);
-    expect(result.action).toEqual(result.status.action);
-    expect(result.action.pid).toBeNull();
-    expect(result.action.logTail).toEqual([result.action.error]);
-    expect(mocks.spawn).not.toHaveBeenCalled();
+    expect(result.status.installKind).toBe('package');
+    expect(result.status.packageManager).toBe('pnpm');
+    expect(result.status.updateChannel).toBe('stable');
+    expect(result.status.officialStatusAvailable).toBe(true);
+    expect(result.status.effectiveUpdater).toBe('official-cli');
+    expect(result.action.phase).toBe('running');
+    expect(result.action.pid).toBe(43210);
+    expect(result.message).toContain('后台发起');
+    expect(mocks.spawn).toHaveBeenCalledTimes(1);
   });
 });

@@ -6,7 +6,7 @@ import { runFullAudit, type AuditResult } from './audit.js';
 import { applyProfile, getProfile, PROFILES } from './profiles.js';
 import { generateHardenScript, getAllHardenSteps } from './harden.js';
 import { detectPlatform, getCurrentUser, getOpenClawDir, getHomeDir } from './platform.js';
-import { detectOpenClaw, runOpenClawTask, type OpenClawTaskMode } from './openclaw.js';
+import { detectOpenClaw, getOpenClawTargets, runOpenClawTask, type OpenClawTaskMode } from './openclaw.js';
 import { getConfigPath, getEnvPath, readAllEnv, readEnvValue, writeEnvValue, getDashboardUrl } from './config.js';
 import { getChannels, getFeishuConfig, saveFeishuConfig, checkFeishuPlugin, type FeishuConfig } from './channels.js';
 import { getAIConfig, setPrimaryModel, setFallbackModels, PROVIDERS as AI_PROVIDERS } from './models.js';
@@ -21,6 +21,23 @@ import { getCachePrewarmStatus, runCachePrewarm } from './cache-prewarm.js';
 import { getGuardRestartStatus, runGuardRestartTask, scheduleGuardRestart } from './guard-restart.js';
 import { formatMachineInitResult, runMachineInit } from './machine-init.js';
 import { formatWebBackgroundReport, getWebBackgroundReport, getWebBackgroundStatus, startWebBackgroundService, stopWebBackgroundService } from './web-background.js';
+
+function rewriteTargetVersionArg(argv: string[]): string[] {
+  const nextArgv = [...argv];
+  const rewriteAfter = (anchor: string) => {
+    const anchorIndex = nextArgv.indexOf(anchor);
+    if (anchorIndex === -1) return;
+    const versionIndex = nextArgv.indexOf('--version', anchorIndex + 1);
+    if (versionIndex !== -1) {
+      nextArgv[versionIndex] = '--target-version';
+    }
+  };
+  rewriteAfter('rollback');
+  rewriteAfter('openclaw-task');
+  return nextArgv;
+}
+
+process.argv.splice(0, process.argv.length, ...rewriteTargetVersionArg(process.argv));
 
 const program = new Command();
 
@@ -187,6 +204,76 @@ program.command('info').description('查看系统与 OpenClaw 基础信息').act
   console.log(`安装路径: ${openclaw.binPath || '-'}`);
   console.log(`检测来源: ${openclaw.detectedSource}`);
   console.log(`托管前缀: ${openclaw.managedPrefix}`);
+});
+
+const openclawCmd = program.command('openclaw').description('OpenClaw 生命周期管理');
+openclawCmd.command('status').description('查看 OpenClaw 状态').option('--json', '输出 JSON').action((opts: { json?: boolean }) => {
+  const status = detectOpenClaw({ bypassCache: true });
+  if (opts.json) {
+    printJson(status);
+    return;
+  }
+  console.log(chalk.bold('\nOpenClaw 状态\n'));
+  console.log(`已安装: ${status.installed ? '是' : '否'}`);
+  console.log(`当前版本: ${status.version || '-'}`);
+  console.log(`最新版本: ${status.latestVersion || '-'}`);
+  console.log(`更新方式: ${status.effectiveUpdater}`);
+  console.log(`安装类型: ${status.installKind}`);
+  console.log(`渠道: ${status.updateChannel || '-'}`);
+  console.log(`路径: ${status.binPath || '-'}`);
+  if (status.lastHistoryEntry) {
+    console.log(`最近动作: ${status.lastHistoryEntry.kind} @ ${status.lastHistoryEntry.finishedAt}`);
+  }
+});
+openclawCmd.command('targets').description('查看可用更新目标和回退目标').option('--json', '输出 JSON').action((opts: { json?: boolean }) => {
+  const targets = getOpenClawTargets();
+  if (opts.json) {
+    printJson(targets);
+    return;
+  }
+  console.log(chalk.bold('\nOpenClaw 目标目录\n'));
+  console.log(`安装类型: ${targets.installKind}`);
+  console.log(`更新方式: ${targets.effectiveUpdater}`);
+  console.log(`渠道: ${targets.channels.join(', ')}`);
+  if (targets.quickRollbackTarget) {
+    console.log(`快速回退: ${targets.quickRollbackTarget.label}`);
+  }
+  if (targets.packageVersions.length) {
+    console.log(`可选版本: ${targets.packageVersions.slice(0, 8).join(', ')}`);
+  }
+  if (targets.recentGitTags.length) {
+    console.log(`近期标签: ${targets.recentGitTags.slice(0, 8).join(', ')}`);
+  }
+});
+openclawCmd.command('update').description('更新 OpenClaw').option('--channel <channel>', 'stable | beta | dev').option('--tag <tag>', '指定版本或 dist-tag').option('--no-restart', '跳过自动重启').option('--dry-run', '只预演，不真正更新').option('--json', '输出 JSON').action((opts: { channel?: string; tag?: string; restart?: boolean; dryRun?: boolean; json?: boolean }) => {
+  const result = runOpenClawTask('update', {
+    channel: opts.channel === 'stable' || opts.channel === 'beta' || opts.channel === 'dev' ? opts.channel : undefined,
+    tag: opts.tag,
+    restart: opts.restart,
+    dryRun: opts.dryRun,
+  });
+  if (opts.json) {
+    printJson({ success: result.phase === 'completed', action: result, status: detectOpenClaw({ bypassCache: true }) });
+    return;
+  }
+  printAction({ success: result.phase === 'completed', message: result.message || (result.phase === 'completed' ? '更新完成。' : '更新失败。') });
+  if (result.error) console.log(chalk.dim(result.error));
+});
+openclawCmd.command('rollback').description('回退 OpenClaw').option('--target-version <version>', 'package 安装回退到指定版本（兼容 --version）').option('--history-id <id>', '使用 Guard 历史记录回退').option('--ref <gitRef>', 'git 检出回退到指定 ref/tag/sha').option('--date <date>', 'git 检出回退到指定日期前的提交').option('--no-restart', '跳过自动重启').option('--dry-run', '只预演，不真正回退').option('--json', '输出 JSON').action((opts: { targetVersion?: string; historyId?: string; ref?: string; date?: string; restart?: boolean; dryRun?: boolean; json?: boolean }) => {
+  const result = runOpenClawTask('rollback', {
+    version: opts.targetVersion,
+    historyId: opts.historyId,
+    gitRef: opts.ref,
+    gitDate: opts.date,
+    restart: opts.restart,
+    dryRun: opts.dryRun,
+  });
+  if (opts.json) {
+    printJson({ success: result.phase === 'completed', action: result, status: detectOpenClaw({ bypassCache: true }) });
+    return;
+  }
+  printAction({ success: result.phase === 'completed', message: result.message || (result.phase === 'completed' ? '回退完成。' : '回退失败。') });
+  if (result.error) console.log(chalk.dim(result.error));
 });
 
 const serviceCmd = program.command('service').description('Gateway 服务管理');
@@ -750,11 +837,19 @@ program.command('service-task')
 
 program.command('openclaw-task')
   .description('执行后台 OpenClaw 安装任务')
-  .requiredOption('--mode <mode>', 'install / update')
+  .requiredOption('--mode <mode>', 'install / update / rollback')
   .option('--managed-prefix <path>', '指定 Guard 托管 npm 前缀')
+  .option('--channel <channel>', 'stable | beta | dev')
+  .option('--tag <tag>', '指定版本或 dist-tag')
+  .option('--target-version <version>', 'package 安装回退到指定版本（兼容 --version）')
+  .option('--history-id <id>', '使用 Guard 历史记录回退')
+  .option('--ref <gitRef>', 'git 检出回退到指定 ref/tag/sha')
+  .option('--date <date>', 'git 检出回退到指定日期前的提交')
+  .option('--no-restart', '跳过自动重启')
+  .option('--dry-run', '只预演，不真正执行')
   .option('--json', '输出 JSON 状态')
-  .action((opts: { mode: string; managedPrefix?: string; json?: boolean }) => {
-    const mode = opts.mode === 'install' || opts.mode === 'update'
+  .action((opts: { mode: string; managedPrefix?: string; channel?: string; tag?: string; targetVersion?: string; historyId?: string; ref?: string; date?: string; restart?: boolean; dryRun?: boolean; json?: boolean }) => {
+    const mode = opts.mode === 'install' || opts.mode === 'update' || opts.mode === 'rollback'
       ? opts.mode as OpenClawTaskMode
       : null;
     if (!mode) {
@@ -771,7 +866,16 @@ program.command('openclaw-task')
       return;
     }
 
-    const result = runOpenClawTask(mode, { managedPrefix: opts.managedPrefix });
+    const result = runOpenClawTask(mode, {
+      channel: opts.channel === 'stable' || opts.channel === 'beta' || opts.channel === 'dev' ? opts.channel : undefined,
+      tag: opts.tag,
+      version: opts.targetVersion,
+      historyId: opts.historyId,
+      gitRef: opts.ref,
+      gitDate: opts.date,
+      restart: opts.restart,
+      dryRun: opts.dryRun,
+    }, { managedPrefix: opts.managedPrefix });
     if (opts.json) {
       printJson(result);
       return;

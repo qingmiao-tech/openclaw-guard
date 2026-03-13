@@ -70,7 +70,7 @@ import {
     setPrimaryModel,
 } from './models.js';
 import { clearNotifications, clearReadNotifications, getNotificationSummary, markAllNotifications, markNotificationRead } from './notifications.js';
-import { detectOpenClaw, scheduleOpenClawTask } from './openclaw.js';
+import { detectOpenClaw, getOpenClawTargets, scheduleOpenClawTask } from './openclaw.js';
 import { detectPlatform, getCurrentUser, getHomeDir, getOpenClawDir } from './platform.js';
 import { applyProfile, PROFILES } from './profiles.js';
 import { getRecoveryOverview, listRecoveryPoints, restoreRecoveryPoint, saveRecoveryPoint } from './recovery.js';
@@ -363,12 +363,38 @@ export function startServer(port: number) {
           jsonResponse(res, detectOpenClaw());
           return;
         }
+        if (pathname === '/api/openclaw/targets' && req.method === 'GET') {
+          jsonResponse(res, getOpenClawTargets());
+          return;
+        }
         if (pathname === '/api/openclaw/install' && req.method === 'POST') {
-          jsonResponse(res, scheduleOpenClawTask('install'));
+          const body = await readJsonBody(req);
+          jsonResponse(res, scheduleOpenClawTask('install', {
+            restart: body.restart === false ? false : undefined,
+            dryRun: body.dryRun === true,
+          }));
           return;
         }
         if (pathname === '/api/openclaw/update' && req.method === 'POST') {
-          jsonResponse(res, scheduleOpenClawTask('update'));
+          const body = await readJsonBody(req);
+          jsonResponse(res, scheduleOpenClawTask('update', {
+            channel: body.channel === 'stable' || body.channel === 'beta' || body.channel === 'dev' ? body.channel : undefined,
+            tag: typeof body.tag === 'string' ? body.tag : undefined,
+            restart: body.restart === false ? false : undefined,
+            dryRun: body.dryRun === true,
+          }));
+          return;
+        }
+        if (pathname === '/api/openclaw/rollback' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          jsonResponse(res, scheduleOpenClawTask('rollback', {
+            version: typeof body.version === 'string' ? body.version : undefined,
+            historyId: typeof body.historyId === 'string' ? body.historyId : undefined,
+            gitRef: typeof body.gitRef === 'string' ? body.gitRef : undefined,
+            gitDate: typeof body.gitDate === 'string' ? body.gitDate : undefined,
+            restart: body.restart === false ? false : undefined,
+            dryRun: body.dryRun === true,
+          }));
           return;
         }
 

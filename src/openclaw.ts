@@ -7,14 +7,14 @@ import { ensureGuardLayout, readJsonFile, resolveUserPath, writeJsonFile } from 
 import { getPersistentCachedValue, invalidatePersistentCache } from './persistent-cache.js';
 import { getRecoveryOverview, saveRecoveryPoint } from './recovery.js';
 
-export type OpenClawTaskMode = 'install' | 'update' | 'rollback';
+export type OpenClawTaskMode = 'install' | 'update' | 'rollback' | 'uninstall';
 export type OpenClawTaskPhase = 'idle' | 'running' | 'completed' | 'error';
 export type OpenClawDetectedSource = 'managed-prefix' | 'path' | 'npm-prefix' | 'none';
 export type OpenClawInstallKind = 'package' | 'git' | 'unknown';
-export type OpenClawUpdateStrategy = 'official-cli' | 'bootstrap' | 'git-direct';
+export type OpenClawUpdateStrategy = 'official-cli' | 'bootstrap' | 'git-direct' | 'package-remove' | 'manual';
 export type OpenClawPackageManager = 'pnpm' | 'bun' | 'npm' | 'unknown';
 export type OpenClawUpdateChannel = 'stable' | 'beta' | 'dev';
-export type OpenClawHistoryKind = 'update' | 'rollback' | 'install' | 'repair';
+export type OpenClawHistoryKind = 'update' | 'rollback' | 'install' | 'repair' | 'uninstall';
 
 export interface OpenClawDetectionOptions {
   managedPrefix?: string;
@@ -305,7 +305,7 @@ function getOfficialCacheKey(localState: Pick<OpenClawLocalState, 'managedPrefix
 function normalizeTaskState(input?: Partial<OpenClawTaskState> | null): OpenClawTaskState {
   const phase = input?.phase;
   return {
-    mode: input?.mode === 'install' || input?.mode === 'update' || input?.mode === 'rollback' ? input.mode : null,
+    mode: input?.mode === 'install' || input?.mode === 'update' || input?.mode === 'rollback' || input?.mode === 'uninstall' ? input.mode : null,
     phase: phase === 'running' || phase === 'completed' || phase === 'error' ? phase : 'idle',
     pid: typeof input?.pid === 'number' && Number.isInteger(input.pid) && input.pid > 0 ? input.pid : null,
     startedAt: typeof input?.startedAt === 'string' ? input.startedAt : null,
@@ -713,14 +713,27 @@ function snapshotFromStatus(status: Pick<OpenClawStatus, 'version' | 'binPath' |
 }
 
 function maybeCreateRecoveryCheckpoint(mode: OpenClawTaskMode): { created: boolean; message: string | null } {
-  if (mode !== 'update' && mode !== 'rollback') return { created: false, message: null };
+  if (mode !== 'update' && mode !== 'rollback' && mode !== 'uninstall') return { created: false, message: null };
   try {
     const overview = getRecoveryOverview();
     if (!overview.repoReady) return { created: false, message: '备份与恢复尚未就绪，本次不会额外创建保护点。' };
-    const result = saveRecoveryPoint(mode === 'rollback' ? 'before OpenClaw rollback' : 'before OpenClaw update');
+    const label = mode === 'rollback'
+      ? 'before OpenClaw rollback'
+      : mode === 'uninstall'
+        ? 'before OpenClaw uninstall'
+        : 'before OpenClaw update';
+    const result = saveRecoveryPoint(label);
     return { created: result.success && !!result.createdPoint, message: result.message };
   } catch (error) {
     return { created: false, message: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+function clearDiscoveredBinary(binaryPath?: string | null): void {
+  const current = process.env.OPENCLAW_GUARD_OPENCLAW_BIN?.trim();
+  if (!current) return;
+  if (!binaryPath || samePath(current, binaryPath)) {
+    delete process.env.OPENCLAW_GUARD_OPENCLAW_BIN;
   }
 }
 
@@ -744,7 +757,18 @@ function getPackageRunArgs(manager: OpenClawPackageManager, script: string): str
 
 function runBootstrapInstall(mode: OpenClawTaskMode, localState: OpenClawLocalState, request: OpenClawActionRequest): { success: boolean; message: string; error?: string | null; logTail: string[] } {
   if (!localState.installReady) return { success: false, message: localState.installBlockers[0] || '当前环境不满足安装条件。', error: localState.installBlockers.join(' | '), logTail: [] };
-  if (mode === 'rollback') return { success: false, message: '当前无法直接执行版本回退，请先修复安装或改用源码检出方式。', error: 'Rollback requires an available official CLI or a git checkout.', logTail: [] };
+  if (mode === 'rollback' || mode === 'uninstall') {
+    return {
+      success: false,
+      message: mode === 'rollback'
+        ? '当前无法直接执行版本回退，请先修复安装或改用源码检出方式。'
+        : '当前无法通过 Guard 托管安装链路直接执行卸载，请先切换到已识别的安装来源。',
+      error: mode === 'rollback'
+        ? 'Rollback requires an available official CLI or a git checkout.'
+        : 'Uninstall requires an installed package or a managed Guard prefix.',
+      logTail: [],
+    };
+  }
   const packageSpec = request.version || request.tag ? `openclaw@${request.version || request.tag}` : 'openclaw@latest';
   const result = runCommandCapture('npm', ['install', '-g', packageSpec, '--prefix', localState.managedPrefix], 240_000, {
     OPENCLAW_GUARD_MANAGED_PREFIX: localState.managedPrefix,
@@ -769,6 +793,9 @@ function resolvePackageRollbackVersion(status: OpenClawStatus, request: OpenClaw
 
 function runOfficialCliAction(mode: OpenClawTaskMode, localState: OpenClawLocalState, request: OpenClawActionRequest, beforeStatus: OpenClawStatus): { success: boolean; message: string; error?: string | null; logTail: string[] } {
   if (!localState.binPath) return { success: false, message: '未定位到可执行的 OpenClaw CLI。', error: 'OpenClaw binary path is unavailable.', logTail: [] };
+  if (mode === 'uninstall') {
+    return { success: false, message: '官方更新 CLI 当前不负责卸载，请改走 Guard 的卸载流程。', error: 'Official CLI uninstall is not available.', logTail: [] };
+  }
   const args = ['update', '--json'];
   if (request.restart === false) args.push('--no-restart');
   if (request.dryRun) args.push('--dry-run');
@@ -843,8 +870,196 @@ function runGitDirectRollback(request: OpenClawActionRequest, beforeStatus: Open
   return { success: true, message: `已回退到源码引用 ${targetRef}，当前可能处于 detached HEAD 状态。`, logTail: lines.slice(-30) };
 }
 
+function appendStepLog(lines: string[], command: string, args: string[], result: CommandCaptureResult): void {
+  lines.push(`${result.success ? 'OK' : 'ERR'} ${[command, ...args].join(' ')}`);
+  tailOutput(result.stdout, result.stderr).forEach((line) => lines.push(line));
+}
+
+function stopGatewayBeforeUninstall(localState: OpenClawLocalState, request: OpenClawActionRequest, lines: string[]): void {
+  if (!localState.binPath || !fs.existsSync(localState.binPath)) return;
+  if (request.dryRun) {
+    lines.push(`DRY ${[localState.binPath, 'gateway', 'stop'].join(' ')}`);
+    return;
+  }
+  const stopResult = runCommandCapture(localState.binPath, ['gateway', 'stop'], 45_000, buildOfficialCliEnv(localState), path.dirname(localState.binPath));
+  appendStepLog(lines, localState.binPath, ['gateway', 'stop'], stopResult);
+  if (stopResult.success) return;
+  const forceResult = runCommandCapture(localState.binPath, ['gateway', 'stop', '--force'], 45_000, buildOfficialCliEnv(localState), path.dirname(localState.binPath));
+  appendStepLog(lines, localState.binPath, ['gateway', 'stop', '--force'], forceResult);
+}
+
+function addCandidatePath(targets: Set<string>, value?: string | null): void {
+  if (!value) return;
+  targets.add(path.resolve(value));
+}
+
+function addShimCandidates(targets: Set<string>, binDir?: string | null): void {
+  if (!binDir) return;
+  addCandidatePath(targets, path.join(binDir, 'openclaw'));
+  addCandidatePath(targets, path.join(binDir, 'openclaw.cmd'));
+  addCandidatePath(targets, path.join(binDir, 'openclaw.ps1'));
+}
+
+function isSafePackageRoot(rootPath: string | null | undefined): boolean {
+  if (!rootPath) return false;
+  const normalized = path.resolve(rootPath).replace(/\\/g, '/');
+  return /\/node_modules\/openclaw$/i.test(normalized);
+}
+
+function collectPackageRemovalTargets(localState: OpenClawLocalState, beforeStatus: OpenClawStatus): { directories: string[]; files: string[] } {
+  const directories = new Set<string>();
+  const files = new Set<string>();
+  const includeManagedTargets = beforeStatus.detectedSource === 'managed-prefix' || localState.detectedSource === 'managed-prefix';
+
+  if (isSafePackageRoot(beforeStatus.updateRoot)) addCandidatePath(directories, beforeStatus.updateRoot);
+  addCandidatePath(files, localState.binPath);
+  addShimCandidates(files, localState.binPath ? path.dirname(localState.binPath) : null);
+
+  if (beforeStatus.npmPrefix) {
+    const prefixBinDir = detectPlatform() === 'windows' ? beforeStatus.npmPrefix : path.join(beforeStatus.npmPrefix, 'bin');
+    addShimCandidates(files, prefixBinDir);
+    addCandidatePath(directories, path.join(beforeStatus.npmPrefix, 'node_modules', 'openclaw'));
+    addCandidatePath(directories, path.join(beforeStatus.npmPrefix, 'lib', 'node_modules', 'openclaw'));
+  }
+
+  if (includeManagedTargets) {
+    addShimCandidates(files, localState.managedBinDir);
+    addCandidatePath(directories, path.join(localState.managedPrefix, 'node_modules', 'openclaw'));
+    addCandidatePath(directories, path.join(localState.managedPrefix, 'lib', 'node_modules', 'openclaw'));
+  }
+
+  return {
+    directories: Array.from(directories).filter((item) => isSafePackageRoot(item)),
+    files: Array.from(files),
+  };
+}
+
+function removeDirectoryIfExists(dirPath: string, lines: string[]): void {
+  if (!fs.existsSync(dirPath)) return;
+  fs.rmSync(dirPath, { recursive: true, force: true });
+  lines.push(`OK remove ${dirPath}`);
+}
+
+function removeFileIfExists(filePath: string, lines: string[]): void {
+  if (!fs.existsSync(filePath)) return;
+  fs.rmSync(filePath, { force: true });
+  lines.push(`OK remove ${filePath}`);
+}
+
+function runManagedPrefixUninstall(localState: OpenClawLocalState, request: OpenClawActionRequest): { success: boolean; message: string; error?: string | null; logTail: string[] } {
+  const lines: string[] = [];
+  stopGatewayBeforeUninstall(localState, request, lines);
+  const commandArgs = ['uninstall', '-g', 'openclaw', '--prefix', localState.managedPrefix];
+  if (request.dryRun) {
+    lines.push(`DRY npm ${commandArgs.join(' ')}`);
+    lines.push(`DRY remove ${localState.managedPrefix}`);
+    return { success: true, message: '已生成 Guard 托管安装卸载预演。', logTail: lines.slice(-30) };
+  }
+
+  const uninstallResult = runCommandCapture('npm', commandArgs, 240_000, {
+    OPENCLAW_GUARD_MANAGED_PREFIX: localState.managedPrefix,
+    NPM_CONFIG_PREFIX: localState.managedPrefix,
+    npm_config_prefix: localState.managedPrefix,
+  });
+  appendStepLog(lines, 'npm', commandArgs, uninstallResult);
+  if (!uninstallResult.success && fs.existsSync(localState.managedPrefix)) {
+    lines.push('WARN npm uninstall failed; falling back to removing the managed prefix directly.');
+  }
+
+  try {
+    removeDirectoryIfExists(localState.managedPrefix, lines);
+    clearDiscoveredBinary(localState.binPath);
+    return {
+      success: true,
+      message: '已移除 Guard 托管目录中的 OpenClaw 程序文件。',
+      logTail: lines.slice(-30),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Guard 托管目录卸载失败。',
+      error: error instanceof Error ? error.message : String(error),
+      logTail: lines.slice(-30),
+    };
+  }
+}
+
+function runManualPackageUninstall(localState: OpenClawLocalState, beforeStatus: OpenClawStatus, request: OpenClawActionRequest): { success: boolean; message: string; error?: string | null; logTail: string[] } {
+  const lines: string[] = [];
+  stopGatewayBeforeUninstall(localState, request, lines);
+  const targets = collectPackageRemovalTargets(localState, beforeStatus);
+  if (!targets.directories.length && !targets.files.length) {
+    return {
+      success: false,
+      message: '当前安装来源无法安全自动卸载，请按原安装方式手动移除 OpenClaw。',
+      error: 'No safe uninstall targets were derived from the current installation.',
+      logTail: lines.slice(-30),
+    };
+  }
+  if (request.dryRun) {
+    targets.directories.forEach((item) => lines.push(`DRY remove ${item}`));
+    targets.files.forEach((item) => lines.push(`DRY remove ${item}`));
+    return { success: true, message: '已生成 OpenClaw 卸载预演。', logTail: lines.slice(-30) };
+  }
+  try {
+    targets.directories.forEach((item) => removeDirectoryIfExists(item, lines));
+    targets.files.forEach((item) => removeFileIfExists(item, lines));
+    clearDiscoveredBinary(localState.binPath);
+    return {
+      success: true,
+      message: '已移除当前安装来源里的 OpenClaw 程序文件。',
+      logTail: lines.slice(-30),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: 'OpenClaw 卸载失败。',
+      error: error instanceof Error ? error.message : String(error),
+      logTail: lines.slice(-30),
+    };
+  }
+}
+
+function runOpenClawUninstall(request: OpenClawActionRequest, beforeStatus: OpenClawStatus, localState: OpenClawLocalState): { success: boolean; message: string; error?: string | null; logTail: string[] } {
+  if (!beforeStatus.installed) {
+    return {
+      success: true,
+      message: request.dryRun ? '当前没有检测到 OpenClaw，卸载预演已跳过。' : '当前没有检测到 OpenClaw，无需继续卸载。',
+      logTail: [],
+    };
+  }
+  if (localState.detectedSource === 'managed-prefix') {
+    return runManagedPrefixUninstall(localState, request);
+  }
+  if (beforeStatus.installKind === 'package') {
+    return runManualPackageUninstall(localState, beforeStatus, request);
+  }
+  if (beforeStatus.installKind === 'git') {
+    const lines: string[] = [];
+    stopGatewayBeforeUninstall(localState, request, lines);
+    return {
+      success: false,
+      message: '当前 OpenClaw 来自源码检出。Guard 不会自动删除你的源码仓库，请先停用相关服务后手动删除仓库目录。',
+      error: 'Source-checkout uninstall requires manual repository removal.',
+      logTail: lines.slice(-30),
+    };
+  }
+  return {
+    success: false,
+    message: '当前安装来源无法安全识别，Guard 不会盲删文件。请按原安装方式手动卸载。',
+    error: 'Unsupported uninstall source.',
+    logTail: [],
+  };
+}
+
 function createHistoryEntry(params: { mode: OpenClawTaskMode; strategy: OpenClawUpdateStrategy; beforeStatus: OpenClawStatus; afterStatus: OpenClawStatus; request: OpenClawActionRequest; startedAt: string; finishedAt: string; success: boolean; error?: string | null }): OpenClawUpdateHistoryEntry {
-  const kind: OpenClawHistoryKind = params.mode === 'rollback' ? 'rollback' : (params.mode === 'install' ? (params.beforeStatus.installed ? 'repair' : 'install') : 'update');
+  const kind: OpenClawHistoryKind = params.mode === 'rollback'
+    ? 'rollback'
+    : params.mode === 'install'
+      ? (params.beforeStatus.installed ? 'repair' : 'install')
+      : params.mode === 'uninstall'
+        ? 'uninstall'
+        : 'update';
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
     kind,
@@ -868,6 +1083,7 @@ function buildFinalMessage(mode: OpenClawTaskMode, success: boolean, directMessa
   if (request.dryRun) return `${directMessage}${suffix}`.trim();
   if (mode === 'rollback') return `OpenClaw 回退完成，当前版本 ${afterStatus.version || '-'}。${suffix}`.trim();
   if (mode === 'install') return `OpenClaw 已安装完成，当前版本 ${afterStatus.version || '-'}。${suffix}`.trim();
+  if (mode === 'uninstall') return `OpenClaw 已卸载完成。${suffix}`.trim();
   return `OpenClaw 更新完成，当前版本 ${afterStatus.version || '-'}。${suffix}`.trim();
 }
 
@@ -875,18 +1091,30 @@ function runOpenClawAction(mode: OpenClawTaskMode, request: OpenClawActionReques
   const beforeStatus = detectOpenClaw({ ...options, bypassCache: true });
   const localState = detectLocalOpenClawState({ managedPrefix: options.managedPrefix });
   const checkpoint = maybeCreateRecoveryCheckpoint(mode);
-  const strategy: OpenClawUpdateStrategy = mode === 'rollback' && beforeStatus.installKind === 'git'
-    ? 'git-direct'
-    : ((mode === 'update' || mode === 'rollback') && beforeStatus.officialStatusAvailable && beforeStatus.installed ? 'official-cli' : 'bootstrap');
-  const result = strategy === 'git-direct'
-    ? runGitDirectRollback(request, beforeStatus)
-    : strategy === 'official-cli'
-      ? runOfficialCliAction(mode, localState, request, beforeStatus)
-      : runBootstrapInstall(mode, localState, request);
+  const strategy: OpenClawUpdateStrategy = mode === 'uninstall'
+    ? (localState.detectedSource === 'managed-prefix' || beforeStatus.installKind === 'package' ? 'package-remove' : 'manual')
+    : mode === 'rollback' && beforeStatus.installKind === 'git'
+      ? 'git-direct'
+      : ((mode === 'update' || mode === 'rollback') && beforeStatus.officialStatusAvailable && beforeStatus.installed ? 'official-cli' : 'bootstrap');
+  const result = mode === 'uninstall'
+    ? runOpenClawUninstall(request, beforeStatus, localState)
+    : strategy === 'git-direct'
+      ? runGitDirectRollback(request, beforeStatus)
+      : strategy === 'official-cli'
+        ? runOfficialCliAction(mode, localState, request, beforeStatus)
+        : runBootstrapInstall(mode, localState, request);
   invalidatePersistentCache(getOfficialCacheKey(localState));
   invalidatePersistentCache(getLocalCacheKey(localState.managedPrefix));
   invalidatePersistentCache(OPENCLAW_REGISTRY_CACHE_KEY);
   const afterStatus = detectOpenClaw({ ...options, bypassCache: true });
+  if (mode === 'uninstall' && result.success && !request.dryRun && afterStatus.installed) {
+    return {
+      success: false,
+      message: '卸载动作已执行，但系统里仍检测到另一份 OpenClaw 安装，请按当前来源继续清理。',
+      error: afterStatus.binPath ? `OpenClaw is still detected at ${afterStatus.binPath}` : 'OpenClaw is still detected after uninstall.',
+      logTail: result.logTail,
+    };
+  }
   if (!request.dryRun) appendHistoryEntry(createHistoryEntry({ mode, strategy, beforeStatus, afterStatus, request, startedAt, finishedAt: nowIso(), success: result.success, error: result.error || null }));
   return { success: result.success, message: buildFinalMessage(mode, result.success, result.message, afterStatus, checkpoint, request), error: result.error || null, logTail: result.logTail };
 }
@@ -897,7 +1125,7 @@ export function scheduleOpenClawTask(mode: OpenClawTaskMode, request: OpenClawAc
     return { success: false, scheduled: false, message: '当前已有 OpenClaw 任务正在执行，请稍后再试。', status: detectOpenClaw(options), action: task };
   }
   const status = detectOpenClaw(options);
-  if (!status.installReady && mode !== 'rollback') {
+  if (!status.installReady && mode === 'install') {
     const failed = saveTaskState({ mode, phase: 'error', pid: null, startedAt: null, finishedAt: nowIso(), message: status.installBlockers[0] || '当前环境不满足 OpenClaw 安装条件。', error: status.installBlockers.join(' | '), logTail: [] });
     return { success: false, scheduled: false, message: failed.message || '当前环境不满足 OpenClaw 安装条件。', status: detectOpenClaw(options), action: failed };
   }
@@ -915,12 +1143,12 @@ export function scheduleOpenClawTask(mode: OpenClawTaskMode, request: OpenClawAc
       env: { ...process.env, OPENCLAW_GUARD_OPENCLAW_CHILD: '1', ...(options.managedPrefix ? { OPENCLAW_GUARD_MANAGED_PREFIX: resolveManagedPrefix(options.managedPrefix) } : {}) },
     });
     child.unref();
-    const running = saveTaskState({ mode, phase: 'running', pid: typeof child.pid === 'number' ? child.pid : null, startedAt: nowIso(), finishedAt: null, message: `已在后台发起 OpenClaw ${mode === 'install' ? '安装' : mode === 'update' ? '更新' : '回退'}。`, error: null, logTail: [] });
+    const running = saveTaskState({ mode, phase: 'running', pid: typeof child.pid === 'number' ? child.pid : null, startedAt: nowIso(), finishedAt: null, message: `已在后台发起 OpenClaw ${mode === 'install' ? '安装' : mode === 'update' ? '更新' : mode === 'rollback' ? '回退' : '卸载'}。`, error: null, logTail: [] });
     invalidatePersistentCache(getLocalCacheKey(options.managedPrefix));
     invalidatePersistentCache(OPENCLAW_REGISTRY_CACHE_KEY);
     return { success: true, scheduled: true, message: running.message || '后台任务已发起。', status: detectOpenClaw(options), action: detectOpenClaw(options).action };
   } catch (error) {
-    const failed = saveTaskState({ mode, phase: 'error', pid: null, startedAt: null, finishedAt: nowIso(), message: `无法发起 OpenClaw ${mode === 'install' ? '安装' : mode === 'update' ? '更新' : '回退'}任务。`, error: error instanceof Error ? error.message : String(error), logTail: [] });
+    const failed = saveTaskState({ mode, phase: 'error', pid: null, startedAt: null, finishedAt: nowIso(), message: `无法发起 OpenClaw ${mode === 'install' ? '安装' : mode === 'update' ? '更新' : mode === 'rollback' ? '回退' : '卸载'}任务。`, error: error instanceof Error ? error.message : String(error), logTail: [] });
     return { success: false, scheduled: false, message: failed.message || '无法发起后台任务。', status: detectOpenClaw(options), action: failed };
   }
 }
@@ -930,7 +1158,7 @@ export function runOpenClawTask(mode: OpenClawTaskMode, requestOrOptions: OpenCl
   const request = looksLikeRequest ? requestOrOptions as OpenClawActionRequest : {};
   const options = looksLikeRequest ? maybeOptions : requestOrOptions as OpenClawDetectionOptions;
   const startedAt = nowIso();
-  saveTaskState({ mode, phase: 'running', pid: process.pid, startedAt, finishedAt: null, message: `正在执行 OpenClaw ${mode === 'install' ? '安装' : mode === 'update' ? '更新' : '回退'}。`, error: null, logTail: [] });
+  saveTaskState({ mode, phase: 'running', pid: process.pid, startedAt, finishedAt: null, message: `正在执行 OpenClaw ${mode === 'install' ? '安装' : mode === 'update' ? '更新' : mode === 'rollback' ? '回退' : '卸载'}。`, error: null, logTail: [] });
   const execution = runOpenClawAction(mode, request, options, startedAt);
   return saveTaskState({ mode, phase: execution.success ? 'completed' : 'error', pid: process.pid, startedAt, finishedAt: nowIso(), message: execution.message, error: execution.error || null, logTail: execution.logTail });
 }

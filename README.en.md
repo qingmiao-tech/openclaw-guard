@@ -19,6 +19,8 @@
   <img src="./web/readme-hero.png" alt="OpenClaw Guard hero banner" />
 </p>
 
+<p align="center"><a href="https://qingmiao-tech.github.io/openclaw-guard/">Open the docs site</a></p>
+
 ## What It Is
 
 OpenClaw Guard is a native operations and security workbench for OpenClaw. It is opinionated about three promises first:

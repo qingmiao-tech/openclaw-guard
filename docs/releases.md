@@ -1,131 +1,104 @@
 # 版本与发布
 
-这一页既面向使用者，也面向维护者，帮助你理解 OpenClaw Guard 当前公开版本的发布形态、安装入口和后续维护方式。
+这一页只回答普通用户最关心的几件事：当前版本是多少、应该怎么安装、应该怎么更新，以及什么时候适合固定到某个版本。
 
-## 当前公开版本
+## 当前版本信息
 
-- 当前 GitHub Release：[`v0.9.0`](https://github.com/qingmiao-tech/openclaw-guard/releases/tag/v0.9.0)
-- 发布时间：2026-03-14
-- 当前附带资产：`openclaw-guard-0.9.0.tgz`
-- 文档站地址：<https://qingmiao-tech.github.io/openclaw-guard/>
+- 当前 GitHub Release：[`v0.9.1`](https://github.com/qingmiao-tech/openclaw-guard/releases/tag/v0.9.1)
+- npm 包名：`@qingmiao-tech/openclaw-guard`
+- 当前文档站：<https://qingmiao-tech.github.io/openclaw-guard/>
 
-如果你现在只是想先用起来，请优先认 GitHub Release 和文档站，不要假设 npm 已经同步可用。
+如果你打开 npm 页面时仍然看到 404，说明公开 npm 同步还没完成。这个时候先使用下方的 GitHub Release 资产安装即可，不影响后续再切回 `npm / npx`。
 
-## 当前推荐安装方式
+## 推荐安装方式
 
-由于这次公开首发先完成了 GitHub Release，而 npm 公开包名还在调整中，当前最稳妥的公开安装方式是直接使用 Release tarball：
+### 1. npm 全局安装
+
+适合准备长期使用、希望本机直接输入 `openclaw-guard` 命令的用户：
 
 ```bash
-npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.0/openclaw-guard-0.9.0.tgz
+npm install -g @qingmiao-tech/openclaw-guard@0.9.1
 openclaw-guard init-machine --install-openclaw --start-web --port 18088
 ```
 
-如果你只是想先预演，不真正写入机器：
+### 2. npx 直接运行
+
+适合先体验一次、临时在新机器上跑起来，或者不想先做全局安装的用户：
 
 ```bash
-openclaw-guard init-machine --install-openclaw --start-web --port 18088 --dry-run --json
+npx -y @qingmiao-tech/openclaw-guard@0.9.1 init-machine --install-openclaw --start-web --port 18088
 ```
 
-## 为什么不是直接 npm publish
+### 3. GitHub Release 资产安装
 
-当前无法直接按 `openclaw-guard` 这个名字发布到 npm，原因有两个：
-
-1. 这台机器当前没有 npm 登录态
-2. 更关键的是，`openclaw-guard` 这个未加 scope 的包名已经被另一个项目占用
-
-已确认的 npm 现状：
-
-- 已存在包名：`openclaw-guard`
-- 当前公开版本：`0.3.1`
-- 对应仓库：`jnMetaCode/clawguard`
-
-这意味着当前仓库不能直接以同名未加 scope 方式发布。
-
-## 推荐的 npm 包名策略
-
-更适合后续公开发布的名字是：
-
-```text
-@qingmiao-tech/openclaw-guard
-```
-
-这个 scoped 包名当前是空的，更符合公开仓库和后续维护路径。
-
-在切到 scoped 包名之后，建议同步更新这些地方：
-
-- `package.json` 的 `name`
-- README 与 docs 里的安装命令
-- `install.sh` / `install.ps1`
-- 任何默认写死 `openclaw-guard@<version>` 的脚本或示例
-
-## 版本线说明
-
-当前公开版本按 `0.x` 线演进，意味着产品仍在快速打磨期，但已经开始提供稳定的公开文档、Release 和安装入口。
-
-你可以这样理解版本策略：
-
-- `0.x`：快速迭代期，重点持续收口公开首发体验
-- `1.0+`：在核心路径更稳定后，再进入更强的兼容承诺
-
-## 安装示例为什么固定写 tag
-
-文档里的 Release 安装示例默认写成固定 tag，例如：
+适合你需要固定到某一个公开版本资产，或者排查问题时想严格复现某次发布：
 
 ```bash
-npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.0/openclaw-guard-0.9.0.tgz
+npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.1/qingmiao-tech-openclaw-guard-0.9.1.tgz
+openclaw-guard init-machine --install-openclaw --start-web --port 18088
 ```
 
-这样做的好处是：
+## 更新方式
 
-- 更容易复现问题
-- 更容易锁定诊断范围
-- 回退和协作时更清楚
-
-## 文档站如何发布
-
-这个文档站使用 VitePress 构建，并通过 GitHub Pages 托管。
-
-当前仓库中的自动发布流程会在以下内容变化时触发：
-
-- `docs/**`
-- `package.json`
-- `package-lock.json`
-- `.github/workflows/docs-pages.yml`
-- 文档所需的静态资源
-
-构建命令：
+### npm 全局更新到最新版
 
 ```bash
-npm run docs:build
+npm install -g @qingmiao-tech/openclaw-guard@latest
 ```
 
-## 对维护者来说：推荐的发版顺序
+### npm 固定更新到某个版本
 
-1. 在本地跑通 `npm run docs:build`
-2. 如有代码变更，再补跑 `npm test`
-3. 确认 README、文档站和安装示例使用同一版本号
-4. 推送到 `main`
-5. 通过 public repo 创建 GitHub Release，并附上 tarball 资产
-6. 等 GitHub Actions 完成 Pages 构建与部署
-7. 解决 npm 包名与登录问题后，再进行公开 npm 发布
+```bash
+npm install -g @qingmiao-tech/openclaw-guard@0.9.1
+```
 
-## 升级建议
+### npx 直接运行最新版
 
-### 普通用户
+```bash
+npx -y @qingmiao-tech/openclaw-guard@latest web-status --port 18088 --lang zh
+```
 
-优先使用 Guard 提供的 OpenClaw 生命周期能力来更新或修复，不建议手工混用多套路径。
+### npx 固定运行某个版本
 
-### 技术用户
+```bash
+npx -y @qingmiao-tech/openclaw-guard@0.9.1 web-status --port 18088 --lang zh
+```
 
-如果你需要更细粒度控制版本或回退，优先查看：
+## 什么时候适合固定版本
 
-- [OpenClaw 生命周期](/openclaw-lifecycle)
-- [备份与恢复](/backup-and-recovery)
-- [排障与诊断包](/troubleshooting)
+如果你处于下面这些场景，更推荐固定到某个明确版本，而不是直接跟 `latest`：
 
-## 已知边界
+- 你在客户现场、交付环境或多人协作环境里，需要更容易复现问题
+- 你准备记录教程、截图或演示，不希望命令行为在短期内变化
+- 你正在排查某次升级前后的差异，想先锁住版本范围
 
-- GitHub Release 已经可用，但 npm 公开包名仍待调整
-- 当前 Release 资产可直接安装，安装脚本会在下一轮与 scoped 包名一起对齐
-- 文档站强调公开首发体验，不会把所有内部或实验性能力都写进默认导航
-- 自定义插件、复杂自动化和更深入的团队协作能力会放在后续版本逐步补齐
+## 什么时候适合用 latest
+
+如果你只是想保持跟上公开版本迭代，通常直接使用 `latest` 就够了：
+
+- `npm install -g @qingmiao-tech/openclaw-guard@latest`
+- `npx -y @qingmiao-tech/openclaw-guard@latest ...`
+
+## 安装后第一件事
+
+无论你是通过 `npm`、`npx` 还是 GitHub Release 资产安装，推荐都先执行：
+
+```bash
+openclaw-guard init-machine --install-openclaw --start-web --port 18088
+```
+
+如果你使用的是 `npx`，把前面的命令替换成：
+
+```bash
+npx -y @qingmiao-tech/openclaw-guard@0.9.1 init-machine --install-openclaw --start-web --port 18088
+```
+
+## 首次登录提醒
+
+首次启动 Guard Web 时，终端会打印初始化密码。如果你没来得及记下，可以在同一台机器的终端执行：
+
+```bash
+openclaw-guard auth show-password
+```
+
+如果你已经修改过密码，请直接使用修改后的当前密码登录。

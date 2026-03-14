@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { getAuthStatus, initAuth, isAuthEnabled, type AuthStatusInfo } from './auth.js';
 import { ensureDir } from './guard-state.js';
 import {
   detectOpenClaw,
@@ -59,6 +60,7 @@ export interface MachineInitResult {
   steps: MachineInitStepResult[];
   openclaw: OpenClawStatus;
   webReport: WebBackgroundReport;
+  auth: AuthStatusInfo & { initializedNow: boolean };
   nextAction: string | null;
   notes: string[];
 }
@@ -269,6 +271,15 @@ function buildNotes(result: MachineInitResult): string[] {
   } else if (result.startWeb) {
     notes.push(`Guard Web 尚未运行，请检查日志文件: ${result.webReport.logPaths.stdout}`);
   }
+  if (result.auth.enabled) {
+    if (result.auth.initializedNow) {
+      notes.push(`首次登录密码已生成，可在本机执行 ${result.auth.revealCommand} 再次查看。`);
+    } else if (result.auth.initialPasswordAvailable) {
+      notes.push(`如果忘记初始化密码，可在本机执行 ${result.auth.revealCommand} 再次查看。`);
+    } else if (result.auth.configured) {
+      notes.push('如果你已经修改过登录密码，请使用当前密码登录；初始化密码不会通过网页直接显示。');
+    }
+  }
   return notes;
 }
 
@@ -277,12 +288,18 @@ export async function runMachineInit(options: MachineInitOptions = {}): Promise<
   const dryRun = options.dryRun === true;
   const installOpenClaw = options.installOpenClaw === true;
   const startWeb = options.startWeb === true;
+  const shouldPrepareAuth = startWeb && !dryRun && isAuthEnabled();
   const platform = detectPlatform();
   const distro = detectLinuxDistro();
   const bootstrapPlan = getNodeBootstrapPlan(platform, distro);
   const managedPrefix = resolveManagedPrefix(options.managedPrefix);
   const managedBinDir = getOpenClawManagedBinDir(managedPrefix);
   const guardVersion = readGuardVersion();
+  let authInitializedNow = false;
+  let auth = {
+    ...getAuthStatus(),
+    initializedNow: authInitializedNow,
+  };
   const steps: MachineInitStepResult[] = [];
 
   steps.push(createStep(
@@ -348,6 +365,7 @@ export async function runMachineInit(options: MachineInitOptions = {}): Promise<
       steps,
       openclaw,
       webReport,
+      auth,
       nextAction: bootstrapPlan.manualHint,
       notes: [],
     };
@@ -457,6 +475,14 @@ export async function runMachineInit(options: MachineInitOptions = {}): Promise<
     ));
   }
 
+  if (shouldPrepareAuth) {
+    authInitializedNow = initAuth().isNew;
+    auth = {
+      ...getAuthStatus(),
+      initializedNow: authInitializedNow,
+    };
+  }
+
   let webReport = getWebBackgroundReport(port);
   if (!startWeb) {
     steps.push(createStep(
@@ -510,6 +536,7 @@ export async function runMachineInit(options: MachineInitOptions = {}): Promise<
     steps,
     openclaw,
     webReport,
+    auth,
     nextAction: webReport.nextAction,
     notes: [],
   };
@@ -543,6 +570,12 @@ export function formatMachineInitResult(result: MachineInitResult): string {
   lines.push(`[INFO] OpenClaw source: ${result.openclaw.detectedSource}`);
   lines.push(`[INFO] OpenClaw binary: ${result.openclaw.binPath || '-'}`);
   lines.push(`[INFO] Guard Web URL: ${result.webReport.workbenchUrl}`);
+  lines.push(`[INFO] Auth enabled: ${result.auth.enabled ? 'yes' : 'no'}`);
+  if (result.auth.enabled) {
+    lines.push(`[INFO] Auth configured: ${result.auth.configured ? 'yes' : 'no'}`);
+    lines.push(`[INFO] Initial password available: ${result.auth.initialPasswordAvailable ? 'yes' : 'no'}`);
+    lines.push(`[INFO] Reveal command: ${result.auth.revealCommand}`);
+  }
   lines.push(`[INFO] Next action: ${result.nextAction || '-'}`);
   if (result.notes.length) {
     for (const note of result.notes) {

@@ -916,10 +916,49 @@ details.sub-card[open] > summary { margin-bottom: 10px; }
   border-radius: 8px;
   padding: 8px 12px;
 }
-.guard-login-hint {
-  display: flex;
-  justify-content: center;
+.guard-login-note {
+  display: grid;
+  gap: 8px;
   margin-top: 4px;
+  padding: 14px 14px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(14, 165, 233, 0.08);
+}
+.guard-login-note-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.guard-login-note-copy {
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+.guard-login-note-copy.secondary {
+  color: var(--muted-strong);
+}
+.guard-login-command {
+  display: grid;
+  gap: 6px;
+}
+.guard-login-command-label {
+  font-size: 11px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.guard-login-command code {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--panel-elevated);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 /* ── 修改密码对话框 ──────────────────────────────────────────────────────────── */

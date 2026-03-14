@@ -42,18 +42,44 @@ If you do not want to think about Git, Cron, OAuth, or plugin architecture on da
 ### 1. Install and start Guard
 
 ```bash
-npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.0/openclaw-guard-0.9.0.tgz
+npm install -g @qingmiao-tech/openclaw-guard@0.9.1
 openclaw-guard init-machine --install-openclaw --start-web --port 18088
 ```
 
-The public launch currently uses the GitHub Release asset as the recommended install source. The npm package name is still being adjusted; see [Version & Releases](./docs/releases.md) for details.
+If you prefer not to keep a global install, you can run it directly with `npx`:
+
+```bash
+npx -y @qingmiao-tech/openclaw-guard@0.9.1 init-machine --install-openclaw --start-web --port 18088
+```
+
+If the scoped package is not visible in the npm registry yet, use the GitHub Release asset below first and switch back to `npm / npx` once the public registry sync is available.
+
+If you still prefer a fixed GitHub Release asset, you can also install:
+
+```bash
+npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.1/qingmiao-tech-openclaw-guard-0.9.1.tgz
+```
+
+Current install methods, `npm / npx` update paths, and release notes are documented in [Version & Releases](./docs/releases.md).
 
 ### 2. Open the workbench
 
 - Main entry: `http://127.0.0.1:18088/workbench`
 - The root route also lands in the Guard workbench: `http://127.0.0.1:18088/`
 
-### 3. Follow the 4 main paths from the home page
+### 3. Check the initial password before the first login
+
+- On the first startup, Guard prints a randomly generated initial password in the local terminal.
+- If you missed it, run this command again on the same machine:
+
+```bash
+openclaw-guard auth show-password
+```
+
+- This command only reveals the password in the local CLI. The password is never returned through the web UI.
+- If you already changed the password, use the current password you set yourself.
+
+### 4. Follow the 4 main paths from the home page
 
 - Install / Repair OpenClaw
 - Configure Models
@@ -94,6 +120,16 @@ openclaw-guard web --port 18088
 # Show the normalized Guard Web report
 openclaw-guard web-status --port 18088 --lang zh
 openclaw-guard web-status --port 18088 --lang en --json
+
+# Show the locally recoverable initial password
+openclaw-guard auth status
+openclaw-guard auth show-password
+
+# Update the global install to the latest release
+npm install -g @qingmiao-tech/openclaw-guard@latest
+
+# Run the latest release directly with npx
+npx -y @qingmiao-tech/openclaw-guard@latest web-status --port 18088 --lang zh
 
 # Initialize a machine (supports dry-run)
 openclaw-guard init-machine --install-openclaw --start-web --port 18088 --dry-run --json

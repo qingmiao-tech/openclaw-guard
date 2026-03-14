@@ -14,10 +14,11 @@
 
 ## 一条命令完成整机初始化
 
-最推荐的方式：
+当前公开版最推荐的方式：
 
 ```bash
-npx -y openclaw-guard@0.9.0 init-machine --install-openclaw --start-web --port 18088
+npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.0/openclaw-guard-0.9.0.tgz
+openclaw-guard init-machine --install-openclaw --start-web --port 18088
 ```
 
 这个命令会按顺序做几件事：
@@ -32,22 +33,12 @@ npx -y openclaw-guard@0.9.0 init-machine --install-openclaw --start-web --port 1
 如果你想先预演，不真正写入机器：
 
 ```bash
-npx -y openclaw-guard@0.9.0 init-machine --install-openclaw --start-web --port 18088 --dry-run --json
+openclaw-guard init-machine --install-openclaw --start-web --port 18088 --dry-run --json
 ```
 
-## 使用安装脚本
-
-### macOS / Linux
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/qingmiao-tech/openclaw-guard/v0.9.0/install.sh | bash
-```
-
-### Windows PowerShell
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/qingmiao-tech/openclaw-guard/v0.9.0/install.ps1 | iex"
-```
+::: tip 当前公开安装说明
+当前公开版先以 GitHub Release 的 tarball 作为推荐安装入口。npm 包名与安装脚本会在下一轮与 scoped 包名一起完成对齐。
+:::
 
 ## 打开工作台
 

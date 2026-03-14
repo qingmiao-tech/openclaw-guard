@@ -19,7 +19,7 @@
   <img src="./web/readme-hero.png" alt="OpenClaw Guard hero banner" />
 </p>
 
-<p align="center"><a href="https://qingmiao-tech.github.io/openclaw-guard/">Open the docs site</a></p>
+<p align="center"><a href="https://qingmiao-tech.github.io/openclaw-guard/">Open the documentation</a></p>
 
 ## What It Is
 
@@ -42,15 +42,11 @@ If you do not want to think about Git, Cron, OAuth, or plugin architecture on da
 ### 1. Install and start Guard
 
 ```bash
-npx -y openclaw-guard@0.9.0 init-machine --install-openclaw --start-web --port 18088
+npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.0/openclaw-guard-0.9.0.tgz
+openclaw-guard init-machine --install-openclaw --start-web --port 18088
 ```
 
-Or use the install scripts:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/qingmiao-tech/openclaw-guard/v0.9.0/install.sh | bash
-powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/qingmiao-tech/openclaw-guard/v0.9.0/install.ps1 | iex"
-```
+The public launch currently uses the GitHub Release asset as the recommended install source. The npm package name is still being adjusted; see [Version & Releases](./docs/releases.md) for details.
 
 ### 2. Open the workbench
 

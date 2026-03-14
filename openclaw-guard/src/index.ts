@@ -275,6 +275,17 @@ openclawCmd.command('rollback').description('回退 OpenClaw').option('--target-
   printAction({ success: result.phase === 'completed', message: result.message || (result.phase === 'completed' ? '回退完成。' : '回退失败。') });
   if (result.error) console.log(chalk.dim(result.error));
 });
+openclawCmd.command('uninstall').description('彻底卸载当前检测到的 OpenClaw 程序文件').option('--dry-run', '只预演，不真正卸载').option('--json', '输出 JSON').action((opts: { dryRun?: boolean; json?: boolean }) => {
+  const result = runOpenClawTask('uninstall', {
+    dryRun: opts.dryRun,
+  });
+  if (opts.json) {
+    printJson({ success: result.phase === 'completed', action: result, status: detectOpenClaw({ bypassCache: true }) });
+    return;
+  }
+  printAction({ success: result.phase === 'completed', message: result.message || (result.phase === 'completed' ? '卸载完成。' : '卸载失败。') });
+  if (result.error) console.log(chalk.dim(result.error));
+});
 
 const serviceCmd = program.command('service').description('Gateway 服务管理');
 serviceCmd.command('status').description('查看服务状态').action(() => printJson(getServiceStatus()));
@@ -837,7 +848,7 @@ program.command('service-task')
 
 program.command('openclaw-task')
   .description('执行后台 OpenClaw 安装任务')
-  .requiredOption('--mode <mode>', 'install / update / rollback')
+  .requiredOption('--mode <mode>', 'install / update / rollback / uninstall')
   .option('--managed-prefix <path>', '指定 Guard 托管 npm 前缀')
   .option('--channel <channel>', 'stable | beta | dev')
   .option('--tag <tag>', '指定版本或 dist-tag')
@@ -849,7 +860,7 @@ program.command('openclaw-task')
   .option('--dry-run', '只预演，不真正执行')
   .option('--json', '输出 JSON 状态')
   .action((opts: { mode: string; managedPrefix?: string; channel?: string; tag?: string; targetVersion?: string; historyId?: string; ref?: string; date?: string; restart?: boolean; dryRun?: boolean; json?: boolean }) => {
-    const mode = opts.mode === 'install' || opts.mode === 'update' || opts.mode === 'rollback'
+    const mode = opts.mode === 'install' || opts.mode === 'update' || opts.mode === 'rollback' || opts.mode === 'uninstall'
       ? opts.mode as OpenClawTaskMode
       : null;
     if (!mode) {

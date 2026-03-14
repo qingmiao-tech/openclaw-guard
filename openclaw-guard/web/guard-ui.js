@@ -3050,7 +3050,9 @@
         ? (state.lang === 'zh' ? '更新' : 'Update')
         : mode === 'rollback'
           ? (state.lang === 'zh' ? '回退' : 'Rollback')
-        : (state.lang === 'zh' ? '待命' : 'Idle');
+          : mode === 'uninstall'
+            ? (state.lang === 'zh' ? '卸载' : 'Uninstall')
+            : (state.lang === 'zh' ? '待命' : 'Idle');
     const phase = actionState?.phase || 'idle';
     const phaseLabel = phase === 'running'
       ? (state.lang === 'zh' ? '执行中' : 'Running')
@@ -5543,6 +5545,16 @@
     const detachedHint = status.installKind === 'git' && status.officialStatus?.git?.branch === 'HEAD'
       ? `<div class="status warn" style="margin-top:12px;">${escapeHtml(state.lang === 'zh' ? '当前处于 detached HEAD。完成历史点排查后，请在高级区切回正常渠道、分支或标签。' : 'The repo is currently on a detached HEAD. Use the advanced controls to return to a normal channel, branch, or tag when you are done.')}</div>`
       : '';
+    const uninstallSummary = state.lang === 'zh'
+      ? '这会尝试先停止 Gateway，并移除当前检测到的 OpenClaw 程序文件。不会删除 Guard、本机 .openclaw 数据、工作区、记忆、会话记录或你的自定义项目文件。'
+      : 'This attempts to stop Gateway first and remove the detected OpenClaw program files. It does not remove Guard, local .openclaw data, workspaces, memories, sessions, or your custom project files.';
+    const uninstallWarning = status.installKind === 'git'
+      ? (state.lang === 'zh'
+        ? '当前安装来自源码检出。Guard 不会自动删除你的源码仓库；执行后会给出手动清理说明。'
+        : 'This install comes from a source checkout. Guard will not delete your repository automatically and will show manual cleanup guidance instead.')
+      : (state.lang === 'zh'
+        ? `当前将按 ${installKindLabel} 的方式清理 ${status.updateRoot || status.binPath || status.managedPrefix || '-' }。`
+        : `Guard will remove the detected ${installKindLabel.toLowerCase()} install at ${status.updateRoot || status.binPath || status.managedPrefix || '-'}.`);
 
     const body = `
       <div class="grid">
@@ -5579,7 +5591,7 @@
         </div>
         <div class="card">
           <h3>${state.lang === 'zh' ? '任务进度' : 'Task Progress'}</h3>
-          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这里会保留最近一次安装、更新或回退的摘要与日志线索。' : 'This card keeps the latest install, update, or rollback summary together with the last useful logs.')}</div>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这里会保留最近一次安装、更新、回退或卸载的摘要与日志线索。' : 'This card keeps the latest install, update, rollback, or uninstall summary together with the last useful logs.')}</div>
           <div class="list" style="margin-top:14px;">
             <div class="list-item"><strong>${state.lang === 'zh' ? '运行说明' : 'Summary'}</strong><div style="margin-top:8px;">${escapeHtml(actionMeta.message)}</div>${status.action?.error ? `<div class="muted small" style="margin-top:8px; color:#b42318;">${escapeHtml(status.action.error)}</div>` : ''}</div>
             <div class="list-item"><strong>${state.lang === 'zh' ? '时间线' : 'Timeline'}</strong><div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? `开始 ${formatDate(status.action?.startedAt)} · 更新 ${formatDate(status.action?.lastUpdatedAt)} · 结束 ${formatDate(status.action?.finishedAt)}` : `Started ${formatDate(status.action?.startedAt)} · Updated ${formatDate(status.action?.lastUpdatedAt)} · Finished ${formatDate(status.action?.finishedAt)}`)}</div></div>
@@ -5593,10 +5605,10 @@
       <div class="grid">
         <div class="card">
           <h3>${state.lang === 'zh' ? '高级能力' : 'Advanced Controls'}</h3>
-          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '推荐更新之外的能力都放在这里，例如切渠道、指定版本、回到旧版本，或执行源码检出回退。' : 'Everything beyond the recommended update lives here: switch channels, pick a version, restore an older release, or run a source-checkout rollback.')}</div>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '推荐更新之外的能力都放在这里，例如切渠道、指定版本、回到旧版本，执行源码检出回退，或彻底卸载当前安装。' : 'Everything beyond the recommended update lives here: switch channels, pick a version, restore an older release, run a source-checkout rollback, or fully remove the current install.')}</div>
           ${renderAdvancedDisclosure({
             title: state.lang === 'zh' ? '展开高级能力' : 'Expand Advanced Controls',
-            description: state.lang === 'zh' ? '普通用户通常只需要上面的主按钮；这里只在你确实要管版本、渠道或历史点时再展开。' : 'Most users only need the primary button above. Expand this when you truly need version-, channel-, or history-level control.',
+            description: state.lang === 'zh' ? '普通用户通常只需要上面的主按钮；这里只在你确实要管版本、渠道、历史点或卸载时再展开。' : 'Most users only need the primary button above. Expand this when you truly need version-, channel-, history-, or uninstall-level control.',
             bodyHtml: `
               <div class="list">
                 <div class="list-item">
@@ -5630,6 +5642,14 @@
                     <button class="action-btn" type="button" data-openclaw-action="git-rollback" ${isRunning || status.installKind !== 'git' ? 'disabled' : ''}>${state.lang === 'zh' ? '回到这个历史点' : 'Rollback to This Point'}</button>
                   </div>
                   ${recentTags.length ? `<div class="muted small" style="margin-top:8px;">${escapeHtml((state.lang === 'zh' ? '近期标签: ' : 'Recent tags: ') + recentTags.slice(0, 6).join(', '))}</div>` : ''}
+                </div>
+                <div class="list-item">
+                  <strong>${state.lang === 'zh' ? '彻底卸载' : 'Complete Uninstall'}</strong>
+                  <div class="muted small" style="margin-top:8px;">${escapeHtml(uninstallSummary)}</div>
+                  <div class="status warn" style="margin-top:12px;">${escapeHtml(uninstallWarning)}</div>
+                  <div class="toolbar tight" style="margin-top:12px;">
+                    <button class="action-btn danger" type="button" data-openclaw-action="uninstall" ${isRunning || !status.installed ? 'disabled' : ''}>${state.lang === 'zh' ? '彻底卸载 OpenClaw' : 'Completely Uninstall OpenClaw'}</button>
+                  </div>
                 </div>
               </div>
             `,
@@ -5677,6 +5697,32 @@
             let payload = {};
             let confirmOptions = null;
             if (action === 'install') endpoint = '/api/openclaw/install';
+            if (action === 'uninstall') {
+              endpoint = '/api/openclaw/uninstall';
+              const uninstallRoot = status.updateRoot || status.binPath || status.managedPrefix || '-';
+              const firstConfirmed = await showConfirmDialog({
+                title: state.lang === 'zh' ? '彻底卸载 OpenClaw' : 'Completely Uninstall OpenClaw',
+                message: uninstallSummary,
+                description: state.lang === 'zh'
+                  ? `当前目标: ${uninstallRoot}\n\n不会删除 Guard、本机 .openclaw 数据、工作区、记忆或会话文件。`
+                  : `Current target: ${uninstallRoot}\n\nGuard, local .openclaw data, workspaces, memories, and session files will stay untouched.`,
+                confirmText: state.lang === 'zh' ? '继续下一步' : 'Continue',
+                tone: 'warn',
+                kicker: state.lang === 'zh' ? '危险操作' : 'Destructive Action',
+              });
+              if (!firstConfirmed) return;
+              const secondConfirmed = await showConfirmDialog({
+                title: state.lang === 'zh' ? '最后确认卸载' : 'Final Uninstall Confirmation',
+                message: state.lang === 'zh'
+                  ? '这是不可逆的程序卸载操作。确认现在就移除当前机器上的 OpenClaw 程序文件吗？'
+                  : 'This is an irreversible program uninstall action. Remove the detected OpenClaw program files from this machine now?',
+                description: uninstallWarning,
+                confirmText: state.lang === 'zh' ? '确认卸载' : 'Uninstall Now',
+                tone: 'danger',
+                kicker: state.lang === 'zh' ? '最后确认' : 'Final Check',
+              });
+              if (!secondConfirmed) return;
+            }
             if (action === 'apply-channel') payload = { channel: button.getAttribute('data-channel') || '' };
             if (action === 'apply-version') {
               const select = document.getElementById('openclaw-version-select');

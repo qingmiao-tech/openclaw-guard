@@ -397,6 +397,13 @@ export function startServer(port: number) {
           }));
           return;
         }
+        if (pathname === '/api/openclaw/uninstall' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          jsonResponse(res, scheduleOpenClawTask('uninstall', {
+            dryRun: body.dryRun === true,
+          }));
+          return;
+        }
 
         if (pathname === '/api/audit') {
           const results = runFullAudit();

@@ -25,6 +25,8 @@ vi.mock('node:child_process', () => ({
 describe('openclaw', () => {
   let tempRoot = '';
   let externalBinary = '';
+  let managedPrefix = '';
+  let managedBinary = '';
   let processKillSpy: ReturnType<typeof vi.spyOn> | null = null;
 
   beforeEach(() => {
@@ -34,6 +36,8 @@ describe('openclaw', () => {
 
     tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'openclaw-guard-openclaw-'));
     externalBinary = path.join(tempRoot, 'external', 'openclaw.cmd');
+    managedPrefix = path.join(tempRoot, '.openclaw', 'guard', 'npm-global');
+    managedBinary = path.join(managedPrefix, 'openclaw.cmd');
     fs.mkdirSync(path.dirname(externalBinary), { recursive: true });
     fs.writeFileSync(externalBinary, '@echo off\r\n', 'utf-8');
 
@@ -83,6 +87,24 @@ describe('openclaw', () => {
           error: null,
         };
       }
+      if (path.resolve(command) === path.resolve(managedBinary) && args[0] === '--version') {
+        if (!fs.existsSync(managedBinary)) {
+          return { status: 1, stdout: '', stderr: 'missing', error: null };
+        }
+        return { status: 0, stdout: 'openclaw 2026.2.20', stderr: '', error: null };
+      }
+      if (path.resolve(command) === path.resolve(managedBinary) && args[0] === 'update' && args[1] === 'status' && args[2] === '--json') {
+        return { status: 1, stdout: '', stderr: 'official status unavailable', error: null };
+      }
+      if (path.resolve(command) === path.resolve(managedBinary) && args[0] === 'gateway' && args[1] === 'stop') {
+        return { status: 0, stdout: 'stopped', stderr: '', error: null };
+      }
+      if (command === 'npm' && args[0] === 'uninstall' && args[1] === '-g' && args[2] === 'openclaw' && args.includes('--prefix')) {
+        const prefix = args[args.indexOf('--prefix') + 1];
+        if (path.resolve(prefix) === path.resolve(managedPrefix)) {
+          return { status: 0, stdout: 'removed', stderr: '', error: null };
+        }
+      }
       throw new Error(`unexpected spawnSync call: ${command} ${args.join(' ')}`);
     });
 
@@ -115,5 +137,19 @@ describe('openclaw', () => {
     expect(result.action.pid).toBe(43210);
     expect(result.message).toContain('后台发起');
     expect(mocks.spawn).toHaveBeenCalledTimes(1);
+  });
+  it('uninstalls a Guard-managed OpenClaw install end-to-end', async () => {
+    fs.mkdirSync(path.dirname(managedBinary), { recursive: true });
+    fs.writeFileSync(managedBinary, '@echo off\r\n', 'utf-8');
+
+    const { detectOpenClaw, runOpenClawTask } = await import('../openclaw.js');
+
+    const result = runOpenClawTask('uninstall');
+    const status = detectOpenClaw({ bypassCache: true });
+
+    expect(result.phase).toBe('completed');
+    expect(result.message).toContain('卸载');
+    expect(status.installed).toBe(false);
+    expect(fs.existsSync(managedPrefix)).toBe(false);
   });
 });

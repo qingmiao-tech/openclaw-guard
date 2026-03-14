@@ -83,6 +83,7 @@ import { getLogs, getServiceActionStatus, getServiceStatus, restartService, star
 import { getWebBackgroundReport, getWebBackgroundStatus, registerBackgroundProcess, startWebBackgroundService, stopWebBackgroundService } from './web-background.js';
 import { getCompatibilityPage } from './web-ui.js';
 import { getWorkbenchPage } from './workbench-ui.js';
+import { buildSupportDiagnosticsBundle } from './support.js';
 import {
     createManagedEntry,
     getAgentCatalog,
@@ -132,6 +133,18 @@ function jsonResponse(res: http.ServerResponse, data: unknown, status = 200) {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   });
   res.end(JSON.stringify(data));
+}
+
+function jsonDownloadResponse(res: http.ServerResponse, data: unknown, fileName: string) {
+  res.writeHead(200, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Content-Disposition': `attachment; filename="${fileName}"`,
+    'Cache-Control': 'no-cache',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  });
+  res.end(JSON.stringify(data, null, 2));
 }
 
 function htmlResponse(res: http.ServerResponse, html: string) {
@@ -644,6 +657,16 @@ export function startServer(port: number) {
 
         if (pathname === '/api/dashboard/overview' && req.method === 'GET') {
           jsonResponse(res, getCachedDashboardOverview());
+          return;
+        }
+        if (pathname === '/api/support/diagnostics' && req.method === 'GET') {
+          const bundle = buildSupportDiagnosticsBundle(currentPort);
+          const dateStamp = bundle.generatedAt.replace(/[:]/g, '-').replace(/\.\d{3}Z$/, 'Z');
+          if (url.searchParams.get('download') === '1') {
+            jsonDownloadResponse(res, bundle, `openclaw-guard-diagnostics-${dateStamp}.json`);
+            return;
+          }
+          jsonResponse(res, bundle);
           return;
         }
         if (pathname === '/api/agents' && req.method === 'GET') {

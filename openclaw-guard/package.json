@@ -1,7 +1,7 @@
 {
   "name": "openclaw-guard",
   "version": "0.9.0",
-  "description": "Native OpenClaw operations and security toolkit with security presets, agent Markdown asset management, and deep Git sync.",
+  "description": "Safer OpenClaw operations console with guided setup, backup & recovery, and security guardrails.",
   "type": "module",
   "main": "dist/index.js",
   "repository": {

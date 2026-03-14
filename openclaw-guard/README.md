@@ -3,13 +3,14 @@
   <img src="./web/readme-wordmark.svg" alt="OpenClaw Guard / 虾护卫" width="540" />
 </p>
 
-<p align="center"><strong>自带“防弹衣”与“复活甲”的 OpenClaw 原生运维与安全工作台。</strong></p>
+<p align="center"><strong>自带“防弹衣”与“复活甲”的 OpenClaw 控制台。</strong></p>
+<p align="center">内置多档安全预设，精准隔离越权风险；统一管理记忆、性格、工作区等 Markdown 资产；结合备份与恢复能力，让你进可自由折腾，退可一键重生。</p>
 
 <p align="center"><a href="./README.md">中文</a> · <a href="./README.en.md">English</a></p>
 
 <p align="center">
   <a href="https://github.com/qingmiao-tech/openclaw-guard/actions/workflows/ci.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/qingmiao-tech/openclaw-guard/ci.yml?branch=main&style=for-the-badge&label=build" /></a>
-  <a href="https://github.com/qingmiao-tech/openclaw-guard/releases"><img alt="Release" src="https://img.shields.io/badge/release-ready-2563eb?style=for-the-badge&logo=github" /></a>
+  <a href="https://github.com/qingmiao-tech/openclaw-guard/releases"><img alt="Release" src="https://img.shields.io/github/v/release/qingmiao-tech/openclaw-guard?style=for-the-badge&label=release" /></a>
   <a href="https://github.com/qingmiao-tech/openclaw-guard/blob/main/package.json"><img alt="Version" src="https://img.shields.io/github/package-json/v/qingmiao-tech/openclaw-guard?style=for-the-badge&label=version&color=0ea5e9" /></a>
   <a href="https://github.com/qingmiao-tech/openclaw-guard/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/qingmiao-tech/openclaw-guard?style=for-the-badge&label=license&color=22c55e" /></a>
 </p>
@@ -18,372 +19,182 @@
   <img src="./web/readme-hero.png" alt="OpenClaw Guard hero banner" />
 </p>
 
-OpenClaw Guard 是 OpenClaw 的原生运维与安全工作台，自带“防弹衣”与“复活甲”：以内置多档安全预设隔离越权风险，统一管理 Agent 的记忆、性格等 Markdown 资产，并结合 Git 深度同步，让你进可自由折腾，退可一键重生。
+## 这是什么
 
-当前形态以轻量 Node CLI + 原生 Web 工作台为主，不再依赖外部 Mission Control 侧挂。
+OpenClaw Guard 是一个面向 OpenClaw 的原生运维与安全工作台。它不想把更多功能堆到你面前，而是优先把三件事做好：
 
-支持平台:
-- Windows
-- macOS
-- Linux
+- 先装得上：检查机器环境，安装或修复 OpenClaw，并拉起 Guard Web。
+- 再保得住：把记忆、角色、工作区和关键资产纳入备份与恢复视图。
+- 出问题能自救：提供安全预设、运行态诊断、日志、修复和回退能力。
 
-## 适用场景
+如果你不想一上来就理解 Git、Cron、OAuth、插件体系这些技术细节，Guard 的首页和工作台会先带你走最核心的路径。
 
-- 电脑上还没有安装 OpenClaw，需要先检测并补装
-- OpenClaw 已安装，但需要统一管理 Gateway、Guard Web、AI、渠道、Git 同步
-- Guard 页面卡住、样式异常、接口超时后，需要做完整重启而不是只重启 Gateway
-- 需要在客户机上以更可控的方式做安装、运维和故障排查
+## 适合这些场景
 
-## 安装
+- 你刚接手一台机器，希望先把 OpenClaw 装起来，再逐步完成模型、渠道和保护设置。
+- 你想统一管理 OpenClaw、Gateway、模型配置、官方渠道、安全预设和恢复点，不想在多个入口之间来回切。
+- 你担心“玩坏了就回不去”，希望保留恢复点、在更新或折腾前先保护当前状态。
 
-公开仓库已经发布到 GitHub:
+## 3 分钟上手
 
-- https://github.com/qingmiao-tech/openclaw-guard
-
-当前公开发版线为 `0.9.0`。
-
-在当前仓库内做本地开发:
+### 1. 安装并启动 Guard
 
 ```bash
-cd openclaw-guard
-npm install
+npx -y openclaw-guard@0.9.0 init-machine --install-openclaw --start-web --port 18088
 ```
 
-公开安装方式:
+或者使用安装脚本：
 
 ```bash
-# npm / npx
-npm install -g openclaw-guard@0.9.0
-npx -y openclaw-guard@0.9.0 init-machine --install-openclaw --start-web --port 18088
-
-# curl / PowerShell
 curl -fsSL https://raw.githubusercontent.com/qingmiao-tech/openclaw-guard/v0.9.0/install.sh | bash
 powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/qingmiao-tech/openclaw-guard/v0.9.0/install.ps1 | iex"
 ```
 
-仓库内也内置了同名安装脚本，默认指向 `qingmiao-tech/openclaw-guard`，但仍可通过参数或环境变量覆盖:
+### 2. 打开工作台
+
+- 主入口：`http://127.0.0.1:18088/workbench`
+- 根路径也会直接进入 Guard 工作台：`http://127.0.0.1:18088/`
+
+### 3. 按首页的 4 条主路径补齐基础配置
+
+- 安装 / 修复 OpenClaw
+- 配置模型
+- 连接渠道
+- 开启备份与恢复
+
+Guard 首页会优先告诉你：
+
+- 现在能不能正常工作
+- 下一步最建议先做什么
+- 当前有没有风险或阻断项
+
+## 首发版的核心能力
+
+- 首页带路页：从“指标墙”改成“下一步做什么”的控制台入口。
+- OpenClaw 生命周期管理：安装、修复、更新、回退、卸载和状态诊断。
+- 备份与恢复：默认以“保存现在 / 回到某个恢复点 / 恢复后继续往前走”的产品语言呈现。
+- 安全页：聚合安全检查、权限模式和主机加固建议。
+- 工作区工具：统一管理角色、文件、搜索和核心记忆资产。
+- 诊断包导出：适合贴到 GitHub Issue 或远程协助的脱敏支持包。
+
+## 支持平台矩阵
+
+| 平台 | 状态 | 说明 |
+| --- | --- | --- |
+| Windows | Supported | 支持托管安装、后台启动脚本、工作台与诊断导出。 |
+| macOS | Supported | 支持脚本启动、工作台、安全建议与恢复流程。 |
+| Linux | Supported | 当前重点覆盖 Debian/Ubuntu、Fedora/RHEL、Arch 这三类发行版的初始化路径。 |
+
+## 常用入口
+
+### 命令行
 
 ```bash
-bash ./install.sh --version latest --port 18088 --dry-run
-pwsh ./install.ps1 -Version latest -Port 18088 -DryRun
+# 启动 Guard Web
+openclaw-guard web --port 18088
+
+# 查看 Guard Web 标准状态报告
+openclaw-guard web-status --port 18088 --lang zh
+openclaw-guard web-status --port 18088 --lang en --json
+
+# 整机初始化（支持预演）
+openclaw-guard init-machine --install-openclaw --start-web --port 18088 --dry-run --json
+
+# OpenClaw 生命周期管理
+openclaw-guard openclaw status
+openclaw-guard openclaw update
+openclaw-guard openclaw rollback --history-id <id>
 ```
 
-## 一键启动脚本
+### 一键脚本
 
-辅助包装脚本统一收纳在 `launchers/` 目录，和内部 `scripts/*.mjs` 实现分开维护。
+便捷脚本都在 [`launchers/`](./launchers) 目录下：
 
-Windows:
+- Windows: `launchers\start-web.bat` / `launchers\stop-web.bat` / `launchers\status-web.bat`
+- macOS / Linux: `bash ./launchers/start-web.sh`
+- macOS 双击入口: `launchers/start-web.command`
 
-```bat
-launchers\start-web.bat
-launchers\stop-web.bat
-launchers\status-web.bat
-```
+## 诊断包与求助
 
-macOS / Linux:
+当你准备提 Issue、寻求远程协助，或者只是想先留下一份现场快照时，优先导出脱敏诊断包：
+
+- 工作台首页可直接下载“诊断包”
+- 也可以访问：`GET /api/support/diagnostics?download=1`
+
+诊断包会包含：
+
+- 版本与运行状态
+- Guard Web / Gateway / OpenClaw 状态
+- 备份与恢复概览
+- 最近日志与提醒
+- 安全检查摘要
+
+诊断包不会直接包含：
+
+- API Key、Token、Secret、Cookie、密码原文
+- 本机用户名称原文
+- 用户主目录等敏感路径原文
+
+## 已知限制
+
+- 首发阶段的“成本”能力仍然是估算值，不作为正式账单视图，也不会在主导航中突出展示。
+- 自定义渠道插件暂时不作为公开首发能力，当前优先支持官方渠道与稳定的扩展预留。
+- 高级 Git 仍然保留给技术用户；普通用户默认只需要理解“保存现在”和“恢复到某个状态”。
+- Linux 初始化链路当前只覆盖主流发行版的推荐路径，不承诺覆盖所有变种系统。
+
+## FAQ
+
+### 1. Guard 和 OpenClaw 是什么关系？
+
+OpenClaw 是主体运行时；Guard 是围绕它做安装、运维、安全、防误触和恢复的一层控制台。
+
+### 2. 恢复之后，后续版本怎么接着走？
+
+Guard 默认不会给你新建分支，也不会改写历史。恢复会在当前主线上追加一个 restore commit，后续版本继续接在这个节点后面。
+
+### 3. 我不懂 Git，也能用“备份与恢复”吗？
+
+可以。默认视图会把 Git 细节藏到“高级 Git”里，你只需要理解“保存现在”“恢复到这个状态”“最近有没有上云”。
+
+### 4. 为什么有些高级功能没有放到首页？
+
+公开首发阶段，Guard 更强调“第一次上手就能理解并完成关键路径”，所以首页优先突出安装、模型、渠道、备份与恢复，而不是把所有运维工具同时放大。
+
+## 如何提 Issue
+
+建议按下面的顺序提交，这样更容易定位：
+
+1. 下载脱敏诊断包。
+2. 写清楚你期望发生什么、实际发生了什么。
+3. 给出最小可复现步骤：
+   例如“全新 Windows 机器 -> 执行 init-machine -> 打开工作台 -> 在 OpenClaw 页点击更新”。
+4. 如果有截图，尽量同时附上诊断包和最近日志。
+
+Issue 入口：
+
+- [GitHub Issues](https://github.com/qingmiao-tech/openclaw-guard/issues/new/choose)
+
+## 本地开发
 
 ```bash
-bash ./launchers/start-web.sh
-bash ./launchers/stop-web.sh
-bash ./launchers/status-web.sh
+cd openclaw-guard
+npm install
+npm run build
+npm test
 ```
 
-macOS 双击方式:
-
-```text
-launchers/start-web.command
-launchers/stop-web.command
-launchers/status-web.command
-```
-
-脚本行为统一为:
-
-- 先检查 `node` / `npm` 是否可用
-- 如果本地还没有 `node_modules`，自动执行 `npm install`
-- 如果 Guard Web 已经在后台运行，先停止旧实例
-- 重新构建最新版本
-- 再启动新的后台实例
-- 最后输出当前状态与访问地址
-
-停止脚本行为:
-
-- 检查目标端口当前是否存在 Guard Web 后台实例
-- 若存在则执行停止，并等待进程真正退出
-- 最后输出当前状态，方便确认服务已经关闭
-
-状态脚本行为:
-
-- 读取当前 Guard Web 后台状态
-- 展示当前端口、PID、访问地址和日志位置
-- 在未运行时给出下一步启动提示
-
-如果你更习惯命令行，也可以直接执行:
-
-```bash
-npm run web:bg:restart
-npm run web:bg:down
-npm run web:bg:show-status
-```
-
-默认端口是 `18088`，也支持自定义端口，例如:
-
-```bash
-bash ./launchers/start-web.sh --port 18090
-bash ./launchers/stop-web.sh --port 18090
-bash ./launchers/status-web.sh --port 18090
-```
-
-```bat
-launchers\start-web.bat --port 18090
-launchers\stop-web.bat --port 18090
-launchers\status-web.bat --port 18090
-```
-
-开发模式启动:
+开发模式：
 
 ```bash
 npx tsx src/index.ts web --port 18088
 ```
 
-构建后启动:
+构建后运行：
 
 ```bash
-npm run build
 node dist/index.js web --port 18088
 ```
 
-常用本地地址:
+## License
 
-- `http://127.0.0.1:18088`
-- `http://127.0.0.1:18088/workbench`
-
-## 常用 CLI
-
-```bash
-# 系统与 OpenClaw 基础信息
-npx tsx src/index.ts info
-
-# 安全审计
-npx tsx src/index.ts audit
-
-# 启动 Web 工作台
-npx tsx src/index.ts web --port 18088
-
-# 查看标准 Guard Web 后台报告
-npx tsx src/index.ts web-status --port 18088 --lang zh
-npx tsx src/index.ts web-status --port 18088 --lang en --json
-
-# 初始化当前机器（可预演）
-npx tsx src/index.ts init-machine --install-openclaw --start-web --port 18088 --dry-run --json
-
-# 查看 Gateway 服务状态
-npx tsx src/index.ts service status
-
-# 启动 / 停止 / 重启 Gateway
-npx tsx src/index.ts service start
-npx tsx src/index.ts service stop
-npx tsx src/index.ts service restart
-
-# 查看 Guard 完整重启状态
-npx tsx src/index.ts guard status
-
-# 完整重启 Guard Web
-npx tsx src/index.ts guard restart --port 18088
-
-# 完整重启 Guard Web，并联动重启 Gateway
-npx tsx src/index.ts guard restart --port 18088 --restart-gateway
-```
-
-## Web 工作台入口
-
-Guard Web 已把根路由 `/` 切到新的原生工作台，核心页签包括:
-
-- 驾驶舱
-- 运维
-- OpenClaw
-- 渠道
-- AI
-- 通知
-- Agent
-- 会话
-- 活动
-- 文件
-- 记忆
-- 搜索
-- 成本
-- Cron
-- Git 同步
-- 审计
-- 预设
-- 加固
-- 日志
-
-其中“渠道”页统一承接消息入口配置，公开版默认保留官方 `Feishu / Lark`、Telegram、Slack、Discord 等渠道，不再单独提供顶级“飞书”页签。
-
-兼容说明:
-
-- 如果访问历史链接 `/#feishu`，前端会自动跳转到 `/#channels`
-- 跳转后会默认选中 `Feishu / Lark` 渠道详情，方便兼容旧书签与旧操作习惯
-
-其中“运维”页是当前唯一的服务控制入口，用来集中处理:
-
-- Gateway 启停与重启
-- Guard Web 后台托管
-- 完整重启 Guard
-- Guard + Gateway 全重启
-- 本地 Env 管理
-- 缓存预热
-- 运行路径与快照
-
-## OpenClaw 未安装时的处理
-
-如果目标机器还没有安装 OpenClaw，可以直接在工作台的 `OpenClaw` 页使用安装能力。
-
-当前策略:
-
-- Guard 先按“托管前缀 -> 当前 PATH -> npm 默认 prefix”的顺序检测本机是否已存在 `openclaw` CLI
-- 若已存在现有安装，优先复用，不强行覆盖
-- 若未安装，再把 OpenClaw 装到 Guard 的用户级托管前缀
-- 安装完成后会把托管 bin 目录注入当前进程 PATH，方便后续运维链路直接复用
-
-说明:
-
-- 默认托管前缀:
-  - Windows: `%USERPROFILE%\\.openclaw\\guard\\npm-global`
-  - macOS / Linux: `~/.openclaw/guard/npm-global`
-- `init-machine` 支持 `--managed-prefix` 覆盖默认托管目录
-- 当前自动安装仍依赖 `Node.js + npm`
-- Gateway 继续独立运维，本轮不会在初始化链路里自动安装或启动
-
-## 完整重启 Guard
-
-### 什么时候要用“完整重启 Guard”
-
-适合以下情况:
-
-- Guard 页面一直处于加载中，但 Gateway 本身未必异常
-- 切菜单后页面状态混乱，需要让 Guard Web 自己重启一轮
-- 前端资源已更新，但当前页面仍拿着旧脚本或旧缓存
-- 需要切换到新的后台托管实例
-
-不适合替代以下动作:
-
-- 只想恢复 OpenClaw Gateway: 用 `重启 Gateway`
-- 只想关闭当前 Guard Web: 用 `一键停后台服务`
-
-### Web 中的使用方式
-
-1. 右上角全局按钮: `完整重启 Guard`
-2. 运维页按钮: `完整重启 Guard`
-3. 运维页按钮: `Guard + Gateway 全重启`
-
-### CLI 中的使用方式
-
-```bash
-# 仅重启 Guard Web
-npx tsx src/index.ts guard restart --port 18088
-
-# Guard Web 和 Gateway 一起重启
-npx tsx src/index.ts guard restart --port 18088 --restart-gateway
-```
-
-### API
-
-```http
-GET /api/guard/restart-status
-POST /api/guard/restart
-Content-Type: application/json
-
-{
-  "restartGateway": true
-}
-```
-
-### 行为说明
-
-完整重启 Guard 不是简单地“先停再起”按钮拼接，而是后台接力式重启:
-
-1. 当前页面发起重启请求
-2. Guard 调度独立后台任务
-3. 旧 Guard Web 进程退出
-4. 新 Guard Web 实例在同端口重新托管启动
-5. 如果勾选联动，则继续重启 Gateway
-6. 前端通过轮询 `restart-status` 判断是否恢复
-
-这样做的目的，是避免当前请求进程直接把自己杀掉，导致链路半途断掉。
-
-## 运维建议
-
-建议按下面的顺序处理问题:
-
-1. 先看“驾驶舱”，判断是页面问题、Gateway 问题，还是 OpenClaw 未安装
-2. 进入“运维”，执行 Guard Web / Gateway 相关操作
-3. 如果是安装问题，进入 `OpenClaw` 页处理安装或升级
-4. 如果是配置问题，继续到 `AI`、`渠道`（内含 `Feishu / Lark`）、`Git 同步`
-5. 如果是运行态问题，查看 `会话`、`活动`、`日志`
-
-公开版当前不暴露“自定义飞书”或独立插件入口，后续扩展能力会通过通用插件机制迭代。
-
-## 常见排障
-
-### 1. 页面能打开，但一直转圈
-
-优先检查:
-
-- 是否命中了旧缓存
-- Guard Web 是否需要完整重启
-- OpenClaw 状态接口是否返回过慢
-
-建议动作:
-
-- 先点右上角 `完整重启 Guard`
-- 如仍异常，再到“运维”页执行 `Guard + Gateway 全重启`
-
-### 2. 只想恢复 OpenClaw 服务
-
-直接使用:
-
-```bash
-npx tsx src/index.ts service restart
-```
-
-或在“运维”页点击 `Restart Gateway`。
-
-### 3. 想把当前页面纳入后台托管
-
-在“运维”页使用:
-
-- `纳入后台托管`
-- `一键停后台服务`
-
-适用于当前页面已经打开，但还没有被 Guard 写入后台运行记录的情况。
-
-### 4. OpenClaw 没装
-
-进入 `OpenClaw` 页查看:
-
-- 安装状态
-- 安装条件
-- 安装前检查
-- 平台说明
-
-再执行:
-
-- `安装 / 修复`
-- `更新到最新`
-
-## 验证建议
-
-提交或发版前，至少验证以下链路:
-
-1. `npm run build`
-2. `npm test`
-3. `npm run pack:dry-run`
-4. 浏览器点击 `完整重启 Guard` 后，页面能在短暂断开后恢复
-5. 浏览器点击 `Guard + Gateway 全重启` 后，Guard 和 Gateway 都能恢复
-
-## 当前说明
-
-- 文档中的“完整重启 Guard”已对应当前代码实现
-- 根路由 `/` 默认进入新工作台
-- 旧版兼容页仅作为历史兼容用途保留，不是主入口
+[MIT](./LICENSE)

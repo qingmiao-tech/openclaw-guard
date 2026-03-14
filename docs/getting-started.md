@@ -58,9 +58,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubus
 
 首页会先回答三个问题：
 
-- 现在能不能正常工作
-- 下一步最建议先做什么
-- 有没有风险或阻断项
+- 现在能不能正常工作？
+- 下一步最建议先做什么？
+- 有没有风险或阻塞项？
 
 ## 第一次进入后，建议按这 4 步走
 
@@ -99,6 +99,7 @@ openclaw-guard openclaw status
 
 - Windows: `start-web.bat` / `stop-web.bat` / `status-web.bat`
 - macOS / Linux: `start-web.sh` / `stop-web.sh` / `status-web.sh`
+- macOS 双击入口: `start-web.command`
 
 ## 下一步看什么
 

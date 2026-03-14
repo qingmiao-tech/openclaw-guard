@@ -19,18 +19,25 @@ export default defineConfig({
     search: {
       provider: 'local',
     },
+    editLink: {
+      pattern: 'https://github.com/qingmiao-tech/openclaw-guard/edit/main/docs/:path',
+      text: '在 GitHub 上编辑此页',
+    },
     nav: [
       { text: '首页', link: '/' },
+      { text: '使用场景', link: '/showcase' },
       { text: '快速开始', link: '/getting-started' },
       { text: '核心能力', link: '/console-overview' },
+      { text: '版本与发布', link: '/releases' },
       { text: '排障支持', link: '/troubleshooting' },
       { text: 'GitHub', link: 'https://github.com/qingmiao-tech/openclaw-guard' },
     ],
     sidebar: [
       {
-        text: '开始使用',
+        text: '概览',
         items: [
           { text: '项目介绍', link: '/' },
+          { text: '使用场景', link: '/showcase' },
           { text: '快速开始', link: '/getting-started' },
           { text: '控制台导览', link: '/console-overview' },
         ],
@@ -50,6 +57,7 @@ export default defineConfig({
         items: [
           { text: '排障与诊断包', link: '/troubleshooting' },
           { text: 'FAQ', link: '/faq' },
+          { text: '版本与发布', link: '/releases' },
         ],
       },
     ],

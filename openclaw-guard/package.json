@@ -1,12 +1,12 @@
 {
-  "name": "openclaw-guard",
-  "version": "0.9.0",
+  "name": "@qingmiao-tech/openclaw-guard",
+  "version": "0.9.1",
   "description": "Safer OpenClaw operations console with guided setup, backup & recovery, and security guardrails.",
   "type": "module",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/qingmiao-tech/openclaw-guard.git"
+    "url": "git+https://github.com/qingmiao-tech/openclaw-guard.git"
   },
   "homepage": "https://github.com/qingmiao-tech/openclaw-guard",
   "bugs": {

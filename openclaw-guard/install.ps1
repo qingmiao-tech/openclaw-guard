@@ -32,6 +32,15 @@ function Get-CommandSafe {
   }
 }
 
+function Get-GuardPackageSpec {
+  $base = "@$Owner/openclaw-guard"
+  if ($Version -eq 'latest') {
+    return $base
+  }
+
+  return "$base@$Version"
+}
+
 function Ensure-Node {
   if ((Get-CommandSafe 'node') -and (Get-CommandSafe 'npm')) {
     Write-Info "Detected Node.js $(node --version) and npm $(npm --version)."
@@ -87,7 +96,7 @@ function Add-NpmPrefixToPath {
 }
 
 function Install-Guard {
-  $packageSpec = if ($Version -eq 'latest') { 'openclaw-guard' } else { "openclaw-guard@$Version" }
+  $packageSpec = Get-GuardPackageSpec
   Write-Info "Installing $packageSpec globally via npm..."
   Invoke-Step { npm install -g $packageSpec } "npm install -g $packageSpec"
 }
@@ -111,7 +120,7 @@ function Invoke-InitMachine {
     return
   }
 
-  $packageSpec = if ($Version -eq 'latest') { 'openclaw-guard' } else { "openclaw-guard@$Version" }
+  $packageSpec = Get-GuardPackageSpec
   if ($DryRun) {
     Write-Info 'openclaw-guard is not on PATH yet. Showing fallback command only:'
     Write-Info "[dry-run] npx -y $packageSpec $($args -join ' ')"

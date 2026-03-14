@@ -377,7 +377,7 @@ export async function runMachineInit(options: MachineInitOptions = {}): Promise<
       ? `已预留 Guard 安装步骤，当前包版本 ${guardVersion}。`
       : `当前进程已在运行 openclaw-guard ${guardVersion}，外部安装脚本可在调用 init-machine 前完成 npm 安装。`,
     {
-      command: 'npm install -g openclaw-guard@<version>',
+      command: 'npm install -g @qingmiao-tech/openclaw-guard@<version>',
     },
   ));
 

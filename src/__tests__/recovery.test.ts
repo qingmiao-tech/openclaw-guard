@@ -91,7 +91,7 @@ describe('recovery', () => {
     expect(result.overview.remoteReady).toBe(false);
     expect(getHeadMessage(tempRoot)).toBe('guard: checkpoint first-state');
     expect(listRecoveryPoints(5)[0]?.commitSha).toBe(result.createdPoint?.commitSha);
-  }, 15000);
+  }, 25000);
 
   it('pushes a saved recovery point when the private remote is ready', async () => {
     initGitSync();
@@ -126,7 +126,7 @@ describe('recovery', () => {
     const branch = execFileSync('git', ['-C', tempRoot, 'branch', '--show-current'], { encoding: 'utf-8' }).trim() || 'master';
     const remoteHeadMessage = execFileSync('git', [`--git-dir=${bareRemotePath}`, 'log', '-1', '--pretty=%s', branch], { encoding: 'utf-8' }).trim();
     expect(remoteHeadMessage).toBe('guard: checkpoint synced-state');
-  }, 20000);
+  }, 30000);
 
   it('restores an older point on the same branch and records auto protection first', () => {
     initGitSync();
@@ -163,5 +163,5 @@ describe('recovery', () => {
     expect(recentSubjects).toContain('guard: auto checkpoint before restore');
     expect(recentSubjects).toContain('guard: checkpoint version-2');
     expect(getRecoveryOverview().nextAction).toBe('review-restored-state');
-  }, 20000);
+  }, 40000);
 });

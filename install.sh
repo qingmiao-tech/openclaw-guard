@@ -7,6 +7,15 @@ PORT="${OPENCLAW_GUARD_PORT:-18088}"
 MANAGED_PREFIX="${OPENCLAW_GUARD_MANAGED_PREFIX:-}"
 DRY_RUN=0
 
+guard_package_spec() {
+  local base="@${OWNER}/openclaw-guard"
+  if [ "$VERSION" != 'latest' ]; then
+    printf '%s@%s' "$base" "$VERSION"
+    return
+  fi
+  printf '%s' "$base"
+}
+
 usage() {
   cat <<'EOF'
 OpenClaw Guard installer (macOS / Linux)
@@ -16,7 +25,7 @@ Usage:
 
 What it does:
   1. Ensure Node.js + npm are available
-  2. Install openclaw-guard globally with npm
+  2. Install @<owner>/openclaw-guard globally with npm
   3. Delegate machine setup to: openclaw-guard init-machine --install-openclaw --start-web
 EOF
 }
@@ -114,10 +123,8 @@ ensure_node() {
 }
 
 install_guard() {
-  local package_spec='openclaw-guard'
-  if [ "$VERSION" != 'latest' ]; then
-    package_spec="openclaw-guard@${VERSION}"
-  fi
+  local package_spec
+  package_spec="$(guard_package_spec)"
   log "Installing ${package_spec} globally via npm..."
   run_cmd npm install -g "$package_spec"
 }
@@ -167,10 +174,8 @@ run_init_machine() {
     return
   fi
 
-  local package_spec='openclaw-guard'
-  if [ "$VERSION" != 'latest' ]; then
-    package_spec="openclaw-guard@${VERSION}"
-  fi
+  local package_spec
+  package_spec="$(guard_package_spec)"
 
   if [ "$DRY_RUN" -eq 1 ]; then
     log 'openclaw-guard is not on PATH yet. Showing fallback command only:'

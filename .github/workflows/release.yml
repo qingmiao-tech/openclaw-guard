@@ -75,13 +75,15 @@ jobs:
           fi
 
           TAG_NAME="v${PACKAGE_VERSION}"
+          TAG_EXISTS="false"
           if git ls-remote --exit-code --tags origin "${TAG_NAME}" >/dev/null 2>&1; then
-            echo "Tag ${TAG_NAME} already exists on origin." >&2
-            exit 1
+            TAG_EXISTS="true"
+            echo "Tag ${TAG_NAME} already exists on origin. The workflow will reuse it and continue with npm publish."
           fi
 
           echo "package_version=${PACKAGE_VERSION}" >> "${GITHUB_OUTPUT}"
           echo "tag_name=${TAG_NAME}" >> "${GITHUB_OUTPUT}"
+          echo "tag_exists=${TAG_EXISTS}" >> "${GITHUB_OUTPUT}"
 
       - name: Build
         run: npm run build
@@ -105,6 +107,7 @@ jobs:
         run: npm publish "${{ steps.pack.outputs.tarball }}" --access public --provenance --tag "${{ github.event.inputs.npm_tag }}"
 
       - name: Create and push git tag
+        if: ${{ steps.version.outputs.tag_exists != 'true' }}
         shell: bash
         run: |
           git config user.name "github-actions[bot]"

@@ -14,17 +14,33 @@ import path from 'node:path';
 import { ensureGuardLayout } from './guard-state.js';
 
 const AUTH_FILENAME = 'auth.json';
+const INITIAL_PASSWORD_FILENAME = 'initial-password.json';
 const TOKEN_EXPIRY_MS = 8 * 60 * 60 * 1000; // 8 小时
 const MAX_SESSIONS = 20;
 const MIN_PASSWORD_LENGTH = 6;
 const PBKDF2_ITERATIONS = 100_000;
 const PBKDF2_KEYLEN = 32;
 const PBKDF2_DIGEST = 'sha256';
+export const AUTH_SHOW_PASSWORD_COMMAND = 'openclaw-guard auth show-password';
 
 interface AuthData {
   passwordHash: string;
   salt: string;
   createdAt: string;
+}
+
+export interface InitialPasswordRecord {
+  password: string;
+  createdAt: string;
+  authCreatedAt: string;
+}
+
+export interface AuthStatusInfo {
+  enabled: boolean;
+  configured: boolean;
+  initialPasswordAvailable: boolean;
+  initialPasswordCreatedAt: string | null;
+  revealCommand: string;
 }
 
 /** 内存会话表：token -> 过期时间戳 */
@@ -35,6 +51,11 @@ const activeSessions = new Map<string, number>();
 function getAuthFilePath(): string {
   const { secretsDir } = ensureGuardLayout();
   return path.join(secretsDir, AUTH_FILENAME);
+}
+
+function getInitialPasswordFilePath(): string {
+  const { secretsDir } = ensureGuardLayout();
+  return path.join(secretsDir, INITIAL_PASSWORD_FILENAME);
 }
 
 function hashPassword(password: string, salt: string): string {
@@ -65,6 +86,30 @@ function writeAuthData(data: AuthData): void {
   fs.writeFileSync(getAuthFilePath(), JSON.stringify(data, null, 2), { encoding: 'utf-8', mode: 0o600 });
 }
 
+function readInitialPasswordRecordFile(): InitialPasswordRecord | null {
+  const filePath = getInitialPasswordFilePath();
+  if (!fs.existsSync(filePath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8')) as InitialPasswordRecord;
+  } catch {
+    return null;
+  }
+}
+
+function writeInitialPasswordRecord(record: InitialPasswordRecord): void {
+  fs.writeFileSync(getInitialPasswordFilePath(), JSON.stringify(record, null, 2), { encoding: 'utf-8', mode: 0o600 });
+}
+
+function removeInitialPasswordRecord(): void {
+  const filePath = getInitialPasswordFilePath();
+  if (!fs.existsSync(filePath)) return;
+  try {
+    fs.rmSync(filePath, { force: true });
+  } catch {
+    // ignore cleanup failure and let the runtime keep going
+  }
+}
+
 // ── 公开 API ──────────────────────────────────────────────────────────────────
 
 /**
@@ -76,10 +121,16 @@ export function initAuth(): { isNew: boolean; password?: string } {
 
   const password = generateRandomPassword();
   const salt = crypto.randomBytes(16).toString('hex');
+  const createdAt = new Date().toISOString();
   writeAuthData({
     passwordHash: hashPassword(password, salt),
     salt,
-    createdAt: new Date().toISOString(),
+    createdAt,
+  });
+  writeInitialPasswordRecord({
+    password,
+    createdAt,
+    authCreatedAt: createdAt,
   });
   return { isNew: true, password };
 }
@@ -87,6 +138,31 @@ export function initAuth(): { isNew: boolean; password?: string } {
 /** 是否已配置密码（auth.json 存在） */
 export function hasAuthConfigured(): boolean {
   return readAuthData() !== null;
+}
+
+export function getInitialPasswordRecord(): InitialPasswordRecord | null {
+  const authData = readAuthData();
+  if (!authData) return null;
+  const record = readInitialPasswordRecordFile();
+  if (!record) return null;
+  if (record.authCreatedAt !== authData.createdAt) {
+    removeInitialPasswordRecord();
+    return null;
+  }
+  return record;
+}
+
+export function getAuthStatus(): AuthStatusInfo {
+  const enabled = isAuthEnabled();
+  const configured = hasAuthConfigured();
+  const record = enabled ? getInitialPasswordRecord() : null;
+  return {
+    enabled,
+    configured,
+    initialPasswordAvailable: record !== null,
+    initialPasswordCreatedAt: record?.createdAt || null,
+    revealCommand: AUTH_SHOW_PASSWORD_COMMAND,
+  };
 }
 
 /** 校验密码是否正确 */
@@ -148,6 +224,7 @@ export function changePassword(
     salt,
     createdAt: new Date().toISOString(),
   });
+  removeInitialPasswordRecord();
   activeSessions.clear(); // 使所有现有会话失效
   return { success: true };
 }

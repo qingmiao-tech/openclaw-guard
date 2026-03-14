@@ -17,9 +17,17 @@
 当前公开版最推荐的方式：
 
 ```bash
-npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.0/openclaw-guard-0.9.0.tgz
+npm install -g @qingmiao-tech/openclaw-guard@0.9.1
 openclaw-guard init-machine --install-openclaw --start-web --port 18088
 ```
+
+如果你更喜欢不落全局安装，也可以直接用 `npx`：
+
+```bash
+npx -y @qingmiao-tech/openclaw-guard@0.9.1 init-machine --install-openclaw --start-web --port 18088
+```
+
+如果 npm registry 里暂时还搜不到这个 scoped 包，先用下方的 GitHub Release 资产安装即可；等 npm 公共同步完成后，再切回 `npm / npx` 方式。
 
 这个命令会按顺序做几件事：
 
@@ -37,7 +45,11 @@ openclaw-guard init-machine --install-openclaw --start-web --port 18088 --dry-ru
 ```
 
 ::: tip 当前公开安装说明
-当前公开版先以 GitHub Release 的 tarball 作为推荐安装入口。npm 包名与安装脚本会在下一轮与 scoped 包名一起完成对齐。
+如果你更想固定到 GitHub Release 资产，也可以安装：
+
+```bash
+npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.1/qingmiao-tech-openclaw-guard-0.9.1.tgz
+```
 :::
 
 ## 打开工作台
@@ -46,6 +58,24 @@ openclaw-guard init-machine --install-openclaw --start-web --port 18088 --dry-ru
 
 - `http://127.0.0.1:18088/`
 - `http://127.0.0.1:18088/workbench`
+
+## 第一次登录前，先确认初始化密码
+
+- 首次启动时，Guard 会在本机终端打印一条随机生成的初始化密码。
+- 如果你没来得及抄下来，可以在同一台机器的终端执行：
+
+```bash
+openclaw-guard auth show-password
+```
+
+- 如果你想先确认当前环境是否仍保留这条本机可回看的记录，也可以执行：
+
+```bash
+openclaw-guard auth status
+```
+
+- 这个命令只会在本机 CLI 中显示密码，不会通过网页直接返回。
+- 如果你已经改过密码，请直接使用修改后的当前密码登录。
 
 首页会先回答三个问题：
 
@@ -79,6 +109,16 @@ openclaw-guard web --port 18088
 
 # 查看 Guard Web 状态
 openclaw-guard web-status --port 18088 --lang zh
+
+# 查看初始化密码是否仍可回看
+openclaw-guard auth status
+openclaw-guard auth show-password
+
+# 用 npm 全局更新到最新版
+npm install -g @qingmiao-tech/openclaw-guard@latest
+
+# 用 npx 直接运行最新版
+npx -y @qingmiao-tech/openclaw-guard@latest web-status --port 18088 --lang zh
 
 # 查看 OpenClaw 生命周期状态
 openclaw-guard openclaw status

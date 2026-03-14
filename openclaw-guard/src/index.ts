@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import { Command } from 'commander';
 import chalk from 'chalk';
+import { getAuthStatus, getInitialPasswordRecord } from './auth.js';
 import { runFullAudit, type AuditResult } from './audit.js';
 import { applyProfile, getProfile, PROFILES } from './profiles.js';
 import { generateHardenScript, getAllHardenSteps } from './harden.js';
@@ -204,6 +205,73 @@ program.command('info').description('查看系统与 OpenClaw 基础信息').act
   console.log(`安装路径: ${openclaw.binPath || '-'}`);
   console.log(`检测来源: ${openclaw.detectedSource}`);
   console.log(`托管前缀: ${openclaw.managedPrefix}`);
+});
+
+const authCmd = program.command('auth').description('本机访问密码与登录状态');
+authCmd.command('status').description('查看访问密码是否已初始化').option('--json', '输出 JSON').action((opts: { json?: boolean }) => {
+  const status = getAuthStatus();
+  if (opts.json) {
+    printJson(status);
+    return;
+  }
+  console.log(chalk.bold('\nGuard Auth 状态\n'));
+  console.log(`鉴权启用: ${status.enabled ? '是' : '否'}`);
+  console.log(`已初始化密码: ${status.configured ? '是' : '否'}`);
+  console.log(`初始化密码可回看: ${status.initialPasswordAvailable ? '是' : '否'}`);
+  console.log(`本机查看命令: ${status.revealCommand}`);
+  if (status.initialPasswordCreatedAt) {
+    console.log(`初始化时间: ${status.initialPasswordCreatedAt}`);
+  }
+});
+authCmd.command('show-password').description('显示当前仍可回看的初始化密码').option('--json', '输出 JSON').action((opts: { json?: boolean }) => {
+  const status = getAuthStatus();
+  const record = getInitialPasswordRecord();
+  const result = !status.enabled
+    ? {
+        success: false,
+        available: false,
+        message: '当前已关闭鉴权（GUARD_NO_AUTH=1），无需访问密码。',
+        revealCommand: status.revealCommand,
+      }
+    : !status.configured
+      ? {
+          success: false,
+          available: false,
+          message: '当前还没有初始化访问密码。请先启动 Guard Web 或运行 init-machine。',
+          revealCommand: status.revealCommand,
+        }
+      : !record
+        ? {
+            success: false,
+            available: false,
+            message: '当前环境没有可回看的初始化密码记录。通常表示密码已经被修改，或该环境早于此功能创建。',
+            revealCommand: status.revealCommand,
+          }
+        : {
+            success: true,
+            available: true,
+            password: record.password,
+            createdAt: record.createdAt,
+            message: '这是当前仍可回看的初始化密码。建议登录后尽快改成你自己的密码。',
+            revealCommand: status.revealCommand,
+          };
+
+  if (opts.json) {
+    printJson(result);
+    if (!result.success) process.exitCode = 1;
+    return;
+  }
+
+  if (!result.success) {
+    console.log(chalk.yellow(`\n${result.message}\n`));
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log(chalk.bold('\nGuard 初始访问密码\n'));
+  console.log(`密码: ${result.password}`);
+  console.log(`生成时间: ${result.createdAt}`);
+  console.log(`说明: ${result.message}\n`);
 });
 
 const openclawCmd = program.command('openclaw').description('OpenClaw 生命周期管理');
@@ -679,6 +747,16 @@ program.command('init-machine')
       return;
     }
     console.log(formatMachineInitResult(result));
+    if (result.auth.initializedNow) {
+      const record = getInitialPasswordRecord();
+      if (record) {
+        console.log('');
+        console.log(chalk.yellow('[Guard] 首次启动访问密码'));
+        console.log(`  密码: ${record.password}`);
+        console.log(`  稍后查看: ${result.auth.revealCommand}`);
+        console.log('  建议首次登录后尽快通过「修改密码」换成你自己的密码。');
+      }
+    }
     if (!result.ok) process.exitCode = 1;
   });
 
@@ -732,6 +810,7 @@ webBackgroundCmd.command('start')
   .option('--current-pid <pid>', '当前 Guard Web PID')
   .option('--json', '输出 JSON')
   .action(async (opts: { port?: string; currentPid?: string; json?: boolean }) => {
+    const beforeAuthStatus = getAuthStatus();
     const result = await startWebBackgroundService({
       port: Number(opts.port || 18088),
       currentPid: parseOptionalNumber(opts.currentPid),
@@ -741,6 +820,18 @@ webBackgroundCmd.command('start')
       return;
     }
     printAction(result);
+    const afterAuthStatus = getAuthStatus();
+    const initializedNow = !beforeAuthStatus.configured && afterAuthStatus.initialPasswordAvailable;
+    if (result.success && initializedNow) {
+      const record = getInitialPasswordRecord();
+      if (record) {
+        console.log('');
+        console.log(chalk.yellow('[Guard] 首次启动访问密码'));
+        console.log(`  密码: ${record.password}`);
+        console.log(`  稍后查看: ${afterAuthStatus.revealCommand}`);
+        console.log('  建议首次登录后尽快通过「修改密码」换成你自己的密码。');
+      }
+    }
   });
 webBackgroundCmd.command('stop')
   .description('停止 Guard Web 后台服务')

@@ -8,6 +8,9 @@ const runOpenClawTaskMock = vi.fn();
 const getWebBackgroundReportMock = vi.fn();
 const startWebBackgroundServiceMock = vi.fn();
 const ensureDirMock = vi.fn();
+const getAuthStatusMock = vi.fn();
+const initAuthMock = vi.fn();
+const isAuthEnabledMock = vi.fn(() => true);
 
 vi.mock('../platform.js', () => ({
   detectPlatform: detectPlatformMock,
@@ -15,6 +18,12 @@ vi.mock('../platform.js', () => ({
 
 vi.mock('../guard-state.js', () => ({
   ensureDir: ensureDirMock,
+}));
+
+vi.mock('../auth.js', () => ({
+  getAuthStatus: getAuthStatusMock,
+  initAuth: initAuthMock,
+  isAuthEnabled: isAuthEnabledMock,
 }));
 
 vi.mock('../openclaw.js', () => ({
@@ -93,6 +102,15 @@ describe('machine-init', () => {
     resolveManagedPrefixMock.mockImplementation((managedPrefix?: string) => managedPrefix || 'C:/Users/demo/.openclaw/guard/npm-global');
     getOpenClawManagedBinDirMock.mockImplementation((managedPrefix?: string) => resolveManagedPrefixMock(managedPrefix));
     ensureDirMock.mockImplementation((value?: string) => value);
+    isAuthEnabledMock.mockReturnValue(true);
+    initAuthMock.mockReturnValue({ isNew: false });
+    getAuthStatusMock.mockReturnValue({
+      enabled: true,
+      configured: true,
+      initialPasswordAvailable: true,
+      initialPasswordCreatedAt: '2026-03-14T00:00:00.000Z',
+      revealCommand: 'openclaw-guard auth show-password',
+    });
   });
 
   afterEach(() => {
@@ -129,6 +147,8 @@ describe('machine-init', () => {
     expect(result.steps.find((step) => step.id === 'start-web')?.status).toBe('dry-run');
     expect(runOpenClawTaskMock).not.toHaveBeenCalled();
     expect(startWebBackgroundServiceMock).not.toHaveBeenCalled();
+    expect(initAuthMock).not.toHaveBeenCalled();
+    expect(result.auth.initializedNow).toBe(false);
   });
 
   it('installs OpenClaw into the managed prefix and starts Guard Web when requested', async () => {
@@ -186,6 +206,7 @@ describe('machine-init', () => {
         },
       };
     });
+    initAuthMock.mockReturnValue({ isNew: true, password: 'DemoInitPwd' });
 
     const { runMachineInit } = await import('../machine-init.js');
     const result = await runMachineInit({
@@ -202,5 +223,7 @@ describe('machine-init', () => {
     expect(result.openclaw.detectedSource).toBe('managed-prefix');
     expect(result.webReport.running).toBe(true);
     expect(result.webReport.nextAction).toBe('open-workbench');
+    expect(initAuthMock).toHaveBeenCalledTimes(1);
+    expect(result.auth.initializedNow).toBe(true);
   });
 });

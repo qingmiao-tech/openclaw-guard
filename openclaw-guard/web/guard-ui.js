@@ -58,6 +58,11 @@
       loginBtn: '登录',
       loginLoading: '验证中…',
       loginError: '密码错误，请重试',
+      loginHintTitle: '忘记初始化密码？',
+      loginHintBody: '如果你没来得及记下第一次启动时的密码，请在本机终端执行下面的命令再次查看。',
+      loginHintFallback: '如果命令提示无法回看，通常表示你已经修改过密码，或当前环境早于本机留存功能创建。',
+      loginHintCurrent: '如果你已经改过密码，请直接输入修改后的当前密码。',
+      loginHintCommandLabel: '本机查看命令',
       changePassword: '修改密码',
       changePwdCurrentLabel: '当前密码',
       changePwdNewLabel: '新密码',
@@ -170,6 +175,11 @@
       loginBtn: 'Login',
       loginLoading: 'Verifying…',
       loginError: 'Incorrect password, please retry',
+      loginHintTitle: 'Missed the initial password?',
+      loginHintBody: 'If you did not have time to copy the password shown on first startup, run this command in the local terminal to view it again.',
+      loginHintFallback: 'If the command says the password is unavailable, the password was either changed already or this environment was initialized before Guard started keeping a local recovery record.',
+      loginHintCurrent: 'If you already changed the password, use the current password you set yourself.',
+      loginHintCommandLabel: 'Local command',
       changePassword: 'Change Password',
       changePwdCurrentLabel: 'Current Password',
       changePwdNewLabel: 'New Password',
@@ -284,6 +294,9 @@
     activeTab: null,
     authToken: localStorage.getItem(STORAGE_TOKEN) || null,
     authEnabled: null, // null = 尚未检测
+    authConfigured: false,
+    authInitialPasswordAvailable: null,
+    authRevealCommand: 'openclaw-guard auth show-password',
     themePreference: normalizeThemePreference(localStorage.getItem(STORAGE_THEME) || 'auto'),
     overviewGuideHidden: localStorage.getItem(STORAGE_OVERVIEW_GUIDE_HIDDEN) === '1',
     topMenu: null,
@@ -961,6 +974,24 @@
 
   // ── 登录页面 ─────────────────────────────────────────────────────────────────
 
+  function renderLoginHint() {
+    const revealCommand = state.authRevealCommand || 'openclaw-guard auth show-password';
+    const availabilityMessage = state.authInitialPasswordAvailable === false
+      ? t('loginHintFallback')
+      : t('loginHintCurrent');
+    return `
+      <div class="guard-login-note">
+        <div class="guard-login-note-title">${escapeHtml(t('loginHintTitle'))}</div>
+        <div class="guard-login-note-copy">${escapeHtml(t('loginHintBody'))}</div>
+        <div class="guard-login-command">
+          <span class="guard-login-command-label">${escapeHtml(t('loginHintCommandLabel'))}</span>
+          <code>${escapeHtml(revealCommand)}</code>
+        </div>
+        <div class="guard-login-note-copy secondary">${escapeHtml(availabilityMessage)}</div>
+      </div>
+    `;
+  }
+
   function renderLoginPage() {
     app.innerHTML = `
       <div id="guard-login-wrap">
@@ -984,6 +1015,7 @@
             <div id="guard-login-error" class="guard-login-error" style="display:none"></div>
             <button type="submit" id="guard-login-btn">${escapeHtml(t('loginBtn'))}</button>
           </form>
+          ${renderLoginHint()}
         </div>
         <div id="guard-toast" class="toast"></div>
       </div>
@@ -9804,6 +9836,11 @@
     try {
       const authStatus = await fetch('/api/auth/status').then((r) => r.json());
       state.authEnabled = authStatus.enabled;
+      state.authConfigured = authStatus.configured === true;
+      state.authInitialPasswordAvailable = authStatus.initialPasswordAvailable === true;
+      if (typeof authStatus.revealCommand === 'string' && authStatus.revealCommand.trim()) {
+        state.authRevealCommand = authStatus.revealCommand.trim();
+      }
       if (!authStatus.enabled) {
         // 鉴权关闭（GUARD_NO_AUTH=1），直接进入主界面
         renderShell();
@@ -9813,6 +9850,8 @@
     } catch {
       // 无法检测时，降级为假设已启用鉴权
       state.authEnabled = true;
+      state.authConfigured = false;
+      state.authInitialPasswordAvailable = null;
     }
     // 有 token 时先进入，如果 token 无效 apiRequest 会捕获 401 并重新触发 renderLoginPage
     if (state.authToken) {

@@ -4,12 +4,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runFullAudit } from './audit.js';
 import {
+    AUTH_SHOW_PASSWORD_COMMAND,
     changePassword,
     checkLoginRate,
     createSession,
     extractBearerToken,
+    getAuthStatus,
     getClientIp,
-    hasAuthConfigured,
     initAuth,
     isAuthEnabled,
     recordLoginFailure,
@@ -294,7 +295,13 @@ export function startServer(port: number) {
 
         // ── 鉴权 API 路由（公开可访问）─────────────────────────────────────────
         if (pathname === '/api/auth/status' && req.method === 'GET') {
-          jsonResponse(res, { enabled: isAuthEnabled(), configured: hasAuthConfigured() });
+          const authStatus = getAuthStatus();
+          jsonResponse(res, {
+            enabled: authStatus.enabled,
+            configured: authStatus.configured,
+            initialPasswordAvailable: authStatus.initialPasswordAvailable,
+            revealCommand: authStatus.revealCommand,
+          });
           return;
         }
 
@@ -959,6 +966,7 @@ export function startServer(port: number) {
     if (authInit.isNew && authInit.password) {
       console.log('\n[Guard] ⚠️  首次启动，已自动生成访问密码：');
       console.log(`   密码: ${authInit.password}`);
+      console.log(`   如需稍后再次查看，请在本机终端执行: ${AUTH_SHOW_PASSWORD_COMMAND}`);
       console.log('   请妥善保存此密码，也可在登录后通过「修改密码」功能更换。\n');
     }
   }

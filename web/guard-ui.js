@@ -6,6 +6,8 @@
   const STORAGE_TAB = 'openclaw-guard.active-tab';
   const STORAGE_TOKEN = 'openclaw-guard.token';
   const STORAGE_THEME = 'openclaw-guard.theme';
+  const STORAGE_OVERVIEW_GUIDE_HIDDEN = 'openclaw-guard.overview-guide-hidden';
+  const SUPPORT_ISSUES_URL = 'https://github.com/qingmiao-tech/openclaw-guard/issues/new/choose';
   const THEME_OPTIONS = ['auto', 'light', 'dark'];
   const themeMediaQuery = typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-color-scheme: dark)')
@@ -254,10 +256,10 @@
   const RUNTIME_TABS = ['sessions', 'logs', 'notifications'];
   const AUTOMATION_TABS = ['cron'];
   const NAV_GROUPS = [
-    { id: 'core', titleKey: 'nav.core', hintKey: 'nav.coreHint', tabs: CORE_TABS },
-    { id: 'workspace', titleKey: 'nav.workspace', hintKey: 'nav.workspaceHint', tabs: WORKSPACE_ROLE_TABS },
-    { id: 'runtime', titleKey: 'nav.runtime', hintKey: 'nav.runtimeHint', tabs: RUNTIME_TABS },
-    { id: 'automation', titleKey: 'nav.automation', hintKey: 'nav.automationHint', tabs: AUTOMATION_TABS },
+    { id: 'core', titleKey: 'nav.core', hintKey: 'nav.coreHint', tabs: CORE_TABS, priority: 'primary' },
+    { id: 'workspace', titleKey: 'nav.workspace', hintKey: 'nav.workspaceHint', tabs: WORKSPACE_ROLE_TABS, priority: 'secondary' },
+    { id: 'runtime', titleKey: 'nav.runtime', hintKey: 'nav.runtimeHint', tabs: RUNTIME_TABS, priority: 'secondary' },
+    { id: 'automation', titleKey: 'nav.automation', hintKey: 'nav.automationHint', tabs: AUTOMATION_TABS, priority: 'secondary' },
   ];
   const TAB_ORDER = [...CORE_TABS, ...WORKSPACE_ROLE_TABS, ...RUNTIME_TABS, ...AUTOMATION_TABS];
   const SOFT_CACHE_TTL_MS = 10_000;
@@ -283,6 +285,7 @@
     authToken: localStorage.getItem(STORAGE_TOKEN) || null,
     authEnabled: null, // null = 尚未检测
     themePreference: normalizeThemePreference(localStorage.getItem(STORAGE_THEME) || 'auto'),
+    overviewGuideHidden: localStorage.getItem(STORAGE_OVERVIEW_GUIDE_HIDDEN) === '1',
     topMenu: null,
     filesPath: '',
     filesMode: 'all',
@@ -385,6 +388,15 @@
     document.documentElement.dataset.themePreference = normalized;
   }
 
+  function setOverviewGuideHidden(hidden) {
+    state.overviewGuideHidden = hidden === true;
+    if (state.overviewGuideHidden) {
+      localStorage.setItem(STORAGE_OVERVIEW_GUIDE_HIDDEN, '1');
+    } else {
+      localStorage.removeItem(STORAGE_OVERVIEW_GUIDE_HIDDEN);
+    }
+  }
+
   function normalizeFilesMode(mode) {
     return mode === 'memory' ? 'memory' : 'all';
   }
@@ -413,9 +425,6 @@
       <div class="toolbar tight">
         <button type="button" class="chip ${state.filesMode === 'all' ? 'active' : ''}" data-files-mode="all">${escapeHtml(t('fileModes.all'))}</button>
         <button type="button" class="chip ${state.filesMode === 'memory' ? 'active' : ''}" data-files-mode="memory">${escapeHtml(t('fileModes.memory'))}</button>
-      </div>
-      </div>
-      </div>
       </div>
     `;
   }
@@ -1159,6 +1168,57 @@
 
   function metricCard(title, value, detail, pillClass = '') {
     return `<div class="card"><div class="row" style="justify-content:space-between"><h3>${escapeHtml(title)}</h3>${pillClass ? `<span class="pill ${pillClass}">${escapeHtml(detail || '')}</span>` : ''}</div><div class="metric">${escapeHtml(value)}</div>${pillClass ? '' : `<p>${escapeHtml(detail || '')}</p>`}</div>`;
+  }
+
+  function renderOverviewGuideStep(step, index, total) {
+    const toneClass = step.complete ? 'is-complete' : step.current ? 'is-current' : '';
+    const stateLabel = step.complete
+      ? (state.lang === 'zh' ? '已完成' : 'Done')
+      : step.current
+        ? (state.lang === 'zh' ? '现在去做' : 'Do This Next')
+        : (state.lang === 'zh' ? '稍后补齐' : 'Later');
+    const statePill = step.complete ? 'success' : step.current ? 'warn' : '';
+    return `
+      <div class="overview-step ${toneClass}">
+        <div class="overview-step-index">${index + 1}</div>
+        <div class="overview-step-main">
+          <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+            <strong>${escapeHtml(step.title)}</strong>
+            <span class="pill ${statePill}">${escapeHtml(stateLabel)}</span>
+          </div>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(step.body)}</div>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(step.meta || (state.lang === 'zh' ? `步骤 ${index + 1} / ${total}` : `Step ${index + 1} / ${total}`))}</div>
+          <div class="toolbar tight" style="margin-top:12px;">
+            <button class="action-btn ${step.current ? 'primary' : ''}" type="button" data-overview-open-tab="${escapeHtml(step.tabId)}" ${step.selector ? `data-overview-focus="${escapeHtml(step.selector)}"` : ''}>${escapeHtml(step.label)}</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderOverviewPathCard(item) {
+    const pillClass = item.complete ? 'success' : item.tone === 'warn' ? 'warn' : item.tone === 'danger' ? 'danger' : '';
+    const pillLabel = item.complete
+      ? (state.lang === 'zh' ? '已就绪' : 'Ready')
+      : item.tone === 'warn' || item.tone === 'danger'
+        ? (state.lang === 'zh' ? '待补齐' : 'Needs Setup')
+        : (state.lang === 'zh' ? '可继续优化' : 'Can Improve');
+    return `
+      <div class="card guide-card tone-${escapeHtml(item.complete ? 'success' : item.tone || 'info')}">
+        <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+          <div>
+            <div class="overview-kicker">${escapeHtml(item.kicker)}</div>
+            <h3>${escapeHtml(item.title)}</h3>
+          </div>
+          <span class="pill ${pillClass}">${escapeHtml(pillLabel)}</span>
+        </div>
+        <p>${escapeHtml(item.body)}</p>
+        ${item.meta ? `<div class="muted small" style="margin-top:8px;">${escapeHtml(item.meta)}</div>` : ''}
+        <div class="toolbar tight" style="margin-top:14px;">
+          <button class="action-btn ${item.complete ? '' : 'primary'}" type="button" data-overview-open-tab="${escapeHtml(item.tabId)}" ${item.selector ? `data-overview-focus="${escapeHtml(item.selector)}"` : ''}>${escapeHtml(item.label)}</button>
+        </div>
+      </div>
+    `;
   }
 
   function renderCacheSummaryCard(cache, title) {
@@ -3994,9 +4054,10 @@
       hint,
       tabs,
       active,
+      priority = 'secondary',
     } = options;
     return `
-      <section class="guard-nav-section" data-nav-section="${escapeHtml(id)}">
+      <section class="guard-nav-section priority-${escapeHtml(priority)}" data-nav-section="${escapeHtml(id)}">
         <div class="guard-nav-meta">
           <div class="guard-nav-copy">
             <div class="guard-nav-kicker">${escapeHtml(title)}</div>
@@ -4038,6 +4099,7 @@
                   hint: t(group.hintKey),
                   tabs: group.tabs,
                   active,
+                  priority: group.priority,
                 })).join('')}
               </nav>
             </div>
@@ -4118,6 +4180,18 @@
       providers: [],
     }));
     const channelsPromise = apiRequest('/api/channels').catch(() => []);
+    const recoveryOverviewPromise = apiRequest('/api/recovery/overview').catch(() => ({
+      protected: false,
+      repoReady: false,
+      remoteReady: false,
+      currentBranch: null,
+      lastSavedAt: null,
+      lastPushedAt: null,
+      unsyncedChanges: false,
+      nextAction: 'setup-protection',
+      warnings: [],
+      latestPoint: null,
+    }));
     const auditPromise = apiRequest('/api/audit').catch(() => ({
       summary: { pass: 0, warn: 0, fail: 0 },
       results: [],
@@ -4135,12 +4209,13 @@
       updatePanelSection('overview-risks', loadingCard(state.lang === 'zh' ? '风险提示' : 'Risk Signals', state.lang === 'zh' ? '正在汇总安全与运行风险…' : 'Collecting runtime and security risks…'));
     }
 
-    const [overview, webReport, openclawStatus, aiConfig, channels, auditData] = await Promise.all([
+    const [overview, webReport, openclawStatus, aiConfig, channels, recoveryOverview, auditData] = await Promise.all([
       overviewPromise,
       webReportPromise,
       openclawStatusPromise,
       aiConfigPromise,
       channelsPromise,
+      recoveryOverviewPromise,
       auditPromise,
     ]);
     if (state.activeTab !== viewTabId) return;
@@ -4157,10 +4232,13 @@
     const securitySummary = auditData.summary || {};
     const serviceActionMeta = getServiceActionMeta(overview.gateway?.action || {});
     const securityHasFailure = (securitySummary.fail || 0) > 0;
+    const securityHasWarning = (securitySummary.warn || 0) > 0;
+    const recoveryReady = recoveryOverview?.protected === true;
+    const recoveryCloudReady = recoveryOverview?.remoteReady === true;
     const systemReady = webReport.running && gatewayRunning && openclawStatus.installed && !!primaryModel && !securityHasFailure;
     const heroTone = securityHasFailure || !webReport.running || !gatewayRunning || !openclawStatus.installed
       ? 'warn'
-      : alerts.length || unreadNotifications > 0 || !primaryModel
+      : alerts.length || unreadNotifications > 0 || !primaryModel || !recoveryReady
         ? 'info'
         : 'success';
     const heroTitle = systemReady
@@ -4168,11 +4246,11 @@
       : (state.lang === 'zh' ? '当前还需要先处理几个关键问题' : 'A few blockers still need attention first');
     const heroBody = systemReady
       ? (state.lang === 'zh'
-        ? '核心服务、安全检查和模型配置已经达到可用基线。你可以继续进入渠道、同步或角色工作区。'
-        : 'Core services, security, and model configuration are in a usable state. Continue into channels, sync, or role workspaces.')
+        ? '核心服务与模型链路已经达到可用基线。下一步建议把渠道和备份保护补齐，让日常使用更稳、回退更安心。'
+        : 'Core services and model routing are usable. The next step is to complete channels and protection so daily work stays steadier and easier to recover.')
       : (state.lang === 'zh'
-        ? '先按下方建议动作依次处理服务、模型或安全问题，再进入日常工作页面。'
-        : 'Follow the recommended actions below for services, models, or security before moving into daily work pages.');
+        ? '先处理下方的关键阻断项，再沿着首次启动向导补齐 OpenClaw、模型、渠道和备份保护。'
+        : 'Clear the blockers below first, then follow the getting-started guide for OpenClaw, models, channels, and protection.');
 
     const availabilityHtml = `
       <div class="card overview-hero ${heroTone === 'success' ? 'accent-success' : heroTone === 'warn' ? 'accent-warn' : 'accent-info'}">
@@ -4191,106 +4269,201 @@
         ${metricCard('OpenClaw', openclawStatus.installed ? (openclawStatus.version || 'READY') : (state.lang === 'zh' ? '未安装' : 'Missing'), openclawStatus.installed ? (openclawStatus.updateAvailable ? (state.lang === 'zh' ? `可升级到 ${openclawStatus.latestVersion || '-'}` : `update to ${openclawStatus.latestVersion || '-'}`) : (state.lang === 'zh' ? 'CLI 已就绪' : 'CLI ready')) : (state.lang === 'zh' ? '需要先安装或修复' : 'install or repair required'), openclawStatus.installed ? 'success' : 'warn')}
         ${metricCard(state.lang === 'zh' ? '模型' : 'Models', primaryModel || (state.lang === 'zh' ? '待配置' : 'Not configured'), configuredProviders.length ? `${formatNumber(configuredProviders.length)} ${state.lang === 'zh' ? '个 Provider' : 'providers'}` : (state.lang === 'zh' ? '还没有 Provider' : 'no provider yet'), primaryModel ? 'success' : 'warn')}
         ${metricCard(state.lang === 'zh' ? '渠道' : 'Channels', `${formatNumber(enabledChannels)} / ${formatNumber((channels || []).length)}`, state.lang === 'zh' ? `${formatNumber(configuredChannels)} 个已配置` : `${formatNumber(configuredChannels)} configured`, enabledChannels > 0 ? 'success' : 'warn')}
-        ${metricCard(state.lang === 'zh' ? '安全检查' : 'Security Checks', securityHasFailure ? (state.lang === 'zh' ? '需要处理' : 'Action needed') : ((securitySummary.warn || 0) > 0 ? (state.lang === 'zh' ? '有提醒' : 'Review needed') : (state.lang === 'zh' ? '已通过' : 'Clear')), state.lang === 'zh' ? `失败 ${formatNumber(securitySummary.fail || 0)} / 警告 ${formatNumber(securitySummary.warn || 0)}` : `fail ${formatNumber(securitySummary.fail || 0)} / warn ${formatNumber(securitySummary.warn || 0)}`, securityHasFailure ? 'danger' : ((securitySummary.warn || 0) > 0 ? 'warn' : 'success'))}
+        ${metricCard(state.lang === 'zh' ? '备份与恢复' : 'Backup & Recovery', recoveryReady ? (state.lang === 'zh' ? '已受保护' : 'Protected') : (state.lang === 'zh' ? '待建立' : 'Setup needed'), recoveryReady ? (recoveryCloudReady ? (state.lang === 'zh' ? '云端保护已就绪' : 'cloud protection ready') : (state.lang === 'zh' ? '当前仅本机可恢复' : 'local recovery only')) : (state.lang === 'zh' ? '建议先创建首个恢复点' : 'create the first recovery point next'), recoveryReady ? (recoveryCloudReady ? 'success' : 'warn') : 'warn')}
       </div>
     `;
 
-    const actionCards = [];
-    if (!webReport.running || !gatewayRunning || !gatewayReachable) {
-      actionCards.push({
-        tone: 'warn',
-        title: state.lang === 'zh' ? '先检查运维状态' : 'Check Operations First',
-        body: state.lang === 'zh'
-          ? 'Guard Web 或 Gateway 还没有稳定运行，先去运维页面确认后台状态、地址和下一步建议。'
-          : 'Guard Web or Gateway is not running cleanly yet. Open Operations first to inspect background state, URLs, and next steps.',
-        meta: serviceActionMeta.message,
-        tabId: 'system',
-        selector: '#system-service-card',
-        label: state.lang === 'zh' ? '打开运维' : 'Open Operations',
-      });
-    }
-    if (!openclawStatus.installed) {
-      actionCards.push({
-        tone: 'warn',
+    const setupSteps = [
+      {
+        id: 'openclaw',
+        complete: !!openclawStatus.installed,
         title: state.lang === 'zh' ? '安装或修复 OpenClaw' : 'Install or Repair OpenClaw',
-        body: state.lang === 'zh'
-          ? 'CLI 还没准备好，后续很多工作区能力都会受影响。'
-          : 'The CLI is not ready yet, which blocks a large part of the workspace experience.',
-        meta: openclawStatus.installReady === false
-          ? (openclawStatus.installBlockers?.[0] || '')
-          : (state.lang === 'zh' ? '安装页会给出当前机器可执行的命令和修复建议。' : 'The OpenClaw page shows the commands and repair guidance that fit this machine.'),
+        body: openclawStatus.installed
+          ? (state.lang === 'zh' ? 'OpenClaw CLI 已可用，后续工作区能力可以正常接入。' : 'The OpenClaw CLI is ready, so workspace features can attach cleanly.')
+          : (state.lang === 'zh' ? '先把 OpenClaw CLI 装好，这是后续运行链路的基础。' : 'Set up the OpenClaw CLI first because the rest of the runtime depends on it.'),
+        meta: openclawStatus.installed
+          ? (openclawStatus.updateAvailable ? (state.lang === 'zh' ? `当前 ${openclawStatus.version || '-'}，可升级到 ${openclawStatus.latestVersion || '-'}` : `${openclawStatus.version || '-'} installed, update to ${openclawStatus.latestVersion || '-'}`) : (state.lang === 'zh' ? `当前版本 ${openclawStatus.version || '-'}` : `Current version ${openclawStatus.version || '-'}`))
+          : (openclawStatus.installBlockers?.[0] || (state.lang === 'zh' ? '安装页会给出适合当前机器的命令。' : 'The OpenClaw page shows the commands that fit this machine.')),
         tabId: 'openclaw',
         label: state.lang === 'zh' ? '打开 OpenClaw' : 'Open OpenClaw',
-      });
-    }
-    if (!primaryModel) {
-      actionCards.push({
-        tone: 'warn',
+      },
+      {
+        id: 'models',
+        complete: !!primaryModel,
         title: state.lang === 'zh' ? '配置模型策略' : 'Configure Models',
-        body: state.lang === 'zh'
-          ? '当前还没有主模型，Guard 很难进入可用状态。'
-          : 'There is no primary model yet, so Guard is not fully ready for work.',
-        meta: configuredProviders.length
-          ? (state.lang === 'zh' ? '先选定主模型，再安排备用顺序。' : 'Choose the primary model first, then arrange backups.')
-          : (state.lang === 'zh' ? '先创建至少一个 Provider。' : 'Create at least one provider first.'),
+        body: primaryModel
+          ? (state.lang === 'zh' ? '主模型已经设好，Guard 有了稳定的默认执行路径。' : 'A primary model is configured, so Guard now has a stable default route.')
+          : (state.lang === 'zh' ? '至少配置一个 Provider，并先确定主模型，再考虑备用顺序。' : 'Create at least one provider and lock the primary model before choosing fallbacks.'),
+        meta: primaryModel
+          ? (state.lang === 'zh' ? `主模型: ${primaryModel}` : `Primary model: ${primaryModel}`)
+          : configuredProviders.length
+            ? (state.lang === 'zh' ? `已配置 ${formatNumber(configuredProviders.length)} 个 Provider，待选定主模型` : `${formatNumber(configuredProviders.length)} providers configured, primary model still missing`)
+            : (state.lang === 'zh' ? '当前还没有任何 Provider。' : 'No provider has been configured yet.'),
         tabId: 'models',
         label: state.lang === 'zh' ? '打开模型' : 'Open Models',
-      });
-    }
-    if (enabledChannels === 0 || configuredChannels === 0) {
-      actionCards.push({
-        tone: 'info',
+      },
+      {
+        id: 'channels',
+        complete: enabledChannels > 0 && configuredChannels > 0,
         title: state.lang === 'zh' ? '连接官方渠道' : 'Connect Channels',
-        body: state.lang === 'zh'
-          ? '消息入口还没有完全就绪，建议先完成渠道配置和启用状态。'
-          : 'Message entry points are not fully ready yet. Complete the channel configuration and enablement next.',
+        body: enabledChannels > 0 && configuredChannels > 0
+          ? (state.lang === 'zh' ? '消息入口已经接好，系统可以开始接收外部消息。' : 'At least one channel is connected, so the system can receive real messages.')
+          : (state.lang === 'zh' ? '至少启用并配置一个官方渠道，让消息真正进入工作流。' : 'Enable and configure at least one built-in channel so real messages can enter the workflow.'),
         meta: state.lang === 'zh'
           ? `已启用 ${formatNumber(enabledChannels)} / 已配置 ${formatNumber(configuredChannels)}`
           : `enabled ${formatNumber(enabledChannels)} / configured ${formatNumber(configuredChannels)}`,
         tabId: 'channels',
         label: state.lang === 'zh' ? '打开渠道' : 'Open Channels',
-      });
-    }
-    if (securityHasFailure || (securitySummary.warn || 0) > 0) {
-      actionCards.push({
-        tone: securityHasFailure ? 'danger' : 'warn',
-        title: state.lang === 'zh' ? '处理安全检查' : 'Review Security Checks',
-        body: securityHasFailure
-          ? (state.lang === 'zh' ? '当前有失败项，建议优先处理，避免把风险带进日常工作。' : 'Security failures should be handled before daily work to keep risk contained.')
-          : (state.lang === 'zh' ? '当前有安全提醒，适合尽快处理。' : 'There are security warnings worth addressing soon.'),
-        meta: state.lang === 'zh'
-          ? `失败 ${formatNumber(securitySummary.fail || 0)} / 警告 ${formatNumber(securitySummary.warn || 0)}`
-          : `fail ${formatNumber(securitySummary.fail || 0)} / warn ${formatNumber(securitySummary.warn || 0)}`,
-        tabId: 'security',
-        label: state.lang === 'zh' ? '打开安全' : 'Open Security',
-      });
-    }
-    if (!actionCards.length) {
-      actionCards.push({
-        tone: 'success',
-        title: state.lang === 'zh' ? '把保护链路补齐' : 'Strengthen Protection',
-        body: state.lang === 'zh'
-          ? '当前基础状态已经可用，下一步适合把“备份与恢复”接好，让记忆和工作区都能退可一键重生。'
-          : 'The foundation is ready. The next step is to finish Backup & Recovery so workspaces and memory can come back cleanly.',
-        meta: overview.openclawDir || '',
+      },
+      {
+        id: 'git-sync',
+        complete: recoveryReady,
+        title: state.lang === 'zh' ? '开启备份与恢复' : 'Turn On Backup & Recovery',
+        body: recoveryReady
+          ? (state.lang === 'zh' ? '恢复点已经建立，后续玩坏了也能回到稳定节点。' : 'A recovery point exists now, so you can return to a stable state when experiments go wrong.')
+          : (state.lang === 'zh' ? '先保存一个恢复点，再按需要补上云端保护。' : 'Create the first recovery point now, then add cloud protection when you are ready.'),
+        meta: recoveryReady
+          ? (recoveryCloudReady
+            ? (state.lang === 'zh' ? '当前云端保护已就绪。' : 'Cloud protection is ready.')
+            : (state.lang === 'zh' ? '当前仅本机可恢复，建议后续补上云端保护。' : 'Recovery is local-only right now. Add cloud protection next.'))
+          : (recoveryOverview?.warnings?.[0] || (state.lang === 'zh' ? '恢复中心会把 Git 细节隐藏在高级视图里。' : 'The recovery view keeps raw Git details inside Advanced Git.')),
         tabId: 'git-sync',
         label: state.lang === 'zh' ? '打开备份与恢复' : 'Open Backup & Recovery',
-      });
-    }
+      },
+    ];
 
-    const actionsHtml = `
-      <div class="overview-action-grid">
-        ${actionCards.slice(0, 5).map((item) => `
-          <div class="card guide-card tone-${escapeHtml(item.tone)}">
-            <div class="overview-kicker">${escapeHtml(state.lang === 'zh' ? '建议动作' : 'Recommended Action')}</div>
-            <h3>${escapeHtml(item.title)}</h3>
-            <p>${escapeHtml(item.body)}</p>
-            ${item.meta ? `<div class="muted small" style="margin-top:8px;">${escapeHtml(item.meta)}</div>` : ''}
-            <div class="toolbar tight" style="margin-top:14px;">
-              <button class="action-btn ${item.tone === 'danger' || item.tone === 'warn' ? 'primary' : ''}" type="button" data-overview-open-tab="${escapeHtml(item.tabId)}" ${item.selector ? `data-overview-focus="${escapeHtml(item.selector)}"` : ''}>${escapeHtml(item.label)}</button>
+    const completedSetupSteps = setupSteps.filter((item) => item.complete).length;
+    const currentSetupStep = setupSteps.find((item) => !item.complete) || setupSteps[setupSteps.length - 1];
+    const showGuide = !state.overviewGuideHidden;
+    const pathCards = [
+      {
+        complete: !!openclawStatus.installed,
+        tone: openclawStatus.installed ? 'success' : 'warn',
+        kicker: state.lang === 'zh' ? '主路径 1 / 4' : 'Path 1 / 4',
+        title: state.lang === 'zh' ? '安装 / 修复 OpenClaw' : 'Install / Repair OpenClaw',
+        body: openclawStatus.installed
+          ? (state.lang === 'zh' ? 'CLI 已就绪，Guard 可以继续管理更新、回退和运行状态。' : 'The CLI is ready, so Guard can continue managing updates, rollback, and runtime state.')
+          : (state.lang === 'zh' ? '先把 OpenClaw 装好或修好，这是整机链路的第一步。' : 'Set up or repair OpenClaw first because everything else builds on it.'),
+        meta: openclawStatus.installed
+          ? (openclawStatus.updateAvailable ? (state.lang === 'zh' ? `可升级到 ${openclawStatus.latestVersion || '-'}` : `Update available: ${openclawStatus.latestVersion || '-'}`) : (state.lang === 'zh' ? `当前版本 ${openclawStatus.version || '-'}` : `Current version ${openclawStatus.version || '-'}`))
+          : (openclawStatus.installBlockers?.[0] || (state.lang === 'zh' ? '安装页会根据当前来源给出推荐动作。' : 'The OpenClaw page will suggest the next action for the current install source.')),
+        tabId: 'openclaw',
+        label: state.lang === 'zh' ? '查看 OpenClaw' : 'Open OpenClaw',
+      },
+      {
+        complete: !!primaryModel,
+        tone: primaryModel ? 'success' : 'warn',
+        kicker: state.lang === 'zh' ? '主路径 2 / 4' : 'Path 2 / 4',
+        title: state.lang === 'zh' ? '模型配置' : 'Model Configuration',
+        body: primaryModel
+          ? (state.lang === 'zh' ? '主模型已经选定，现在更适合继续补齐备用模型和 Provider 说明。' : 'The primary model is selected, so you can polish fallbacks and provider details next.')
+          : (state.lang === 'zh' ? '先把主模型定下来，让系统的默认行为稳定可预测。' : 'Set the primary model first so the system stays predictable.'),
+        meta: primaryModel
+          ? primaryModel
+          : configuredProviders.length
+            ? (state.lang === 'zh' ? `${formatNumber(configuredProviders.length)} 个 Provider 已就绪` : `${formatNumber(configuredProviders.length)} providers ready`)
+            : (state.lang === 'zh' ? '当前还没有 Provider。' : 'No provider is configured yet.'),
+        tabId: 'models',
+        label: state.lang === 'zh' ? '查看模型' : 'Open Models',
+      },
+      {
+        complete: enabledChannels > 0 && configuredChannels > 0,
+        tone: enabledChannels > 0 && configuredChannels > 0 ? 'success' : 'warn',
+        kicker: state.lang === 'zh' ? '主路径 3 / 4' : 'Path 3 / 4',
+        title: state.lang === 'zh' ? '渠道连接' : 'Channel Connection',
+        body: enabledChannels > 0 && configuredChannels > 0
+          ? (state.lang === 'zh' ? '官方渠道已经接通，接下来可以继续优化凭据与路由策略。' : 'A built-in channel is ready, and you can continue polishing credentials or routing later.')
+          : (state.lang === 'zh' ? '至少接好一个官方渠道，Guard 才能真正收消息、跑完整链路。' : 'Connect at least one built-in channel so Guard can receive real messages and run the full path.'),
+        meta: state.lang === 'zh'
+          ? `启用 ${formatNumber(enabledChannels)} / 配置 ${formatNumber(configuredChannels)}`
+          : `enabled ${formatNumber(enabledChannels)} / configured ${formatNumber(configuredChannels)}`,
+        tabId: 'channels',
+        label: state.lang === 'zh' ? '查看渠道' : 'Open Channels',
+      },
+      {
+        complete: recoveryReady,
+        tone: recoveryReady ? 'success' : 'warn',
+        kicker: state.lang === 'zh' ? '主路径 4 / 4' : 'Path 4 / 4',
+        title: state.lang === 'zh' ? '备份与恢复' : 'Backup & Recovery',
+        body: recoveryReady
+          ? (state.lang === 'zh' ? '现在已经有“退可一键重生”的基础，后续可以继续把云端保护和范围管理补强。' : 'The project already has a recovery baseline, and you can strengthen cloud protection or scope management next.')
+          : (state.lang === 'zh' ? '先把当前状态保存成恢复点，后面即使折腾坏了也能快速回去。' : 'Save the current state as a recovery point so you can return quickly when experiments go sideways.'),
+        meta: recoveryReady
+          ? (recoveryCloudReady
+            ? (state.lang === 'zh' ? '最近一次保护点已具备云端保护能力。' : 'The latest recovery point is cloud protected.')
+            : (state.lang === 'zh' ? '当前保护点还没有上云。' : 'The latest protection point is not in the cloud yet.'))
+          : (recoveryOverview?.warnings?.[0] || (state.lang === 'zh' ? '恢复中心默认隐藏 Git 细节。' : 'The recovery view keeps Git details hidden by default.')),
+        tabId: 'git-sync',
+        label: state.lang === 'zh' ? '查看备份与恢复' : 'Open Backup & Recovery',
+      },
+    ];
+
+    const guideHtml = showGuide ? `
+      <div class="card accent-info overview-guide-card">
+        <div class="overview-hero-header">
+          <div>
+            <div class="overview-kicker">${escapeHtml(state.lang === 'zh' ? '首次启动向导' : 'Getting Started')}</div>
+            <h3>${escapeHtml(state.lang === 'zh' ? '先把这 4 步补齐，再进入日常工作' : 'Finish these 4 steps first, then move into daily work')}</h3>
+          </div>
+          <span class="pill ${completedSetupSteps === setupSteps.length ? 'success' : 'warn'}">${escapeHtml(state.lang === 'zh' ? `已完成 ${completedSetupSteps} / ${setupSteps.length}` : `${completedSetupSteps} / ${setupSteps.length} complete`)}</span>
+        </div>
+        <p>${escapeHtml(state.lang === 'zh'
+          ? '这个向导默认只讲普通用户最需要的 4 条主路径，不要求你先理解 Git、Cron 或 OAuth 细节。'
+          : 'This guide focuses on the 4 paths ordinary users need first. It does not expect Git, Cron, or OAuth knowledge up front.')}</p>
+        ${(!webReport.running || !gatewayRunning || !gatewayReachable) ? `
+          <div class="status warn" style="margin-top:14px;">
+            ${escapeHtml(state.lang === 'zh'
+              ? 'Guard Web 或 Gateway 还没稳定运行。先去运维页确认服务状态，再继续下面 4 步会更顺。'
+              : 'Guard Web or Gateway is not stable yet. Check Operations first, then continue with the 4 steps below.')}
+            <div class="toolbar tight" style="margin-top:12px;">
+              <button class="action-btn" type="button" data-overview-open-tab="system" data-overview-focus="#system-service-card">${escapeHtml(state.lang === 'zh' ? '先看运维' : 'Open Operations First')}</button>
             </div>
           </div>
-        `).join('')}
+        ` : ''}
+        <div class="overview-step-list" style="margin-top:16px;">
+          ${setupSteps.map((step, index) => renderOverviewGuideStep({
+            ...step,
+            current: !step.complete && step.id === currentSetupStep.id,
+          }, index, setupSteps.length)).join('')}
+        </div>
+        <div class="toolbar tight" style="margin-top:16px;">
+          <button class="action-btn subtle" type="button" data-overview-guide-toggle="hide">${escapeHtml(state.lang === 'zh' ? '先收起这个向导' : 'Hide This Guide For Now')}</button>
+        </div>
+      </div>
+    ` : `
+      <div class="card overview-guide-compact">
+        <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+          <div>
+            <div class="overview-kicker">${escapeHtml(state.lang === 'zh' ? '首次启动向导' : 'Getting Started')}</div>
+            <h3>${escapeHtml(state.lang === 'zh' ? '需要时再展开 4 步引导' : 'Expand the 4-step guide when needed')}</h3>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? `当前完成 ${completedSetupSteps} / ${setupSteps.length}` : `${completedSetupSteps} / ${setupSteps.length} complete`)}</div>
+          </div>
+          <button class="action-btn" type="button" data-overview-guide-toggle="show">${escapeHtml(state.lang === 'zh' ? '展开向导' : 'Show Guide')}</button>
+        </div>
+      </div>
+    `;
+
+    const actionsHtml = `
+      <div class="overview-onboarding-stack">
+        ${guideHtml}
+        <div class="overview-action-grid">
+          ${pathCards.map((item) => renderOverviewPathCard(item)).join('')}
+        </div>
+        <div class="card overview-support-card">
+          <div class="overview-hero-header">
+            <div>
+              <div class="overview-kicker">${escapeHtml(state.lang === 'zh' ? '求助与反馈' : 'Support & Feedback')}</div>
+              <h3>${escapeHtml(state.lang === 'zh' ? '遇到问题时，先导出脱敏诊断包' : 'Export the redacted diagnostics bundle before asking for help')}</h3>
+            </div>
+          </div>
+          <p>${escapeHtml(state.lang === 'zh'
+            ? '诊断包会带上版本、状态、最近日志和恢复信息，但不会直接包含 Token、Secret 或密码值，适合开源 Issue 与远程协助。'
+            : 'The diagnostics bundle includes versions, status, recent logs, and recovery signals, but it does not expose raw tokens, secrets, or passwords. It is designed for open-source issues and remote support.')}</p>
+          <div class="toolbar tight" style="margin-top:14px;">
+            <a class="action-btn primary" href="/api/support/diagnostics?download=1">${escapeHtml(state.lang === 'zh' ? '下载诊断包' : 'Download Diagnostics')}</a>
+            <a class="action-btn" href="${escapeHtml(SUPPORT_ISSUES_URL)}" target="_blank" rel="noreferrer">${escapeHtml(state.lang === 'zh' ? '打开 Issue' : 'Open Issue')}</a>
+          </div>
+        </div>
       </div>
     `;
 
@@ -4326,7 +4499,7 @@
         tabId: 'models',
       });
     }
-    if (securityHasFailure || (securitySummary.warn || 0) > 0) {
+    if (securityHasFailure || securityHasWarning) {
       riskItems.push({
         tone: securityHasFailure ? 'danger' : 'warn',
         title: securityHasFailure ? (state.lang === 'zh' ? '安全检查存在失败项' : 'Security Checks Have Failures') : (state.lang === 'zh' ? '安全检查有提醒项' : 'Security Checks Need Review'),
@@ -4344,6 +4517,25 @@
           ? '即使系统已启动，也不会有消息入口进入工作流。'
           : 'Even if the system is running, no messages can enter the workflow yet.',
         tabId: 'channels',
+      });
+    }
+    if (!recoveryReady) {
+      riskItems.push({
+        tone: 'warn',
+        title: state.lang === 'zh' ? '还没有恢复点' : 'No Recovery Point Exists Yet',
+        message: state.lang === 'zh'
+          ? '当前状态还没有被 Guard 保存成可恢复节点。建议先去“备份与恢复”保存现在。'
+          : 'The current state has not been saved as a recoverable point yet. Open Backup & Recovery and save the current state first.',
+        tabId: 'git-sync',
+      });
+    } else if (!recoveryCloudReady) {
+      riskItems.push({
+        tone: 'warn',
+        title: state.lang === 'zh' ? '最近保护点还没上云' : 'The Latest Recovery Point Is Not In The Cloud Yet',
+        message: state.lang === 'zh'
+          ? '当前仍以本机恢复为主，适合后续补齐 private 仓库连接与认证。'
+          : 'Recovery is still local-first. Connect a private remote and authentication when you are ready.',
+        tabId: 'git-sync',
       });
     }
     alerts.slice(0, 3).forEach((item) => {
@@ -4408,6 +4600,13 @@
           const selector = button.getAttribute('data-overview-focus');
           if (selector) queuePanelFocus(tabId, selector);
           setActiveTab(tabId);
+        });
+      });
+      document.querySelectorAll('[data-overview-guide-toggle]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const nextState = button.getAttribute('data-overview-guide-toggle') === 'hide';
+          setOverviewGuideHidden(nextState);
+          loadOverview({ reuseExisting: false });
         });
       });
     };

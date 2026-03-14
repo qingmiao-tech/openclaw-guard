@@ -19,6 +19,8 @@
   <img src="./web/readme-hero.png" alt="OpenClaw Guard hero banner" />
 </p>
 
+<p align="center"><a href="https://qingmiao-tech.github.io/openclaw-guard/">查看文档站</a></p>
+
 ## 这是什么
 
 OpenClaw Guard 是一个面向 OpenClaw 的原生运维与安全工作台。它不想把更多功能堆到你面前，而是优先把三件事做好：

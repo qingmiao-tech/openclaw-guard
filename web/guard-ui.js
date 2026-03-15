@@ -289,9 +289,21 @@
     { id: 'auth', label: { zh: '认证与推送', en: 'Auth & Push' } },
   ];
 
+  function readGuardVersionMeta() {
+    const version = document.querySelector('meta[name="guard-version"]')?.getAttribute('content') || '';
+    const normalized = String(version).trim().replace(/^v/i, '');
+    return normalized || null;
+  }
+
+  function getGuardVersionLabel(version = state.guardVersion) {
+    const normalized = String(version || '').trim().replace(/^v/i, '');
+    return normalized ? `v${normalized}` : '';
+  }
+
   const state = {
     lang: localStorage.getItem(STORAGE_LANG) || 'zh',
     activeTab: null,
+    guardVersion: readGuardVersionMeta(),
     authToken: localStorage.getItem(STORAGE_TOKEN) || null,
     authEnabled: null, // null = 尚未检测
     authConfigured: false,
@@ -990,6 +1002,53 @@
         <div class="guard-login-note-copy secondary">${escapeHtml(availabilityMessage)}</div>
       </div>
     `;
+  }
+
+  function renderActionButtonContent(label, busyLabel, loading = false) {
+    if (!loading) return escapeHtml(label);
+    return `
+      <span class="action-btn-inline">
+        <span class="action-btn-spinner" aria-hidden="true"></span>
+        <span>${escapeHtml(busyLabel || label)}</span>
+      </span>
+    `;
+  }
+
+  function renderActionButton(options = {}) {
+    const {
+      attrName,
+      attrValue,
+      label,
+      busyLabel,
+      tone = '',
+      disabled = false,
+      loading = false,
+    } = options;
+    const classes = ['action-btn', tone, loading ? 'loading' : ''].filter(Boolean).join(' ');
+    const attrs = [
+      `${attrName}="${escapeHtml(attrValue)}"`,
+      `data-default-label="${escapeHtml(label)}"`,
+      `data-busy-label="${escapeHtml(busyLabel || label)}"`,
+      loading ? 'aria-busy="true"' : 'aria-busy="false"',
+      (disabled || loading) ? 'disabled' : '',
+    ].filter(Boolean).join(' ');
+    return `<button class="${classes}" type="button" ${attrs}>${renderActionButtonContent(label, busyLabel, loading)}</button>`;
+  }
+
+  function markButtonGroupBusy(selector, activeButton) {
+    document.querySelectorAll(selector).forEach((node) => {
+      if (!(node instanceof HTMLButtonElement)) return;
+      node.disabled = true;
+      node.setAttribute('aria-busy', node === activeButton ? 'true' : 'false');
+      if (node === activeButton) {
+        node.classList.add('loading');
+        node.innerHTML = renderActionButtonContent(
+          node.dataset.defaultLabel || node.textContent || '',
+          node.dataset.busyLabel || node.textContent || '',
+          true,
+        );
+      }
+    });
   }
 
   function renderLoginPage() {
@@ -3232,7 +3291,7 @@
     }, 1600);
   }
 
-  async function triggerGuardRestart(restartGateway = false) {
+  async function triggerGuardRestart(restartGateway = false, activeButton = null) {
     const confirmText = restartGateway
       ? (state.lang === 'zh'
         ? '确认执行 Guard + Gateway 全重启？当前页面会短暂断开，然后自动恢复。'
@@ -3251,10 +3310,20 @@
     if (!confirmed) return;
 
     try {
+      if (activeButton) {
+        markButtonGroupBusy('[data-service-action]', activeButton);
+      }
       const result = await postJson('/api/guard/restart', { restartGateway });
       const ok = result?.success !== false;
       showToast(result?.message || (state.lang === 'zh' ? 'Guard 重启任务已调度。' : 'Guard restart has been scheduled.'), ok ? 'success' : 'error');
       if (!ok) return;
+      if (state.activeTab === 'system') {
+        try {
+          await loadSystem({ reuseExisting: true, refreshScope: 'service' });
+        } catch {
+          // Guard 可能已经开始切换进程，此时保留当前界面状态即可。
+        }
+      }
       scheduleGuardRestartPoll();
     } catch (error) {
       showToast(error.message || String(error), 'error');
@@ -3263,18 +3332,38 @@
 
   function scheduleServiceStatusPoll() {
     clearServicePollTimer();
-    state.servicePollTimer = setTimeout(() => {
-      if (state.activeTab === 'overview' || state.activeTab === 'system') {
-        loadActiveTab();
+    state.servicePollTimer = setTimeout(async () => {
+      try {
+        if (state.activeTab === 'system') {
+          await loadSystem({ reuseExisting: true, refreshScope: 'service' });
+          return;
+        }
+        if (state.activeTab === 'overview') {
+          await loadOverview({ reuseExisting: true });
+        }
+      } catch {
+        if (state.activeTab === 'overview' || state.activeTab === 'system') {
+          scheduleServiceStatusPoll();
+        }
       }
     }, 1800);
   }
 
   function schedulePrewarmStatusPoll() {
     clearPrewarmPollTimer();
-    state.prewarmPollTimer = setTimeout(() => {
-      if (state.activeTab === 'overview' || state.activeTab === 'system') {
-        loadActiveTab();
+    state.prewarmPollTimer = setTimeout(async () => {
+      try {
+        if (state.activeTab === 'system') {
+          await loadSystem({ reuseExisting: true, refreshScope: 'prewarm' });
+          return;
+        }
+        if (state.activeTab === 'overview') {
+          await loadOverview({ reuseExisting: true });
+        }
+      } catch {
+        if (state.activeTab === 'overview' || state.activeTab === 'system') {
+          schedulePrewarmStatusPoll();
+        }
       }
     }, 1800);
   }
@@ -4101,6 +4190,12 @@
     `;
   }
 
+  function renderGuardVersionBadge() {
+    const versionLabel = getGuardVersionLabel();
+    if (!versionLabel) return '';
+    return `<span class="guard-version-badge" title="${escapeHtml(`OpenClaw Guard ${versionLabel}`)}">${escapeHtml(versionLabel)}</span>`;
+  }
+
   function renderShell() {
     const active = state.activeTab || 'overview';
     app.innerHTML = `
@@ -4112,7 +4207,10 @@
                 <img class="guard-badge-logo" src="/ui/logo.png" alt="OpenClaw Guard logo" />
               </div>
             <div class="guard-title">
-              <h1>${escapeHtml(t('appTitle'))}</h1>
+              <div class="guard-title-top">
+                <h1>${escapeHtml(t('appTitle'))}</h1>
+                ${renderGuardVersionBadge()}
+              </div>
               <p>${escapeHtml(t('appSubtitle'))}</p>
             </div>
           </div>
@@ -4741,9 +4839,25 @@
       },
     ];
     const cockpitActions = [
-      `<button class="action-btn primary" type="button" data-overview-action="enter-operations">${state.lang === 'zh' ? '打开运维' : 'Open Operations'}</button>`,
-      showQuickRestart ? `<button class="action-btn" type="button" data-overview-action="gateway-restart">${state.lang === 'zh' ? '重启 Gateway' : 'Restart Gateway'}</button>` : '',
-      `<button class="action-btn" type="button" data-overview-action="open-dashboard">${state.lang === 'zh' ? '打开 OpenClaw' : 'Open OpenClaw'}</button>`,
+      renderActionButton({
+        attrName: 'data-overview-action',
+        attrValue: 'enter-operations',
+        label: state.lang === 'zh' ? '打开运维' : 'Open Operations',
+        busyLabel: state.lang === 'zh' ? '打开中…' : 'Opening…',
+        tone: 'primary',
+      }),
+      showQuickRestart ? renderActionButton({
+        attrName: 'data-overview-action',
+        attrValue: 'gateway-restart',
+        label: state.lang === 'zh' ? '重启 Gateway' : 'Restart Gateway',
+        busyLabel: state.lang === 'zh' ? '重启中…' : 'Restarting Gateway…',
+      }) : '',
+      renderActionButton({
+        attrName: 'data-overview-action',
+        attrValue: 'open-dashboard',
+        label: state.lang === 'zh' ? '打开 OpenClaw' : 'Open OpenClaw',
+        busyLabel: state.lang === 'zh' ? '打开中…' : 'Opening…',
+      }),
     ].filter(Boolean).join('');
     const body = `
       ${renderCacheSummaryCard(overview.cache, state.lang === 'zh' ? '驾驶舱共享快照' : 'Cockpit Shared Snapshot')}
@@ -4827,17 +4941,22 @@
       queuePanelFocus('system', '#system-service-card');
       setActiveTab('system');
     });
-    document.querySelector('[data-overview-action="gateway-restart"]')?.addEventListener('click', async () => {
+    document.querySelector('[data-overview-action="gateway-restart"]')?.addEventListener('click', async (event) => {
+      const button = event.currentTarget;
       try {
+        if (button instanceof HTMLButtonElement) {
+          markButtonGroupBusy('[data-overview-action]', button);
+        }
         const result = await postJson('/api/service/restart', {});
         const ok = result?.success !== false;
         showToast(result.message || 'OK', ok ? 'success' : 'error');
-        await loadOverview();
+        await loadOverview({ reuseExisting: true });
         if (result?.action?.phase === 'running') {
           scheduleServiceStatusPoll();
         }
       } catch (error) {
         showToast(error.message || String(error), 'error');
+        await loadOverview({ reuseExisting: true }).catch(() => {});
       }
     });
     document.querySelector('[data-overview-action="open-dashboard"]')?.addEventListener('click', async () => {
@@ -4859,6 +4978,7 @@
   async function loadSystem(options = {}) {
     const viewTabId = 'system';
     const reuseExisting = options.reuseExisting === true;
+    const refreshScope = options.refreshScope || 'all';
     if (!reuseExisting) {
       setPanelSections(t('tabs.system'), t('desc.system'), [
         { id: 'system-summary', title: state.lang === 'zh' ? '运维摘要' : 'Operations Summary' },
@@ -4985,7 +5105,14 @@
     const prewarmMeta = getPrewarmMeta(prewarmStatus);
     const serviceBusy = serviceActionMeta.phase === 'running';
     const guardRestartBusy = guardRestartMeta.phase === 'running';
+    const prewarmBusy = prewarmMeta.phase === 'running' || prewarmMeta.phase === 'scheduled';
     const trackingSourceLabel = getRuntimeSourceLabel(webReport.source);
+    const serviceTaskAction = typeof service.action?.action === 'string' ? service.action.action : '';
+    const serviceStartLoading = serviceBusy && serviceTaskAction === 'start';
+    const serviceRestartLoading = serviceBusy && serviceTaskAction === 'restart';
+    const serviceStopLoading = serviceBusy && serviceTaskAction === 'stop';
+    const guardRestartLoading = guardRestartBusy && guardRestartStatus?.restartGateway !== true;
+    const guardRestartWithGatewayLoading = guardRestartBusy && guardRestartStatus?.restartGateway === true;
 
     let webPrimaryLabel = state.lang === 'zh' ? '后台启动 Guard Web' : 'Start Guard Web in Background';
     let webPrimaryHint = state.lang === 'zh'
@@ -5057,7 +5184,7 @@
         }).join('')
       : emptyState(state.lang === 'zh' ? '暂时还没有预热记录。手动触发一次后，这里会显示结果。' : 'No prewarm history yet. Trigger one run to see the result here.');
 
-    const body = `
+    const summaryHtml = `
       <div class="grid">
         ${metricCard('Gateway', getRunStateLabel(service.running), `PID ${service.pid || '-'}`, service.running ? 'success' : 'danger')}
         ${metricCard('Guard Web', getRunStateLabel(webReport.running), webReport.running ? `PID ${webReport.pid || '-'}` : '-', webReport.running ? 'success' : 'warn')}
@@ -5065,6 +5192,9 @@
         ${metricCard('OpenClaw', getInstallStateLabel(info.openclaw?.installed), info.openclaw?.version || '-', info.openclaw?.installed ? 'success' : 'warn')}
         ${metricCard(state.lang === 'zh' ? '本地 Env' : 'Local Env', formatNumber(envEntries.length), info.envPath || '-')}
       </div>
+    `;
+
+    const servicesHtml = `
       <div class="card accent-warn panel-focus-target" id="system-service-card">
         <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
           <div>
@@ -5080,13 +5210,64 @@
           </div>
         </div>
         <div class="toolbar" style="margin-top:14px;">
-          <button class="action-btn primary" type="button" data-service-action="start" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('start'))} Gateway</button>
-          <button class="action-btn" type="button" data-service-action="restart" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('restart'))} Gateway</button>
-          <button class="action-btn warn" type="button" data-service-action="stop" ${serviceBusy ? 'disabled' : ''}>${escapeHtml(t('stop'))} Gateway</button>
-          <button class="action-btn ${webPrimaryDisabled ? '' : 'primary'}" type="button" data-service-action="start-web" ${webPrimaryDisabled ? 'disabled' : ''}>${escapeHtml(webPrimaryLabel)}</button>
-          <button class="action-btn warn" type="button" data-service-action="stop-web" ${webReport.running ? '' : 'disabled'}>${escapeHtml(t('stopWeb'))}</button>
-          <button class="action-btn" type="button" data-service-action="restart-guard" ${guardRestartBusy ? 'disabled' : ''}>${escapeHtml(t('restartGuard'))}</button>
-          <button class="action-btn" type="button" data-service-action="restart-guard-with-gateway" ${(guardRestartBusy || serviceBusy) ? 'disabled' : ''}>${escapeHtml(t('restartGuardWithGateway'))}</button>
+          ${renderActionButton({
+            attrName: 'data-service-action',
+            attrValue: 'start',
+            label: `${t('start')} Gateway`,
+            busyLabel: state.lang === 'zh' ? '启动中…' : 'Starting Gateway…',
+            tone: 'primary',
+            disabled: serviceBusy,
+            loading: serviceStartLoading,
+          })}
+          ${renderActionButton({
+            attrName: 'data-service-action',
+            attrValue: 'restart',
+            label: `${t('restart')} Gateway`,
+            busyLabel: state.lang === 'zh' ? '重启中…' : 'Restarting Gateway…',
+            disabled: serviceBusy,
+            loading: serviceRestartLoading,
+          })}
+          ${renderActionButton({
+            attrName: 'data-service-action',
+            attrValue: 'stop',
+            label: `${t('stop')} Gateway`,
+            busyLabel: state.lang === 'zh' ? '停止中…' : 'Stopping Gateway…',
+            tone: 'warn',
+            disabled: serviceBusy,
+            loading: serviceStopLoading,
+          })}
+          ${renderActionButton({
+            attrName: 'data-service-action',
+            attrValue: 'start-web',
+            label: webPrimaryLabel,
+            busyLabel: state.lang === 'zh' ? '处理中…' : 'Working…',
+            tone: webPrimaryDisabled ? '' : 'primary',
+            disabled: webPrimaryDisabled,
+          })}
+          ${renderActionButton({
+            attrName: 'data-service-action',
+            attrValue: 'stop-web',
+            label: t('stopWeb'),
+            busyLabel: state.lang === 'zh' ? '停止中…' : 'Stopping…',
+            tone: 'warn',
+            disabled: !webReport.running,
+          })}
+          ${renderActionButton({
+            attrName: 'data-service-action',
+            attrValue: 'restart-guard',
+            label: t('restartGuard'),
+            busyLabel: state.lang === 'zh' ? '重启中…' : 'Restarting Guard…',
+            disabled: guardRestartBusy,
+            loading: guardRestartLoading,
+          })}
+          ${renderActionButton({
+            attrName: 'data-service-action',
+            attrValue: 'restart-guard-with-gateway',
+            label: t('restartGuardWithGateway'),
+            busyLabel: state.lang === 'zh' ? '重启中…' : 'Restarting Guard + Gateway…',
+            disabled: guardRestartBusy || serviceBusy,
+            loading: guardRestartWithGatewayLoading,
+          })}
         </div>
         <div class="status ${webPrimaryDisabled && !isCurrentManaged ? 'warn' : ''}" style="margin-top:14px;">${escapeHtml(webPrimaryHint)}</div>
         <div class="grid" style="margin-top:14px;">
@@ -5167,12 +5348,15 @@
           </div>
         </div>
       </div>
-      ${renderPageTip({
-        title: state.lang === 'zh' ? '适用场景' : 'Best Used For',
-        body: state.lang === 'zh'
-          ? '当你需要启动、停止、重启或排查 Guard / Gateway 时，优先在这一页处理。推荐顺序：先看首页，再回到这里动服务；只有在需要深查时，再继续进入会话、安全或备份与恢复。'
-          : 'Use this page first when you need to start, stop, restart, or troubleshoot Guard and Gateway. Check Home first, act here next, and only continue into Sessions, Security, or Backup & Recovery for deeper diagnosis.',
-      })}
+        ${renderPageTip({
+          title: state.lang === 'zh' ? '适用场景' : 'Best Used For',
+          body: state.lang === 'zh'
+            ? '当你需要启动、停止、重启或排查 Guard / Gateway 时，优先在这一页处理。推荐顺序：先看首页，再回到这里动服务；只有在需要深查时，再继续进入会话、安全或备份与恢复。'
+            : 'Use this page first when you need to start, stop, restart, or troubleshoot Guard and Gateway. Check Home first, act here next, and only continue into Sessions, Security, or Backup & Recovery for deeper diagnosis.',
+        })}
+    `;
+
+    const runtimeHtml = `
       <div class="grid">
         <div class="card accent-info panel-focus-target" id="system-paths-card">
           <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
@@ -5230,8 +5414,21 @@
             <span class="pill ${prewarmMeta.pillClass}">${escapeHtml(prewarmMeta.phaseLabel)}</span>
           </div>
           <div class="toolbar tight" style="margin-top:12px;">
-            <button class="action-btn primary" type="button" data-prewarm-action="trigger" ${(prewarmMeta.phase === 'running' || prewarmMeta.phase === 'scheduled') ? 'disabled' : ''}>${state.lang === 'zh' ? '手动预热缓存' : 'Run Prewarm'}</button>
-            <button class="action-btn" type="button" data-prewarm-action="reload">${escapeHtml(t('reload'))}</button>
+            ${renderActionButton({
+              attrName: 'data-prewarm-action',
+              attrValue: 'trigger',
+              label: state.lang === 'zh' ? '手动预热缓存' : 'Run Prewarm',
+              busyLabel: state.lang === 'zh' ? '预热中…' : 'Prewarming…',
+              tone: 'primary',
+              disabled: prewarmBusy,
+              loading: prewarmBusy,
+            })}
+            ${renderActionButton({
+              attrName: 'data-prewarm-action',
+              attrValue: 'reload',
+              label: t('reload'),
+              busyLabel: state.lang === 'zh' ? '刷新中…' : 'Refreshing…',
+            })}
           </div>
           <div class="status ${prewarmMeta.phase === 'error' ? 'warn' : ''}" style="margin-top:14px;">${escapeHtml(prewarmMeta.message)}</div>
           <div class="sub-card" style="margin-top:14px;">
@@ -5249,6 +5446,17 @@
           </div>
         </div>
       </div>
+      <div class="card panel-focus-target" id="system-runtime-card">
+        <h3>${state.lang === 'zh' ? '本机路径与诊断信息' : 'Local Paths & Diagnostics'}</h3>
+        <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '上面已经展示了日常会用到的路径和状态。只有在需要排查问题或联系技术支持时，再展开下面的高级诊断信息。' : 'The cards above already show the paths and statuses needed for daily use. Only expand the advanced diagnostics below when troubleshooting or contacting support.')}</div>
+        ${renderAdvancedDisclosure({
+          title: state.lang === 'zh' ? '诊断信息（高级）' : 'Diagnostics (Advanced)',
+          description: state.lang === 'zh' ? '这是一份原始运行诊断数据，适合排查问题或发给技术支持。普通使用场景可以忽略。' : 'This raw diagnostic payload is mainly for troubleshooting or sharing with support. Most users can ignore it.',
+          bodyHtml: `<pre>${prettyJson(runtimeSnapshot)}</pre>`,
+        })}
+      </div>
+    `;
+    const envHtml = `
       <div class="grid">
         <div class="card accent-success panel-focus-target" id="system-env-list-card">
           <div class="row" style="justify-content:space-between; align-items:flex-start;">
@@ -5309,19 +5517,21 @@
           </form>
         </div>
       </div>
-      <div class="card panel-focus-target" id="system-runtime-card">
-        <h3>${state.lang === 'zh' ? '本机路径与诊断信息' : 'Local Paths & Diagnostics'}</h3>
-        <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '上面已经展示了日常会用到的路径和状态。只有在需要排查问题或联系技术支持时，再展开下面的高级诊断信息。' : 'The cards above already show the paths and statuses needed for daily use. Only expand the advanced diagnostics below when troubleshooting or contacting support.')}</div>
-        ${renderAdvancedDisclosure({
-          title: state.lang === 'zh' ? '诊断信息（高级）' : 'Diagnostics (Advanced)',
-          description: state.lang === 'zh' ? '这是一份原始运行诊断数据，适合排查问题或发给技术支持。普通使用场景可以忽略。' : 'This raw diagnostic payload is mainly for troubleshooting or sharing with support. Most users can ignore it.',
-          bodyHtml: `<pre>${prettyJson(runtimeSnapshot)}</pre>`,
-        })}
-      </div>
     `;
 
-    setPanel(t('tabs.system'), t('desc.system'), body);
-    const bindSystemPanelActions = () => {
+    if (refreshScope === 'all' || refreshScope === 'service' || refreshScope === 'prewarm') {
+      updatePanelSection('system-summary', summaryHtml);
+    }
+    if (refreshScope === 'all' || refreshScope === 'service') {
+      updatePanelSection('system-services', servicesHtml);
+    }
+    if (refreshScope === 'all' || refreshScope === 'prewarm') {
+      updatePanelSection('system-runtime', runtimeHtml);
+    }
+    if (refreshScope === 'all') {
+      updatePanelSection('system-env', envHtml);
+    }
+    const bindSystemServiceActions = () => {
       applyPendingPanelFocus('system');
 
       document.querySelectorAll('[data-service-action]').forEach((button) => {
@@ -5330,13 +5540,14 @@
           try {
             let result;
             if (action === 'restart-guard') {
-              await triggerGuardRestart(false);
+              await triggerGuardRestart(false, button);
               return;
             }
             if (action === 'restart-guard-with-gateway') {
-              await triggerGuardRestart(true);
+              await triggerGuardRestart(true, button);
               return;
             }
+            markButtonGroupBusy('[data-service-action]', button);
             if (action === 'start-web') {
               result = await postJson('/api/web-background/start', {});
             } else if (action === 'stop-web') {
@@ -5346,37 +5557,45 @@
             }
             const ok = result?.success !== false;
             showToast(result?.message || 'OK', ok ? 'success' : 'error');
-            await loadSystem();
+            await loadSystem({ reuseExisting: true, refreshScope: 'service' });
             if (result?.action?.phase === 'running') {
               scheduleServiceStatusPoll();
             }
           } catch (error) {
             showToast(error.message || String(error), 'error');
+            await loadSystem({ reuseExisting: true, refreshScope: 'service' }).catch(() => {});
           }
         });
       });
+    };
 
+    const bindSystemPrewarmActions = () => {
       document.querySelectorAll('[data-prewarm-action]').forEach((button) => {
         button.addEventListener('click', async () => {
           const action = button.getAttribute('data-prewarm-action');
           try {
             if (action === 'reload') {
-              await loadSystem();
+              markButtonGroupBusy('[data-prewarm-action]', button);
+              await loadSystem({ reuseExisting: true, refreshScope: 'prewarm' });
               return;
             }
+            markButtonGroupBusy('[data-prewarm-action]', button);
             const result = await postJson('/api/cache-prewarm/trigger', { trigger: 'web-manual' });
             const ok = result?.scheduled !== false;
             showToast(result?.message || 'OK', ok ? 'success' : 'error');
-            await loadSystem();
+            await loadSystem({ reuseExisting: true, refreshScope: 'prewarm' });
             if (result?.status?.phase === 'running' || result?.status?.phase === 'scheduled') {
               schedulePrewarmStatusPoll();
             }
           } catch (error) {
             showToast(error.message || String(error), 'error');
+            await loadSystem({ reuseExisting: true, refreshScope: 'prewarm' }).catch(() => {});
           }
         });
       });
+    };
 
+    const bindSystemEnvActions = () => {
       const envForm = document.getElementById('system-env-form');
       const envKeyInput = document.getElementById('system-env-key');
       const envValueInput = document.getElementById('system-env-value');
@@ -5442,13 +5661,13 @@
               : `Remove ${key}? This will delete it from the local env file.`,
             confirmText: state.lang === 'zh' ? '确认删除' : 'Delete',
             tone: 'danger',
-          });
+            });
           if (!confirmed) return;
           try {
             const result = await apiRequest(`/api/env?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
             const ok = result?.success !== false;
             showToast(result?.message || 'OK', ok ? 'success' : 'error');
-            await loadSystem();
+            await loadSystem({ reuseExisting: true, refreshScope: 'all' });
           } catch (error) {
             showToast(error.message || String(error), 'error');
           }
@@ -5461,7 +5680,7 @@
       });
 
       document.querySelector('[data-env-action="reload"]')?.addEventListener('click', async () => {
-        await loadSystem();
+        await loadSystem({ reuseExisting: true, refreshScope: 'all' });
       });
 
       envForm?.addEventListener('submit', async (event) => {
@@ -5477,15 +5696,25 @@
           const result = await postJson('/api/env', { key, value });
           const ok = result?.success !== false;
           showToast(result?.message || 'OK', ok ? 'success' : 'error');
-          await loadSystem();
+          await loadSystem({ reuseExisting: true, refreshScope: 'all' });
         } catch (error) {
           showToast(error.message || String(error), 'error');
         }
       });
     };
 
-    bindSystemPanelActions();
-    rememberCurrentPanelRender(viewTabId, bindSystemPanelActions);
+    bindSystemServiceActions();
+    if (refreshScope === 'all' || refreshScope === 'prewarm') {
+      bindSystemPrewarmActions();
+    }
+    if (refreshScope === 'all') {
+      bindSystemEnvActions();
+    }
+    rememberCurrentPanelRender(viewTabId, () => {
+      bindSystemServiceActions();
+      bindSystemPrewarmActions();
+      bindSystemEnvActions();
+    });
 
     if (serviceActionMeta.phase === 'running') {
       scheduleServiceStatusPoll();

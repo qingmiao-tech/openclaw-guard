@@ -2,6 +2,7 @@
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { GUARD_VERSION } from './app-meta.js';
 import { runFullAudit } from './audit.js';
 import {
     AUTH_SHOW_PASSWORD_COMMAND,
@@ -354,6 +355,7 @@ export function startServer(port: number) {
 
         if (pathname === '/api/info') {
           jsonResponse(res, {
+            guardVersion: GUARD_VERSION,
             platform: detectPlatform(),
             user: getCurrentUser(),
             home: getHomeDir(),

@@ -1,7 +1,7 @@
 ﻿import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { spawn, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { loadConfig, getNested } from './config.js';
 import { getOpenClawBinPath, getOpenClawCommand } from './openclaw.js';
 import { ensureGuardLayout, readJsonFile, writeJsonFile } from './guard-state.js';
@@ -117,6 +117,50 @@ function runTextCommand(command: string, args: string[], timeout = 10_000): stri
     throw new Error(result.error?.message || result.stderr || result.stdout || `exit code ${result.status}`);
   }
   return String(result.stdout || '').trim();
+}
+
+function getProcessCommandLine(pid: number | null | undefined): string | null {
+  if (!Number.isInteger(pid) || !pid || pid <= 0) return null;
+  try {
+    if (detectPlatform() === 'windows') {
+      const script = `$ProgressPreference = 'SilentlyContinue'; $p = Get-CimInstance Win32_Process -Filter 'ProcessId = ${pid}'; if ($p) { $p.CommandLine }`;
+      const encoded = Buffer.from(script, 'utf16le').toString('base64');
+      const output = runTextCommand('powershell', [
+        '-NoProfile',
+        '-EncodedCommand',
+        encoded,
+      ], 8_000);
+      return output || null;
+    }
+
+    const output = runTextCommand('ps', ['-p', String(pid), '-o', 'command='], 8_000);
+    return output || null;
+  } catch {
+    return null;
+  }
+}
+
+function looksLikeOpenClawGatewayProcess(commandLine: string | null | undefined): boolean {
+  const normalized = String(commandLine || '').trim().toLowerCase();
+  if (!normalized) return false;
+  return normalized.includes('openclaw') && /\bgateway\b/.test(normalized);
+}
+
+function killPid(pid: number): boolean {
+  try {
+    if (detectPlatform() === 'windows') {
+      execFileSync('taskkill', ['/PID', String(pid), '/T', '/F'], {
+        encoding: 'utf-8',
+        windowsHide: true,
+      });
+      return true;
+    }
+
+    process.kill(pid, 'SIGTERM');
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function invalidateServiceStatusCache(): void {
@@ -291,6 +335,16 @@ function performStopService(): { success: boolean; message: string } {
   const stopped = waitForGatewayState(false, 15_000);
   if (!stopped.running) {
     return { success: true, message: 'Gateway 已停止。' };
+  }
+
+  const samePidStillRunning = typeof before.pid === 'number' && typeof stopped.pid === 'number' && before.pid === stopped.pid;
+  const lingeringPid = samePidStillRunning ? stopped.pid : null;
+  const lingeringCommandLine = lingeringPid ? getProcessCommandLine(lingeringPid) : null;
+  if (lingeringPid && looksLikeOpenClawGatewayProcess(lingeringCommandLine) && killPid(lingeringPid)) {
+    const forcedStopped = waitForGatewayState(false, 8_000, 500);
+    if (!forcedStopped.running) {
+      return { success: true, message: 'Gateway 已停止（已清理残留 Gateway 进程）。' };
+    }
   }
 
   return { success: false, message: `Gateway 停止失败，当前 PID: ${stopped.pid}` };

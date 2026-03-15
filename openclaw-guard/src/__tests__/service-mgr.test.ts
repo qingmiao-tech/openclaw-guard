@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const spawnMock = vi.fn();
 const spawnSyncMock = vi.fn();
+const execFileSyncMock = vi.fn();
+const writeJsonFileMock = vi.fn();
+const readJsonFileMock = vi.fn(() => null);
 
 vi.mock('node:child_process', () => ({
-  spawn: vi.fn(),
+  spawn: spawnMock,
   spawnSync: spawnSyncMock,
+  execFileSync: execFileSyncMock,
 }));
 
 vi.mock('../openclaw.js', () => ({
@@ -12,10 +17,31 @@ vi.mock('../openclaw.js', () => ({
   getOpenClawCommand: vi.fn(() => 'C:/mock/openclaw'),
 }));
 
-describe('service-mgr getLogs', () => {
+vi.mock('../config.js', () => ({
+  loadConfig: vi.fn(() => ({})),
+  getNested: vi.fn(() => undefined),
+}));
+
+vi.mock('../guard-state.js', () => ({
+  ensureGuardLayout: vi.fn(() => ({ stateDir: 'C:/mock/state' })),
+  readJsonFile: readJsonFileMock,
+  writeJsonFile: writeJsonFileMock,
+}));
+
+vi.mock('../platform.js', () => ({
+  detectPlatform: vi.fn(() => (process.platform === 'win32' ? 'windows' : 'linux')),
+}));
+
+vi.mock('../persistent-cache.js', () => ({
+  getPersistentCachedValue: vi.fn((_: string, options: { loader: () => unknown }) => options.loader()),
+  invalidatePersistentCache: vi.fn(),
+}));
+
+describe('service-mgr', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    readJsonFileMock.mockReturnValue(null);
   });
 
   it('uses the plain no-color log command before returning parsed lines', async () => {
@@ -78,5 +104,80 @@ describe('service-mgr getLogs', () => {
     expect(
       spawnSyncMock.mock.calls.some(([, args]) => Array.isArray(args) && args.includes('--lines')),
     ).toBe(false);
+  });
+
+  it('kills a lingering OpenClaw gateway process after official stop leaves the same pid behind', async () => {
+    const atomicsWaitSpy = vi.spyOn(Atomics, 'wait').mockReturnValue('timed-out');
+    const dateNowSpy = vi.spyOn(Date, 'now');
+    dateNowSpy
+      .mockImplementationOnce(() => 0)
+      .mockImplementationOnce(() => 1_000)
+      .mockImplementationOnce(() => 16_000)
+      .mockImplementationOnce(() => 20_000)
+      .mockImplementationOnce(() => 29_000);
+
+    spawnSyncMock
+      .mockReturnValueOnce({
+        status: 0,
+        stdout: [
+          '  TCP    127.0.0.1:18789        0.0.0.0:0              LISTENING       17232',
+          '  TCP    [::1]:18789            [::]:0                 LISTENING       17232',
+        ].join('\n'),
+        stderr: '',
+        error: undefined,
+      })
+      .mockReturnValueOnce({
+        status: 0,
+        stdout: 'Stopped Scheduled Task: OpenClaw Gateway',
+        stderr: '',
+        error: undefined,
+      })
+      .mockReturnValueOnce({
+        status: 0,
+        stdout: [
+          '  TCP    127.0.0.1:18789        0.0.0.0:0              LISTENING       17232',
+          '  TCP    [::1]:18789            [::]:0                 LISTENING       17232',
+        ].join('\n'),
+        stderr: '',
+        error: undefined,
+      })
+      .mockReturnValueOnce({
+        status: 0,
+        stdout: [
+          '  TCP    127.0.0.1:18789        0.0.0.0:0              LISTENING       17232',
+          '  TCP    [::1]:18789            [::]:0                 LISTENING       17232',
+        ].join('\n'),
+        stderr: '',
+        error: undefined,
+      })
+      .mockReturnValueOnce({
+        status: 0,
+        stdout: 'C:/mock/openclaw gateway --port 18789',
+        stderr: '',
+        error: undefined,
+      })
+      .mockReturnValueOnce({
+        status: 0,
+        stdout: '  TCP    127.0.0.1:12345        0.0.0.0:0              LISTENING       9999',
+        stderr: '',
+        error: undefined,
+      });
+
+    const { runServiceActionTask } = await import('../service-mgr.js');
+    const result = runServiceActionTask('stop');
+
+    expect(result.phase).toBe('completed');
+    expect(result.message).toBe('Gateway 已停止（已清理残留 Gateway 进程）。');
+    expect(execFileSyncMock).toHaveBeenCalledWith(
+      'taskkill',
+      ['/PID', '17232', '/T', '/F'],
+      expect.objectContaining({
+        encoding: 'utf-8',
+        windowsHide: true,
+      }),
+    );
+
+    atomicsWaitSpy.mockRestore();
+    dateNowSpy.mockRestore();
   });
 });

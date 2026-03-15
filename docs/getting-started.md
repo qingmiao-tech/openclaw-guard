@@ -17,14 +17,14 @@
 当前公开版最推荐的方式：
 
 ```bash
-npm install -g @qingmiao-tech/openclaw-guard@0.9.1
+npm install -g @qingmiao-tech/openclaw-guard@0.9.2
 openclaw-guard init-machine --install-openclaw --start-web --port 18088
 ```
 
 如果你更喜欢不落全局安装，也可以直接用 `npx`：
 
 ```bash
-npx -y @qingmiao-tech/openclaw-guard@0.9.1 init-machine --install-openclaw --start-web --port 18088
+npx -y @qingmiao-tech/openclaw-guard@0.9.2 init-machine --install-openclaw --start-web --port 18088
 ```
 
 这个命令会按顺序做几件事：
@@ -46,7 +46,7 @@ openclaw-guard init-machine --install-openclaw --start-web --port 18088 --dry-ru
 如果你更想固定到 GitHub Release 资产，也可以安装：
 
 ```bash
-npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.1/qingmiao-tech-openclaw-guard-0.9.1.tgz
+npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.2/qingmiao-tech-openclaw-guard-0.9.2.tgz
 ```
 :::
 

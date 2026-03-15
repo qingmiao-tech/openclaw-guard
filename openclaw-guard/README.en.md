@@ -42,20 +42,20 @@ If you do not want to think about Git, Cron, OAuth, or plugin architecture on da
 ### 1. Install and start Guard
 
 ```bash
-npm install -g @qingmiao-tech/openclaw-guard@0.9.1
+npm install -g @qingmiao-tech/openclaw-guard@0.9.2
 openclaw-guard init-machine --install-openclaw --start-web --port 18088
 ```
 
 If you prefer not to keep a global install, you can run it directly with `npx`:
 
 ```bash
-npx -y @qingmiao-tech/openclaw-guard@0.9.1 init-machine --install-openclaw --start-web --port 18088
+npx -y @qingmiao-tech/openclaw-guard@0.9.2 init-machine --install-openclaw --start-web --port 18088
 ```
 
 If you prefer to pin a specific GitHub Release asset, you can also install:
 
 ```bash
-npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.1/qingmiao-tech-openclaw-guard-0.9.1.tgz
+npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.2/qingmiao-tech-openclaw-guard-0.9.2.tgz
 ```
 
 Current install methods, `npm / npx` update paths, and release notes are documented in [Version & Releases](./docs/releases.md).

@@ -4,9 +4,15 @@
 
 ## 当前版本信息
 
-- 当前 GitHub Release：[`v0.9.1`](https://github.com/qingmiao-tech/openclaw-guard/releases/tag/v0.9.1)
+- 当前 GitHub Release：[`v0.9.2`](https://github.com/qingmiao-tech/openclaw-guard/releases/tag/v0.9.2)
 - npm 包名：[`@qingmiao-tech/openclaw-guard`](https://www.npmjs.com/package/@qingmiao-tech/openclaw-guard)
 - 当前文档站：<https://qingmiao-tech.github.io/openclaw-guard/>
+
+## v0.9.2 这次更新了什么
+
+- 修复 Windows 下通过计划任务运行的 Gateway 无法被彻底停止的问题
+- 运维页服务操作反馈更明确，停止中状态不再依赖整页频繁刷新
+- 继续保持 `npm`、`npx`、GitHub Release 资产三种安装入口
 
 ## 推荐安装方式
 
@@ -15,7 +21,7 @@
 适合准备长期使用、希望本机直接输入 `openclaw-guard` 命令的用户：
 
 ```bash
-npm install -g @qingmiao-tech/openclaw-guard@0.9.1
+npm install -g @qingmiao-tech/openclaw-guard@0.9.2
 openclaw-guard init-machine --install-openclaw --start-web --port 18088
 ```
 
@@ -24,7 +30,7 @@ openclaw-guard init-machine --install-openclaw --start-web --port 18088
 适合先体验一次、临时在新机器上跑起来，或者不想先做全局安装的用户：
 
 ```bash
-npx -y @qingmiao-tech/openclaw-guard@0.9.1 init-machine --install-openclaw --start-web --port 18088
+npx -y @qingmiao-tech/openclaw-guard@0.9.2 init-machine --install-openclaw --start-web --port 18088
 ```
 
 ### 3. GitHub Release 资产安装
@@ -32,7 +38,7 @@ npx -y @qingmiao-tech/openclaw-guard@0.9.1 init-machine --install-openclaw --sta
 适合你需要固定到某一个公开版本资产，或者排查问题时想严格复现某次发布：
 
 ```bash
-npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.1/qingmiao-tech-openclaw-guard-0.9.1.tgz
+npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.2/qingmiao-tech-openclaw-guard-0.9.2.tgz
 openclaw-guard init-machine --install-openclaw --start-web --port 18088
 ```
 
@@ -47,7 +53,7 @@ npm install -g @qingmiao-tech/openclaw-guard@latest
 ### npm 固定更新到某个版本
 
 ```bash
-npm install -g @qingmiao-tech/openclaw-guard@0.9.1
+npm install -g @qingmiao-tech/openclaw-guard@0.9.2
 ```
 
 ### npx 直接运行最新版
@@ -59,7 +65,7 @@ npx -y @qingmiao-tech/openclaw-guard@latest web-status --port 18088 --lang zh
 ### npx 固定运行某个版本
 
 ```bash
-npx -y @qingmiao-tech/openclaw-guard@0.9.1 web-status --port 18088 --lang zh
+npx -y @qingmiao-tech/openclaw-guard@0.9.2 web-status --port 18088 --lang zh
 ```
 
 ## 什么时候适合固定版本
@@ -88,7 +94,7 @@ openclaw-guard init-machine --install-openclaw --start-web --port 18088
 如果你使用的是 `npx`，把前面的命令替换成：
 
 ```bash
-npx -y @qingmiao-tech/openclaw-guard@0.9.1 init-machine --install-openclaw --start-web --port 18088
+npx -y @qingmiao-tech/openclaw-guard@0.9.2 init-machine --install-openclaw --start-web --port 18088
 ```
 
 ## 首次登录提醒

@@ -5,6 +5,7 @@ const spawnSyncMock = vi.fn();
 const execFileSyncMock = vi.fn();
 const writeJsonFileMock = vi.fn();
 const readJsonFileMock = vi.fn(() => null);
+const detectPlatformMock = vi.fn(() => (process.platform === 'win32' ? 'windows' : 'linux'));
 
 vi.mock('node:child_process', () => ({
   spawn: spawnMock,
@@ -29,7 +30,7 @@ vi.mock('../guard-state.js', () => ({
 }));
 
 vi.mock('../platform.js', () => ({
-  detectPlatform: vi.fn(() => (process.platform === 'win32' ? 'windows' : 'linux')),
+  detectPlatform: detectPlatformMock,
 }));
 
 vi.mock('../persistent-cache.js', () => ({
@@ -42,6 +43,7 @@ describe('service-mgr', () => {
     vi.resetModules();
     vi.clearAllMocks();
     readJsonFileMock.mockReturnValue(null);
+    detectPlatformMock.mockReturnValue(process.platform === 'win32' ? 'windows' : 'linux');
   });
 
   it('uses the plain no-color log command before returning parsed lines', async () => {
@@ -109,6 +111,7 @@ describe('service-mgr', () => {
   it('kills a lingering OpenClaw gateway process after official stop leaves the same pid behind', async () => {
     const atomicsWaitSpy = vi.spyOn(Atomics, 'wait').mockReturnValue('timed-out');
     const dateNowSpy = vi.spyOn(Date, 'now');
+    detectPlatformMock.mockReturnValue('windows');
     dateNowSpy
       .mockImplementationOnce(() => 0)
       .mockImplementationOnce(() => 1_000)

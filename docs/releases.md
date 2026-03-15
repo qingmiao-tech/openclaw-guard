@@ -5,10 +5,8 @@
 ## 当前版本信息
 
 - 当前 GitHub Release：[`v0.9.1`](https://github.com/qingmiao-tech/openclaw-guard/releases/tag/v0.9.1)
-- npm 包名：`@qingmiao-tech/openclaw-guard`
+- npm 包名：[`@qingmiao-tech/openclaw-guard`](https://www.npmjs.com/package/@qingmiao-tech/openclaw-guard)
 - 当前文档站：<https://qingmiao-tech.github.io/openclaw-guard/>
-
-如果你打开 npm 页面时仍然看到 404，说明公开 npm 同步还没完成。这个时候先使用下方的 GitHub Release 资产安装即可，不影响后续再切回 `npm / npx`。
 
 ## 推荐安装方式
 

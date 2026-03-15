@@ -27,8 +27,6 @@ openclaw-guard init-machine --install-openclaw --start-web --port 18088
 npx -y @qingmiao-tech/openclaw-guard@0.9.1 init-machine --install-openclaw --start-web --port 18088
 ```
 
-如果 npm registry 里暂时还搜不到这个 scoped 包，先用下方的 GitHub Release 资产安装即可；等 npm 公共同步完成后，再切回 `npm / npx` 方式。
-
 这个命令会按顺序做几件事：
 
 1. 检测当前平台

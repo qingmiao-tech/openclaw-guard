@@ -289,9 +289,21 @@
     { id: 'auth', label: { zh: '认证与推送', en: 'Auth & Push' } },
   ];
 
+  function readGuardVersionMeta() {
+    const version = document.querySelector('meta[name="guard-version"]')?.getAttribute('content') || '';
+    const normalized = String(version).trim().replace(/^v/i, '');
+    return normalized || null;
+  }
+
+  function getGuardVersionLabel(version = state.guardVersion) {
+    const normalized = String(version || '').trim().replace(/^v/i, '');
+    return normalized ? `v${normalized}` : '';
+  }
+
   const state = {
     lang: localStorage.getItem(STORAGE_LANG) || 'zh',
     activeTab: null,
+    guardVersion: readGuardVersionMeta(),
     authToken: localStorage.getItem(STORAGE_TOKEN) || null,
     authEnabled: null, // null = 尚未检测
     authConfigured: false,
@@ -4101,6 +4113,12 @@
     `;
   }
 
+  function renderGuardVersionBadge() {
+    const versionLabel = getGuardVersionLabel();
+    if (!versionLabel) return '';
+    return `<span class="guard-version-badge" title="${escapeHtml(`OpenClaw Guard ${versionLabel}`)}">${escapeHtml(versionLabel)}</span>`;
+  }
+
   function renderShell() {
     const active = state.activeTab || 'overview';
     app.innerHTML = `
@@ -4112,7 +4130,10 @@
                 <img class="guard-badge-logo" src="/ui/logo.png" alt="OpenClaw Guard logo" />
               </div>
             <div class="guard-title">
-              <h1>${escapeHtml(t('appTitle'))}</h1>
+              <div class="guard-title-top">
+                <h1>${escapeHtml(t('appTitle'))}</h1>
+                ${renderGuardVersionBadge()}
+              </div>
               <p>${escapeHtml(t('appSubtitle'))}</p>
             </div>
           </div>

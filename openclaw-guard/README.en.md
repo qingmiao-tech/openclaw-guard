@@ -52,9 +52,7 @@ If you prefer not to keep a global install, you can run it directly with `npx`:
 npx -y @qingmiao-tech/openclaw-guard@0.9.1 init-machine --install-openclaw --start-web --port 18088
 ```
 
-If the scoped package is not visible in the npm registry yet, use the GitHub Release asset below first and switch back to `npm / npx` once the public registry sync is available.
-
-If you still prefer a fixed GitHub Release asset, you can also install:
+If you prefer to pin a specific GitHub Release asset, you can also install:
 
 ```bash
 npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.1/qingmiao-tech-openclaw-guard-0.9.1.tgz

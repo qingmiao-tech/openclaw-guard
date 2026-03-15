@@ -52,9 +52,7 @@ openclaw-guard init-machine --install-openclaw --start-web --port 18088
 npx -y @qingmiao-tech/openclaw-guard@0.9.1 init-machine --install-openclaw --start-web --port 18088
 ```
 
-如果你此时在 npm registry 里还暂时搜不到这个包，先使用下面的 GitHub Release 资产安装即可；等 npm 公开同步完成后，再切回 `npm / npx` 方式。
-
-如果你更希望固定到 GitHub Release 资产，也可以直接安装：
+如果你更希望固定到某个 GitHub Release 资产，也可以直接安装：
 
 ```bash
 npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.1/qingmiao-tech-openclaw-guard-0.9.1.tgz

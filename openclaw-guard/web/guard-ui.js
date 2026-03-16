@@ -356,6 +356,7 @@
     cronPollTimer: null,
     runtimeViewPollTimer: null,
     guardRestartPollTimer: null,
+    guardSelfUpdatePollTimer: null,
     pendingPanelFocus: null,
     renderCache: {},
     tabRefreshHints: {},
@@ -3134,6 +3135,13 @@
     }
   }
 
+  function clearGuardSelfUpdatePollTimer() {
+    if (state.guardSelfUpdatePollTimer) {
+      clearTimeout(state.guardSelfUpdatePollTimer);
+      state.guardSelfUpdatePollTimer = null;
+    }
+  }
+
   function getServiceActionMeta(actionState) {
     const action = actionState?.action || '';
     const actionLabel = action === 'start'
@@ -3253,6 +3261,79 @@
     };
   }
 
+  function getGuardInstallSourceLabel(source) {
+    if (source === 'npm-global') return state.lang === 'zh' ? 'npm 全局安装' : 'Global npm install';
+    if (source === 'npx') return state.lang === 'zh' ? 'npx 临时运行' : 'npx temporary run';
+    if (source === 'workspace') return state.lang === 'zh' ? '源码工作区' : 'Workspace source';
+    return state.lang === 'zh' ? '未知来源' : 'Unknown source';
+  }
+
+  function getGuardNextActionLabel(status) {
+    if (!status?.updateAvailable) {
+      return state.lang === 'zh' ? '当前已是最新版本' : 'Already up to date';
+    }
+    if (status?.nextAction === 'update-now') {
+      return state.lang === 'zh' ? '可直接在线更新' : 'Ready for in-console update';
+    }
+    if (status?.nextAction === 'rerun-npx') {
+      return state.lang === 'zh' ? '重新运行 npx 即可' : 'Re-run with npx';
+    }
+    if (status?.nextAction === 'pull-workspace') {
+      return state.lang === 'zh' ? '请在源码目录拉取最新代码' : 'Pull the latest workspace code';
+    }
+    return state.lang === 'zh' ? '建议手动升级' : 'Manual upgrade recommended';
+  }
+
+  function getGuardUpdateHelp(status) {
+    if (!status?.updateAvailable) {
+      return state.lang === 'zh'
+        ? '当前 Guard 已经是公开最新版本，无需额外处理。'
+        : 'Guard is already on the latest public release.';
+    }
+    if (status?.installSource === 'npm-global') {
+      return state.lang === 'zh'
+        ? '当前是 npm 全局安装，可以在这里直接在线更新。更新期间页面会短暂断开，完成后会自动恢复。'
+        : 'This Guard instance comes from a global npm install, so it can be updated in place here. The page will disconnect briefly and then recover automatically.';
+    }
+    if (status?.installSource === 'npx') {
+      return state.lang === 'zh'
+        ? '当前是 npx 临时运行。下次重新执行 npx 命令时，会自动拉起最新版本。'
+        : 'This Guard instance is running from npx. The next npx run will automatically use the newest version.';
+    }
+    if (status?.installSource === 'workspace') {
+      return state.lang === 'zh'
+        ? '当前是源码工作区运行。建议在项目目录执行 git pull、npm install 和 npm run build。'
+        : 'This Guard instance is running from a source workspace. Pull the latest code, run npm install, and rebuild the project.';
+    }
+    return state.lang === 'zh'
+      ? '当前来源无法安全判断，建议先手动升级再重启 Guard。'
+      : 'The current source cannot be updated safely in place. Upgrade it manually first and then restart Guard.';
+  }
+
+  function getGuardSelfUpdateMeta(actionState) {
+    const phase = actionState?.phase || 'idle';
+    const phaseLabel = phase === 'running'
+      ? (state.lang === 'zh' ? '执行中' : 'Running')
+      : phase === 'completed'
+        ? (state.lang === 'zh' ? '已完成' : 'Completed')
+        : phase === 'error'
+          ? (state.lang === 'zh' ? '失败' : 'Failed')
+          : (state.lang === 'zh' ? '空闲' : 'Idle');
+    const pillClass = phase === 'completed'
+      ? 'success'
+      : phase === 'error'
+        ? 'danger'
+        : phase === 'running'
+          ? 'warn'
+          : '';
+    return {
+      phase,
+      phaseLabel,
+      pillClass,
+      message: actionState?.message || (state.lang === 'zh' ? '当前没有 Guard 在线更新任务。' : 'No Guard self-update task is active.'),
+    };
+  }
+
   function scheduleGuardRestartPoll(startedAt = Date.now()) {
     clearGuardRestartPollTimer();
     state.guardRestartPollTimer = setTimeout(async () => {
@@ -3291,6 +3372,44 @@
     }, 1600);
   }
 
+  function scheduleGuardSelfUpdatePoll(startedAt = Date.now()) {
+    clearGuardSelfUpdatePollTimer();
+    state.guardSelfUpdatePollTimer = setTimeout(async () => {
+      try {
+        const status = await apiRequest('/api/guard/update-status', { timeoutMs: 2200 });
+        const meta = getGuardSelfUpdateMeta(status);
+        if (meta.phase === 'completed') {
+          clearGuardSelfUpdatePollTimer();
+          showToast(status?.message || (state.lang === 'zh' ? 'Guard 已完成在线更新。' : 'Guard update completed.'));
+          setTimeout(() => {
+            window.location.reload();
+          }, 900);
+          return;
+        }
+        if (meta.phase === 'error') {
+          clearGuardSelfUpdatePollTimer();
+          showToast(status?.message || (state.lang === 'zh' ? 'Guard 在线更新失败。' : 'Guard update failed.'), 'error');
+          if (state.activeTab === 'system') {
+            loadSystem({ reuseExisting: true, refreshScope: 'guard-update' }).catch(() => {});
+          }
+          return;
+        }
+      } catch {
+        // Guard 重启切换期间请求失败是预期行为，继续轮询即可。
+      }
+
+      if (Date.now() - startedAt > 90_000) {
+        clearGuardSelfUpdatePollTimer();
+        showToast(state.lang === 'zh'
+          ? 'Guard 更新等待超过 90 秒，请手动刷新页面确认状态。'
+          : 'Guard update took longer than 90s. Refresh the page to verify the state.', 'error');
+        return;
+      }
+
+      scheduleGuardSelfUpdatePoll(startedAt);
+    }, 1800);
+  }
+
   async function triggerGuardRestart(restartGateway = false, activeButton = null) {
     const confirmText = restartGateway
       ? (state.lang === 'zh'
@@ -3327,6 +3446,42 @@
       scheduleGuardRestartPoll();
     } catch (error) {
       showToast(error.message || String(error), 'error');
+    }
+  }
+
+  async function triggerGuardSelfUpdate(activeButton = null) {
+    const confirmed = await showConfirmDialog({
+      title: state.lang === 'zh' ? '在线更新 Guard' : 'Update Guard',
+      message: state.lang === 'zh'
+        ? '确认在线更新 OpenClaw Guard 吗？当前页面会短暂断开，然后自动恢复到新版本。'
+        : 'Update OpenClaw Guard now? This page will disconnect briefly and then recover on the new version.',
+      confirmText: state.lang === 'zh' ? '立即更新' : 'Update now',
+      tone: 'warn',
+    });
+    if (!confirmed) return;
+
+    try {
+      if (activeButton) {
+        markButtonGroupBusy('[data-guard-update-action]', activeButton);
+      }
+      const result = await postJson('/api/guard/update', {});
+      const ok = result?.success !== false;
+      showToast(result?.message || (state.lang === 'zh' ? 'Guard 更新任务已调度。' : 'Guard update has been scheduled.'), ok ? 'success' : 'error');
+      if (!ok) {
+        if (state.activeTab === 'system') {
+          await loadSystem({ reuseExisting: true, refreshScope: 'guard-update' }).catch(() => {});
+        }
+        return;
+      }
+      if (state.activeTab === 'system') {
+        await loadSystem({ reuseExisting: true, refreshScope: 'guard-update' }).catch(() => {});
+      }
+      scheduleGuardSelfUpdatePoll();
+    } catch (error) {
+      showToast(error.message || String(error), 'error');
+      if (state.activeTab === 'system') {
+        await loadSystem({ reuseExisting: true, refreshScope: 'guard-update' }).catch(() => {});
+      }
     }
   }
 
@@ -4982,6 +5137,7 @@
     if (!reuseExisting) {
       setPanelSections(t('tabs.system'), t('desc.system'), [
         { id: 'system-summary', title: state.lang === 'zh' ? '运维摘要' : 'Operations Summary' },
+        { id: 'system-guard-update', title: state.lang === 'zh' ? 'Guard 版本与更新' : 'Guard Version & Update' },
         { id: 'system-services', title: state.lang === 'zh' ? '服务操作与后台状态' : 'Service Actions & Background State' },
         { id: 'system-env', title: state.lang === 'zh' ? '本机密钥与变量' : 'Local Secrets & Variables' },
         { id: 'system-runtime', title: state.lang === 'zh' ? '本机路径与诊断信息' : 'Local Paths & Diagnostics' },
@@ -4993,14 +5149,33 @@
     const webStatusPromise = apiRequest('/api/web-background/status');
     const webReportPromise = apiRequest('/api/web-background/report').catch(() => null);
     const guardRestartPromise = apiRequest('/api/guard/restart-status').catch(() => ({ phase: 'idle' }));
+    const guardSelfPromise = apiRequest(`/api/guard/self-status${options.forceRefresh ? '?fresh=1' : ''}`).catch(() => ({
+      packageName: '@qingmiao-tech/openclaw-guard',
+      currentVersion: state.guardVersion || '-',
+      latestVersion: null,
+      updateAvailable: false,
+      installSource: 'unknown',
+      updateSupported: false,
+      nextAction: 'manual',
+      packageRoot: '-',
+      binPath: '-',
+      nodeVersion: '-',
+      npmVersion: null,
+      globalNodeModules: null,
+      updateCommand: null,
+      releaseUrl: 'https://github.com/qingmiao-tech/openclaw-guard/releases',
+      docsUrl: 'https://qingmiao-tech.github.io/openclaw-guard/',
+      action: { phase: 'idle' },
+    }));
     const envPromise = apiRequest('/api/env').catch(() => ({}));
     const prewarmStatusPromise = apiRequest('/api/cache-prewarm/status').catch(() => ({ phase: 'idle', tasks: [] }));
 
-    const [service, webStatus, webReportPayload, guardRestartStatus, envMap, prewarmStatus] = await Promise.all([
+    const [service, webStatus, webReportPayload, guardRestartStatus, guardSelfStatus, envMap, prewarmStatus] = await Promise.all([
       servicePromise,
       webStatusPromise,
       webReportPromise,
       guardRestartPromise,
+      guardSelfPromise,
       envPromise,
       prewarmStatusPromise,
     ]);
@@ -5009,6 +5184,7 @@
     const envEntries = Object.entries(envMap || {}).sort(([left], [right]) => left.localeCompare(right));
     const quickServiceActionMeta = getServiceActionMeta(service.action || {});
     const quickGuardRestartMeta = getGuardRestartMeta(guardRestartStatus);
+    const quickGuardSelfUpdateMeta = getGuardSelfUpdateMeta(guardSelfStatus.action || {});
     const quickPrewarmMeta = getPrewarmMeta(prewarmStatus);
     const webReport = webReportPayload || {
       running: webStatus.running,
@@ -5038,6 +5214,7 @@
           ${metricCard('Guard Web', getRunStateLabel(webReport.running), webReport.running ? `PID ${webReport.pid || '-'}` : '-', webReport.running ? 'success' : 'warn')}
           ${metricCard(state.lang === 'zh' ? '托管来源' : 'Tracking Source', webSourceLabel, webScenarioLabel, webReport.managed ? 'success' : 'warn')}
           ${metricCard(state.lang === 'zh' ? '下一步建议' : 'Recommended Next Step', webNextActionLabel, webNextActionHelp)}
+          ${metricCard(state.lang === 'zh' ? 'Guard 版本' : 'Guard Version', guardSelfStatus.currentVersion ? `v${guardSelfStatus.currentVersion}` : '-', guardSelfStatus.updateAvailable ? (state.lang === 'zh' ? `可更新到 v${guardSelfStatus.latestVersion || '-'}` : `update to v${guardSelfStatus.latestVersion || '-'}`) : (state.lang === 'zh' ? '当前已是最新版本' : 'Already up to date'), guardSelfStatus.updateAvailable ? 'warn' : 'success')}
           ${metricCard(state.lang === 'zh' ? 'Guard 重启任务' : 'Guard Restart Task', quickGuardRestartMeta.phaseLabel, guardRestartStatus?.newPid ? `PID ${guardRestartStatus.newPid}` : '-', quickGuardRestartMeta.pillClass)}
           ${metricCard(state.lang === 'zh' ? '本地 Env' : 'Local Env', formatNumber(envEntries.length), state.lang === 'zh' ? '已读取本地键数量' : 'loaded local keys')}
           ${metricCard(state.lang === 'zh' ? '缓存预热' : 'Cache Prewarm', quickPrewarmMeta.phaseLabel, prewarmStatus?.lastDurationMs ? `${prewarmStatus.lastDurationMs} ms` : '-', quickPrewarmMeta.pillClass)}
@@ -5065,6 +5242,18 @@
               ]),
             })}
           </div>
+        </div>
+      `);
+      updatePanelSection('system-guard-update', `
+        <div class="card accent-info">
+          <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+            <div>
+              <h3>${state.lang === 'zh' ? 'Guard 版本与更新' : 'Guard Version & Update'}</h3>
+              <p>${escapeHtml(state.lang === 'zh' ? '正在检查当前 Guard 版本、安装来源和是否有可用更新…' : 'Checking the current Guard version, install source, and whether an update is available…')}</p>
+            </div>
+            <span class="pill ${quickGuardSelfUpdateMeta.pillClass}">${escapeHtml(quickGuardSelfUpdateMeta.phaseLabel)}</span>
+          </div>
+          <div class="status" style="margin-top:14px;">${escapeHtml(quickGuardSelfUpdateMeta.message)}</div>
         </div>
       `);
       updatePanelSection('system-services', `
@@ -5103,8 +5292,10 @@
     const serviceActionMeta = getServiceActionMeta(service.action || {});
     const guardRestartMeta = getGuardRestartMeta(guardRestartStatus);
     const prewarmMeta = getPrewarmMeta(prewarmStatus);
+    const guardSelfUpdateMeta = getGuardSelfUpdateMeta(guardSelfStatus.action || {});
     const serviceBusy = serviceActionMeta.phase === 'running';
     const guardRestartBusy = guardRestartMeta.phase === 'running';
+    const guardSelfUpdateBusy = guardSelfUpdateMeta.phase === 'running';
     const prewarmBusy = prewarmMeta.phase === 'running' || prewarmMeta.phase === 'scheduled';
     const trackingSourceLabel = getRuntimeSourceLabel(webReport.source);
     const serviceTaskAction = typeof service.action?.action === 'string' ? service.action.action : '';
@@ -5113,6 +5304,11 @@
     const serviceStopLoading = serviceBusy && serviceTaskAction === 'stop';
     const guardRestartLoading = guardRestartBusy && guardRestartStatus?.restartGateway !== true;
     const guardRestartWithGatewayLoading = guardRestartBusy && guardRestartStatus?.restartGateway === true;
+    const guardVersionLabel = guardSelfStatus.currentVersion ? `v${guardSelfStatus.currentVersion}` : '-';
+    const latestGuardVersionLabel = guardSelfStatus.latestVersion ? `v${guardSelfStatus.latestVersion}` : '-';
+    const guardInstallSourceLabel = getGuardInstallSourceLabel(guardSelfStatus.installSource);
+    const guardNextActionLabel = getGuardNextActionLabel(guardSelfStatus);
+    const guardUpdateHelp = getGuardUpdateHelp(guardSelfStatus);
 
     let webPrimaryLabel = state.lang === 'zh' ? '后台启动 Guard Web' : 'Start Guard Web in Background';
     let webPrimaryHint = state.lang === 'zh'
@@ -5175,6 +5371,7 @@
       gateway: service,
       web: webReport,
       guardRestart: guardRestartStatus,
+      guardSelfStatus,
       envKeys: envEntries.map(([key]) => key),
     };
     const prewarmTasksHtml = (prewarmStatus.tasks || []).length
@@ -5188,9 +5385,79 @@
       <div class="grid">
         ${metricCard('Gateway', getRunStateLabel(service.running), `PID ${service.pid || '-'}`, service.running ? 'success' : 'danger')}
         ${metricCard('Guard Web', getRunStateLabel(webReport.running), webReport.running ? `PID ${webReport.pid || '-'}` : '-', webReport.running ? 'success' : 'warn')}
+        ${metricCard(state.lang === 'zh' ? 'Guard 版本' : 'Guard Version', guardVersionLabel, guardSelfStatus.updateAvailable ? (state.lang === 'zh' ? `可更新到 ${latestGuardVersionLabel}` : `update to ${latestGuardVersionLabel}`) : getGuardNextActionLabel(guardSelfStatus), guardSelfStatus.updateAvailable ? 'warn' : 'success')}
         ${metricCard('Node.js', info.nodeVersion || '-', info.arch || '-')}
         ${metricCard('OpenClaw', getInstallStateLabel(info.openclaw?.installed), info.openclaw?.version || '-', info.openclaw?.installed ? 'success' : 'warn')}
         ${metricCard(state.lang === 'zh' ? '本地 Env' : 'Local Env', formatNumber(envEntries.length), info.envPath || '-')}
+      </div>
+    `;
+
+    const guardUpdateHtml = `
+      <div class="card accent-info panel-focus-target" id="system-guard-update-card">
+        <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+          <div>
+            <h3>${state.lang === 'zh' ? 'Guard 版本与更新' : 'Guard Version & Update'}</h3>
+            <p>${escapeHtml(guardUpdateHelp)}</p>
+          </div>
+          <span class="pill ${guardSelfUpdateMeta.pillClass}">${escapeHtml(guardSelfUpdateMeta.phaseLabel)}</span>
+        </div>
+        <div class="toolbar" style="margin-top:14px;">
+          ${renderActionButton({
+            attrName: 'data-guard-update-action',
+            attrValue: 'update',
+            label: state.lang === 'zh' ? '在线更新 Guard' : 'Update Guard',
+            busyLabel: state.lang === 'zh' ? '更新中…' : 'Updating Guard…',
+            tone: 'primary',
+            disabled: !guardSelfStatus.updateSupported || !guardSelfStatus.updateAvailable || guardSelfUpdateBusy,
+            loading: guardSelfUpdateBusy,
+          })}
+          ${renderActionButton({
+            attrName: 'data-guard-update-action',
+            attrValue: 'reload',
+            label: state.lang === 'zh' ? '重新检查版本' : 'Check Again',
+            busyLabel: state.lang === 'zh' ? '检查中…' : 'Checking…',
+            disabled: guardSelfUpdateBusy,
+          })}
+        </div>
+        <div class="status ${guardSelfStatus.updateAvailable ? 'warn' : ''}" style="margin-top:14px;">${escapeHtml(guardSelfUpdateMeta.message || guardUpdateHelp)}</div>
+        <div class="grid" style="margin-top:14px;">
+          <div class="list-item">
+            <div class="row" style="justify-content:space-between;">
+              <strong>${state.lang === 'zh' ? '当前版本' : 'Current Version'}</strong>
+              <span class="pill ${guardSelfStatus.updateAvailable ? 'warn' : 'success'}">${escapeHtml(guardVersionLabel)}</span>
+            </div>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '当前工作台正在运行的 Guard 版本。' : 'The Guard version currently serving this workbench.')}</div>
+          </div>
+          <div class="list-item">
+            <div class="row" style="justify-content:space-between;">
+              <strong>${state.lang === 'zh' ? '公开最新版本' : 'Latest Public Version'}</strong>
+              <span class="pill ${guardSelfStatus.updateAvailable ? 'warn' : ''}">${escapeHtml(latestGuardVersionLabel)}</span>
+            </div>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(guardSelfStatus.updateAvailable ? (state.lang === 'zh' ? '检测到更高公开版本，可按当前来源决定是否在线更新。' : 'A newer public release is available for this install source.') : (state.lang === 'zh' ? '当前已经跟上公开版本线。' : 'This Guard instance already matches the public release line.'))}</div>
+          </div>
+          <div class="list-item">
+            <div class="row" style="justify-content:space-between;">
+              <strong>${state.lang === 'zh' ? '安装来源' : 'Install Source'}</strong>
+              <span class="pill ${guardSelfStatus.updateSupported ? 'success' : 'warn'}">${escapeHtml(guardInstallSourceLabel)}</span>
+            </div>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(guardSelfStatus.updateSupported ? (state.lang === 'zh' ? '当前来源支持在控制台里直接更新 Guard。' : 'This source supports updating Guard directly inside the console.') : (state.lang === 'zh' ? '当前来源暂不支持一键在线更新。' : 'This source does not support one-click in-console updates yet.'))}</div>
+          </div>
+          <div class="list-item">
+            <div class="row" style="justify-content:space-between;">
+              <strong>${state.lang === 'zh' ? '建议动作' : 'Recommended Action'}</strong>
+              <span class="chip">${escapeHtml(guardNextActionLabel)}</span>
+            </div>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(guardUpdateHelp)}</div>
+          </div>
+        </div>
+        ${guardSelfStatus.updateCommand ? `
+          <div class="sub-card" style="margin-top:14px;">
+            <strong>${state.lang === 'zh' ? '命令参考' : 'Suggested Command'}</strong>
+            <div class="command-list" style="margin-top:10px;">
+              <code>${escapeHtml(guardSelfStatus.updateCommand)}</code>
+            </div>
+          </div>
+        ` : ''}
       </div>
     `;
 
@@ -5522,6 +5789,9 @@
     if (refreshScope === 'all' || refreshScope === 'service' || refreshScope === 'prewarm') {
       updatePanelSection('system-summary', summaryHtml);
     }
+    if (refreshScope === 'all' || refreshScope === 'guard-update' || refreshScope === 'service') {
+      updatePanelSection('system-guard-update', guardUpdateHtml);
+    }
     if (refreshScope === 'all' || refreshScope === 'service') {
       updatePanelSection('system-services', servicesHtml);
     }
@@ -5565,6 +5835,25 @@
             showToast(error.message || String(error), 'error');
             await loadSystem({ reuseExisting: true, refreshScope: 'service' }).catch(() => {});
           }
+        });
+      });
+    };
+
+    const bindGuardUpdateActions = () => {
+      document.querySelectorAll('[data-guard-update-action]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const action = button.getAttribute('data-guard-update-action');
+          if (!action) return;
+          if (action === 'reload') {
+            try {
+              markButtonGroupBusy('[data-guard-update-action]', button);
+              await loadSystem({ reuseExisting: true, refreshScope: 'guard-update', forceRefresh: true });
+            } catch (error) {
+              showToast(error.message || String(error), 'error');
+            }
+            return;
+          }
+          await triggerGuardSelfUpdate(button);
         });
       });
     };
@@ -5704,6 +5993,7 @@
     };
 
     bindSystemServiceActions();
+    bindGuardUpdateActions();
     if (refreshScope === 'all' || refreshScope === 'prewarm') {
       bindSystemPrewarmActions();
     }
@@ -5712,6 +6002,7 @@
     }
     rememberCurrentPanelRender(viewTabId, () => {
       bindSystemServiceActions();
+      bindGuardUpdateActions();
       bindSystemPrewarmActions();
       bindSystemEnvActions();
     });
@@ -5721,6 +6012,9 @@
     }
     if (guardRestartMeta.phase === 'running') {
       scheduleGuardRestartPoll();
+    }
+    if (guardSelfUpdateMeta.phase === 'running') {
+      scheduleGuardSelfUpdatePoll();
     }
     if (prewarmMeta.phase === 'running' || prewarmMeta.phase === 'scheduled') {
       schedulePrewarmStatusPoll();

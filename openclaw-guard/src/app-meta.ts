@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 type GuardPackageJson = {
   name?: string;
@@ -6,7 +8,7 @@ type GuardPackageJson = {
 };
 
 const FALLBACK_GUARD_PACKAGE_NAME = '@qingmiao-tech/openclaw-guard';
-const FALLBACK_GUARD_VERSION = '0.9.0';
+const FALLBACK_GUARD_VERSION = '0.9.3';
 
 function readGuardPackageJson(): GuardPackageJson {
   try {
@@ -16,6 +18,8 @@ function readGuardPackageJson(): GuardPackageJson {
     return {};
   }
 }
+
+export const GUARD_PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const packageJson = readGuardPackageJson();
 

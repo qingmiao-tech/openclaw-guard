@@ -1,4 +1,4 @@
-﻿# Codex 工作日志
+# Codex 工作日志
 
 ## 固定准则（长期生效）
 
@@ -2822,3 +2822,65 @@
 - 风险与补充说明:
   1) 当前 `restart-web.mjs` 为了保证“必须回到指定端口”，如果检测到目标端口未释放，会直接中止并报错，而不是偷偷漂移到旁路端口；这是刻意保守的行为，便于客户机排障。
   2) `.command` 文件在 macOS 上更适合配合可执行权限一起使用；这轮提交会顺手把 `.sh` / `.command` 的可执行位纳入 Git。
+
+## [2026-03-16 15:40] openclaw-guard 新增 Guard 自身版本检测与在线更新，并准备 v0.9.3 发布 [TASK-20260316-001]
+
+- 任务来源: 用户要求让 openclaw-guard 支持版本检测和控制台在线更新，并在完成后补工作日志、提交 Git、发布  .9.3 到 npm。
+- 仓库范围: openclaw-course / openclaw-guard
+- 当前状态: 已完成 Guard 自更新能力落地、公开文档补齐、版本号抬升到  .9.3，并进入发布验证阶段。
+- 实际完成:
+  1) 新增 Guard 自身更新编排模块:
+     - 新增 openclaw-guard/src/guard-self-update.ts
+     - 负责检测当前包版本、npm 全局安装来源、npm 最新版、在线更新可行性，以及后台自更新任务状态持久化
+     - 明确只对 
+pm -g 安装来源开放一键在线更新；
+px 与源码工作区安装只给出诊断与推荐升级方式
+  2) 打通后端 API 与 CLI:
+     - src/server.ts 新增 GET /api/guard/self-status、GET /api/guard/update-status、POST /api/guard/update
+     - src/index.ts 新增 openclaw-guard self status、openclaw-guard self update 与内部 self-update-task
+     - 让运维页、CLI 和后台任务共享同一套自更新状态机，避免出现界面状态与真实执行状态漂移
+  3) 收口 Windows 下的 npm 兼容细节:
+     - 修复在当前环境里直接 spawnSync('npm', ...) 不稳定的问题
+     - 改成 Windows 下通过 shell: true 执行命令串，确保 
+pm --version、
+pm root -g 与 
+pm view 能稳定返回
+  4) 接入前端运维页:
+     - web/guard-ui.js 新增“Guard 版本与更新 / Guard Version & Update”区块
+     - 支持显示当前版本、最新版本、安装来源、是否支持一键在线更新，以及更新中的轮询反馈
+  5) 更新公开文档与版本说明:
+     - docs/console-overview.md、docs/getting-started.md 增加 Guard 自更新与初始化密码回看说明
+     - docs/releases.md 同步整理 0.9.3 的公开更新摘要
+     - README.md、README.en.md、package.json、package-lock.json、CLI fallback 版本一起抬升到  .9.3
+  6) 补齐测试:
+     - 新增 src/__tests__/guard-self-update.test.ts
+     - 覆盖 Guard npm 全局安装检测、版本比较、在线更新后重启工作台等关键路径
+- 交付清单:
+  - openclaw-guard/src/guard-self-update.ts
+  - openclaw-guard/src/__tests__/guard-self-update.test.ts
+  - openclaw-guard/src/server.ts
+  - openclaw-guard/src/index.ts
+  - openclaw-guard/src/app-meta.ts
+  - openclaw-guard/web/guard-ui.js
+  - openclaw-guard/README.md
+  - openclaw-guard/README.en.md
+  - openclaw-guard/docs/console-overview.md
+  - openclaw-guard/docs/getting-started.md
+  - openclaw-guard/docs/releases.md
+  - openclaw-guard/package.json
+  - openclaw-guard/package-lock.json
+  - worklogs/codex-work-logs.md
+- 验证结果:
+  1) 已验证 
+pm test（目录 openclaw-guard）通过。
+  2) 已验证 
+pm run build（目录 openclaw-guard）通过。
+  3) 已验证 
+pm run docs:build（目录 openclaw-guard）通过。
+  4) 已验证 
+ode dist/index.js self status --json 能正确返回 Guard 当前版本、npm 版本与全局安装根目录。
+- 风险与补充说明:
+  1) 当前 Guard 自更新仍然只对 
+pm -g 安装来源开放，这是刻意设计，避免对 
+px 临时运行或源码工作区运行做出误导性的“一键升级”承诺。
+  2) 公开仓库与 monorepo 仍是双仓同步模式，发布时需要继续把 openclaw-guard/ 子目录同步到独立 public repo 后再走 GitHub Release / npm 分发链路。

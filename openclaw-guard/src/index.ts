@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 import fs from 'node:fs';
 import { Command } from 'commander';
 import chalk from 'chalk';
@@ -20,6 +20,7 @@ import { getGitSyncStatus, initGitSync, connectGitRemote, saveGitTokenAuth, chec
 import { summarizeCosts } from './costs.js';
 import { getCachePrewarmStatus, runCachePrewarm } from './cache-prewarm.js';
 import { getGuardRestartStatus, runGuardRestartTask, scheduleGuardRestart } from './guard-restart.js';
+import { getGuardSelfStatus, getGuardSelfUpdateState, runGuardSelfUpdateTask, scheduleGuardSelfUpdate } from './guard-self-update.js';
 import { formatMachineInitResult, runMachineInit } from './machine-init.js';
 import { formatWebBackgroundReport, getWebBackgroundReport, getWebBackgroundStatus, startWebBackgroundService, stopWebBackgroundService } from './web-background.js';
 
@@ -120,7 +121,7 @@ function getCliVersion(): string {
   } catch {
     // Fall back to the current public release line if package metadata is unavailable.
   }
-  return '0.9.0';
+  return '0.9.3';
 }
 
 program
@@ -868,6 +869,47 @@ guardCmd.command('restart')
     printAction(result);
   });
 
+const selfCmd = program.command('self').description('Guard 自身版本检测与在线更新');
+selfCmd.command('status').description('查看 Guard 当前版本与更新状态').option('--json', '输出 JSON').action((opts: { json?: boolean }) => {
+  const status = getGuardSelfStatus({ bypassCache: opts.json === true });
+  if (opts.json) {
+    printJson(status);
+    return;
+  }
+  console.log(chalk.bold('\nGuard 版本状态\n'));
+  console.log(`当前版本: ${status.currentVersion}`);
+  console.log(`最新版本: ${status.latestVersion || '-'}`);
+  console.log(`安装来源: ${status.installSource}`);
+  console.log(`可在线更新: ${status.updateSupported ? '是' : '否'}`);
+  console.log(`下一步: ${status.nextAction}`);
+  if (status.updateCommand) {
+    console.log(`建议命令: ${status.updateCommand}`);
+  }
+});
+selfCmd.command('update')
+  .description('在线更新 Guard 自身（仅 npm 全局安装支持）')
+  .option('-p, --port <port>', 'Guard Web 端口', '18088')
+  .option('--current-pid <pid>', '指定要接管的 Guard Web PID')
+  .option('--target-version <version>', '指定 Guard 目标版本，默认 latest')
+  .option('--dry-run', '只预演，不真正更新')
+  .option('--json', '输出 JSON')
+  .action((opts: { port?: string; currentPid?: string; targetVersion?: string; dryRun?: boolean; json?: boolean }) => {
+    const result = scheduleGuardSelfUpdate({
+      port: Number(opts.port || 18088),
+      currentPid: parseOptionalNumber(opts.currentPid),
+      targetVersion: opts.targetVersion,
+      dryRun: opts.dryRun,
+    });
+    if (opts.json) {
+      printJson(result);
+      return;
+    }
+    printAction(result);
+    if (!result.success && result.action?.error) {
+      console.log(chalk.dim(result.action.error));
+    }
+  });
+
 program.command('cache-prewarm')
   .description('执行 Guard 缓存预热')
   .option('--trigger <trigger>', '预热触发来源', 'manual')
@@ -1027,6 +1069,50 @@ program.command('guard-task')
 
     const ok = result.phase === 'completed';
     const message = result.message || (ok ? 'Guard 重启任务已完成。' : 'Guard 重启任务执行失败。');
+    console.log(ok ? chalk.green(message) : chalk.red(message));
+    if (result.error) {
+      console.log(chalk.dim(result.error));
+    }
+    if (!ok) process.exitCode = 1;
+  });
+
+program.command('self-update-task')
+  .description('执行后台 Guard 自更新任务')
+  .requiredOption('--port <port>', 'Guard Web 端口')
+  .option('--current-pid <pid>', '当前 Guard Web PID')
+  .option('--target-version <version>', '指定 Guard 目标版本，默认 latest')
+  .option('--dry-run', '只预演，不真正更新')
+  .option('--json', '输出 JSON 状态')
+  .action(async (opts: { port: string; currentPid?: string; targetVersion?: string; dryRun?: boolean; json?: boolean }) => {
+    const port = Number(opts.port);
+    if (!Number.isFinite(port) || port <= 0) {
+      const errorResult = {
+        success: false,
+        message: `Unsupported port: ${opts.port}`,
+      };
+      if (opts.json) {
+        printJson(errorResult);
+        return;
+      }
+      console.log(chalk.red(errorResult.message));
+      process.exitCode = 1;
+      return;
+    }
+
+    const result = await runGuardSelfUpdateTask({
+      port,
+      currentPid: parseOptionalNumber(opts.currentPid),
+      targetVersion: opts.targetVersion,
+      dryRun: opts.dryRun,
+    });
+
+    if (opts.json) {
+      printJson(result);
+      return;
+    }
+
+    const ok = result.phase === 'completed';
+    const message = result.message || (ok ? 'Guard 自更新任务已完成。' : 'Guard 自更新任务执行失败。');
     console.log(ok ? chalk.green(message) : chalk.red(message));
     if (result.error) {
       console.log(chalk.dim(result.error));

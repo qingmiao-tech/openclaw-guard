@@ -144,6 +144,16 @@ export interface AIConfigOverview {
   availableModels: string[];
 }
 
+function stripProviderLevelApiType(config: Record<string, any>): void {
+  const providers = getNested(config, ['models', 'providers']);
+  if (!providers || typeof providers !== 'object' || Array.isArray(providers)) return;
+  for (const providerConfig of Object.values(providers as Record<string, any>)) {
+    if (providerConfig && typeof providerConfig === 'object' && !Array.isArray(providerConfig) && 'apiType' in providerConfig) {
+      delete providerConfig.apiType;
+    }
+  }
+}
+
 export function getAIConfig(): AIConfigOverview {
   const config = loadConfig();
   const primaryModel = getNested(config, ['agents', 'defaults', 'model', 'primary']) || null;
@@ -210,15 +220,17 @@ export function saveProvider(params: {
 
   const config = loadConfig();
   const effectiveApiType = params.apiType?.trim() || 'openai-completions';
+  stripProviderLevelApiType(config);
+  const existingProvider = getNested(config, ['models', 'providers', name]) || {};
+  const existingApiKey = typeof existingProvider.apiKey === 'string' ? existingProvider.apiKey : undefined;
 
-  setNested(config, ['models', 'providers', name], {});
+  setNested(config, ['models', 'providers'], getNested(config, ['models', 'providers']) || {});
   if (!getNested(config, ['agents', 'defaults', 'models'])) {
     setNested(config, ['agents', 'defaults', 'models'], {});
   }
 
   const providerConfig: Record<string, any> = {
     baseUrl,
-    apiType: effectiveApiType,
     models: models.map((model) => ({
       id: model.id,
       name: model.name,
@@ -233,7 +245,6 @@ export function saveProvider(params: {
   if (params.apiKey && params.apiKey.trim()) {
     providerConfig.apiKey = params.apiKey.trim();
   } else {
-    const existingApiKey = getNested(config, ['models', 'providers', name, 'apiKey']);
     if (existingApiKey) providerConfig.apiKey = existingApiKey;
   }
 
@@ -247,7 +258,7 @@ export function saveProvider(params: {
   setNested(config, ['meta', 'lastTouchedAt'], new Date().toISOString());
 
   try {
-    saveConfig(config);
+    saveConfig(config, { merge: false });
     return { success: true, message: `Provider ${name} 已保存。` };
   } catch (error) {
     return { success: false, message: `保存失败：${error}` };
@@ -259,6 +270,7 @@ export function deleteProvider(name: string): { success: boolean; message: strin
   if (!providerName) return { success: false, message: 'Provider 名称不能为空。' };
 
   const config = loadConfig();
+  stripProviderLevelApiType(config);
   const providers = getNested(config, ['models', 'providers']);
   if (providers) delete providers[providerName];
 
@@ -286,7 +298,7 @@ export function deleteProvider(name: string): { success: boolean; message: strin
   setNested(config, ['meta', 'lastTouchedAt'], new Date().toISOString());
 
   try {
-    saveConfig(config);
+    saveConfig(config, { merge: false });
     return { success: true, message: `Provider ${providerName} 已删除。` };
   } catch (error) {
     return { success: false, message: `删除失败：${error}` };
@@ -296,11 +308,12 @@ export function deleteProvider(name: string): { success: boolean; message: strin
 export function setPrimaryModel(modelId: string): { success: boolean; message: string } {
   const nextModelId = modelId.trim();
   const config = loadConfig();
+  stripProviderLevelApiType(config);
   setNested(config, ['agents', 'defaults', 'model', 'primary'], nextModelId || null);
   setNested(config, ['meta', 'lastTouchedAt'], new Date().toISOString());
 
   try {
-    saveConfig(config);
+    saveConfig(config, { merge: false });
     return {
       success: true,
       message: nextModelId ? `主模型已切换为 ${nextModelId}。` : '主模型已清空。',
@@ -312,6 +325,7 @@ export function setPrimaryModel(modelId: string): { success: boolean; message: s
 
 export function setFallbackModels(modelIds: string[]): { success: boolean; message: string } {
   const config = loadConfig();
+  stripProviderLevelApiType(config);
 
   const normalized = Array.from(
     new Set(
@@ -345,7 +359,7 @@ export function setFallbackModels(modelIds: string[]): { success: boolean; messa
   setNested(config, ['meta', 'lastTouchedAt'], new Date().toISOString());
 
   try {
-    saveConfig(config);
+    saveConfig(config, { merge: false });
     if (normalized.length > 0) {
       return { success: true, message: `Fallback 链已更新：${normalized.join(' -> ')}` };
     }

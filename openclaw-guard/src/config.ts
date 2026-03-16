@@ -38,12 +38,30 @@ export function getEnvPath(): string {
   return path.join(getOpenClawDir(), 'env');
 }
 
+function stripLegacyProviderApiTypes(config: Record<string, any>): boolean {
+  const providers = config?.models?.providers;
+  if (!providers || typeof providers !== 'object' || Array.isArray(providers)) return false;
+
+  let changed = false;
+  for (const providerConfig of Object.values(providers as Record<string, any>)) {
+    if (providerConfig && typeof providerConfig === 'object' && !Array.isArray(providerConfig) && 'apiType' in providerConfig) {
+      delete providerConfig.apiType;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 /** 加载 openclaw.json，不存在则返回空对象 */
 export function loadConfig(): Record<string, any> {
   const p = getConfigPath();
   if (!fs.existsSync(p)) return {};
   try {
-    return JSON.parse(fs.readFileSync(p, 'utf-8'));
+    const config = JSON.parse(fs.readFileSync(p, 'utf-8'));
+    if (stripLegacyProviderApiTypes(config)) {
+      fs.writeFileSync(p, JSON.stringify(config, null, 2), 'utf-8');
+    }
+    return config;
   } catch {
     return {};
   }

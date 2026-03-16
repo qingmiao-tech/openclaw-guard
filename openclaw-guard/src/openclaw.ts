@@ -531,6 +531,33 @@ function normalizeOfficialStatus(payload: Record<string, unknown>): OpenClawOffi
   };
 }
 
+function isNodeModulesOpenClawRoot(root: string | null | undefined): boolean {
+  if (!root) return false;
+  return /[\\/]node_modules[\\/]openclaw$/i.test(path.resolve(root));
+}
+
+function isPathInsideRoot(candidatePath: string | null | undefined, rootPath: string | null | undefined): boolean {
+  if (!candidatePath || !rootPath) return false;
+  const normalizedCandidate = path.resolve(candidatePath).replace(/[\\/]+/g, '/').toLowerCase();
+  const normalizedRoot = path.resolve(rootPath).replace(/[\\/]+/g, '/').toLowerCase();
+  return normalizedCandidate === normalizedRoot || normalizedCandidate.startsWith(`${normalizedRoot}/`);
+}
+
+function inferInstallKind(localState: OpenClawLocalState, officialStatus: OpenClawOfficialStatus | null): OpenClawInstallKind {
+  if (officialStatus?.installKind && officialStatus.installKind !== 'unknown') return officialStatus.installKind;
+  if (isNodeModulesOpenClawRoot(officialStatus?.root)) return 'package';
+  if (localState.detectedSource === 'managed-prefix' || localState.detectedSource === 'npm-prefix') return 'package';
+  if (localState.detectedSource === 'path' && isPathInsideRoot(officialStatus?.root, localState.npmPrefix)) return 'package';
+  return 'unknown';
+}
+
+function inferPackageManager(localState: OpenClawLocalState, officialStatus: OpenClawOfficialStatus | null): OpenClawPackageManager | null {
+  if (officialStatus?.packageManager && officialStatus.packageManager !== 'unknown') return officialStatus.packageManager;
+  if (localState.detectedSource === 'managed-prefix' || localState.detectedSource === 'npm-prefix') return 'npm';
+  if (isNodeModulesOpenClawRoot(officialStatus?.root) && isPathInsideRoot(officialStatus?.root, localState.npmPrefix)) return 'npm';
+  return null;
+}
+
 function readOfficialStatus(localState: OpenClawLocalState): OpenClawOfficialStatus | null {
   if (!localState.installed || !localState.binPath || !fs.existsSync(localState.binPath)) return null;
   const result = runCommandCapture(localState.binPath, ['update', 'status', '--json'], 30_000, buildOfficialCliEnv(localState), path.dirname(localState.binPath));
@@ -595,12 +622,14 @@ export function detectOpenClaw(options: OpenClawDetectionOptions = {}): OpenClaw
   } : null;
   const updateAvailable = !!(localState.installed && localState.version && latestVersion && localState.version !== latestVersion)
     || !!mergedOfficialStatus?.updateAvailable;
+  const inferredInstallKind = inferInstallKind(localState, mergedOfficialStatus);
+  const inferredPackageManager = inferPackageManager(localState, mergedOfficialStatus);
   const baseStatus: OpenClawStatus = {
     ...localState,
     latestVersion,
     updateAvailable,
-    installKind: mergedOfficialStatus?.installKind || 'unknown',
-    packageManager: mergedOfficialStatus?.packageManager || null,
+    installKind: inferredInstallKind,
+    packageManager: inferredPackageManager,
     updateChannel: mergedOfficialStatus?.channel || null,
     updateChannelSource: mergedOfficialStatus?.channelSource || null,
     officialStatusAvailable: !!mergedOfficialStatus,
@@ -791,6 +820,72 @@ function resolvePackageRollbackVersion(status: OpenClawStatus, request: OpenClaw
   return items.find((item) => item.success && !!item.before.version)?.before.version || null;
 }
 
+function getPackageManagerFallbackCommand(manager: OpenClawPackageManager, packageSpec: string, localState: OpenClawLocalState, beforeStatus: OpenClawStatus): { command: string; args: string[]; env?: NodeJS.ProcessEnv } | null {
+  if (manager === 'pnpm') {
+    return { command: 'pnpm', args: ['add', '-g', packageSpec] };
+  }
+  if (manager === 'bun') {
+    return { command: 'bun', args: ['add', '-g', packageSpec] };
+  }
+  if (manager === 'npm') {
+    const prefix = localState.detectedSource === 'managed-prefix'
+      ? localState.managedPrefix
+      : beforeStatus.npmPrefix || null;
+    const env = prefix
+      ? { NPM_CONFIG_PREFIX: prefix, npm_config_prefix: prefix }
+      : undefined;
+    const args = ['install', '-g', packageSpec];
+    if (prefix) args.push('--prefix', prefix);
+    return { command: 'npm', args, env };
+  }
+  return null;
+}
+
+function shouldFallbackToPackageManager(mode: OpenClawTaskMode, result: CommandCaptureResult): boolean {
+  if (mode !== 'update' && mode !== 'rollback') return false;
+  const payload = parseJsonOutput(result.stdout || result.stderr);
+  const status = normalizeString(payload?.status);
+  const reason = normalizeString(payload?.reason);
+  if (status === 'skipped' && reason === 'not-git-install') return true;
+  const text = `${result.stdout}\n${result.stderr}`.toLowerCase();
+  return text.includes("package manager couldn't be detected")
+    || text.includes('package manager could not be detected')
+    || text.includes('not-git-install');
+}
+
+function runPackageManagerFallbackAction(mode: OpenClawTaskMode, localState: OpenClawLocalState, request: OpenClawActionRequest, beforeStatus: OpenClawStatus): { success: boolean; message: string; error?: string | null; logTail: string[] } | null {
+  const manager = beforeStatus.packageManager || inferPackageManager(localState, beforeStatus.officialStatus);
+  if (!manager) return null;
+  if (mode === 'update' && request.channel) return null;
+  const packageSpec = mode === 'rollback'
+    ? (() => {
+        const version = resolvePackageRollbackVersion(beforeStatus, request);
+        return version ? `openclaw@${version}` : null;
+      })()
+    : `openclaw@${request.tag || request.version || 'latest'}`;
+  if (!packageSpec) {
+    return {
+      success: false,
+      message: '当前没有可用于回退的目标版本。',
+      error: 'No package rollback target available for fallback update.',
+      logTail: [],
+    };
+  }
+  const commandSpec = getPackageManagerFallbackCommand(manager, packageSpec, localState, beforeStatus);
+  if (!commandSpec) return null;
+  const result = runCommandCapture(commandSpec.command, commandSpec.args, 20 * 60_000, commandSpec.env);
+  return {
+    success: result.success,
+    message: result.success
+      ? (mode === 'rollback'
+        ? '官方更新器未识别包管理器，Guard 已回退到原全局安装方式完成版本恢复。'
+        : '官方更新器未识别包管理器，Guard 已回退到原全局安装方式完成更新。')
+      : `OpenClaw ${mode === 'rollback' ? '回退' : '更新'}失败。`,
+    error: result.success ? null : (result.error || result.stderr || result.stdout || 'Package manager fallback failed.'),
+    logTail: tailOutput(result.stdout, result.stderr),
+  };
+}
+
 function runOfficialCliAction(mode: OpenClawTaskMode, localState: OpenClawLocalState, request: OpenClawActionRequest, beforeStatus: OpenClawStatus): { success: boolean; message: string; error?: string | null; logTail: string[] } {
   if (!localState.binPath) return { success: false, message: '未定位到可执行的 OpenClaw CLI。', error: 'OpenClaw binary path is unavailable.', logTail: [] };
   if (mode === 'uninstall') {
@@ -808,6 +903,16 @@ function runOfficialCliAction(mode: OpenClawTaskMode, localState: OpenClawLocalS
     if (request.tag) args.push('--tag', request.tag);
   }
   const result = runCommandCapture(localState.binPath, args, 20 * 60_000, buildOfficialCliEnv(localState), beforeStatus.updateRoot || path.dirname(localState.binPath));
+  if (shouldFallbackToPackageManager(mode, result)) {
+    const fallback = runPackageManagerFallbackAction(mode, localState, request, beforeStatus);
+    if (fallback) {
+      const officialTail = tailOutput(result.stdout, result.stderr);
+      return {
+        ...fallback,
+        logTail: [...officialTail, ...fallback.logTail].slice(-30),
+      };
+    }
+  }
   return {
     success: result.success,
     message: result.success

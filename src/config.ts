@@ -50,7 +50,7 @@ export function loadConfig(): Record<string, any> {
 }
 
 /** 保存 openclaw.json（深度合并 + 备份） */
-export function saveConfig(config: Record<string, any>): { success: boolean; error?: string } {
+export function saveConfig(config: Record<string, any>, options?: { merge?: boolean }): { success: boolean; error?: string } {
   const p = getConfigPath();
   const dir = path.dirname(p);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -59,8 +59,7 @@ export function saveConfig(config: Record<string, any>): { success: boolean; err
   createBackup();
 
   // 深度合并
-  const existing = loadConfig();
-  const merged = deepMerge(existing, config);
+  const merged = options?.merge === false ? config : deepMerge(loadConfig(), config);
 
   try {
     fs.writeFileSync(p, JSON.stringify(merged, null, 2), 'utf-8');

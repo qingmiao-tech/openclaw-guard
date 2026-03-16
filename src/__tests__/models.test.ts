@@ -19,7 +19,7 @@ describe('saveProvider', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('apiType 未提供时默认使用 openai-completions', () => {
+  it('defaults model api to openai-completions when apiType is omitted', () => {
     const result = saveProvider({
       name: 'custom-provider',
       baseUrl: 'https://api.example.com',
@@ -29,11 +29,11 @@ describe('saveProvider', () => {
     expect(result.success).toBe(true);
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     const provider = config.models.providers['custom-provider'];
-    expect(provider.apiType).toBe('openai-completions');
+    expect(provider).not.toHaveProperty('apiType');
     expect(provider.models[0].api).toBe('openai-completions');
   });
 
-  it('提供 apiType 时使用用户指定值', () => {
+  it('uses the requested apiType as the default model api', () => {
     const result = saveProvider({
       name: 'anthropic-custom',
       baseUrl: 'https://api.anthropic.com',
@@ -44,11 +44,11 @@ describe('saveProvider', () => {
     expect(result.success).toBe(true);
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     const provider = config.models.providers['anthropic-custom'];
-    expect(provider.apiType).toBe('anthropic-messages');
+    expect(provider).not.toHaveProperty('apiType');
     expect(provider.models[0].api).toBe('anthropic-messages');
   });
 
-  it('apiType 持久化到配置文件中', () => {
+  it('does not persist provider-level apiType to openclaw.json', () => {
     saveProvider({
       name: 'test-provider',
       baseUrl: 'https://api.test.com',
@@ -57,11 +57,37 @@ describe('saveProvider', () => {
     });
 
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    expect(config.models.providers['test-provider'].apiType).toBe('custom-api-type');
+    expect(config.models.providers['test-provider']).not.toHaveProperty('apiType');
+    expect(config.models.providers['test-provider'].models[0].api).toBe('custom-api-type');
   });
 
-  it('空字符串 apiKey 不覆盖已有值', () => {
-    // First save with a real apiKey
+  it('removes legacy provider-level apiType when rewriting an existing provider', () => {
+    fs.writeFileSync(configPath, JSON.stringify({
+      models: {
+        providers: {
+          openai: {
+            baseUrl: 'https://api.openai.com/v1',
+            apiType: 'openai-completions',
+            models: [{ id: 'gpt-4o', name: 'GPT-4o', api: 'openai-completions' }],
+          },
+        },
+      },
+    }), 'utf-8');
+
+    const result = saveProvider({
+      name: 'openai',
+      baseUrl: 'https://api.openai.com/v1',
+      apiType: 'openai-completions',
+      models: [{ id: 'gpt-4o', name: 'GPT-4o' }],
+    });
+
+    expect(result.success).toBe(true);
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    expect(config.models.providers.openai).not.toHaveProperty('apiType');
+    expect(config.models.providers.openai.models[0].api).toBe('openai-completions');
+  });
+
+  it('does not overwrite an existing apiKey with an empty string', () => {
     saveProvider({
       name: 'my-provider',
       baseUrl: 'https://api.example.com',
@@ -69,7 +95,6 @@ describe('saveProvider', () => {
       models: [{ id: 'm1', name: 'M1' }],
     });
 
-    // Save again with empty apiKey
     saveProvider({
       name: 'my-provider',
       baseUrl: 'https://api.example.com',
@@ -81,7 +106,7 @@ describe('saveProvider', () => {
     expect(config.models.providers['my-provider'].apiKey).toBe('sk-secret-key-12345');
   });
 
-  it('undefined apiKey 不覆盖已有值', () => {
+  it('does not overwrite an existing apiKey with undefined', () => {
     saveProvider({
       name: 'my-provider',
       baseUrl: 'https://api.example.com',
@@ -99,7 +124,7 @@ describe('saveProvider', () => {
     expect(config.models.providers['my-provider'].apiKey).toBe('sk-existing-key');
   });
 
-  it('模型使用用户指定的 contextWindow 和 maxTokens', () => {
+  it('preserves user-specified contextWindow and maxTokens', () => {
     saveProvider({
       name: 'test-provider',
       baseUrl: 'https://api.test.com',
@@ -112,7 +137,7 @@ describe('saveProvider', () => {
     expect(model.maxTokens).toBe(1024);
   });
 
-  it('模型 contextWindow 和 maxTokens 为 0 时不被默认值覆盖', () => {
+  it('preserves zero values for contextWindow and maxTokens', () => {
     saveProvider({
       name: 'test-provider',
       baseUrl: 'https://api.test.com',
@@ -125,7 +150,7 @@ describe('saveProvider', () => {
     expect(model.maxTokens).toBe(0);
   });
 
-  it('模型未提供 contextWindow 和 maxTokens 时使用默认值', () => {
+  it('falls back to default contextWindow and maxTokens when omitted', () => {
     saveProvider({
       name: 'test-provider',
       baseUrl: 'https://api.test.com',
@@ -138,7 +163,7 @@ describe('saveProvider', () => {
     expect(model.maxTokens).toBe(8192);
   });
 
-  it('支持自定义 Provider 的完整 round-trip', () => {
+  it('supports a full custom provider round-trip', () => {
     saveProvider({
       name: 'custom-ai',
       baseUrl: 'https://custom.ai/v1',
@@ -151,17 +176,17 @@ describe('saveProvider', () => {
     });
 
     const overview = getAIConfig();
-    const provider = overview.providers.find(p => p.name === 'custom-ai');
+    const provider = overview.providers.find((entry) => entry.name === 'custom-ai');
     expect(provider).toBeDefined();
     expect(provider!.baseUrl).toBe('https://custom.ai/v1');
+    expect(provider!.apiType).toBe('custom-type');
     expect(provider!.hasApiKey).toBe(true);
     expect(provider!.models).toHaveLength(2);
     expect(provider!.models[0].id).toBe('fast');
     expect(provider!.models[1].id).toBe('smart');
   });
 
-  it('saveProvider 不影响其他配置节点', () => {
-    // Write initial config with multiple providers and other config nodes
+  it('does not affect unrelated config nodes when saving a provider', () => {
     const initialConfig = {
       gateway: { port: 9999, auth: { token: 'abc123' } },
       models: {
@@ -170,7 +195,16 @@ describe('saveProvider', () => {
             baseUrl: 'https://existing.com',
             apiKey: 'existing-key',
             apiType: 'openai-completions',
-            models: [{ id: 'e1', name: 'E1', api: 'openai-completions', input: ['text'], contextWindow: 4096, maxTokens: 512 }],
+            models: [
+              {
+                id: 'e1',
+                name: 'E1',
+                api: 'openai-completions',
+                input: ['text'],
+                contextWindow: 4096,
+                maxTokens: 512,
+              },
+            ],
           },
         },
       },
@@ -179,7 +213,6 @@ describe('saveProvider', () => {
     };
     fs.writeFileSync(configPath, JSON.stringify(initialConfig), 'utf-8');
 
-    // Save a new provider
     const result = saveProvider({
       name: 'new-provider',
       baseUrl: 'https://new.com',
@@ -190,25 +223,22 @@ describe('saveProvider', () => {
     expect(result.success).toBe(true);
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 
-    // Verify other config nodes are preserved
     expect(config.gateway).toEqual({ port: 9999, auth: { token: 'abc123' } });
     expect(config.customSection).toEqual({ data: 'should-not-change' });
     expect(config.agents.defaults.model.primary).toBe('existing-provider/e1');
 
-    // Verify existing provider is unchanged
     expect(config.models.providers['existing-provider'].baseUrl).toBe('https://existing.com');
     expect(config.models.providers['existing-provider'].apiKey).toBe('existing-key');
     expect(config.models.providers['existing-provider'].models[0].id).toBe('e1');
     expect(config.models.providers['existing-provider'].models[0].contextWindow).toBe(4096);
     expect(config.models.providers['existing-provider'].models[0].maxTokens).toBe(512);
 
-    // Verify new provider was added correctly
     expect(config.models.providers['new-provider']).toBeDefined();
     expect(config.models.providers['new-provider'].baseUrl).toBe('https://new.com');
     expect(config.models.providers['new-provider'].apiKey).toBe('new-key');
+    expect(config.models.providers['new-provider']).not.toHaveProperty('apiType');
   });
 });
-
 
 describe('fallback models', () => {
   let tmpDir: string;
@@ -225,7 +255,7 @@ describe('fallback models', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('setFallbackModels saves normalized list and exposes it in getAIConfig', () => {
+  it('setFallbackModels saves a normalized list and exposes it in getAIConfig', () => {
     const result = setFallbackModels([
       ' wenwen/claude-opus-4-6 ',
       'custom-127-0-0-1-11434/qwen3:8b',

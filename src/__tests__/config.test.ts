@@ -220,3 +220,40 @@ describe('saveConfig', () => {
     expect(content).toBe(originalContent);
   });
 });
+
+describe('loadConfig', () => {
+  let tmpDir: string;
+  let configPath: string;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'openclaw-test-'));
+    configPath = path.join(tmpDir, 'openclaw.json');
+    vi.stubEnv('OPENCLAW_CONFIG_PATH', configPath);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('repairs legacy provider-level apiType keys while loading config', () => {
+    fs.writeFileSync(configPath, JSON.stringify({
+      models: {
+        providers: {
+          openai: {
+            baseUrl: 'https://api.openai.com/v1',
+            apiType: 'openai-completions',
+            models: [{ id: 'gpt-4o', name: 'GPT-4o', api: 'openai-completions' }],
+          },
+        },
+      },
+    }), 'utf-8');
+
+    const loaded = loadConfig();
+    expect(loaded.models.providers.openai).not.toHaveProperty('apiType');
+
+    const persisted = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    expect(persisted.models.providers.openai).not.toHaveProperty('apiType');
+    expect(persisted.models.providers.openai.models[0].api).toBe('openai-completions');
+  });
+});

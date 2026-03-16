@@ -15,6 +15,19 @@ export type OpenClawUpdateStrategy = 'official-cli' | 'bootstrap' | 'git-direct'
 export type OpenClawPackageManager = 'pnpm' | 'bun' | 'npm' | 'unknown';
 export type OpenClawUpdateChannel = 'stable' | 'beta' | 'dev';
 export type OpenClawHistoryKind = 'update' | 'rollback' | 'install' | 'repair' | 'uninstall';
+export type OpenClawUninstallMode = 'managed-prefix' | 'package-manager' | 'safe-remove' | 'git-manual' | 'unsupported';
+
+export interface OpenClawUninstallPlan {
+  mode: OpenClawUninstallMode;
+  autoSupported: boolean;
+  packageManager: OpenClawPackageManager | null;
+  command: string | null;
+  targetRoot: string | null;
+  targetBinary: string | null;
+  fallbackDirectories: string[];
+  fallbackFiles: string[];
+  reason: 'guard-managed-prefix' | 'package-manager' | 'safe-program-files' | 'git-checkout' | 'unsupported';
+}
 
 export interface OpenClawDetectionOptions {
   managedPrefix?: string;
@@ -126,6 +139,7 @@ export interface OpenClawStatus {
   lastHistoryEntry: OpenClawUpdateHistoryEntry | null;
   updateRoot: string | null;
   officialStatus: OpenClawOfficialStatus | null;
+  uninstallPlan: OpenClawUninstallPlan;
   action: OpenClawTaskState;
 }
 
@@ -171,6 +185,12 @@ interface CommandCaptureResult {
   error: string | null;
 }
 
+interface CommandSpec {
+  command: string;
+  args: string[];
+  env?: NodeJS.ProcessEnv;
+}
+
 const OPENCLAW_LOCAL_CACHE_KEY = 'openclaw-status-local-v4';
 const OPENCLAW_OFFICIAL_CACHE_KEY = 'openclaw-status-official-v2';
 const OPENCLAW_REGISTRY_CACHE_KEY = 'openclaw-status-registry-v1';
@@ -191,12 +211,21 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+function stripWindowsCommandExtension(value: string): string {
+  return value.replace(/\.(cmd|exe|bat|ps1)$/i, '');
+}
+
 function samePath(left: string | null | undefined, right: string | null | undefined): boolean {
   if (!left || !right) return false;
   const normalize = detectPlatform() === 'windows'
     ? (value: string) => path.resolve(value).toLowerCase()
     : (value: string) => path.resolve(value);
-  return normalize(left) === normalize(right);
+  const normalizedLeft = normalize(left);
+  const normalizedRight = normalize(right);
+  if (normalizedLeft === normalizedRight) return true;
+  if (detectPlatform() !== 'windows') return false;
+  return normalize(path.dirname(normalizedLeft)) === normalize(path.dirname(normalizedRight))
+    && stripWindowsCommandExtension(path.basename(normalizedLeft)) === stripWindowsCommandExtension(path.basename(normalizedRight));
 }
 
 function normalizeString(value: unknown): string | null {
@@ -401,6 +430,35 @@ function buildExpectedBinaryPath(npmPrefix: string | null): string | null {
   return detectPlatform() === 'windows' ? path.join(npmPrefix, 'openclaw.cmd') : path.join(npmPrefix, 'bin', 'openclaw');
 }
 
+function buildExpectedBinaryCandidates(npmPrefix: string | null): string[] {
+  if (!npmPrefix) return [];
+  if (detectPlatform() === 'windows') {
+    return [
+      path.join(npmPrefix, 'openclaw.cmd'),
+      path.join(npmPrefix, 'openclaw'),
+      path.join(npmPrefix, 'openclaw.ps1'),
+      path.join(npmPrefix, 'openclaw.bat'),
+      path.join(npmPrefix, 'openclaw.exe'),
+    ];
+  }
+  return [
+    path.join(npmPrefix, 'bin', 'openclaw'),
+    path.join(npmPrefix, 'openclaw'),
+  ];
+}
+
+function getPackageRootCandidatesForPrefix(prefix: string | null | undefined): string[] {
+  if (!prefix) return [];
+  return [
+    path.join(prefix, 'node_modules', 'openclaw'),
+    path.join(prefix, 'lib', 'node_modules', 'openclaw'),
+  ];
+}
+
+function firstExistingPath(candidates: string[]): string | null {
+  return candidates.find((candidate) => fs.existsSync(candidate)) || candidates[0] || null;
+}
+
 function buildInstallNotes(options: { targetBinDir: string | null; managedPrefix: string; detectedSource: OpenClawDetectedSource }): string[] {
   const shared = [
     `Guard 默认把托管安装放到 ${options.managedPrefix}。`,
@@ -440,10 +498,11 @@ function locateBinaryFromPath(): string | null {
 function discoverOpenClawBinary(managedPrefix: string, npmPrefix: string | null): { binPath: string | null; detectedSource: OpenClawDetectedSource } {
   const managedBinary = getOpenClawManagedBinaryPath(managedPrefix);
   if (fs.existsSync(managedBinary)) return { binPath: applyDiscoveredBinary(managedBinary), detectedSource: 'managed-prefix' };
-  const npmExpected = buildExpectedBinaryPath(npmPrefix);
+  const npmCandidates = buildExpectedBinaryCandidates(npmPrefix);
   const fromPath = locateBinaryFromPath();
-  if (fromPath) return { binPath: applyDiscoveredBinary(fromPath), detectedSource: npmExpected && samePath(fromPath, npmExpected) ? 'npm-prefix' : 'path' };
-  if (npmExpected && fs.existsSync(npmExpected)) return { binPath: applyDiscoveredBinary(npmExpected), detectedSource: 'npm-prefix' };
+  if (fromPath) return { binPath: applyDiscoveredBinary(fromPath), detectedSource: npmCandidates.some((candidate) => samePath(fromPath, candidate)) ? 'npm-prefix' : 'path' };
+  const npmCandidate = npmCandidates.find((candidate) => fs.existsSync(candidate)) || null;
+  if (npmCandidate) return { binPath: applyDiscoveredBinary(npmCandidate), detectedSource: 'npm-prefix' };
   return { binPath: null, detectedSource: 'none' };
 }
 
@@ -536,6 +595,13 @@ function isNodeModulesOpenClawRoot(root: string | null | undefined): boolean {
   return /[\\/]node_modules[\\/]openclaw$/i.test(path.resolve(root));
 }
 
+function isLikelyNpmPrefixBinary(binaryPath: string | null | undefined, npmPrefix: string | null | undefined): boolean {
+  if (!binaryPath || !npmPrefix) return false;
+  if (buildExpectedBinaryCandidates(npmPrefix).some((candidate) => samePath(binaryPath, candidate))) return true;
+  const expectedDir = detectPlatform() === 'windows' ? npmPrefix : path.join(npmPrefix, 'bin');
+  return samePath(path.dirname(binaryPath), expectedDir);
+}
+
 function isPathInsideRoot(candidatePath: string | null | undefined, rootPath: string | null | undefined): boolean {
   if (!candidatePath || !rootPath) return false;
   const normalizedCandidate = path.resolve(candidatePath).replace(/[\\/]+/g, '/').toLowerCase();
@@ -545,9 +611,11 @@ function isPathInsideRoot(candidatePath: string | null | undefined, rootPath: st
 
 function inferInstallKind(localState: OpenClawLocalState, officialStatus: OpenClawOfficialStatus | null): OpenClawInstallKind {
   if (officialStatus?.installKind && officialStatus.installKind !== 'unknown') return officialStatus.installKind;
+  if (officialStatus?.root && fs.existsSync(path.join(officialStatus.root, '.git'))) return 'git';
   if (isNodeModulesOpenClawRoot(officialStatus?.root)) return 'package';
   if (localState.detectedSource === 'managed-prefix' || localState.detectedSource === 'npm-prefix') return 'package';
   if (localState.detectedSource === 'path' && isPathInsideRoot(officialStatus?.root, localState.npmPrefix)) return 'package';
+  if (isLikelyNpmPrefixBinary(localState.binPath, localState.npmPrefix)) return 'package';
   return 'unknown';
 }
 
@@ -555,6 +623,18 @@ function inferPackageManager(localState: OpenClawLocalState, officialStatus: Ope
   if (officialStatus?.packageManager && officialStatus.packageManager !== 'unknown') return officialStatus.packageManager;
   if (localState.detectedSource === 'managed-prefix' || localState.detectedSource === 'npm-prefix') return 'npm';
   if (isNodeModulesOpenClawRoot(officialStatus?.root) && isPathInsideRoot(officialStatus?.root, localState.npmPrefix)) return 'npm';
+  if (isLikelyNpmPrefixBinary(localState.binPath, localState.npmPrefix)) return 'npm';
+  return null;
+}
+
+function inferUpdateRoot(localState: OpenClawLocalState, officialStatus: OpenClawOfficialStatus | null): string | null {
+  if (officialStatus?.root) return officialStatus.root;
+  if (localState.detectedSource === 'managed-prefix') {
+    return firstExistingPath(getPackageRootCandidatesForPrefix(localState.managedPrefix));
+  }
+  if (localState.npmPrefix && (localState.detectedSource === 'npm-prefix' || isLikelyNpmPrefixBinary(localState.binPath, localState.npmPrefix))) {
+    return firstExistingPath(getPackageRootCandidatesForPrefix(localState.npmPrefix));
+  }
   return null;
 }
 
@@ -624,7 +704,8 @@ export function detectOpenClaw(options: OpenClawDetectionOptions = {}): OpenClaw
     || !!mergedOfficialStatus?.updateAvailable;
   const inferredInstallKind = inferInstallKind(localState, mergedOfficialStatus);
   const inferredPackageManager = inferPackageManager(localState, mergedOfficialStatus);
-  const baseStatus: OpenClawStatus = {
+  const inferredUpdateRoot = inferUpdateRoot(localState, mergedOfficialStatus);
+  const baseStatus: Omit<OpenClawStatus, 'quickRollbackAvailable' | 'lastHistoryEntry' | 'uninstallPlan'> = {
     ...localState,
     latestVersion,
     updateAvailable,
@@ -634,14 +715,20 @@ export function detectOpenClaw(options: OpenClawDetectionOptions = {}): OpenClaw
     updateChannelSource: mergedOfficialStatus?.channelSource || null,
     officialStatusAvailable: !!mergedOfficialStatus,
     effectiveUpdater: resolveEffectiveUpdater(localState, mergedOfficialStatus),
-    quickRollbackAvailable: false,
-    lastHistoryEntry: null,
-    updateRoot: mergedOfficialStatus?.root || null,
+    updateRoot: inferredUpdateRoot,
     officialStatus: mergedOfficialStatus,
     action: getOpenClawTaskState(),
   };
   const history = listRelevantHistory(baseStatus);
-  return { ...baseStatus, quickRollbackAvailable: !!getQuickRollbackEntry(baseStatus), lastHistoryEntry: history[0] || null };
+  const resolvedStatus: Omit<OpenClawStatus, 'uninstallPlan'> = {
+    ...baseStatus,
+    quickRollbackAvailable: !!getQuickRollbackEntry(baseStatus),
+    lastHistoryEntry: history[0] || null,
+  };
+  return {
+    ...resolvedStatus,
+    uninstallPlan: resolveOpenClawUninstallPlan(localState, resolvedStatus),
+  };
 }
 
 function detectPackageDistTags(): Record<string, string> {
@@ -1003,6 +1090,8 @@ function addShimCandidates(targets: Set<string>, binDir?: string | null): void {
   addCandidatePath(targets, path.join(binDir, 'openclaw'));
   addCandidatePath(targets, path.join(binDir, 'openclaw.cmd'));
   addCandidatePath(targets, path.join(binDir, 'openclaw.ps1'));
+  addCandidatePath(targets, path.join(binDir, 'openclaw.bat'));
+  addCandidatePath(targets, path.join(binDir, 'openclaw.exe'));
 }
 
 function isSafePackageRoot(rootPath: string | null | undefined): boolean {
@@ -1011,31 +1100,148 @@ function isSafePackageRoot(rootPath: string | null | undefined): boolean {
   return /\/node_modules\/openclaw$/i.test(normalized);
 }
 
-function collectPackageRemovalTargets(localState: OpenClawLocalState, beforeStatus: OpenClawStatus): { directories: string[]; files: string[] } {
+function collectPackageRemovalTargets(
+  localState: OpenClawLocalState,
+  beforeStatus: Pick<OpenClawStatus, 'detectedSource' | 'npmPrefix' | 'updateRoot'>,
+): { directories: string[]; files: string[] } {
   const directories = new Set<string>();
   const files = new Set<string>();
   const includeManagedTargets = beforeStatus.detectedSource === 'managed-prefix' || localState.detectedSource === 'managed-prefix';
+  const npmPrefix = beforeStatus.npmPrefix || localState.npmPrefix;
+  const includeNpmTargets = !!npmPrefix && (
+    beforeStatus.detectedSource === 'npm-prefix'
+    || localState.detectedSource === 'npm-prefix'
+    || isLikelyNpmPrefixBinary(localState.binPath, npmPrefix)
+    || isPathInsideRoot(beforeStatus.updateRoot, npmPrefix)
+  );
 
   if (isSafePackageRoot(beforeStatus.updateRoot)) addCandidatePath(directories, beforeStatus.updateRoot);
-  addCandidatePath(files, localState.binPath);
-  addShimCandidates(files, localState.binPath ? path.dirname(localState.binPath) : null);
 
-  if (beforeStatus.npmPrefix) {
-    const prefixBinDir = detectPlatform() === 'windows' ? beforeStatus.npmPrefix : path.join(beforeStatus.npmPrefix, 'bin');
+  if (includeNpmTargets && npmPrefix) {
+    const prefixBinDir = detectPlatform() === 'windows' ? npmPrefix : path.join(npmPrefix, 'bin');
     addShimCandidates(files, prefixBinDir);
-    addCandidatePath(directories, path.join(beforeStatus.npmPrefix, 'node_modules', 'openclaw'));
-    addCandidatePath(directories, path.join(beforeStatus.npmPrefix, 'lib', 'node_modules', 'openclaw'));
+    getPackageRootCandidatesForPrefix(npmPrefix).forEach((candidate) => addCandidatePath(directories, candidate));
   }
 
   if (includeManagedTargets) {
     addShimCandidates(files, localState.managedBinDir);
-    addCandidatePath(directories, path.join(localState.managedPrefix, 'node_modules', 'openclaw'));
-    addCandidatePath(directories, path.join(localState.managedPrefix, 'lib', 'node_modules', 'openclaw'));
+    getPackageRootCandidatesForPrefix(localState.managedPrefix).forEach((candidate) => addCandidatePath(directories, candidate));
   }
 
   return {
     directories: Array.from(directories).filter((item) => isSafePackageRoot(item)),
     files: Array.from(files),
+  };
+}
+
+function formatCommandForDisplay(spec: CommandSpec | null): string | null {
+  if (!spec) return null;
+  return [spec.command, ...spec.args.map((arg) => quoteForDisplay(arg))].join(' ');
+}
+
+function getPackageManagerUninstallCommand(
+  manager: OpenClawPackageManager,
+  localState: OpenClawLocalState,
+  beforeStatus: Pick<OpenClawStatus, 'detectedSource' | 'npmPrefix'>,
+): CommandSpec | null {
+  if (manager === 'pnpm') {
+    return { command: 'pnpm', args: ['remove', '-g', 'openclaw'] };
+  }
+  if (manager === 'bun') {
+    return { command: 'bun', args: ['remove', '-g', 'openclaw'] };
+  }
+  if (manager === 'npm') {
+    const prefix = localState.detectedSource === 'managed-prefix'
+      ? localState.managedPrefix
+      : beforeStatus.npmPrefix || localState.npmPrefix || null;
+    const args = ['uninstall', '-g', 'openclaw'];
+    if (prefix) args.push('--prefix', prefix);
+    return {
+      command: 'npm',
+      args,
+      env: prefix ? { NPM_CONFIG_PREFIX: prefix, npm_config_prefix: prefix } : undefined,
+    };
+  }
+  return null;
+}
+
+function resolveOpenClawUninstallPlan(
+  localState: OpenClawLocalState,
+  beforeStatus: Pick<OpenClawStatus, 'installed' | 'detectedSource' | 'installKind' | 'packageManager' | 'npmPrefix' | 'updateRoot' | 'officialStatus' | 'binPath' | 'managedPrefix'>,
+): OpenClawUninstallPlan {
+  const fallbackTargets = collectPackageRemovalTargets(localState, beforeStatus);
+  const targetRoot = beforeStatus.updateRoot || inferUpdateRoot(localState, beforeStatus.officialStatus) || null;
+  const targetBinary = beforeStatus.binPath || localState.binPath || null;
+
+  if (localState.detectedSource === 'managed-prefix') {
+    const command = getPackageManagerUninstallCommand('npm', localState, beforeStatus);
+    return {
+      mode: 'managed-prefix',
+      autoSupported: true,
+      packageManager: 'npm',
+      command: formatCommandForDisplay(command),
+      targetRoot: targetRoot || localState.managedPrefix,
+      targetBinary,
+      fallbackDirectories: [localState.managedPrefix, ...fallbackTargets.directories.filter((item) => !samePath(item, localState.managedPrefix))],
+      fallbackFiles: fallbackTargets.files,
+      reason: 'guard-managed-prefix',
+    };
+  }
+
+  const manager = beforeStatus.packageManager || inferPackageManager(localState, beforeStatus.officialStatus);
+  if ((beforeStatus.installKind === 'package' || manager) && manager) {
+    const command = getPackageManagerUninstallCommand(manager, localState, beforeStatus);
+    return {
+      mode: 'package-manager',
+      autoSupported: !!command,
+      packageManager: manager,
+      command: formatCommandForDisplay(command),
+      targetRoot: targetRoot || beforeStatus.npmPrefix || localState.npmPrefix || targetBinary,
+      targetBinary,
+      fallbackDirectories: fallbackTargets.directories,
+      fallbackFiles: fallbackTargets.files,
+      reason: 'package-manager',
+    };
+  }
+
+  if (fallbackTargets.directories.length || fallbackTargets.files.length) {
+    return {
+      mode: 'safe-remove',
+      autoSupported: true,
+      packageManager: null,
+      command: null,
+      targetRoot: targetRoot || targetBinary,
+      targetBinary,
+      fallbackDirectories: fallbackTargets.directories,
+      fallbackFiles: fallbackTargets.files,
+      reason: 'safe-program-files',
+    };
+  }
+
+  if (beforeStatus.installKind === 'git') {
+    return {
+      mode: 'git-manual',
+      autoSupported: false,
+      packageManager: null,
+      command: null,
+      targetRoot: targetRoot || targetBinary,
+      targetBinary,
+      fallbackDirectories: [],
+      fallbackFiles: [],
+      reason: 'git-checkout',
+    };
+  }
+
+  return {
+    mode: 'unsupported',
+    autoSupported: false,
+    packageManager: null,
+    command: null,
+    targetRoot: targetRoot || targetBinary,
+    targetBinary,
+    fallbackDirectories: [],
+    fallbackFiles: [],
+    reason: 'unsupported',
   };
 }
 
@@ -1089,10 +1295,73 @@ function runManagedPrefixUninstall(localState: OpenClawLocalState, request: Open
   }
 }
 
-function runManualPackageUninstall(localState: OpenClawLocalState, beforeStatus: OpenClawStatus, request: OpenClawActionRequest): { success: boolean; message: string; error?: string | null; logTail: string[] } {
+function runPackageManagerUninstall(localState: OpenClawLocalState, beforeStatus: OpenClawStatus, request: OpenClawActionRequest): { success: boolean; message: string; error?: string | null; logTail: string[] } {
   const lines: string[] = [];
   stopGatewayBeforeUninstall(localState, request, lines);
-  const targets = collectPackageRemovalTargets(localState, beforeStatus);
+  const plan = resolveOpenClawUninstallPlan(localState, beforeStatus);
+  const manager = plan.packageManager;
+  const command = manager ? getPackageManagerUninstallCommand(manager, localState, beforeStatus) : null;
+  const fallbackTargets = {
+    directories: plan.fallbackDirectories,
+    files: plan.fallbackFiles,
+  };
+
+  if (!command) {
+    return {
+      success: false,
+      message: '当前没有可用的包管理器卸载命令，请按原安装方式手动移除 OpenClaw。',
+      error: 'No package-manager uninstall command could be derived.',
+      logTail: lines.slice(-30),
+    };
+  }
+
+  if (request.dryRun) {
+    lines.push(`DRY ${[command.command, ...command.args].join(' ')}`);
+    fallbackTargets.directories.forEach((item) => lines.push(`DRY remove ${item}`));
+    fallbackTargets.files.forEach((item) => lines.push(`DRY remove ${item}`));
+    return { success: true, message: '已生成按原包管理器卸载 OpenClaw 的预演。', logTail: lines.slice(-30) };
+  }
+
+  const uninstallResult = runCommandCapture(command.command, command.args, 240_000, command.env);
+  appendStepLog(lines, command.command, command.args, uninstallResult);
+  if (!uninstallResult.success && !fallbackTargets.directories.length && !fallbackTargets.files.length) {
+    return {
+      success: false,
+      message: '按原包管理器卸载 OpenClaw 失败，且当前没有可安全清理的残留目标。',
+      error: uninstallResult.error || uninstallResult.stderr || uninstallResult.stdout || 'Package-manager uninstall failed.',
+      logTail: lines.slice(-30),
+    };
+  }
+  if (!uninstallResult.success) {
+    lines.push('WARN package-manager uninstall failed; falling back to safe program-file cleanup.');
+  }
+  try {
+    fallbackTargets.directories.forEach((item) => removeDirectoryIfExists(item, lines));
+    fallbackTargets.files.forEach((item) => removeFileIfExists(item, lines));
+    clearDiscoveredBinary(localState.binPath);
+    return {
+      success: true,
+      message: '已按原包管理器完成卸载，并清理当前检测到的 OpenClaw 残留文件。',
+      logTail: lines.slice(-30),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: 'OpenClaw 卸载后的残留清理失败。',
+      error: error instanceof Error ? error.message : String(error),
+      logTail: lines.slice(-30),
+    };
+  }
+}
+
+function runSafeRemovalUninstall(localState: OpenClawLocalState, beforeStatus: OpenClawStatus, request: OpenClawActionRequest): { success: boolean; message: string; error?: string | null; logTail: string[] } {
+  const lines: string[] = [];
+  stopGatewayBeforeUninstall(localState, request, lines);
+  const plan = resolveOpenClawUninstallPlan(localState, beforeStatus);
+  const targets = {
+    directories: plan.fallbackDirectories,
+    files: plan.fallbackFiles,
+  };
   if (!targets.directories.length && !targets.files.length) {
     return {
       success: false,
@@ -1133,13 +1402,17 @@ function runOpenClawUninstall(request: OpenClawActionRequest, beforeStatus: Open
       logTail: [],
     };
   }
-  if (localState.detectedSource === 'managed-prefix') {
+  const plan = resolveOpenClawUninstallPlan(localState, beforeStatus);
+  if (plan.mode === 'managed-prefix') {
     return runManagedPrefixUninstall(localState, request);
   }
-  if (beforeStatus.installKind === 'package') {
-    return runManualPackageUninstall(localState, beforeStatus, request);
+  if (plan.mode === 'package-manager') {
+    return runPackageManagerUninstall(localState, beforeStatus, request);
   }
-  if (beforeStatus.installKind === 'git') {
+  if (plan.mode === 'safe-remove') {
+    return runSafeRemovalUninstall(localState, beforeStatus, request);
+  }
+  if (plan.mode === 'git-manual') {
     const lines: string[] = [];
     stopGatewayBeforeUninstall(localState, request, lines);
     return {
@@ -1196,8 +1469,9 @@ function runOpenClawAction(mode: OpenClawTaskMode, request: OpenClawActionReques
   const beforeStatus = detectOpenClaw({ ...options, bypassCache: true });
   const localState = detectLocalOpenClawState({ managedPrefix: options.managedPrefix });
   const checkpoint = maybeCreateRecoveryCheckpoint(mode);
+  const uninstallPlan = mode === 'uninstall' ? resolveOpenClawUninstallPlan(localState, beforeStatus) : null;
   const strategy: OpenClawUpdateStrategy = mode === 'uninstall'
-    ? (localState.detectedSource === 'managed-prefix' || beforeStatus.installKind === 'package' ? 'package-remove' : 'manual')
+    ? (uninstallPlan?.autoSupported ? 'package-remove' : 'manual')
     : mode === 'rollback' && beforeStatus.installKind === 'git'
       ? 'git-direct'
       : ((mode === 'update' || mode === 'rollback') && beforeStatus.officialStatusAvailable && beforeStatus.installed ? 'official-cli' : 'bootstrap');

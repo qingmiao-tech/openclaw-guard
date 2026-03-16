@@ -373,6 +373,8 @@
     openclawSilentRefreshUntil: 0,
     pendingPanelFocus: null,
     renderCache: {},
+    panelUiState: {},
+    panelMarkupByTab: {},
     tabRefreshHints: {},
   };
 
@@ -1220,6 +1222,7 @@
 
   function preserveCurrentTabSnapshot(tabId) {
     if (!CACHEABLE_TABS.has(tabId)) return;
+    rememberPanelUiState(tabId);
     if (tabId === 'files') {
       cacheFilesPanelFromState();
       return;
@@ -3688,7 +3691,25 @@
   function setPanel(title, description, bodyHtml, actionsHtml = '') {
     const panel = document.getElementById('guard-panel');
     if (!panel) return;
-    panel.innerHTML = buildPanelMarkup(title, description, bodyHtml, actionsHtml);
+    const tabId = state.activeTab || 'overview';
+    const nextMarkup = buildPanelMarkup(title, description, bodyHtml, actionsHtml);
+    const currentTabId = panel.dataset.tabId || '';
+    const shouldPersistUiState = CACHEABLE_TABS.has(tabId) || currentTabId === tabId;
+    const snapshot = currentTabId === tabId
+      ? capturePanelUiState(tabId)
+      : (CACHEABLE_TABS.has(tabId) ? (state.panelUiState[tabId] || null) : null);
+    if (currentTabId === tabId && state.panelMarkupByTab[tabId] === nextMarkup && !panel.querySelector('.guard-refresh-banner-wrap')) {
+      if (snapshot) {
+        state.panelUiState[tabId] = snapshot;
+      }
+      return;
+    }
+    panel.innerHTML = nextMarkup;
+    panel.dataset.tabId = tabId;
+    state.panelMarkupByTab[tabId] = nextMarkup;
+    if (shouldPersistUiState && snapshot) {
+      restorePanelUiState(tabId, snapshot);
+    }
   }
 
   function renderTabRefreshBanner(tabId) {
@@ -3714,6 +3735,76 @@
     delete state.tabRefreshHints[tabId];
   }
 
+  function getPanelStateScroller() {
+    return document.querySelector('.guard-main') || document.querySelector('.guard-main-inner') || null;
+  }
+
+  function buildFieldStateKey(field, index) {
+    const id = field.id ? `id:${field.id}` : '';
+    const name = field.name ? `name:${field.name}` : '';
+    const type = field.type ? `type:${field.type}` : '';
+    return [id, name, type, `index:${index}`].filter(Boolean).join('|');
+  }
+
+  function capturePanelUiState(tabId = state.activeTab) {
+    const panel = document.getElementById('guard-panel');
+    if (!panel || !tabId) return null;
+    const details = Array.from(panel.querySelectorAll('details')).map((node) => node.open === true);
+    const fields = {};
+    Array.from(panel.querySelectorAll('input, textarea, select')).forEach((field, index) => {
+      if (!(field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || field instanceof HTMLSelectElement)) return;
+      if (field instanceof HTMLInputElement) {
+        const ignoredTypes = new Set(['hidden', 'button', 'submit', 'reset', 'checkbox', 'radio', 'file']);
+        if (ignoredTypes.has(field.type)) return;
+      }
+      fields[buildFieldStateKey(field, index)] = field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement
+        ? field.value
+        : field.value;
+    });
+    const scroller = getPanelStateScroller();
+    return {
+      details,
+      fields,
+      scrollTop: scroller ? scroller.scrollTop : 0,
+    };
+  }
+
+  function rememberPanelUiState(tabId = state.activeTab) {
+    if (!tabId) return;
+    const snapshot = capturePanelUiState(tabId);
+    if (snapshot) {
+      state.panelUiState[tabId] = snapshot;
+    }
+  }
+
+  function restorePanelUiState(tabId = state.activeTab, snapshot = null) {
+    const panel = document.getElementById('guard-panel');
+    const nextState = snapshot || (tabId ? state.panelUiState[tabId] : null);
+    if (!panel || !nextState) return;
+    const detailNodes = Array.from(panel.querySelectorAll('details'));
+    detailNodes.forEach((node, index) => {
+      if (typeof nextState.details?.[index] === 'boolean') {
+        node.open = nextState.details[index] === true;
+      }
+    });
+    Array.from(panel.querySelectorAll('input, textarea, select')).forEach((field, index) => {
+      if (!(field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || field instanceof HTMLSelectElement)) return;
+      if (field instanceof HTMLInputElement) {
+        const ignoredTypes = new Set(['hidden', 'button', 'submit', 'reset', 'checkbox', 'radio', 'file']);
+        if (ignoredTypes.has(field.type)) return;
+      }
+      const key = buildFieldStateKey(field, index);
+      if (typeof nextState.fields?.[key] !== 'string') return;
+      field.value = nextState.fields[key];
+    });
+    const scroller = getPanelStateScroller();
+    if (scroller && Number.isFinite(nextState.scrollTop)) {
+      requestAnimationFrame(() => {
+        scroller.scrollTop = nextState.scrollTop;
+      });
+    }
+  }
+
   function setDeveloperMode(enabled, options = {}) {
     const nextValue = enabled === true;
     state.developerMode = nextValue;
@@ -3726,6 +3817,8 @@
       state.tabRefreshHints = {};
     }
     state.renderCache = {};
+    state.panelUiState = {};
+    state.panelMarkupByTab = {};
     if (options.refresh !== false) {
       loadActiveTab(true);
     }
@@ -3744,6 +3837,7 @@
     const panel = document.getElementById('guard-panel');
     if (!panel) return;
     const existingCache = state.renderCache[tabId];
+    rememberPanelUiState(tabId);
     clearTabRefreshHint(tabId);
     state.renderCache[tabId] = {
       html: panel.innerHTML,
@@ -3763,10 +3857,15 @@
     const isFresh = Number.isFinite(ageMs) && ageMs <= SOFT_CACHE_TTL_MS;
     const manualRefresh = options.manualRefresh === true;
     const silent = options.silent === true;
+    const isCurrentTabAlreadyRendered = (panel.dataset.tabId || '') === tabId && panel.querySelector('.panel-shell');
     if (silent) {
       clearTabRefreshHint(tabId);
-      panel.innerHTML = cached.html;
-      cached.bind?.();
+      if (!isCurrentTabAlreadyRendered) {
+        panel.innerHTML = cached.html;
+        panel.dataset.tabId = tabId;
+        cached.bind?.();
+        restorePanelUiState(tabId);
+      }
       return true;
     }
     setTabRefreshHint(tabId, {
@@ -3785,8 +3884,18 @@
         : '',
       tone: manualRefresh ? 'warn' : (isFresh ? 'success' : 'warn'),
     });
-    panel.innerHTML = `${renderTabRefreshBanner(tabId)}${cached.html}`;
-    cached.bind?.();
+    if (!isCurrentTabAlreadyRendered || state.developerMode) {
+      const snapshot = isCurrentTabAlreadyRendered ? capturePanelUiState(tabId) : (state.panelUiState[tabId] || null);
+      const restoredHtml = state.developerMode ? `${renderTabRefreshBanner(tabId)}${cached.html}` : cached.html;
+      if (panel.innerHTML !== restoredHtml) {
+        panel.innerHTML = restoredHtml;
+        panel.dataset.tabId = tabId;
+      }
+      cached.bind?.();
+      if (snapshot) {
+        restorePanelUiState(tabId, snapshot);
+      }
+    }
     return true;
   }
 
@@ -3839,8 +3948,19 @@
         : '',
       tone: 'danger',
     });
-    panel.innerHTML = `${renderTabRefreshBanner(tabId)}${cached.html}`;
-    cached.bind?.();
+    const isCurrentTabAlreadyRendered = (panel.dataset.tabId || '') === tabId && panel.querySelector('.panel-shell');
+    if (!isCurrentTabAlreadyRendered || state.developerMode) {
+      const snapshot = isCurrentTabAlreadyRendered ? capturePanelUiState(tabId) : (state.panelUiState[tabId] || null);
+      const restoredHtml = state.developerMode ? `${renderTabRefreshBanner(tabId)}${cached.html}` : cached.html;
+      if (panel.innerHTML !== restoredHtml) {
+        panel.innerHTML = restoredHtml;
+        panel.dataset.tabId = tabId;
+      }
+      cached.bind?.();
+      if (snapshot) {
+        restorePanelUiState(tabId, snapshot);
+      }
+    }
     showToast(error?.message || String(error), 'error');
     return true;
   }
@@ -6358,6 +6478,7 @@
     const versionOptions = Array.isArray(targets.packageVersions) ? targets.packageVersions : [];
     const recentTags = Array.isArray(targets.recentGitTags) ? targets.recentGitTags : [];
     const quickRollback = targets.quickRollbackTarget || null;
+    const uninstallPlan = status.uninstallPlan || {};
     const installKindLabel = status.installKind === 'git'
       ? (state.lang === 'zh' ? '源码检出' : 'Source Checkout')
       : status.installKind === 'package'
@@ -6390,16 +6511,48 @@
     const detachedHint = status.installKind === 'git' && status.officialStatus?.git?.branch === 'HEAD'
       ? `<div class="status warn" style="margin-top:12px;">${escapeHtml(state.lang === 'zh' ? '当前处于 detached HEAD。完成历史点排查后，请在高级区切回正常渠道、分支或标签。' : 'The repo is currently on a detached HEAD. Use the advanced controls to return to a normal channel, branch, or tag when you are done.')}</div>`
       : '';
+    const uninstallTarget = uninstallPlan.targetRoot || uninstallPlan.targetBinary || status.updateRoot || status.binPath || status.managedPrefix || '-';
+    const uninstallCommand = uninstallPlan.command || '';
+    const uninstallStrategyLabel = uninstallPlan.mode === 'managed-prefix'
+      ? (state.lang === 'zh' ? 'Guard 托管目录' : 'Guard-managed prefix')
+      : uninstallPlan.mode === 'package-manager'
+        ? (state.lang === 'zh'
+          ? `原${(uninstallPlan.packageManager || status.packageManager || 'npm').toUpperCase()}安装方式`
+          : `Original ${(uninstallPlan.packageManager || status.packageManager || 'npm').toUpperCase()} flow`)
+        : uninstallPlan.mode === 'safe-remove'
+          ? (state.lang === 'zh' ? '安全清理残留文件' : 'Safe program-file cleanup')
+          : uninstallPlan.mode === 'git-manual'
+            ? (state.lang === 'zh' ? '源码仓库需手动处理' : 'Manual source-checkout cleanup')
+            : (state.lang === 'zh' ? '需按原方式手动卸载' : 'Manual uninstall required');
     const uninstallSummary = state.lang === 'zh'
-      ? '这会尝试先停止 Gateway，并移除当前检测到的 OpenClaw 程序文件。不会删除 Guard、本机 .openclaw 数据、工作区、记忆、会话记录或你的自定义项目文件。'
-      : 'This attempts to stop Gateway first and remove the detected OpenClaw program files. It does not remove Guard, local .openclaw data, workspaces, memories, sessions, or your custom project files.';
-    const uninstallWarning = status.installKind === 'git'
+      ? `这会先尝试停止 Gateway，然后按“${uninstallStrategyLabel}”处理当前检测到的 OpenClaw 安装。不会删除 Guard、本机 .openclaw 数据、工作区、记忆、会话记录或你的自定义项目文件。`
+      : `Guard first tries to stop Gateway, then follows the "${uninstallStrategyLabel}" path for the detected OpenClaw install. It does not remove Guard, local .openclaw data, workspaces, memories, sessions, or your custom project files.`;
+    const uninstallWarning = uninstallPlan.mode === 'git-manual'
       ? (state.lang === 'zh'
         ? '当前安装来自源码检出。Guard 不会自动删除你的源码仓库；执行后会给出手动清理说明。'
         : 'This install comes from a source checkout. Guard will not delete your repository automatically and will show manual cleanup guidance instead.')
-      : (state.lang === 'zh'
-        ? `当前将按 ${installKindLabel} 的方式清理 ${status.updateRoot || status.binPath || status.managedPrefix || '-' }。`
-        : `Guard will remove the detected ${installKindLabel.toLowerCase()} install at ${status.updateRoot || status.binPath || status.managedPrefix || '-'}.`);
+      : uninstallPlan.mode === 'unsupported'
+        ? (state.lang === 'zh'
+          ? '当前来源还不能被安全地自动卸载。建议按原安装方式手动处理，例如原包管理器、安装器或源码目录。'
+          : 'This source cannot be safely uninstalled automatically yet. Remove it with the original installer, package manager, or source directory flow.')
+        : uninstallPlan.mode === 'package-manager'
+          ? (state.lang === 'zh'
+            ? `当前会优先沿原 ${(uninstallPlan.packageManager || status.packageManager || 'npm').toUpperCase()} 安装方式卸载 ${uninstallTarget}，再补清理已识别的残留文件。`
+            : `Guard first uses the original ${(uninstallPlan.packageManager || status.packageManager || 'npm').toUpperCase()} uninstall flow for ${uninstallTarget}, then cleans known leftover files.`)
+          : uninstallPlan.mode === 'managed-prefix'
+            ? (state.lang === 'zh'
+              ? `当前会清理 Guard 托管目录 ${uninstallTarget}，并移除对应 shim 与托管包目录。`
+              : `Guard will clean the managed install at ${uninstallTarget} together with its shims and managed package directory.`)
+            : uninstallPlan.mode === 'safe-remove'
+              ? (state.lang === 'zh'
+                ? `当前没有可靠的原包管理器信息，Guard 只会清理已判定安全的 OpenClaw 程序文件：${uninstallTarget}。`
+                : `A trustworthy package-manager path was not detected, so Guard only removes OpenClaw program files that were classified as safe: ${uninstallTarget}.`)
+              : (state.lang === 'zh'
+                ? `当前将处理 ${uninstallTarget}。`
+                : `Guard will work on ${uninstallTarget}.`);
+    const uninstallActionLabel = uninstallPlan.autoSupported === false
+      ? (state.lang === 'zh' ? '查看卸载说明' : 'Show Uninstall Guidance')
+      : (state.lang === 'zh' ? '彻底卸载 OpenClaw' : 'Completely Uninstall OpenClaw');
 
     const body = `
       <div class="grid">
@@ -6492,8 +6645,9 @@
                   <strong>${state.lang === 'zh' ? '彻底卸载' : 'Complete Uninstall'}</strong>
                   <div class="muted small" style="margin-top:8px;">${escapeHtml(uninstallSummary)}</div>
                   <div class="status warn" style="margin-top:12px;">${escapeHtml(uninstallWarning)}</div>
+                  ${uninstallCommand ? `<div class="muted small" style="margin-top:8px;">${escapeHtml((state.lang === 'zh' ? '计划命令: ' : 'Planned command: ') + uninstallCommand)}</div>` : ''}
                   <div class="toolbar tight" style="margin-top:12px;">
-                    <button class="action-btn danger" type="button" data-openclaw-action="uninstall" ${isRunning || !status.installed ? 'disabled' : ''}>${(isRunning && actionMeta.mode === 'uninstall') || busyAction === 'uninstall' ? getOpenClawBusyLabel('uninstall') : (state.lang === 'zh' ? '彻底卸载 OpenClaw' : 'Completely Uninstall OpenClaw')}</button>
+                    <button class="action-btn danger" type="button" data-openclaw-action="uninstall" ${isRunning || !status.installed ? 'disabled' : ''}>${(isRunning && actionMeta.mode === 'uninstall') || busyAction === 'uninstall' ? getOpenClawBusyLabel('uninstall') : uninstallActionLabel}</button>
                   </div>
                 </div>
               </div>
@@ -6550,13 +6704,26 @@
             if (action === 'install') endpoint = '/api/openclaw/install';
             if (action === 'uninstall') {
               endpoint = '/api/openclaw/uninstall';
-              const uninstallRoot = status.updateRoot || status.binPath || status.managedPrefix || '-';
+              const uninstallRoot = uninstallTarget;
+              if (uninstallPlan.autoSupported === false) {
+                await showConfirmDialog({
+                  title: state.lang === 'zh' ? '当前需要手动卸载' : 'Manual Uninstall Required',
+                  message: uninstallWarning,
+                  description: state.lang === 'zh'
+                    ? `当前目标: ${uninstallRoot}${uninstallCommand ? `\n\n建议命令: ${uninstallCommand}` : ''}`
+                    : `Current target: ${uninstallRoot}${uninstallCommand ? `\n\nSuggested command: ${uninstallCommand}` : ''}`,
+                  confirmText: state.lang === 'zh' ? '知道了' : 'Got It',
+                  tone: 'warn',
+                  kicker: state.lang === 'zh' ? '卸载说明' : 'Uninstall Guidance',
+                });
+                return;
+              }
               const firstConfirmed = await showConfirmDialog({
                 title: state.lang === 'zh' ? '彻底卸载 OpenClaw' : 'Completely Uninstall OpenClaw',
                 message: uninstallSummary,
                 description: state.lang === 'zh'
-                  ? `当前目标: ${uninstallRoot}\n\n不会删除 Guard、本机 .openclaw 数据、工作区、记忆或会话文件。`
-                  : `Current target: ${uninstallRoot}\n\nGuard, local .openclaw data, workspaces, memories, and session files will stay untouched.`,
+                  ? `当前目标: ${uninstallRoot}${uninstallCommand ? `\n计划命令: ${uninstallCommand}` : ''}\n\n不会删除 Guard、本机 .openclaw 数据、工作区、记忆或会话文件。`
+                  : `Current target: ${uninstallRoot}${uninstallCommand ? `\nPlanned command: ${uninstallCommand}` : ''}\n\nGuard, local .openclaw data, workspaces, memories, and session files will stay untouched.`,
                 confirmText: state.lang === 'zh' ? '继续下一步' : 'Continue',
                 tone: 'warn',
                 kicker: state.lang === 'zh' ? '危险操作' : 'Destructive Action',

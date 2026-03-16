@@ -87,6 +87,19 @@ describe('openclaw', () => {
           error: null,
         };
       }
+      if (path.resolve(command) === path.resolve(externalBinary) && args[0] === 'update' && args[1] === '--json') {
+        return {
+          status: 0,
+          stdout: JSON.stringify({
+            status: 'updated',
+            mode: 'package',
+            before: { version: '2026.2.25' },
+            after: { version: '2026.3.12' },
+          }),
+          stderr: '',
+          error: null,
+        };
+      }
       if (path.resolve(command) === path.resolve(managedBinary) && args[0] === '--version') {
         if (!fs.existsSync(managedBinary)) {
           return { status: 1, stdout: '', stderr: 'missing', error: null };
@@ -138,6 +151,71 @@ describe('openclaw', () => {
     expect(result.message).toContain('后台发起');
     expect(mocks.spawn).toHaveBeenCalledTimes(1);
   });
+  it('falls back to npm when the official updater cannot detect the package manager for a global install', async () => {
+    const baseImpl = mocks.spawnSync.getMockImplementation();
+    mocks.spawnSync.mockImplementation((command: string, args: string[] = []) => {
+      if (path.resolve(command) === path.resolve(externalBinary) && args[0] === 'update' && args[1] === 'status' && args[2] === '--json') {
+        return {
+          status: 0,
+          stdout: JSON.stringify({
+            update: {
+              root: 'E:\\ProgramFiles\\nvm\\node_global\\node_modules\\openclaw',
+              installKind: 'unknown',
+              packageManager: 'unknown',
+            },
+            availability: {
+              available: true,
+              latestVersion: '2026.3.12',
+              hasRegistryUpdate: true,
+            },
+          }),
+          stderr: '',
+          error: null,
+        };
+      }
+      if (path.resolve(command) === path.resolve(externalBinary) && args[0] === 'update' && args[1] === '--json') {
+        return {
+          status: 0,
+          stdout: JSON.stringify({
+            status: 'skipped',
+            mode: 'unknown',
+            root: 'E:\\ProgramFiles\\nvm\\node_global\\node_modules\\openclaw',
+            reason: 'not-git-install',
+            before: { version: '2026.2.25' },
+            steps: [],
+            durationMs: 440,
+          }),
+          stderr: "Skipped: this OpenClaw install isn't a git checkout, and the package manager couldn't be detected.",
+          error: null,
+        };
+      }
+      if (command === 'npm' && args[0] === 'install' && args[1] === '-g' && args[2] === 'openclaw@latest' && args.includes('--prefix')) {
+        return {
+          status: 0,
+          stdout: 'updated via npm',
+          stderr: '',
+          error: null,
+        };
+      }
+      return baseImpl ? baseImpl(command, args) : { status: 1, stdout: '', stderr: 'unexpected', error: null };
+    });
+
+    const { detectOpenClaw, runOpenClawTask } = await import('../openclaw.js');
+
+    const status = detectOpenClaw({ bypassCache: true });
+    const result = runOpenClawTask('update');
+
+    expect(status.installKind).toBe('package');
+    expect(status.packageManager).toBe('npm');
+    expect(result.phase).toBe('completed');
+    expect(result.logTail.join('\n')).toContain('updated via npm');
+    expect(mocks.spawnSync).toHaveBeenCalledWith(
+      'npm',
+      expect.arrayContaining(['install', '-g', 'openclaw@latest', '--prefix', 'E:\\ProgramFiles\\nvm\\node_global']),
+      expect.any(Object),
+    );
+  });
+
   it('uninstalls a Guard-managed OpenClaw install end-to-end', async () => {
     fs.mkdirSync(path.dirname(managedBinary), { recursive: true });
     fs.writeFileSync(managedBinary, '@echo off\r\n', 'utf-8');

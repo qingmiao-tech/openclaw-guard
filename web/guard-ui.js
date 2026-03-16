@@ -357,6 +357,8 @@
     runtimeViewPollTimer: null,
     guardRestartPollTimer: null,
     guardSelfUpdatePollTimer: null,
+    openclawActionBusy: null,
+    openclawSilentRefreshUntil: 0,
     pendingPanelFocus: null,
     renderCache: {},
     tabRefreshHints: {},
@@ -3527,7 +3529,7 @@
     clearOpenClawPollTimer();
     state.openclawPollTimer = setTimeout(() => {
       if (state.activeTab === 'openclaw') {
-        loadActiveTab();
+        loadOpenClawTab({ reuseExisting: true, silentRefresh: true, preserveBusyState: true });
       }
     }, 2200);
   }
@@ -3724,6 +3726,13 @@
     const ageMs = Number.isFinite(cachedAtMs) ? Math.max(0, Date.now() - cachedAtMs) : NaN;
     const isFresh = Number.isFinite(ageMs) && ageMs <= SOFT_CACHE_TTL_MS;
     const manualRefresh = options.manualRefresh === true;
+    const silent = options.silent === true;
+    if (silent) {
+      clearTabRefreshHint(tabId);
+      panel.innerHTML = cached.html;
+      cached.bind?.();
+      return true;
+    }
     setTabRefreshHint(tabId, {
       title: manualRefresh
         ? (state.lang === 'zh' ? '正在刷新当前页' : 'Refreshing this page')
@@ -3743,6 +3752,37 @@
     panel.innerHTML = `${renderTabRefreshBanner(tabId)}${cached.html}`;
     cached.bind?.();
     return true;
+  }
+
+  function shouldUseSilentOpenClawRefresh() {
+    return state.activeTab === 'openclaw' && Date.now() < Number(state.openclawSilentRefreshUntil || 0);
+  }
+
+  function getOpenClawBusyLabel(action) {
+    if (action === 'install') return state.lang === 'zh' ? '安装中…' : 'Installing…';
+    if (action === 'update' || action === 'apply-channel' || action === 'apply-version') return state.lang === 'zh' ? '更新中…' : 'Updating…';
+    if (action === 'quick-rollback' || action === 'git-rollback') return state.lang === 'zh' ? '恢复中…' : 'Restoring…';
+    if (action === 'uninstall') return state.lang === 'zh' ? '卸载中…' : 'Uninstalling…';
+    return state.lang === 'zh' ? '处理中…' : 'Working…';
+  }
+
+  function setOpenClawBusyState(action) {
+    state.openclawActionBusy = action || null;
+    state.openclawSilentRefreshUntil = action ? (Date.now() + 20000) : 0;
+    document.querySelectorAll('[data-openclaw-action]').forEach((button) => {
+      const buttonAction = button.getAttribute('data-openclaw-action');
+      if (!button.dataset.defaultLabel) {
+        button.dataset.defaultLabel = button.textContent || '';
+      }
+      button.disabled = !!action;
+      if (action && buttonAction === action) {
+        button.textContent = getOpenClawBusyLabel(action);
+        button.classList.add('is-busy');
+      } else {
+        button.textContent = button.dataset.defaultLabel || button.textContent || '';
+        button.classList.remove('is-busy');
+      }
+    });
   }
 
   function restoreCachedPanelWithError(tabId, error) {
@@ -6242,6 +6282,7 @@
   async function loadOpenClawTabV2(options = {}) {
     const viewTabId = 'openclaw';
     const reuseExisting = options.reuseExisting === true;
+    const preserveBusyState = options.preserveBusyState === true;
     if (!reuseExisting) {
       setPanelSections(t('tabs.openclaw'), t('desc.openclaw'), [
         { id: 'openclaw-summary', title: state.lang === 'zh' ? '当前状态' : 'Current State' },
@@ -6264,6 +6305,10 @@
 
     const actionMeta = getOpenClawActionMeta(status.action);
     const isRunning = actionMeta.phase === 'running';
+    if (!isRunning && !preserveBusyState) {
+      state.openclawActionBusy = null;
+      state.openclawSilentRefreshUntil = 0;
+    }
     const installBlockers = Array.isArray(status.installBlockers) ? status.installBlockers.filter(Boolean) : [];
     const platformNotes = Array.isArray(status.platformNotes) ? status.platformNotes.filter(Boolean) : [];
     const logTail = Array.isArray(status.action?.logTail) ? status.action.logTail.filter(Boolean) : [];
@@ -6285,6 +6330,10 @@
     const primaryLabel = status.installed
       ? (state.lang === 'zh' ? '更新到推荐版本' : 'Update to Recommended Version')
       : (state.lang === 'zh' ? '安装 / 修复 OpenClaw' : 'Install / Repair OpenClaw');
+    const busyAction = state.openclawActionBusy;
+    const primaryActionLabel = (isRunning && actionMeta.mode === primaryAction) || busyAction === primaryAction
+      ? getOpenClawBusyLabel(primaryAction)
+      : primaryLabel;
     const versionDetail = status.installed
       ? (status.updateAvailable
         ? (state.lang === 'zh' ? `当前 ${status.version || '-'}，推荐 ${status.latestVersion || '-'}` : `Current ${status.version || '-'}, recommended ${status.latestVersion || '-'}`)
@@ -6330,8 +6379,8 @@
             <span class="pill ${actionMeta.pillClass}">${escapeHtml(actionMeta.phaseLabel)}</span>
           </div>
           <div class="toolbar tight" style="margin-top:14px;">
-            <button class="action-btn primary" type="button" data-openclaw-action="${primaryAction}" ${isRunning ? 'disabled' : ''}>${primaryLabel}</button>
-            ${quickRollback ? `<button class="action-btn" type="button" data-openclaw-action="quick-rollback" ${isRunning ? 'disabled' : ''}>${state.lang === 'zh' ? '恢复到上一版本' : 'Restore Previous Version'}</button>` : ''}
+            <button class="action-btn primary" type="button" data-openclaw-action="${primaryAction}" ${isRunning ? 'disabled' : ''}>${primaryActionLabel}</button>
+            ${quickRollback ? `<button class="action-btn" type="button" data-openclaw-action="quick-rollback" ${isRunning ? 'disabled' : ''}>${(isRunning && actionMeta.mode === 'rollback') || busyAction === 'quick-rollback' ? getOpenClawBusyLabel('quick-rollback') : (state.lang === 'zh' ? '恢复到上一版本' : 'Restore Previous Version')}</button>` : ''}
             <button class="action-btn" type="button" data-openclaw-action="copy-command">${state.lang === 'zh' ? '复制托管安装命令' : 'Copy Managed Install Command'}</button>
           </div>
           <div class="list" style="margin-top:14px;">
@@ -6378,8 +6427,8 @@
                       <option value="">${state.lang === 'zh' ? '选择一个版本' : 'Select a version'}</option>
                       ${versionOptions.map((version) => `<option value="${escapeHtml(version)}">${escapeHtml(version)}</option>`).join('')}
                     </select>
-                    <button class="action-btn" type="button" data-openclaw-action="apply-version" ${isRunning || !versionOptions.length ? 'disabled' : ''}>${state.lang === 'zh' ? '更新到这个版本' : 'Update to This Version'}</button>
-                    ${quickRollback ? `<button class="action-btn" type="button" data-openclaw-action="quick-rollback" ${isRunning ? 'disabled' : ''}>${state.lang === 'zh' ? '恢复到上一版本' : 'Restore Previous Version'}</button>` : ''}
+                    <button class="action-btn" type="button" data-openclaw-action="apply-version" ${isRunning || !versionOptions.length ? 'disabled' : ''}>${((isRunning && actionMeta.mode === 'update') || busyAction === 'apply-version') ? getOpenClawBusyLabel('apply-version') : (state.lang === 'zh' ? '更新到这个版本' : 'Update to This Version')}</button>
+                    ${quickRollback ? `<button class="action-btn" type="button" data-openclaw-action="quick-rollback" ${isRunning ? 'disabled' : ''}>${(isRunning && actionMeta.mode === 'rollback') || busyAction === 'quick-rollback' ? getOpenClawBusyLabel('quick-rollback') : (state.lang === 'zh' ? '恢复到上一版本' : 'Restore Previous Version')}</button>` : ''}
                   </div>
                   ${quickRollback ? `<div class="muted small" style="margin-top:8px;">${escapeHtml(quickRollback.label || '')}</div>` : ''}
                 </div>
@@ -6393,7 +6442,7 @@
                     </select>
                     <input id="openclaw-git-ref" type="text" placeholder="${state.lang === 'zh' ? '标签 / ref / sha' : 'tag / ref / sha'}" ${isRunning || status.installKind !== 'git' ? 'disabled' : ''}>
                     <input id="openclaw-git-date" type="text" placeholder="${state.lang === 'zh' ? '日期，例如 2026-03-01' : 'date, e.g. 2026-03-01'}" ${isRunning || status.installKind !== 'git' ? 'disabled' : ''}>
-                    <button class="action-btn" type="button" data-openclaw-action="git-rollback" ${isRunning || status.installKind !== 'git' ? 'disabled' : ''}>${state.lang === 'zh' ? '回到这个历史点' : 'Rollback to This Point'}</button>
+                    <button class="action-btn" type="button" data-openclaw-action="git-rollback" ${isRunning || status.installKind !== 'git' ? 'disabled' : ''}>${(isRunning && actionMeta.mode === 'rollback') || busyAction === 'git-rollback' ? getOpenClawBusyLabel('git-rollback') : (state.lang === 'zh' ? '回到这个历史点' : 'Rollback to This Point')}</button>
                   </div>
                   ${recentTags.length ? `<div class="muted small" style="margin-top:8px;">${escapeHtml((state.lang === 'zh' ? '近期标签: ' : 'Recent tags: ') + recentTags.slice(0, 6).join(', '))}</div>` : ''}
                 </div>
@@ -6402,7 +6451,7 @@
                   <div class="muted small" style="margin-top:8px;">${escapeHtml(uninstallSummary)}</div>
                   <div class="status warn" style="margin-top:12px;">${escapeHtml(uninstallWarning)}</div>
                   <div class="toolbar tight" style="margin-top:12px;">
-                    <button class="action-btn danger" type="button" data-openclaw-action="uninstall" ${isRunning || !status.installed ? 'disabled' : ''}>${state.lang === 'zh' ? '彻底卸载 OpenClaw' : 'Completely Uninstall OpenClaw'}</button>
+                    <button class="action-btn danger" type="button" data-openclaw-action="uninstall" ${isRunning || !status.installed ? 'disabled' : ''}>${(isRunning && actionMeta.mode === 'uninstall') || busyAction === 'uninstall' ? getOpenClawBusyLabel('uninstall') : (state.lang === 'zh' ? '彻底卸载 OpenClaw' : 'Completely Uninstall OpenClaw')}</button>
                   </div>
                 </div>
               </div>
@@ -6518,17 +6567,29 @@
               const confirmed = await showConfirmDialog({ ...confirmOptions, confirmText: state.lang === 'zh' ? '继续执行' : 'Continue', tone: 'warn' });
               if (!confirmed) return;
             }
+            setOpenClawBusyState(action);
             const result = await postJson(endpoint, payload);
             const ok = result?.success !== false;
             showToast(result?.message || 'OK', ok ? 'success' : 'error');
-            await loadOpenClawTab();
+            if (result?.scheduled === true || result?.action?.phase === 'running') {
+              await loadOpenClawTab({ reuseExisting: true, silentRefresh: true, preserveBusyState: true });
+            } else {
+              setOpenClawBusyState(null);
+              await loadOpenClawTab({ reuseExisting: true, silentRefresh: true });
+            }
           } catch (error) {
+            setOpenClawBusyState(null);
             showToast(error.message || String(error), 'error');
           }
         });
       });
     };
     bindOpenClawActions();
+    if (state.openclawActionBusy && (isRunning || preserveBusyState)) {
+      setOpenClawBusyState(state.openclawActionBusy);
+    } else if (!isRunning) {
+      setOpenClawBusyState(null);
+    }
     rememberCurrentPanelRender(viewTabId, bindOpenClawActions);
     if (isRunning) scheduleOpenClawStatusPoll();
     else clearOpenClawPollTimer();
@@ -10239,6 +10300,7 @@
         ? '当前页正在后台刷新最新数据，先显示上一次成功加载的内容。'
         : 'Refreshing the latest data in the background. Showing the last successful result first.'), {
       manualRefresh: forceRefresh,
+      silent: active === 'openclaw' && shouldUseSilentOpenClawRefresh(),
     });
     if (!restoredFromCache && !['overview', 'system', 'openclaw', 'git-sync', 'security', 'search'].includes(active)) {
       renderTabLoadingState(active);

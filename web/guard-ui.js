@@ -7,6 +7,7 @@
   const STORAGE_TOKEN = 'openclaw-guard.token';
   const STORAGE_THEME = 'openclaw-guard.theme';
   const STORAGE_OVERVIEW_GUIDE_HIDDEN = 'openclaw-guard.overview-guide-hidden';
+  const STORAGE_DEVELOPER_MODE = 'openclaw-guard.developer-mode';
   const SUPPORT_ISSUES_URL = 'https://github.com/qingmiao-tech/openclaw-guard/issues/new/choose';
   const THEME_OPTIONS = ['auto', 'light', 'dark'];
   const themeMediaQuery = typeof window.matchMedia === 'function'
@@ -88,6 +89,7 @@
         cron: 'Cron',
         'git-sync': '备份与恢复',
         security: '安全',
+        settings: '设置',
         audit: '审计',
         profiles: '预设',
         harden: '加固',
@@ -102,6 +104,8 @@
         runtimeHint: '会话、日志和通知都围绕日常观察与问题定位。',
         automation: '自动化',
         automationHint: 'Cron 先保留在这里，作为后续扩展能力的稳定入口。',
+        preferences: '偏好与调试',
+        preferencesHint: '把仅对当前浏览器生效的界面偏好和开发者开关收在这里。',
       },
       fileModes: {
         all: '全部文件',
@@ -125,6 +129,7 @@
         cron: '查看和维护自动化任务，确认定时执行是否健康。',
         'git-sync': '先保护当前状态，再回到稳定节点；高级 Git 配置仍然保留在这里。',
         security: '集中处理安全检查、权限模式与主机加固建议。',
+        settings: '控制当前浏览器里的主题、语言和开发者可见信息开关。',
         audit: '查看安全检查结果，并优先处理高风险问题。',
         profiles: '套用安全预设，快速调整当前机器的权限与行为。',
         harden: '按当前系统获取加固建议和脚本，减少误操作与越权风险。',
@@ -205,6 +210,7 @@
         cron: 'Cron',
         'git-sync': 'Backup & Recovery',
         security: 'Security',
+        settings: 'Settings',
         audit: 'Audit',
         profiles: 'Profiles',
         harden: 'Hardening',
@@ -219,6 +225,8 @@
         runtimeHint: 'Sessions, logs, and notifications support daily observation and debugging.',
         automation: 'Automation',
         automationHint: 'Cron stays here as a stable entry for operational automation.',
+        preferences: 'Preferences & Debug',
+        preferencesHint: 'Keep browser-only preferences and developer-facing visibility controls here.',
       },
       fileModes: {
         all: 'All Files',
@@ -242,6 +250,7 @@
         cron: 'Manage scheduled jobs and verify the automation runtime is healthy.',
         'git-sync': 'Protect the current state, return to a stable point, and keep advanced Git controls available.',
         security: 'Keep security checks, permission modes, and host hardening guidance together.',
+        settings: 'Control browser-local preferences such as theme, language, and developer-facing UI details.',
         audit: 'Review security findings and focus on the highest-risk items first.',
         profiles: 'Apply security profiles to quickly adjust how this machine behaves.',
         harden: 'Get platform-specific hardening guidance and scripts to reduce mistakes and over-permission.',
@@ -265,13 +274,15 @@
   const WORKSPACE_ROLE_TABS = ['agents', 'files', 'search'];
   const RUNTIME_TABS = ['sessions', 'logs', 'notifications'];
   const AUTOMATION_TABS = ['cron'];
+  const PREFERENCE_TABS = ['settings'];
   const NAV_GROUPS = [
     { id: 'core', titleKey: 'nav.core', hintKey: 'nav.coreHint', tabs: CORE_TABS, priority: 'primary' },
     { id: 'workspace', titleKey: 'nav.workspace', hintKey: 'nav.workspaceHint', tabs: WORKSPACE_ROLE_TABS, priority: 'secondary' },
     { id: 'runtime', titleKey: 'nav.runtime', hintKey: 'nav.runtimeHint', tabs: RUNTIME_TABS, priority: 'secondary' },
     { id: 'automation', titleKey: 'nav.automation', hintKey: 'nav.automationHint', tabs: AUTOMATION_TABS, priority: 'secondary' },
+    { id: 'preferences', titleKey: 'nav.preferences', hintKey: 'nav.preferencesHint', tabs: PREFERENCE_TABS, priority: 'secondary' },
   ];
-  const TAB_ORDER = [...CORE_TABS, ...WORKSPACE_ROLE_TABS, ...RUNTIME_TABS, ...AUTOMATION_TABS];
+  const TAB_ORDER = [...CORE_TABS, ...WORKSPACE_ROLE_TABS, ...RUNTIME_TABS, ...AUTOMATION_TABS, ...PREFERENCE_TABS];
   const SOFT_CACHE_TTL_MS = 10_000;
   const SECURITY_VIEW_TABS = [
     { id: 'audit', labelKey: 'tabs.audit' },
@@ -310,6 +321,7 @@
     authInitialPasswordAvailable: null,
     authRevealCommand: 'openclaw-guard auth show-password',
     themePreference: normalizeThemePreference(localStorage.getItem(STORAGE_THEME) || 'auto'),
+    developerMode: localStorage.getItem(STORAGE_DEVELOPER_MODE) === '1',
     overviewGuideHidden: localStorage.getItem(STORAGE_OVERVIEW_GUIDE_HIDDEN) === '1',
     topMenu: null,
     filesPath: '',
@@ -531,6 +543,7 @@
   }
 
   function renderAdvancedDisclosure(options = {}) {
+    if (options.developerOnly && !state.developerMode) return '';
     const title = options.title || (state.lang === 'zh' ? '诊断信息（高级）' : 'Diagnostics (Advanced)');
     const description = options.description || '';
     const bodyHtml = options.bodyHtml || '';
@@ -1007,6 +1020,11 @@
     `;
   }
 
+  function renderDeveloperDisclosure(options = {}) {
+    if (!state.developerMode) return '';
+    return renderAdvancedDisclosure({ ...options, developerOnly: true });
+  }
+
   function renderActionButtonContent(label, busyLabel, loading = false) {
     if (!loading) return escapeHtml(label);
     return `
@@ -1316,7 +1334,7 @@
   }
 
   function renderCacheSummaryCard(cache, title) {
-    if (!cache) return '';
+    if (!cache || !state.developerMode) return '';
     const statusLabel = cache.refreshing
       ? (state.lang === 'zh' ? '后台刷新中' : 'Refreshing in background')
       : cache.stale
@@ -2300,7 +2318,7 @@
   }
 
   function ensureNotificationRawExpansion(items) {
-    if (state.notificationDetailMode !== 'raw') return null;
+    if (!state.developerMode || state.notificationDetailMode !== 'raw') return null;
     const visibleItems = Array.isArray(items) ? items.filter((item) => item?.id) : [];
     if (!visibleItems.length) {
       state.notificationExpandedRawId = null;
@@ -2966,7 +2984,7 @@
         </div>
         <div>${escapeHtml(entry.message || '-')}</div>
         <div class="muted small" style="margin-top:8px;">${escapeHtml(formatDate(entry.at))}</div>
-        ${detailText ? renderAdvancedDisclosure({
+        ${detailText ? renderDeveloperDisclosure({
           title: state.lang === 'zh' ? '查看操作详情' : 'View Action Details',
           description: state.lang === 'zh' ? '这里保留了这次操作的原始返回内容，只有在排查问题时才需要展开。' : 'This keeps the raw result of the latest action. Expand it only when you need more detail.',
           bodyHtml: `<pre>${escapeHtml(detailText)}</pre>`,
@@ -3674,6 +3692,7 @@
   }
 
   function renderTabRefreshBanner(tabId) {
+    if (!state.developerMode) return '';
     const refreshHint = state.tabRefreshHints[tabId];
     if (!refreshHint) return '';
     const tone = refreshHint.tone === 'danger' ? 'danger' : refreshHint.tone === 'success' ? 'success' : 'warn';
@@ -3693,6 +3712,23 @@
 
   function clearTabRefreshHint(tabId) {
     delete state.tabRefreshHints[tabId];
+  }
+
+  function setDeveloperMode(enabled, options = {}) {
+    const nextValue = enabled === true;
+    state.developerMode = nextValue;
+    if (options.persist !== false) {
+      localStorage.setItem(STORAGE_DEVELOPER_MODE, nextValue ? '1' : '0');
+    }
+    if (!nextValue) {
+      state.notificationDetailMode = 'summary';
+      state.notificationExpandedRawId = null;
+      state.tabRefreshHints = {};
+    }
+    state.renderCache = {};
+    if (options.refresh !== false) {
+      loadActiveTab(true);
+    }
   }
 
   function setTabRefreshHint(tabId, hint) {
@@ -5756,7 +5792,7 @@
       <div class="card panel-focus-target" id="system-runtime-card">
         <h3>${state.lang === 'zh' ? '本机路径与诊断信息' : 'Local Paths & Diagnostics'}</h3>
         <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '上面已经展示了日常会用到的路径和状态。只有在需要排查问题或联系技术支持时，再展开下面的高级诊断信息。' : 'The cards above already show the paths and statuses needed for daily use. Only expand the advanced diagnostics below when troubleshooting or contacting support.')}</div>
-        ${renderAdvancedDisclosure({
+        ${renderDeveloperDisclosure({
           title: state.lang === 'zh' ? '诊断信息（高级）' : 'Diagnostics (Advanced)',
           description: state.lang === 'zh' ? '这是一份原始运行诊断数据，适合排查问题或发给技术支持。普通使用场景可以忽略。' : 'This raw diagnostic payload is mainly for troubleshooting or sharing with support. Most users can ignore it.',
           bodyHtml: `<pre>${prettyJson(runtimeSnapshot)}</pre>`,
@@ -6223,12 +6259,18 @@
         <div class="card">
           <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
             <div>
-              <h3>${state.lang === 'zh' ? '诊断信息（高级）' : 'Diagnostics (Advanced)'}</h3>
-              <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '这里保留原始状态，适合排查 PATH、版本识别或安装异常，也可以直接复制给技术支持。' : 'This raw state is helpful for diagnosing PATH, version detection, or install problems, and can be copied directly for support.')}</div>
+              <h3>${state.lang === 'zh' ? (state.developerMode ? '诊断信息（高级）' : '诊断信息') : (state.developerMode ? 'Diagnostics (Advanced)' : 'Diagnostics')}</h3>
+              <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh'
+                ? (state.developerMode
+                  ? '这里保留原始状态，适合排查 PATH、版本识别或安装异常，也可以直接复制给技术支持。'
+                  : '这里保留安装差异与诊断提示；原始状态只会在开发者模式下显示。')
+                : (state.developerMode
+                  ? 'This raw state is helpful for diagnosing PATH, version detection, or install problems, and can be copied directly for support.'
+                  : 'Install notes and diagnostics stay here. Raw state becomes visible only when developer mode is enabled.'))}</div>
             </div>
-            <button class="action-btn" type="button" data-openclaw-action="copy-status">${state.lang === 'zh' ? '复制状态 JSON' : 'Copy JSON'}</button>
+            ${state.developerMode ? `<button class="action-btn" type="button" data-openclaw-action="copy-status">${state.lang === 'zh' ? '复制状态 JSON' : 'Copy JSON'}</button>` : ''}
           </div>
-          ${renderAdvancedDisclosure({
+          ${renderDeveloperDisclosure({
             title: state.lang === 'zh' ? '展开原始状态' : 'Expand Raw Status',
             description: state.lang === 'zh' ? '只有在需要进一步排查时，再展开查看完整状态 JSON。' : 'Expand this only when you need the full raw status JSON for troubleshooting.',
             bodyHtml: `<pre>${prettyJson(status)}</pre>`,
@@ -6459,16 +6501,22 @@
           })}
         </div>
         <div class="card">
-          <h3>${state.lang === 'zh' ? '诊断与原始状态' : 'Diagnostics and Raw State'}</h3>
-          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '安装阻塞项、平台差异、原始状态 JSON 都放在这里。需要排障时再展开即可。' : 'Install blockers, platform notes, and the raw JSON contract live here. Expand them only when you need diagnostics.')}</div>
+          <h3>${state.lang === 'zh' ? (state.developerMode ? '诊断与原始状态' : '诊断信息') : (state.developerMode ? 'Diagnostics and Raw State' : 'Diagnostics')}</h3>
+          <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh'
+            ? (state.developerMode
+              ? '安装阻塞项、平台差异、原始状态 JSON 都放在这里。需要排障时再展开即可。'
+              : '这里保留安装阻塞项与平台差异说明；原始状态与 JSON 视图会在开发者模式下显示。')
+            : (state.developerMode
+              ? 'Install blockers, platform notes, and the raw JSON contract live here. Expand them only when you need diagnostics.'
+              : 'Install blockers and platform notes stay here. Raw status JSON becomes visible only when developer mode is enabled.'))}</div>
           ${installBlockers.length ? `<div class="status warn" style="margin-top:12px;">${escapeHtml(installBlockers[0])}</div>` : `<div class="status" style="margin-top:12px;">${escapeHtml(installReadyDetail)}</div>`}
           ${platformNotes.length ? `<div class="list" style="margin-top:12px;">${platformNotes.map((item) => `<div class="list-item">${escapeHtml(item)}</div>`).join('')}</div>` : ''}
           <div class="toolbar tight" style="margin-top:14px;">
             <button class="action-btn" type="button" data-openclaw-action="copy-command">${state.lang === 'zh' ? '复制托管安装命令' : 'Copy Managed Install Command'}</button>
-            <button class="action-btn" type="button" data-openclaw-action="copy-status">${state.lang === 'zh' ? '复制状态 JSON' : 'Copy Status JSON'}</button>
-            <button class="action-btn" type="button" data-openclaw-action="copy-targets">${state.lang === 'zh' ? '复制目标 JSON' : 'Copy Targets JSON'}</button>
+            ${state.developerMode ? `<button class="action-btn" type="button" data-openclaw-action="copy-status">${state.lang === 'zh' ? '复制状态 JSON' : 'Copy Status JSON'}</button>` : ''}
+            ${state.developerMode ? `<button class="action-btn" type="button" data-openclaw-action="copy-targets">${state.lang === 'zh' ? '复制目标 JSON' : 'Copy Targets JSON'}</button>` : ''}
           </div>
-          ${renderAdvancedDisclosure({
+          ${renderDeveloperDisclosure({
             title: state.lang === 'zh' ? '展开原始状态与目标目录' : 'Expand Raw Status and Target Catalog',
             description: state.lang === 'zh' ? '只有在需要进一步排查 PATH、安装来源、版本目录或历史回退时，再展开这一块。' : 'Expand this only when you need to inspect PATH detection, install source, version catalog, or rollback history in raw JSON form.',
             bodyHtml: `<pre>${prettyJson({ status, targets })}</pre>`,
@@ -6779,7 +6827,9 @@
           </div>
           <div class="card">
             <h3>${state.lang === 'zh' ? '当前配置摘要' : 'Current Configuration Summary'}</h3>
-            <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '先看普通字段和本机变量数量；只有在排查问题时，再展开原始配置。' : 'Start with the counts of regular fields and local values. Expand the raw configuration only when you need more detail.')}</div>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh'
+              ? (state.developerMode ? '先看普通字段和本机变量数量；只有在排查问题时，再展开原始配置。' : '先看普通字段和本机变量数量；如需查看原始配置，请先到设置里开启开发者模式。')
+              : (state.developerMode ? 'Start with the counts of regular fields and local values. Expand the raw configuration only when you need more detail.' : 'Start with the counts of regular fields and local values. Enable developer mode in Settings if you need the raw configuration view.'))}</div>
             <div class="grid">
               ${metricCard(state.lang === 'zh' ? '普通字段' : 'Config Fields', formatNumber(configKeys.length), configKeys.join(', ') || '-')}
               ${metricCard(state.lang === 'zh' ? 'Env 字段' : 'Env Fields', formatNumber(envKeys.length), envKeys.join(', ') || '-')}
@@ -6793,7 +6843,7 @@
                 ? metricCard(state.lang === 'zh' ? '回复方式' : 'Response Mode', feishuResponseMode, feishuRenderMode)
                 : ''}
             </div>
-            ${renderAdvancedDisclosure({
+            ${renderDeveloperDisclosure({
               title: state.lang === 'zh' ? '查看原始配置' : 'View Raw Configuration',
               description: state.lang === 'zh' ? '这里会显示当前消息入口的完整原始配置。' : 'This shows the complete raw configuration for the selected channel.',
               bodyHtml: `<pre>${prettyJson(selected.config || {})}</pre>`,
@@ -7444,8 +7494,13 @@
     ]);
     if (state.activeTab !== viewTabId) return;
     clearTabRefreshHint(viewTabId);
+    if (!state.developerMode && state.notificationDetailMode === 'raw') {
+      state.notificationDetailMode = 'summary';
+      state.notificationExpandedRawId = null;
+    }
 
     const view = normalizeNotificationView(state.notificationView);
+    const showRawNotificationMode = state.developerMode === true;
     const items = summary.items || [];
     const events = activityData.events || [];
     const pageSizeOptions = [10, 20, 50];
@@ -7536,7 +7591,7 @@
           <div class="toolbar tight" style="margin-top:12px;">
             <span class="muted small">${escapeHtml(state.lang === 'zh' ? '详情模式' : 'Detail Mode')}</span>
             <button class="chip ${state.notificationDetailMode === 'summary' ? 'active' : ''}" type="button" data-notify-detail-mode="summary">${escapeHtml(state.lang === 'zh' ? '易读详情' : 'Readable Detail')}</button>
-            <button class="chip ${state.notificationDetailMode === 'raw' ? 'active' : ''}" type="button" data-notify-detail-mode="raw">${escapeHtml(state.lang === 'zh' ? '原始数据' : 'Raw Payload')}</button>
+            ${showRawNotificationMode ? `<button class="chip ${state.notificationDetailMode === 'raw' ? 'active' : ''}" type="button" data-notify-detail-mode="raw">${escapeHtml(state.lang === 'zh' ? '原始数据' : 'Raw Payload')}</button>` : ''}
           </div>
           <div class="toolbar tight" style="margin-top:12px; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
             <div class="muted small">
@@ -7585,12 +7640,12 @@
                       <span class="pill ${item.severity === 'success' ? 'success' : item.severity === 'warning' ? 'warn' : item.severity === 'error' ? 'danger' : ''}">${escapeHtml(present.severityLabel)}</span>
                     </div>
                     <p style="margin-top:10px;">${escapeHtml(present.message)}</p>
-                    ${state.notificationDetailMode === 'raw'
+                    ${showRawNotificationMode && state.notificationDetailMode === 'raw'
                       ? (isRawExpanded ? renderNotificationRawDetail(item) : '')
                       : renderNotificationSummaryDetail(item, present)}
                     <div class="toolbar tight" style="margin-top:12px;">
                       <button class="action-btn" type="button" data-notify-item="${escapeHtml(item.id)}" data-next-read="${item.read ? 'false' : 'true'}">${escapeHtml(item.read ? t('markUnread') : t('markRead'))}</button>
-                      ${state.notificationDetailMode === 'raw'
+                      ${showRawNotificationMode && state.notificationDetailMode === 'raw'
                         ? `<button class="action-btn ${isRawExpanded ? 'primary' : ''}" type="button" data-notify-raw-item="${escapeHtml(item.id)}" ${isRawExpanded ? 'disabled' : ''}>${escapeHtml(isRawExpanded ? (state.lang === 'zh' ? '当前原始详情' : 'Current Raw Detail') : (state.lang === 'zh' ? '查看原始详情' : 'View Raw Detail'))}</button>`
                         : ''}
                       <button class="action-btn" type="button" data-notify-copy="${escapeHtml(item.id)}">${escapeHtml(state.lang === 'zh' ? '复制详情' : 'Copy Details')}</button>
@@ -7643,6 +7698,11 @@
     const summary = await apiRequest('/api/notifications?limit=200');
     if (state.activeTab !== viewTabId) return;
     clearTabRefreshHint(viewTabId);
+    if (!state.developerMode && state.notificationDetailMode === 'raw') {
+      state.notificationDetailMode = 'summary';
+      state.notificationExpandedRawId = null;
+    }
+    const showRawNotificationMode = state.developerMode === true;
     const items = summary.items || [];
     const pageSizeOptions = [10, 20, 50];
     if (!pageSizeOptions.includes(state.notificationPageSize)) {
@@ -7713,7 +7773,7 @@
         <div class="toolbar tight" style="margin-top:12px;">
           <span class="muted small">${escapeHtml(state.lang === 'zh' ? '详情模式' : 'Detail Mode')}</span>
           <button class="chip ${state.notificationDetailMode === 'summary' ? 'active' : ''}" type="button" data-notify-detail-mode="summary">${escapeHtml(state.lang === 'zh' ? '易读详情' : 'Readable Detail')}</button>
-          <button class="chip ${state.notificationDetailMode === 'raw' ? 'active' : ''}" type="button" data-notify-detail-mode="raw">${escapeHtml(state.lang === 'zh' ? '原始数据' : 'Raw Payload')}</button>
+          ${showRawNotificationMode ? `<button class="chip ${state.notificationDetailMode === 'raw' ? 'active' : ''}" type="button" data-notify-detail-mode="raw">${escapeHtml(state.lang === 'zh' ? '原始数据' : 'Raw Payload')}</button>` : ''}
         </div>
         <div class="toolbar tight" style="margin-top:12px; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
           <div class="muted small">
@@ -7730,7 +7790,7 @@
             </select>
           </div>
         </div>
-        ${state.notificationDetailMode === 'raw' ? `
+        ${showRawNotificationMode && state.notificationDetailMode === 'raw' ? `
           <div class="sub-card" style="margin-top:12px;">
             <div class="muted small">${escapeHtml(state.lang === 'zh'
               ? '为降低页面负担，原始详情改为按需展开，当前页只渲染 1 条通知的原始负载。点击卡片里的“查看原始详情”可切换。'
@@ -7775,12 +7835,12 @@
                       <span class="pill ${item.severity === 'success' ? 'success' : item.severity === 'warning' ? 'warn' : item.severity === 'error' ? 'danger' : ''}">${escapeHtml(present.severityLabel)}</span>
                     </div>
                     <p style="margin-top:10px;">${escapeHtml(present.message)}</p>
-                    ${state.notificationDetailMode === 'raw'
+                    ${showRawNotificationMode && state.notificationDetailMode === 'raw'
                       ? (isRawExpanded ? renderNotificationRawDetail(item) : '')
                       : renderNotificationSummaryDetail(item, present)}
                     <div class="toolbar tight" style="margin-top:12px;">
                       <button class="action-btn" type="button" data-notify-item="${escapeHtml(item.id)}" data-next-read="${item.read ? 'false' : 'true'}">${escapeHtml(item.read ? t('markUnread') : t('markRead'))}</button>
-                      ${state.notificationDetailMode === 'raw'
+                      ${showRawNotificationMode && state.notificationDetailMode === 'raw'
                         ? `<button class="action-btn ${isRawExpanded ? 'primary' : ''}" type="button" data-notify-raw-item="${escapeHtml(item.id)}" ${isRawExpanded ? 'disabled' : ''}>${escapeHtml(isRawExpanded ? (state.lang === 'zh' ? '当前原始详情' : 'Current Raw Detail') : (state.lang === 'zh' ? '查看原始详情' : 'View Raw Detail'))}</button>`
                         : ''}
                       <button class="action-btn" type="button" data-notify-copy="${escapeHtml(item.id)}">${escapeHtml(state.lang === 'zh' ? '复制详情' : 'Copy Details')}</button>
@@ -7822,7 +7882,7 @@
       </div>
     `;
     const listHtml = agents.length
-      ? `<div class="grid">${agents.map((agent) => `<div class="card"><div class="row" style="justify-content:space-between"><h3>${escapeHtml(agent.name)}</h3><span class="pill ${agent.isDefault ? 'success' : ''}">${agent.isDefault ? (state.lang === 'zh' ? '默认' : 'Default') : agent.id}</span></div><div class="muted">${escapeHtml(agent.resolvedWorkspace || agent.workspace || '-')}</div><div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '用下方标签快速确认关键文档是否齐全。' : 'Use the tags below to quickly confirm whether the key docs are present.')}</div><div class="tag-list" style="margin-top:12px;"><span class="chip ${agent.docStatus?.soul ? 'active' : ''}">SOUL</span><span class="chip ${agent.docStatus?.user ? 'active' : ''}">USER</span><span class="chip ${agent.docStatus?.agents ? 'active' : ''}">AGENTS</span><span class="chip ${agent.docStatus?.memory ? 'active' : ''}">MEMORY</span></div>${renderAdvancedDisclosure({ title: state.lang === 'zh' ? '查看诊断信息' : 'View Diagnostics', description: state.lang === 'zh' ? '这里保留这个角色的原始配置和状态信息，平时可以不用展开。' : 'This keeps the raw config and status for this role. You usually do not need to expand it.', bodyHtml: `<pre>${prettyJson(agent)}</pre>` })}</div>`).join('')}</div>`
+      ? `<div class="grid">${agents.map((agent) => `<div class="card"><div class="row" style="justify-content:space-between"><h3>${escapeHtml(agent.name)}</h3><span class="pill ${agent.isDefault ? 'success' : ''}">${agent.isDefault ? (state.lang === 'zh' ? '默认' : 'Default') : agent.id}</span></div><div class="muted">${escapeHtml(agent.resolvedWorkspace || agent.workspace || '-')}</div><div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '用下方标签快速确认关键文档是否齐全。' : 'Use the tags below to quickly confirm whether the key docs are present.')}</div><div class="tag-list" style="margin-top:12px;"><span class="chip ${agent.docStatus?.soul ? 'active' : ''}">SOUL</span><span class="chip ${agent.docStatus?.user ? 'active' : ''}">USER</span><span class="chip ${agent.docStatus?.agents ? 'active' : ''}">AGENTS</span><span class="chip ${agent.docStatus?.memory ? 'active' : ''}">MEMORY</span></div>${renderDeveloperDisclosure({ title: state.lang === 'zh' ? '查看诊断信息' : 'View Diagnostics', description: state.lang === 'zh' ? '这里保留这个角色的原始配置和状态信息，平时可以不用展开。' : 'This keeps the raw config and status for this role. You usually do not need to expand it.', bodyHtml: `<pre>${prettyJson(agent)}</pre>` })}</div>`).join('')}</div>`
       : emptyState(state.lang === 'zh' ? '还没有发现可用的 Agent。请先检查配置文件或安装步骤。' : 'No agents are available yet. Check the configuration or installation first.');
     setPanelSections(t('tabs.agents'), t('desc.agents'), [
       { id: 'agents-summary', title: state.lang === 'zh' ? '团队概览' : 'Team Overview', html: summaryHtml },
@@ -9200,7 +9260,7 @@
               <button class="action-btn" type="button" data-recovery-open-advanced="auth">${escapeHtml(state.lang === 'zh' ? '查看云端保护' : 'Review Cloud Protection')}</button>
             </div>
             <div style="margin-top:14px;">${renderRecoveryPointTimeline(points)}</div>
-            ${renderAdvancedDisclosure({
+            ${renderDeveloperDisclosure({
               title: state.lang === 'zh' ? '查看原始恢复数据' : 'View Raw Recovery Data',
               description: state.lang === 'zh' ? '只有在排查问题时，再展开恢复概览和时间线原始数据。' : 'Expand this only when you need to debug the recovery state or raw timeline data.',
               bodyHtml: `<pre>${prettyJson({ overview, points })}</pre>`,
@@ -9707,7 +9767,7 @@
             <button class="action-btn" type="button" data-git-action="oauth">${state.lang === 'zh' ? '启动 OAuth' : 'Start OAuth'}</button>
             <button class="action-btn" type="button" data-git-action="copy-oauth" ${oauth.authorizeUrl ? '' : 'disabled'}>${state.lang === 'zh' ? '复制授权地址' : 'Copy Auth URL'}</button>
           </div>
-          ${renderAdvancedDisclosure({
+          ${renderDeveloperDisclosure({
             title: state.lang === 'zh' ? '查看 OAuth 原始状态' : 'View Raw OAuth State',
             description: state.lang === 'zh' ? '只有在授权异常或排查回调问题时，再展开这份原始状态。' : 'Expand this only when the OAuth flow fails or you need to debug the callback state.',
             bodyHtml: `<pre>${prettyJson(oauth)}</pre>`,
@@ -10280,6 +10340,51 @@
     document.querySelector('[data-logs-action="reload"]')?.addEventListener('click', () => loadLogs());
   }
 
+  async function loadSettings() {
+    const modeEnabled = state.developerMode === true;
+    const body = `
+      <div class="grid">
+        ${metricCard(state.lang === 'zh' ? '主题偏好' : 'Theme Preference', state.themePreference === 'auto' ? t('themeAuto') : state.themePreference === 'light' ? t('themeLight') : t('themeDark'), state.lang === 'zh' ? '右上角图标菜单里也可以随时切换' : 'You can also change this from the top-right icon menu', 'success')}
+        ${metricCard(state.lang === 'zh' ? '界面语言' : 'Interface Language', state.lang === 'zh' ? '中文' : 'English', state.lang === 'zh' ? '右上角地球图标里可随时切换' : 'You can change this anytime from the globe menu', 'success')}
+        ${metricCard(state.lang === 'zh' ? '开发者模式' : 'Developer Mode', modeEnabled ? (state.lang === 'zh' ? '已开启' : 'Enabled') : (state.lang === 'zh' ? '已关闭' : 'Disabled'), modeEnabled ? (state.lang === 'zh' ? '正在显示缓存倒计时、原始配置与调试信息' : 'Refresh countdowns, raw config, and diagnostics are visible') : (state.lang === 'zh' ? '默认隐藏倒计时和原始配置，界面更干净' : 'Countdown banners and raw config stay hidden for a cleaner UI'), modeEnabled ? 'warn' : 'success')}
+      </div>
+      <div class="card">
+        <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px;">
+          <div>
+            <h3>${state.lang === 'zh' ? '开发者模式' : 'Developer Mode'}</h3>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh'
+              ? '这是当前浏览器里的本地偏好，不会改动服务器配置，也不会影响其他访问这台 Guard 的用户。'
+              : 'This is a browser-local preference. It does not change server-side config and does not affect other people who open this Guard instance.')}</div>
+          </div>
+          <span class="pill ${modeEnabled ? 'warn' : 'success'}">${escapeHtml(modeEnabled ? (state.lang === 'zh' ? '调试可见' : 'Debug Visible') : (state.lang === 'zh' ? '默认简洁' : 'Default Clean'))}</span>
+        </div>
+        <label class="checkbox-field" style="margin-top:16px;">
+          <input id="settings-developer-mode" type="checkbox" ${modeEnabled ? 'checked' : ''}>
+          <span>${escapeHtml(state.lang === 'zh' ? '开启开发者模式，显示缓存刷新倒计时、原始配置 / 状态、原始通知负载等调试信息。' : 'Enable developer mode to show refresh countdown banners, raw config/status panels, raw notification payloads, and other debugging details.')}</span>
+        </label>
+        <div class="list" style="margin-top:16px;">
+          <div class="list-item">
+            <strong>${state.lang === 'zh' ? '关闭时会隐藏' : 'Hidden When Disabled'}</strong>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '页面顶部的缓存倒计时提示、各页原始 JSON / 原始配置折叠块，以及通知里的原始负载视图。' : 'Cache countdown banners, raw JSON/config foldouts, and raw payload views inside Notifications.')}</div>
+          </div>
+          <div class="list-item">
+            <strong>${state.lang === 'zh' ? '开启后更适合' : 'Best Used For'}</strong>
+            <div class="muted small" style="margin-top:8px;">${escapeHtml(state.lang === 'zh' ? '排查缓存刷新、版本识别、OAuth 回调、同步异常或需要把原始状态发给技术支持的时候。' : 'Troubleshooting refresh behavior, version detection, OAuth callbacks, sync issues, or when you need to share raw state with support.')}</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    setPanel(t('tabs.settings'), t('desc.settings'), body);
+    document.getElementById('settings-developer-mode')?.addEventListener('change', (event) => {
+      const enabled = event?.target?.checked === true;
+      setDeveloperMode(enabled);
+      showToast(enabled
+        ? (state.lang === 'zh' ? '开发者模式已开启。' : 'Developer mode enabled.')
+        : (state.lang === 'zh' ? '开发者模式已关闭。' : 'Developer mode disabled.'), 'success');
+    });
+  }
+
   async function loadActiveTab(forceRefresh = false) {
     const active = state.activeTab || 'overview';
     if (active !== 'git-sync') clearGitSyncPollTimer();
@@ -10320,6 +10425,7 @@
       if (active === 'cron') return await loadCron();
       if (active === 'git-sync') return await loadGitSync(loadOptions);
       if (active === 'security') return await loadSecurity(loadOptions);
+      if (active === 'settings') return await loadSettings();
       if (active === 'logs') return await loadLogs();
       return await loadOverview(loadOptions);
     } catch (error) {

@@ -17,14 +17,14 @@
 当前公开版最推荐的方式：
 
 ```bash
-npm install -g @qingmiao-tech/openclaw-guard@0.9.2
+npm install -g @qingmiao-tech/openclaw-guard@0.9.3
 openclaw-guard init-machine --install-openclaw --start-web --port 18088
 ```
 
 如果你更喜欢不落全局安装，也可以直接用 `npx`：
 
 ```bash
-npx -y @qingmiao-tech/openclaw-guard@0.9.2 init-machine --install-openclaw --start-web --port 18088
+npx -y @qingmiao-tech/openclaw-guard@0.9.3 init-machine --install-openclaw --start-web --port 18088
 ```
 
 这个命令会按顺序做几件事：
@@ -46,7 +46,7 @@ openclaw-guard init-machine --install-openclaw --start-web --port 18088 --dry-ru
 如果你更想固定到 GitHub Release 资产，也可以安装：
 
 ```bash
-npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.2/qingmiao-tech-openclaw-guard-0.9.2.tgz
+npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.3/qingmiao-tech-openclaw-guard-0.9.3.tgz
 ```
 :::
 
@@ -115,6 +115,9 @@ openclaw-guard auth show-password
 # 用 npm 全局更新到最新版
 npm install -g @qingmiao-tech/openclaw-guard@latest
 
+# 查看 Guard 自己的版本与更新状态
+openclaw-guard self status
+
 # 用 npx 直接运行最新版
 npx -y @qingmiao-tech/openclaw-guard@latest web-status --port 18088 --lang zh
 
@@ -135,3 +138,9 @@ openclaw-guard openclaw status
 - 想先理解界面：看 [控制台导览](/console-overview)
 - 想先保住现场：看 [备份与恢复](/backup-and-recovery)
 - 想先做好边界：看 [安全与防误触](/security)
+
+::: tip Guard 在线更新说明
+如果你是通过 `npm install -g @qingmiao-tech/openclaw-guard` 安装的公开版，进入“运维”页后可以直接看到 Guard 当前版本、最新版本，并在控制台里在线更新。
+
+如果你当前是 `npx` 临时运行或源码工作区运行，页面也会告诉你为什么这次不适合一键更新，以及更合适的升级方式。
+:::

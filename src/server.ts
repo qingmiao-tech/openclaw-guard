@@ -62,6 +62,7 @@ import {
 } from './git-sync.js';
 import { getGitSyncScopeReport } from './git-sync-scope.js';
 import { getGuardRestartStatus, scheduleGuardRestart } from './guard-restart.js';
+import { getGuardSelfStatus, getGuardSelfUpdateState, scheduleGuardSelfUpdate } from './guard-self-update.js';
 import { generateHardenScript, getAllHardenSteps } from './harden.js';
 import {
     PROVIDERS as AI_PROVIDERS,
@@ -367,6 +368,27 @@ export function startServer(port: number) {
             arch: process.arch,
             openclaw: detectOpenClaw(),
           });
+          return;
+        }
+
+        if (pathname === '/api/guard/self-status' && req.method === 'GET') {
+          jsonResponse(res, getGuardSelfStatus({
+            bypassCache: url.searchParams.get('fresh') === '1',
+          }));
+          return;
+        }
+        if (pathname === '/api/guard/update-status' && req.method === 'GET') {
+          jsonResponse(res, getGuardSelfUpdateState());
+          return;
+        }
+        if (pathname === '/api/guard/update' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          jsonResponse(res, scheduleGuardSelfUpdate({
+            port: currentPort,
+            currentPid: process.pid,
+            targetVersion: typeof body.version === 'string' ? body.version : undefined,
+            dryRun: body.dryRun === true,
+          }));
           return;
         }
 

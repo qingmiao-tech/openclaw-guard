@@ -1,12 +1,16 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
-import DashboardPage from '@/features/dashboard/pages/DashboardPage.vue';
 import ChannelsPage from '@/features/channels/pages/ChannelsPage.vue';
+import DashboardPage from '@/features/dashboard/pages/DashboardPage.vue';
+import FilesPage from '@/features/files/pages/FilesPage.vue';
 import ModelsPage from '@/features/models/pages/ModelsPage.vue';
 import OpenClawPage from '@/features/openclaw/pages/OpenClawPage.vue';
 import OperationsPage from '@/features/operations/pages/OperationsPage.vue';
 import PlaceholderPage from '@/features/placeholder/pages/PlaceholderPage.vue';
 import RecoveryPage from '@/features/recovery/pages/RecoveryPage.vue';
+import RolesPage from '@/features/roles/pages/RolesPage.vue';
+import SearchPage from '@/features/search/pages/SearchPage.vue';
 import SecurityPage from '@/features/security/pages/SecurityPage.vue';
+import SessionsPage from '@/features/sessions/pages/SessionsPage.vue';
 
 function placeholderRoute(
   path: string,
@@ -39,13 +43,34 @@ export const router = createRouter({
     { path: '/models', name: 'models', component: ModelsPage },
     { path: '/security', name: 'security', component: SecurityPage },
     { path: '/recovery', name: 'recovery', component: RecoveryPage },
-    placeholderRoute('/roles', '角色', 'Roles', '浏览角色配置与工作区角色视图。', 'Browse role definitions and workspace role views.', '#agents'),
-    placeholderRoute('/files', '文件', 'Files', '管理记忆、文件与当前工作区内容。', 'Manage memory files, documents, and workspace content.', '#files'),
-    placeholderRoute('/search', '搜索', 'Search', '统一搜索工作区中的关键信息与记忆。', 'Search across workspace documents and memory files.', '#search'),
-    placeholderRoute('/sessions', '会话', 'Sessions', '查看会话状态与用量估算。', 'Inspect session health and usage estimates.', '#sessions'),
-    placeholderRoute('/logs', '日志', 'Logs', '查看运行日志与排障信息。', 'Inspect runtime logs and troubleshooting output.', '#logs'),
-    placeholderRoute('/notifications', '通知', 'Notifications', '查看提醒与时间线事件。', 'Review alerts and timeline activity.', '#notifications'),
-    placeholderRoute('/cron', 'Cron', 'Cron', '管理自动化任务与定时执行计划。', 'Manage automation tasks and scheduled execution.', '#cron'),
+    { path: '/roles', name: 'roles', component: RolesPage },
+    { path: '/files', name: 'files', component: FilesPage },
+    { path: '/search', name: 'search', component: SearchPage },
+    { path: '/sessions', name: 'sessions', component: SessionsPage },
+    placeholderRoute(
+      '/logs',
+      '日志',
+      'Logs',
+      '继续保留原有日志与排障能力，下一批会把分页、筛选和详情读取迁进新壳层。',
+      'Keep the current logging and troubleshooting flow for now. Pagination, filtering, and detail reads move into the new shell in a later slice.',
+      '#logs',
+    ),
+    placeholderRoute(
+      '/notifications',
+      '通知',
+      'Notifications',
+      '提醒和时间线会在后续切片里继续迁移，目前仍可通过正式控制台完成完整查看。',
+      'Alerts and timeline views move over in a later slice. The production console still provides the full experience for now.',
+      '#notifications',
+    ),
+    placeholderRoute(
+      '/cron',
+      'Cron',
+      'Cron',
+      '自动化任务编辑器还保留在正式控制台里，等工作区与排查视图稳定后再迁移。',
+      'The automation editor remains in the production console for now and moves later once the workspace and troubleshooting views are stable.',
+      '#cron',
+    ),
     { path: '/ai', redirect: '/models' },
     { path: '/git-sync', redirect: '/recovery' },
     { path: '/memory', redirect: '/files' },

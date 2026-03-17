@@ -11,6 +11,46 @@ export function formatDateTime(value?: string | null) {
   }).format(new Date(timestamp));
 }
 
+export function formatNumber(value?: number | null) {
+  if (value == null || !Number.isFinite(value)) return '-';
+  return new Intl.NumberFormat(undefined).format(value);
+}
+
+export function formatPercent(value?: number | null) {
+  if (value == null || !Number.isFinite(value)) return '-';
+  return `${value.toFixed(value >= 10 ? 0 : 1)}%`;
+}
+
+export function formatBytes(value?: number | null) {
+  if (value == null || !Number.isFinite(value) || value < 0) return '-';
+  if (value < 1024) return `${formatNumber(value)} B`;
+
+  const units = ['KB', 'MB', 'GB', 'TB'];
+  let current = value / 1024;
+  let unitIndex = 0;
+  while (current >= 1024 && unitIndex < units.length - 1) {
+    current /= 1024;
+    unitIndex += 1;
+  }
+  return `${current.toFixed(current >= 10 ? 1 : 2)} ${units[unitIndex]}`;
+}
+
+export function formatCost(value?: number | null, unit = 'USD') {
+  if (value == null || !Number.isFinite(value)) return '-';
+  if (/^[A-Z]{3}$/.test(unit)) {
+    const digits = value >= 1 ? 2 : 4;
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: unit,
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    }).format(value);
+  }
+
+  const digits = value >= 1 ? 2 : 4;
+  return `${value.toFixed(digits)} ${unit}`.trim();
+}
+
 export function shortSha(value?: string | null) {
   if (!value) return '-';
   return value.slice(0, 7);

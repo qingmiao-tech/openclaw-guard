@@ -792,6 +792,105 @@ pre {
   gap: 14px;
 }
 
+.page-split {
+  display: grid;
+  grid-template-columns: minmax(340px, 0.95fr) minmax(0, 1.15fr);
+  gap: 20px;
+}
+
+.page-form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.control-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.status-banner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--shell-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--shell-text-muted);
+  line-height: 1.65;
+}
+
+.status-banner strong,
+.timeline-day-header strong,
+.checkbox-card__body strong {
+  color: var(--shell-text);
+}
+
+.status-banner--success {
+  color: #aee5c4;
+  border-color: rgba(62, 155, 95, 0.24);
+  background: rgba(62, 155, 95, 0.14);
+}
+
+.status-banner--warning {
+  color: #ffd4a0;
+  border-color: rgba(221, 144, 39, 0.24);
+  background: rgba(221, 144, 39, 0.14);
+}
+
+.status-banner--error {
+  color: #ffc7bb;
+  border-color: rgba(217, 109, 91, 0.24);
+  background: rgba(217, 109, 91, 0.14);
+}
+
+.timeline-day-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.timeline-day-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timeline-day-header,
+.pagination-bar,
+.checkbox-card__body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.timeline-day-header,
+.pagination-bar {
+  flex-wrap: wrap;
+}
+
+.timeline-day-header {
+  color: var(--shell-text-muted);
+  font-size: 13px;
+}
+
+.checkbox-card__body {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.log-output {
+  min-height: 320px;
+  max-height: 560px;
+  overflow: auto;
+}
+
 .action-row h3,
 .risk-row strong {
   margin: 0;
@@ -816,6 +915,7 @@ pre {
   .guard-shell__body { grid-template-columns: 1fr; }
   .guard-shell__sidebar { position: static; }
   .page-two-column { grid-template-columns: 1fr; }
+  .page-split { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 760px) {
@@ -827,7 +927,10 @@ pre {
   .page-card__header,
   .provider-card__header,
   .confirm-dialog__header,
-  .confirm-dialog__footer {
+  .confirm-dialog__footer,
+  .status-banner,
+  .timeline-day-header,
+  .pagination-bar {
     flex-direction: column;
   }
 

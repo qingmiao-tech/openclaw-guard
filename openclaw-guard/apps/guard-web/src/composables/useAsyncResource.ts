@@ -4,9 +4,18 @@ type ExecuteOptions = {
   silent?: boolean;
 };
 
-export function useAsyncResource<T>(loader: () => Promise<T>, initialValue: T | null = null) {
+type AsyncResourceOptions = {
+  immediate?: boolean;
+};
+
+export function useAsyncResource<T>(
+  loader: () => Promise<T>,
+  initialValue: T | null = null,
+  options: AsyncResourceOptions = {},
+) {
   const data = ref<T | null>(initialValue);
-  const loading = ref(initialValue === null);
+  const immediate = options.immediate !== false;
+  const loading = ref(immediate && initialValue === null);
   const refreshing = ref(false);
   const error = ref<string | null>(null);
 
@@ -29,7 +38,9 @@ export function useAsyncResource<T>(loader: () => Promise<T>, initialValue: T | 
   }
 
   onMounted(() => {
-    void execute();
+    if (immediate) {
+      void execute();
+    }
   });
 
   return {

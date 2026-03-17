@@ -66,7 +66,7 @@ const navGroups: NavGroup[] = [
 ];
 
 const themeMenu: Array<{ value: ThemePreference; icon: string; zh: string; en: string }> = [
-  { value: 'auto', icon: '◐', zh: '跟随系统', en: 'Auto' },
+  { value: 'auto', icon: '⌘', zh: '跟随系统', en: 'Auto' },
   { value: 'light', icon: '☀', zh: '浅色', en: 'Light' },
   { value: 'dark', icon: '☾', zh: '深色', en: 'Dark' },
 ];
@@ -74,7 +74,7 @@ const themeMenu: Array<{ value: ThemePreference; icon: string; zh: string; en: s
 const themeIcon = computed(() => {
   if (ui.themePreference === 'light') return '☀';
   if (ui.themePreference === 'dark') return '☾';
-  return '◐';
+  return '⌘';
 });
 
 const activeLabel = computed(() => {
@@ -147,7 +147,9 @@ watch(() => ui.language, () => ui.applyDocumentState());
         <div class="sidebar-current">
           <p class="sidebar-current__label">{{ ui.label('当前页面', 'Current page') }}</p>
           <p class="sidebar-current__title">{{ activeLabel }}</p>
-          <p class="sidebar-current__meta">{{ ui.label('这是 dev-rust 线上的模块化壳层预览。', 'This is the modular preview shell on the dev-rust line.') }}</p>
+          <p class="sidebar-current__meta">
+            {{ ui.label('这里是 dev-rust 分支上的模块化预览壳层。当前继续迁移真实业务页面，但不会替换正式运行时。', 'This is the modular preview shell on the dev-rust line. We keep migrating real product pages here without replacing the production runtime yet.') }}
+          </p>
         </div>
 
         <nav class="sidebar-nav">

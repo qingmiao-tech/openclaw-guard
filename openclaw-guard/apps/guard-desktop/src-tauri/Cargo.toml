@@ -1,0 +1,14 @@
+[package]
+name = "guard-desktop"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[build-dependencies]
+tauri-build.workspace = true
+
+[dependencies]
+guard-core = { path = "../../../crates/guard-core" }
+serde.workspace = true
+serde_json.workspace = true
+tauri.workspace = true

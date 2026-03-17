@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "OpenClaw Guard Desktop",
+  "version": "0.9.4-dev",
+  "identifier": "tech.qingmiao.openclaw-guard.desktop",
+  "build": {
+    "beforeDevCommand": "npm --prefix ../../guard-web run dev",
+    "beforeBuildCommand": "npm --prefix ../../guard-web run build",
+    "devUrl": "http://127.0.0.1:4173",
+    "frontendDist": "../../guard-web/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "OpenClaw Guard Desktop",
+        "width": 1440,
+        "height": 920,
+        "resizable": true
+      }
+    ]
+  },
+  "bundle": {
+    "active": false
+  }
+}

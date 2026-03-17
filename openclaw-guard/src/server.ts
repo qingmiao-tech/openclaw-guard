@@ -84,6 +84,7 @@ import {
 } from './runtime-view-store.js';
 import { getLogs, getServiceActionStatus, getServiceStatus, restartService, startService, stopService } from './service-mgr.js';
 import { getWebBackgroundReport, getWebBackgroundStatus, registerBackgroundProcess, startWebBackgroundService, stopWebBackgroundService } from './web-background.js';
+import { getNextWorkbenchPage } from './next-ui-shell.js';
 import { getCompatibilityPage } from './web-ui.js';
 import { getWorkbenchPage } from './workbench-ui.js';
 import { buildSupportDiagnosticsBundle } from './support.js';
@@ -120,6 +121,14 @@ const STATIC_UI_ASSETS: Record<string, { file: string; contentType: string }> = 
   },
   '/ui/guard-ui.js': {
     file: path.join(WEB_DIR, 'guard-ui.js'),
+    contentType: 'application/javascript; charset=utf-8',
+  },
+  '/ui/guard-ui.next.css': {
+    file: path.join(WEB_DIR, 'guard-ui.next.css'),
+    contentType: 'text/css; charset=utf-8',
+  },
+  '/ui/guard-ui.next.js': {
+    file: path.join(WEB_DIR, 'guard-ui.next.js'),
     contentType: 'application/javascript; charset=utf-8',
   },
   '/ui/logo.png': {
@@ -264,6 +273,10 @@ export function startServer(port: number) {
           htmlResponse(res, getWorkbenchPage());
           return;
         }
+        if (pathname === '/next') {
+          htmlResponse(res, getNextWorkbenchPage());
+          return;
+        }
         if (pathname === '/compat') {
           htmlResponse(res, getCompatibilityPage());
           return;
@@ -283,6 +296,7 @@ export function startServer(port: number) {
             pathname === '/' ||
             pathname === '/index.html' ||
             pathname === '/workbench' ||
+            pathname === '/next' ||
             pathname === '/compat' ||
             pathname === '/legacy';
 

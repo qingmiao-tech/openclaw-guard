@@ -1,43 +1,44 @@
 # 版本与发布
-这一页只回答普通用户最关心的几件事: 当前版本是多少、应该怎么安装、应该怎么更新，以及什么时候适合固定到某一个版本。
+
+这一页只回答普通用户最关心的几件事：当前公开版本是多少、该怎么安装、该怎么更新，以及什么时候适合固定到某一个版本。
 
 ## 当前版本信息
 
-- 当前 GitHub Release: [`v0.9.3`](https://github.com/qingmiao-tech/openclaw-guard/releases/tag/v0.9.3)
+- 当前 GitHub Release: [`v0.9.4`](https://github.com/qingmiao-tech/openclaw-guard/releases/tag/v0.9.4)
 - npm 包名: [`@qingmiao-tech/openclaw-guard`](https://www.npmjs.com/package/@qingmiao-tech/openclaw-guard)
 - 当前文档站: <https://qingmiao-tech.github.io/openclaw-guard/>
 
-## v0.9.3 这次更新了什么
+## v0.9.4 这次更新了什么
 
-- 新增 Guard 自身版本检测与控制台在线更新能力，支持在运维页直接检查公开版新版本。
-- 修复 Windows 环境下 `npm` 版本探测与全局根目录识别不稳定的问题，避免 Guard 自更新误判。
-- 文档同步补齐初始化密码回看方式、Guard 自更新入口，以及 `npm`、`npx`、GitHub Release 三种安装更新路径。
+- 修复模型配置里对 `models.providers.<name>.apiType` 的错误持久化，避免旧版 OpenClaw 校验器把它判成非法字段。
+- 兼容清理历史配置里的遗留 `apiType` 键，Guard 重新读取配置时会自动修正，不需要手动改 JSON。
+- 修复工作台后台刷新时的整页级重绘，让展开状态、输入状态和滚动位置更稳定。
 
 ## 推荐安装方式
 
 ### 1. npm 全局安装
 
-适合准备长期使用、希望本机直接输入 `openclaw-guard` 命令的用户:
+适合准备长期使用、希望本机直接输入 `openclaw-guard` 命令的用户：
 
 ```bash
-npm install -g @qingmiao-tech/openclaw-guard@0.9.3
+npm install -g @qingmiao-tech/openclaw-guard@0.9.4
 openclaw-guard init-machine --install-openclaw --start-web --port 18088
 ```
 
 ### 2. npx 直接运行
 
-适合先体验一次、临时在新机器上跑起来，或者不想先做全局安装的用户:
+适合先体验一次、临时在新机器上跑起来，或者不想先做全局安装的用户：
 
 ```bash
-npx -y @qingmiao-tech/openclaw-guard@0.9.3 init-machine --install-openclaw --start-web --port 18088
+npx -y @qingmiao-tech/openclaw-guard@0.9.4 init-machine --install-openclaw --start-web --port 18088
 ```
 
 ### 3. GitHub Release 资产安装
 
-适合你需要固定到某一个公开版本资产，或者排查问题时想严格复现某次发布:
+适合你需要固定到某一个公开版本资产，或者排查问题时想严格复现某次发布：
 
 ```bash
-npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.3/qingmiao-tech-openclaw-guard-0.9.3.tgz
+npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.4/qingmiao-tech-openclaw-guard-0.9.4.tgz
 openclaw-guard init-machine --install-openclaw --start-web --port 18088
 ```
 
@@ -52,7 +53,7 @@ npm install -g @qingmiao-tech/openclaw-guard@latest
 ### npm 固定更新到某个版本
 
 ```bash
-npm install -g @qingmiao-tech/openclaw-guard@0.9.3
+npm install -g @qingmiao-tech/openclaw-guard@0.9.4
 ```
 
 ### npx 直接运行最新版
@@ -64,15 +65,15 @@ npx -y @qingmiao-tech/openclaw-guard@latest web-status --port 18088 --lang zh
 ### npx 固定运行某个版本
 
 ```bash
-npx -y @qingmiao-tech/openclaw-guard@0.9.3 web-status --port 18088 --lang zh
+npx -y @qingmiao-tech/openclaw-guard@0.9.4 web-status --port 18088 --lang zh
 ```
 
 ## Guard 自身在线更新
 
-如果你是通过 `npm install -g @qingmiao-tech/openclaw-guard` 安装的公开版，现在可以在两种地方直接查看 Guard 自身版本和更新状态:
+如果你是通过 `npm install -g @qingmiao-tech/openclaw-guard` 安装的公开版，现在可以在两种地方直接查看 Guard 自身版本和更新状态：
 
-- 运维页中的 “Guard 版本与更新 / Guard Version & Update”
-- 本机 CLI:
+- 运维页里的 “Guard 版本与更新 / Guard Version & Update”
+- 本机 CLI：
 
 ```bash
 openclaw-guard self status
@@ -81,38 +82,38 @@ openclaw-guard self update
 
 如果当前运行来源是 `npx` 临时环境或源码工作区，Guard 也会明确告诉你为什么这次不适合一键在线更新，以及更合适的升级方式。
 
-## 什么时候适合固定版本
+## 什么时间适合固定版本
 
-如果你处于下面这些场景，更推荐固定到某个明确版本，而不是直接跟 `latest`:
+如果你处于下面这些场景，更推荐固定到某个明确版本，而不是直接跟 `latest`：
 
 - 你在客户现场、交付环境或多人协作环境里，需要更容易复现问题。
 - 你准备录制教程、截图或演示，不希望命令行为在短期内变化。
 - 你正在排查某次升级前后的差异，想先锁住版本范围。
 
-## 什么时候适合用 latest
+## 什么时间适合用 `latest`
 
-如果你只是想保持跟上公开版本迭代，通常直接使用 `latest` 就够了:
+如果你只是想保持跟上公开版本迭代，通常直接使用 `latest` 就够了：
 
 - `npm install -g @qingmiao-tech/openclaw-guard@latest`
 - `npx -y @qingmiao-tech/openclaw-guard@latest ...`
 
-## 安装后第一件事
+## 安装后的第一件事
 
-无论你是通过 `npm`、`npx` 还是 GitHub Release 资产安装，推荐都先执行:
+无论你是通过 `npm`、`npx` 还是 GitHub Release 资产安装，推荐都先执行：
 
 ```bash
 openclaw-guard init-machine --install-openclaw --start-web --port 18088
 ```
 
-如果你使用的是 `npx`，把前面的命令替换成:
+如果你使用的是 `npx`，把前面的命令替换成：
 
 ```bash
-npx -y @qingmiao-tech/openclaw-guard@0.9.3 init-machine --install-openclaw --start-web --port 18088
+npx -y @qingmiao-tech/openclaw-guard@0.9.4 init-machine --install-openclaw --start-web --port 18088
 ```
 
 ## 首次登录提醒
 
-首次启动 Guard Web 时，终端会打印初始化密码。如果你没来得及记下，可以在同一台机器的终端执行:
+首次启动 Guard Web 时，终端会打印初始化密码。如果你没来得及记下，可以在同一台机器的终端执行：
 
 ```bash
 openclaw-guard auth show-password

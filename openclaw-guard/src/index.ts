@@ -121,7 +121,7 @@ function getCliVersion(): string {
   } catch {
     // Fall back to the current public release line if package metadata is unavailable.
   }
-  return '0.9.3';
+  return '0.9.4';
 }
 
 program

@@ -8,7 +8,7 @@ type GuardPackageJson = {
 };
 
 const FALLBACK_GUARD_PACKAGE_NAME = '@qingmiao-tech/openclaw-guard';
-const FALLBACK_GUARD_VERSION = '0.9.3';
+const FALLBACK_GUARD_VERSION = '0.9.4';
 
 function readGuardPackageJson(): GuardPackageJson {
   try {

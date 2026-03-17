@@ -4,3 +4,8 @@ dist/
 .serena/
 docs/.vitepress/cache/
 docs/.vitepress/dist/
+apps/guard-web/dist/
+apps/guard-desktop/node_modules/
+apps/guard-desktop/src-tauri/gen/
+apps/guard-desktop/src-tauri/target/
+target/

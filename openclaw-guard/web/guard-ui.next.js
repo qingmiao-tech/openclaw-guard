@@ -4,133 +4,133 @@
 * @license MIT
 **/
 // @__NO_SIDE_EFFECTS__
-function Bt(e) {
+function Zt(e) {
   const t = /* @__PURE__ */ Object.create(null);
   for (const n of e.split(",")) t[n] = 1;
   return (n) => n in t;
 }
-const be = process.env.NODE_ENV !== "production" ? Object.freeze({}) : {}, Rn = process.env.NODE_ENV !== "production" ? Object.freeze([]) : [], Ie = () => {
-}, ol = () => !1, ms = (e) => e.charCodeAt(0) === 111 && e.charCodeAt(1) === 110 && // uppercase letter
-(e.charCodeAt(2) > 122 || e.charCodeAt(2) < 97), Ws = (e) => e.startsWith("onUpdate:"), De = Object.assign, ar = (e, t) => {
+const Oe = process.env.NODE_ENV !== "production" ? Object.freeze({}) : {}, Fn = process.env.NODE_ENV !== "production" ? Object.freeze([]) : [], Le = () => {
+}, pl = () => !1, bs = (e) => e.charCodeAt(0) === 111 && e.charCodeAt(1) === 110 && // uppercase letter
+(e.charCodeAt(2) > 122 || e.charCodeAt(2) < 97), zs = (e) => e.startsWith("onUpdate:"), Ae = Object.assign, pr = (e, t) => {
   const n = e.indexOf(t);
   n > -1 && e.splice(n, 1);
-}, ac = Object.prototype.hasOwnProperty, pe = (e, t) => ac.call(e, t), q = Array.isArray, vn = (e) => _s(e) === "[object Map]", Gn = (e) => _s(e) === "[object Set]", Ur = (e) => _s(e) === "[object Date]", ee = (e) => typeof e == "function", Oe = (e) => typeof e == "string", pt = (e) => typeof e == "symbol", de = (e) => e !== null && typeof e == "object", cr = (e) => (de(e) || ee(e)) && ee(e.then) && ee(e.catch), rl = Object.prototype.toString, _s = (e) => rl.call(e), ur = (e) => _s(e).slice(8, -1), il = (e) => _s(e) === "[object Object]", lo = (e) => Oe(e) && e !== "NaN" && e[0] !== "-" && "" + parseInt(e, 10) === e, ss = /* @__PURE__ */ Bt(
+}, mc = Object.prototype.hasOwnProperty, be = (e, t) => mc.call(e, t), ee = Array.isArray, En = (e) => ys(e) === "[object Map]", Wn = (e) => ys(e) === "[object Set]", zr = (e) => ys(e) === "[object Date]", ae = (e) => typeof e == "function", Te = (e) => typeof e == "string", Nt = (e) => typeof e == "symbol", ve = (e) => e !== null && typeof e == "object", hr = (e) => (ve(e) || ae(e)) && ae(e.then) && ae(e.catch), hl = Object.prototype.toString, ys = (e) => hl.call(e), _r = (e) => ys(e).slice(8, -1), _l = (e) => ys(e) === "[object Object]", co = (e) => Te(e) && e !== "NaN" && e[0] !== "-" && "" + parseInt(e, 10) === e, os = /* @__PURE__ */ Zt(
   // the leading comma is intentional so empty string "" is also included
   ",key,ref,ref_for,ref_key,onVnodeBeforeMount,onVnodeMounted,onVnodeBeforeUpdate,onVnodeUpdated,onVnodeBeforeUnmount,onVnodeUnmounted"
-), cc = /* @__PURE__ */ Bt(
+), gc = /* @__PURE__ */ Zt(
   "bind,cloak,else-if,else,for,html,if,model,on,once,pre,show,slot,text,memo"
-), ao = (e) => {
+), uo = (e) => {
   const t = /* @__PURE__ */ Object.create(null);
   return (n) => t[n] || (t[n] = e(n));
-}, uc = /-\w/g, Xe = ao(
-  (e) => e.replace(uc, (t) => t.slice(1).toUpperCase())
-), dc = /\B([A-Z])/g, nn = ao(
-  (e) => e.replace(dc, "-$1").toLowerCase()
-), co = ao((e) => e.charAt(0).toUpperCase() + e.slice(1)), pn = ao(
-  (e) => e ? `on${co(e)}` : ""
-), kt = (e, t) => !Object.is(e, t), Pn = (e, ...t) => {
+}, vc = /-\w/g, rt = uo(
+  (e) => e.replace(vc, (t) => t.slice(1).toUpperCase())
+), bc = /\B([A-Z])/g, Xt = uo(
+  (e) => e.replace(bc, "-$1").toLowerCase()
+), fo = uo((e) => e.charAt(0).toUpperCase() + e.slice(1)), gn = uo(
+  (e) => e ? `on${fo(e)}` : ""
+), Vt = (e, t) => !Object.is(e, t), Vn = (e, ...t) => {
   for (let n = 0; n < e.length; n++)
     e[n](...t);
-}, Ks = (e, t, n, s = !1) => {
+}, Js = (e, t, n, s = !1) => {
   Object.defineProperty(e, t, {
     configurable: !0,
     enumerable: !1,
     writable: s,
     value: n
   });
-}, uo = (e) => {
+}, po = (e) => {
   const t = parseFloat(e);
   return isNaN(t) ? e : t;
 };
-let Hr;
-const vs = () => Hr || (Hr = typeof globalThis < "u" ? globalThis : typeof self < "u" ? self : typeof window < "u" ? window : typeof global < "u" ? global : {});
-function dr(e) {
-  if (q(e)) {
+let Jr;
+const Es = () => Jr || (Jr = typeof globalThis < "u" ? globalThis : typeof self < "u" ? self : typeof window < "u" ? window : typeof global < "u" ? global : {});
+function mr(e) {
+  if (ee(e)) {
     const t = {};
     for (let n = 0; n < e.length; n++) {
-      const s = e[n], o = Oe(s) ? gc(s) : dr(s);
+      const s = e[n], o = Te(s) ? Nc(s) : mr(s);
       if (o)
         for (const r in o)
           t[r] = o[r];
     }
     return t;
-  } else if (Oe(e) || de(e))
+  } else if (Te(e) || ve(e))
     return e;
 }
-const fc = /;(?![^(]*\))/g, pc = /:([^]+)/, hc = /\/\*[^]*?\*\//g;
-function gc(e) {
+const yc = /;(?![^(]*\))/g, Ec = /:([^]+)/, wc = /\/\*[^]*?\*\//g;
+function Nc(e) {
   const t = {};
-  return e.replace(hc, "").split(fc).forEach((n) => {
+  return e.replace(wc, "").split(yc).forEach((n) => {
     if (n) {
-      const s = n.split(pc);
+      const s = n.split(Ec);
       s.length > 1 && (t[s[0].trim()] = s[1].trim());
     }
   }), t;
 }
-function $e(e) {
+function ge(e) {
   let t = "";
-  if (Oe(e))
+  if (Te(e))
     t = e;
-  else if (q(e))
+  else if (ee(e))
     for (let n = 0; n < e.length; n++) {
-      const s = $e(e[n]);
+      const s = ge(e[n]);
       s && (t += s + " ");
     }
-  else if (de(e))
+  else if (ve(e))
     for (const n in e)
       e[n] && (t += n + " ");
   return t.trim();
 }
-const mc = "html,body,base,head,link,meta,style,title,address,article,aside,footer,header,hgroup,h1,h2,h3,h4,h5,h6,nav,section,div,dd,dl,dt,figcaption,figure,picture,hr,img,li,main,ol,p,pre,ul,a,b,abbr,bdi,bdo,br,cite,code,data,dfn,em,i,kbd,mark,q,rp,rt,ruby,s,samp,small,span,strong,sub,sup,time,u,var,wbr,area,audio,map,track,video,embed,object,param,source,canvas,script,noscript,del,ins,caption,col,colgroup,table,thead,tbody,td,th,tr,button,datalist,fieldset,form,input,label,legend,meter,optgroup,option,output,progress,select,textarea,details,dialog,menu,summary,template,blockquote,iframe,tfoot", _c = "svg,animate,animateMotion,animateTransform,circle,clipPath,color-profile,defs,desc,discard,ellipse,feBlend,feColorMatrix,feComponentTransfer,feComposite,feConvolveMatrix,feDiffuseLighting,feDisplacementMap,feDistantLight,feDropShadow,feFlood,feFuncA,feFuncB,feFuncG,feFuncR,feGaussianBlur,feImage,feMerge,feMergeNode,feMorphology,feOffset,fePointLight,feSpecularLighting,feSpotLight,feTile,feTurbulence,filter,foreignObject,g,hatch,hatchpath,image,line,linearGradient,marker,mask,mesh,meshgradient,meshpatch,meshrow,metadata,mpath,path,pattern,polygon,polyline,radialGradient,rect,set,solidcolor,stop,switch,symbol,text,textPath,title,tspan,unknown,use,view", vc = "annotation,annotation-xml,maction,maligngroup,malignmark,math,menclose,merror,mfenced,mfrac,mfraction,mglyph,mi,mlabeledtr,mlongdiv,mmultiscripts,mn,mo,mover,mpadded,mphantom,mprescripts,mroot,mrow,ms,mscarries,mscarry,msgroup,msline,mspace,msqrt,msrow,mstack,mstyle,msub,msubsup,msup,mtable,mtd,mtext,mtr,munder,munderover,none,semantics", bc = /* @__PURE__ */ Bt(mc), yc = /* @__PURE__ */ Bt(_c), Ec = /* @__PURE__ */ Bt(vc), wc = "itemscope,allowfullscreen,formnovalidate,ismap,nomodule,novalidate,readonly", Nc = /* @__PURE__ */ Bt(wc);
-function ll(e) {
+const $c = "html,body,base,head,link,meta,style,title,address,article,aside,footer,header,hgroup,h1,h2,h3,h4,h5,h6,nav,section,div,dd,dl,dt,figcaption,figure,picture,hr,img,li,main,ol,p,pre,ul,a,b,abbr,bdi,bdo,br,cite,code,data,dfn,em,i,kbd,mark,q,rp,rt,ruby,s,samp,small,span,strong,sub,sup,time,u,var,wbr,area,audio,map,track,video,embed,object,param,source,canvas,script,noscript,del,ins,caption,col,colgroup,table,thead,tbody,td,th,tr,button,datalist,fieldset,form,input,label,legend,meter,optgroup,option,output,progress,select,textarea,details,dialog,menu,summary,template,blockquote,iframe,tfoot", Oc = "svg,animate,animateMotion,animateTransform,circle,clipPath,color-profile,defs,desc,discard,ellipse,feBlend,feColorMatrix,feComponentTransfer,feComposite,feConvolveMatrix,feDiffuseLighting,feDisplacementMap,feDistantLight,feDropShadow,feFlood,feFuncA,feFuncB,feFuncG,feFuncR,feGaussianBlur,feImage,feMerge,feMergeNode,feMorphology,feOffset,fePointLight,feSpecularLighting,feSpotLight,feTile,feTurbulence,filter,foreignObject,g,hatch,hatchpath,image,line,linearGradient,marker,mask,mesh,meshgradient,meshpatch,meshrow,metadata,mpath,path,pattern,polygon,polyline,radialGradient,rect,set,solidcolor,stop,switch,symbol,text,textPath,title,tspan,unknown,use,view", Sc = "annotation,annotation-xml,maction,maligngroup,malignmark,math,menclose,merror,mfenced,mfrac,mfraction,mglyph,mi,mlabeledtr,mlongdiv,mmultiscripts,mn,mo,mover,mpadded,mphantom,mprescripts,mroot,mrow,ms,mscarries,mscarry,msgroup,msline,mspace,msqrt,msrow,mstack,mstyle,msub,msubsup,msup,mtable,mtd,mtext,mtr,munder,munderover,none,semantics", kc = /* @__PURE__ */ Zt($c), Cc = /* @__PURE__ */ Zt(Oc), xc = /* @__PURE__ */ Zt(Sc), Dc = "itemscope,allowfullscreen,formnovalidate,ismap,nomodule,novalidate,readonly", Tc = /* @__PURE__ */ Zt(Dc);
+function ml(e) {
   return !!e || e === "";
 }
-function Oc(e, t) {
+function Pc(e, t) {
   if (e.length !== t.length) return !1;
   let n = !0;
   for (let s = 0; n && s < e.length; s++)
-    n = sn(e[s], t[s]);
+    n = an(e[s], t[s]);
   return n;
 }
-function sn(e, t) {
+function an(e, t) {
   if (e === t) return !0;
-  let n = Ur(e), s = Ur(t);
+  let n = zr(e), s = zr(t);
   if (n || s)
     return n && s ? e.getTime() === t.getTime() : !1;
-  if (n = pt(e), s = pt(t), n || s)
+  if (n = Nt(e), s = Nt(t), n || s)
     return e === t;
-  if (n = q(e), s = q(t), n || s)
-    return n && s ? Oc(e, t) : !1;
-  if (n = de(e), s = de(t), n || s) {
+  if (n = ee(e), s = ee(t), n || s)
+    return n && s ? Pc(e, t) : !1;
+  if (n = ve(e), s = ve(t), n || s) {
     if (!n || !s)
       return !1;
     const o = Object.keys(e).length, r = Object.keys(t).length;
     if (o !== r)
       return !1;
-    for (const i in e) {
-      const l = e.hasOwnProperty(i), a = t.hasOwnProperty(i);
-      if (l && !a || !l && a || !sn(e[i], t[i]))
+    for (const a in e) {
+      const c = e.hasOwnProperty(a), u = t.hasOwnProperty(a);
+      if (c && !u || !c && u || !an(e[a], t[a]))
         return !1;
     }
   }
   return String(e) === String(t);
 }
-function fr(e, t) {
-  return e.findIndex((n) => sn(n, t));
+function gr(e, t) {
+  return e.findIndex((n) => an(n, t));
 }
-const al = (e) => !!(e && e.__v_isRef === !0), g = (e) => Oe(e) ? e : e == null ? "" : q(e) || de(e) && (e.toString === rl || !ee(e.toString)) ? al(e) ? g(e.value) : JSON.stringify(e, cl, 2) : String(e), cl = (e, t) => al(t) ? cl(e, t.value) : vn(t) ? {
+const gl = (e) => !!(e && e.__v_isRef === !0), d = (e) => Te(e) ? e : e == null ? "" : ee(e) || ve(e) && (e.toString === hl || !ae(e.toString)) ? gl(e) ? d(e.value) : JSON.stringify(e, vl, 2) : String(e), vl = (e, t) => gl(t) ? vl(e, t.value) : En(t) ? {
   [`Map(${t.size})`]: [...t.entries()].reduce(
-    (n, [s, o], r) => (n[yo(s, r) + " =>"] = o, n),
+    (n, [s, o], r) => (n[No(s, r) + " =>"] = o, n),
     {}
   )
-} : Gn(t) ? {
-  [`Set(${t.size})`]: [...t.values()].map((n) => yo(n))
-} : pt(t) ? yo(t) : de(t) && !q(t) && !il(t) ? String(t) : t, yo = (e, t = "") => {
+} : Wn(t) ? {
+  [`Set(${t.size})`]: [...t.values()].map((n) => No(n))
+} : Nt(t) ? No(t) : ve(t) && !ee(t) && !_l(t) ? String(t) : t, No = (e, t = "") => {
   var n;
   return (
     // Symbol.description in es2019+ so we need to cast here to pass
     // the lib: es2016 check
-    pt(e) ? `Symbol(${(n = e.description) != null ? n : t})` : e
+    Nt(e) ? `Symbol(${(n = e.description) != null ? n : t})` : e
   );
 };
 /**
@@ -138,14 +138,14 @@ const al = (e) => !!(e && e.__v_isRef === !0), g = (e) => Oe(e) ? e : e == null 
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-function tt(e, ...t) {
+function ut(e, ...t) {
   console.warn(`[Vue warn] ${e}`, ...t);
 }
-let Fe;
-class ul {
+let Be;
+class bl {
   // TODO isolatedDeclarations "__v_skip"
   constructor(t = !1) {
-    this.detached = t, this._active = !0, this._on = 0, this.effects = [], this.cleanups = [], this._isPaused = !1, this.__v_skip = !0, this.parent = Fe, !t && Fe && (this.index = (Fe.scopes || (Fe.scopes = [])).push(
+    this.detached = t, this._active = !0, this._on = 0, this.effects = [], this.cleanups = [], this._isPaused = !1, this.__v_skip = !0, this.parent = Be, !t && Be && (this.index = (Be.scopes || (Be.scopes = [])).push(
       this
     ) - 1);
   }
@@ -179,27 +179,27 @@ class ul {
   }
   run(t) {
     if (this._active) {
-      const n = Fe;
+      const n = Be;
       try {
-        return Fe = this, t();
+        return Be = this, t();
       } finally {
-        Fe = n;
+        Be = n;
       }
-    } else process.env.NODE_ENV !== "production" && tt("cannot run an inactive effect scope.");
+    } else process.env.NODE_ENV !== "production" && ut("cannot run an inactive effect scope.");
   }
   /**
    * This should only be called on non-detached scopes
    * @internal
    */
   on() {
-    ++this._on === 1 && (this.prevScope = Fe, Fe = this);
+    ++this._on === 1 && (this.prevScope = Be, Be = this);
   }
   /**
    * This should only be called on non-detached scopes
    * @internal
    */
   off() {
-    this._on > 0 && --this._on === 0 && (Fe = this.prevScope, this.prevScope = void 0);
+    this._on > 0 && --this._on === 0 && (Be = this.prevScope, this.prevScope = void 0);
   }
   stop(t) {
     if (this._active) {
@@ -222,94 +222,94 @@ class ul {
     }
   }
 }
-function dl(e) {
-  return new ul(e);
+function yl(e) {
+  return new bl(e);
 }
-function fl() {
-  return Fe;
+function El() {
+  return Be;
 }
-function Sc(e, t = !1) {
-  Fe ? Fe.cleanups.push(e) : process.env.NODE_ENV !== "production" && !t && tt(
+function Rc(e, t = !1) {
+  Be ? Be.cleanups.push(e) : process.env.NODE_ENV !== "production" && !t && ut(
     "onScopeDispose() is called when there is no active effect scope to be associated with."
   );
 }
-let ve;
-const Eo = /* @__PURE__ */ new WeakSet();
-class pl {
+let $e;
+const $o = /* @__PURE__ */ new WeakSet();
+class wl {
   constructor(t) {
-    this.fn = t, this.deps = void 0, this.depsTail = void 0, this.flags = 5, this.next = void 0, this.cleanup = void 0, this.scheduler = void 0, Fe && Fe.active && Fe.effects.push(this);
+    this.fn = t, this.deps = void 0, this.depsTail = void 0, this.flags = 5, this.next = void 0, this.cleanup = void 0, this.scheduler = void 0, Be && Be.active && Be.effects.push(this);
   }
   pause() {
     this.flags |= 64;
   }
   resume() {
-    this.flags & 64 && (this.flags &= -65, Eo.has(this) && (Eo.delete(this), this.trigger()));
+    this.flags & 64 && (this.flags &= -65, $o.has(this) && ($o.delete(this), this.trigger()));
   }
   /**
    * @internal
    */
   notify() {
-    this.flags & 2 && !(this.flags & 32) || this.flags & 8 || gl(this);
+    this.flags & 2 && !(this.flags & 32) || this.flags & 8 || $l(this);
   }
   run() {
     if (!(this.flags & 1))
       return this.fn();
-    this.flags |= 2, Br(this), ml(this);
-    const t = ve, n = dt;
-    ve = this, dt = !0;
+    this.flags |= 2, Qr(this), Ol(this);
+    const t = $e, n = Et;
+    $e = this, Et = !0;
     try {
       return this.fn();
     } finally {
-      process.env.NODE_ENV !== "production" && ve !== this && tt(
+      process.env.NODE_ENV !== "production" && $e !== this && ut(
         "Active effect was not restored correctly - this is likely a Vue internal bug."
-      ), _l(this), ve = t, dt = n, this.flags &= -3;
+      ), Sl(this), $e = t, Et = n, this.flags &= -3;
     }
   }
   stop() {
     if (this.flags & 1) {
       for (let t = this.deps; t; t = t.nextDep)
-        gr(t);
-      this.deps = this.depsTail = void 0, Br(this), this.onStop && this.onStop(), this.flags &= -2;
+        yr(t);
+      this.deps = this.depsTail = void 0, Qr(this), this.onStop && this.onStop(), this.flags &= -2;
     }
   }
   trigger() {
-    this.flags & 64 ? Eo.add(this) : this.scheduler ? this.scheduler() : this.runIfDirty();
+    this.flags & 64 ? $o.add(this) : this.scheduler ? this.scheduler() : this.runIfDirty();
   }
   /**
    * @internal
    */
   runIfDirty() {
-    Io(this) && this.run();
+    jo(this) && this.run();
   }
   get dirty() {
-    return Io(this);
+    return jo(this);
   }
 }
-let hl = 0, os, rs;
-function gl(e, t = !1) {
+let Nl = 0, rs, is;
+function $l(e, t = !1) {
   if (e.flags |= 8, t) {
-    e.next = rs, rs = e;
+    e.next = is, is = e;
     return;
   }
-  e.next = os, os = e;
+  e.next = rs, rs = e;
 }
-function pr() {
-  hl++;
+function vr() {
+  Nl++;
 }
-function hr() {
-  if (--hl > 0)
+function br() {
+  if (--Nl > 0)
     return;
-  if (rs) {
-    let t = rs;
-    for (rs = void 0; t; ) {
+  if (is) {
+    let t = is;
+    for (is = void 0; t; ) {
       const n = t.next;
       t.next = void 0, t.flags &= -9, t = n;
     }
   }
   let e;
-  for (; os; ) {
-    let t = os;
-    for (os = void 0; t; ) {
+  for (; rs; ) {
+    let t = rs;
+    for (rs = void 0; t; ) {
       const n = t.next;
       if (t.next = void 0, t.flags &= -9, t.flags & 1)
         try {
@@ -322,114 +322,114 @@ function hr() {
   }
   if (e) throw e;
 }
-function ml(e) {
+function Ol(e) {
   for (let t = e.deps; t; t = t.nextDep)
     t.version = -1, t.prevActiveLink = t.dep.activeLink, t.dep.activeLink = t;
 }
-function _l(e) {
+function Sl(e) {
   let t, n = e.depsTail, s = n;
   for (; s; ) {
     const o = s.prevDep;
-    s.version === -1 ? (s === n && (n = o), gr(s), kc(s)) : t = s, s.dep.activeLink = s.prevActiveLink, s.prevActiveLink = void 0, s = o;
+    s.version === -1 ? (s === n && (n = o), yr(s), Ac(s)) : t = s, s.dep.activeLink = s.prevActiveLink, s.prevActiveLink = void 0, s = o;
   }
   e.deps = t, e.depsTail = n;
 }
-function Io(e) {
+function jo(e) {
   for (let t = e.deps; t; t = t.nextDep)
-    if (t.dep.version !== t.version || t.dep.computed && (vl(t.dep.computed) || t.dep.version !== t.version))
+    if (t.dep.version !== t.version || t.dep.computed && (kl(t.dep.computed) || t.dep.version !== t.version))
       return !0;
   return !!e._dirty;
 }
-function vl(e) {
-  if (e.flags & 4 && !(e.flags & 16) || (e.flags &= -17, e.globalVersion === cs) || (e.globalVersion = cs, !e.isSSR && e.flags & 128 && (!e.deps && !e._dirty || !Io(e))))
+function kl(e) {
+  if (e.flags & 4 && !(e.flags & 16) || (e.flags &= -17, e.globalVersion === ds) || (e.globalVersion = ds, !e.isSSR && e.flags & 128 && (!e.deps && !e._dirty || !jo(e))))
     return;
   e.flags |= 2;
-  const t = e.dep, n = ve, s = dt;
-  ve = e, dt = !0;
+  const t = e.dep, n = $e, s = Et;
+  $e = e, Et = !0;
   try {
-    ml(e);
+    Ol(e);
     const o = e.fn(e._value);
-    (t.version === 0 || kt(o, e._value)) && (e.flags |= 128, e._value = o, t.version++);
+    (t.version === 0 || Vt(o, e._value)) && (e.flags |= 128, e._value = o, t.version++);
   } catch (o) {
     throw t.version++, o;
   } finally {
-    ve = n, dt = s, _l(e), e.flags &= -3;
+    $e = n, Et = s, Sl(e), e.flags &= -3;
   }
 }
-function gr(e, t = !1) {
+function yr(e, t = !1) {
   const { dep: n, prevSub: s, nextSub: o } = e;
   if (s && (s.nextSub = o, e.prevSub = void 0), o && (o.prevSub = s, e.nextSub = void 0), process.env.NODE_ENV !== "production" && n.subsHead === e && (n.subsHead = o), n.subs === e && (n.subs = s, !s && n.computed)) {
     n.computed.flags &= -5;
     for (let r = n.computed.deps; r; r = r.nextDep)
-      gr(r, !0);
+      yr(r, !0);
   }
   !t && !--n.sc && n.map && n.map.delete(n.key);
 }
-function kc(e) {
+function Ac(e) {
   const { prevDep: t, nextDep: n } = e;
   t && (t.nextDep = n, e.prevDep = void 0), n && (n.prevDep = t, e.nextDep = void 0);
 }
-let dt = !0;
-const bl = [];
-function ht() {
-  bl.push(dt), dt = !1;
+let Et = !0;
+const Cl = [];
+function $t() {
+  Cl.push(Et), Et = !1;
 }
-function gt() {
-  const e = bl.pop();
-  dt = e === void 0 ? !0 : e;
+function Ot() {
+  const e = Cl.pop();
+  Et = e === void 0 ? !0 : e;
 }
-function Br(e) {
+function Qr(e) {
   const { cleanup: t } = e;
   if (e.cleanup = void 0, t) {
-    const n = ve;
-    ve = void 0;
+    const n = $e;
+    $e = void 0;
     try {
       t();
     } finally {
-      ve = n;
+      $e = n;
     }
   }
 }
-let cs = 0;
-class $c {
+let ds = 0;
+class Vc {
   constructor(t, n) {
     this.sub = t, this.dep = n, this.version = n.version, this.nextDep = this.prevDep = this.nextSub = this.prevSub = this.prevActiveLink = void 0;
   }
 }
-class mr {
+class Er {
   // TODO isolatedDeclarations "__v_skip"
   constructor(t) {
     this.computed = t, this.version = 0, this.activeLink = void 0, this.subs = void 0, this.map = void 0, this.key = void 0, this.sc = 0, this.__v_skip = !0, process.env.NODE_ENV !== "production" && (this.subsHead = void 0);
   }
   track(t) {
-    if (!ve || !dt || ve === this.computed)
+    if (!$e || !Et || $e === this.computed)
       return;
     let n = this.activeLink;
-    if (n === void 0 || n.sub !== ve)
-      n = this.activeLink = new $c(ve, this), ve.deps ? (n.prevDep = ve.depsTail, ve.depsTail.nextDep = n, ve.depsTail = n) : ve.deps = ve.depsTail = n, yl(n);
+    if (n === void 0 || n.sub !== $e)
+      n = this.activeLink = new Vc($e, this), $e.deps ? (n.prevDep = $e.depsTail, $e.depsTail.nextDep = n, $e.depsTail = n) : $e.deps = $e.depsTail = n, xl(n);
     else if (n.version === -1 && (n.version = this.version, n.nextDep)) {
       const s = n.nextDep;
-      s.prevDep = n.prevDep, n.prevDep && (n.prevDep.nextDep = s), n.prevDep = ve.depsTail, n.nextDep = void 0, ve.depsTail.nextDep = n, ve.depsTail = n, ve.deps === n && (ve.deps = s);
+      s.prevDep = n.prevDep, n.prevDep && (n.prevDep.nextDep = s), n.prevDep = $e.depsTail, n.nextDep = void 0, $e.depsTail.nextDep = n, $e.depsTail = n, $e.deps === n && ($e.deps = s);
     }
-    return process.env.NODE_ENV !== "production" && ve.onTrack && ve.onTrack(
-      De(
+    return process.env.NODE_ENV !== "production" && $e.onTrack && $e.onTrack(
+      Ae(
         {
-          effect: ve
+          effect: $e
         },
         t
       )
     ), n;
   }
   trigger(t) {
-    this.version++, cs++, this.notify(t);
+    this.version++, ds++, this.notify(t);
   }
   notify(t) {
-    pr();
+    vr();
     try {
       if (process.env.NODE_ENV !== "production")
         for (let n = this.subsHead; n; n = n.nextSub)
           n.sub.onTrigger && !(n.sub.flags & 8) && n.sub.onTrigger(
-            De(
+            Ae(
               {
                 effect: n.sub
               },
@@ -439,259 +439,259 @@ class mr {
       for (let n = this.subs; n; n = n.prevSub)
         n.sub.notify() && n.sub.dep.notify();
     } finally {
-      hr();
+      br();
     }
   }
 }
-function yl(e) {
+function xl(e) {
   if (e.dep.sc++, e.sub.flags & 4) {
     const t = e.dep.computed;
     if (t && !e.dep.subs) {
       t.flags |= 20;
       for (let s = t.deps; s; s = s.nextDep)
-        yl(s);
+        xl(s);
     }
     const n = e.dep.subs;
     n !== e && (e.prevSub = n, n && (n.nextSub = e)), process.env.NODE_ENV !== "production" && e.dep.subsHead === void 0 && (e.dep.subsHead = e), e.dep.subs = e;
   }
 }
-const zs = /* @__PURE__ */ new WeakMap(), bn = /* @__PURE__ */ Symbol(
+const Qs = /* @__PURE__ */ new WeakMap(), wn = /* @__PURE__ */ Symbol(
   process.env.NODE_ENV !== "production" ? "Object iterate" : ""
-), Mo = /* @__PURE__ */ Symbol(
+), Uo = /* @__PURE__ */ Symbol(
   process.env.NODE_ENV !== "production" ? "Map keys iterate" : ""
-), us = /* @__PURE__ */ Symbol(
+), fs = /* @__PURE__ */ Symbol(
   process.env.NODE_ENV !== "production" ? "Array iterate" : ""
 );
-function Re(e, t, n) {
-  if (dt && ve) {
-    let s = zs.get(e);
-    s || zs.set(e, s = /* @__PURE__ */ new Map());
+function Fe(e, t, n) {
+  if (Et && $e) {
+    let s = Qs.get(e);
+    s || Qs.set(e, s = /* @__PURE__ */ new Map());
     let o = s.get(n);
-    o || (s.set(n, o = new mr()), o.map = s, o.key = n), process.env.NODE_ENV !== "production" ? o.track({
+    o || (s.set(n, o = new Er()), o.map = s, o.key = n), process.env.NODE_ENV !== "production" ? o.track({
       target: e,
       type: t,
       key: n
     }) : o.track();
   }
 }
-function $t(e, t, n, s, o, r) {
-  const i = zs.get(e);
-  if (!i) {
-    cs++;
+function It(e, t, n, s, o, r) {
+  const a = Qs.get(e);
+  if (!a) {
+    ds++;
     return;
   }
-  const l = (a) => {
-    a && (process.env.NODE_ENV !== "production" ? a.trigger({
+  const c = (u) => {
+    u && (process.env.NODE_ENV !== "production" ? u.trigger({
       target: e,
       type: t,
       key: n,
       newValue: s,
       oldValue: o,
       oldTarget: r
-    }) : a.trigger());
+    }) : u.trigger());
   };
-  if (pr(), t === "clear")
-    i.forEach(l);
+  if (vr(), t === "clear")
+    a.forEach(c);
   else {
-    const a = q(e), f = a && lo(n);
-    if (a && n === "length") {
-      const p = Number(s);
-      i.forEach((u, m) => {
-        (m === "length" || m === us || !pt(m) && m >= p) && l(u);
+    const u = ee(e), p = u && co(n);
+    if (u && n === "length") {
+      const h = Number(s);
+      a.forEach((f, _) => {
+        (_ === "length" || _ === fs || !Nt(_) && _ >= h) && c(f);
       });
     } else
-      switch ((n !== void 0 || i.has(void 0)) && l(i.get(n)), f && l(i.get(us)), t) {
+      switch ((n !== void 0 || a.has(void 0)) && c(a.get(n)), p && c(a.get(fs)), t) {
         case "add":
-          a ? f && l(i.get("length")) : (l(i.get(bn)), vn(e) && l(i.get(Mo)));
+          u ? p && c(a.get("length")) : (c(a.get(wn)), En(e) && c(a.get(Uo)));
           break;
         case "delete":
-          a || (l(i.get(bn)), vn(e) && l(i.get(Mo)));
+          u || (c(a.get(wn)), En(e) && c(a.get(Uo)));
           break;
         case "set":
-          vn(e) && l(i.get(bn));
+          En(e) && c(a.get(wn));
           break;
       }
   }
-  hr();
+  br();
 }
-function Cc(e, t) {
-  const n = zs.get(e);
+function Ic(e, t) {
+  const n = Qs.get(e);
   return n && n.get(t);
 }
-function kn(e) {
-  const t = /* @__PURE__ */ ne(e);
-  return t === e ? t : (Re(t, "iterate", us), /* @__PURE__ */ He(e) ? t : t.map(_t));
+function xn(e) {
+  const t = /* @__PURE__ */ de(e);
+  return t === e ? t : (Fe(t, "iterate", fs), /* @__PURE__ */ We(e) ? t : t.map(kt));
 }
-function fo(e) {
-  return Re(e = /* @__PURE__ */ ne(e), "iterate", us), e;
+function ho(e) {
+  return Fe(e = /* @__PURE__ */ de(e), "iterate", fs), e;
 }
-function Ot(e, t) {
-  return /* @__PURE__ */ mt(e) ? jn(/* @__PURE__ */ it(e) ? _t(t) : t) : _t(t);
+function At(e, t) {
+  return /* @__PURE__ */ St(e) ? Hn(/* @__PURE__ */ ht(e) ? kt(t) : t) : kt(t);
 }
-const Dc = {
+const Mc = {
   __proto__: null,
   [Symbol.iterator]() {
-    return wo(this, Symbol.iterator, (e) => Ot(this, e));
+    return Oo(this, Symbol.iterator, (e) => At(this, e));
   },
   concat(...e) {
-    return kn(this).concat(
-      ...e.map((t) => q(t) ? kn(t) : t)
+    return xn(this).concat(
+      ...e.map((t) => ee(t) ? xn(t) : t)
     );
   },
   entries() {
-    return wo(this, "entries", (e) => (e[1] = Ot(this, e[1]), e));
+    return Oo(this, "entries", (e) => (e[1] = At(this, e[1]), e));
   },
   every(e, t) {
-    return Vt(this, "every", e, t, void 0, arguments);
+    return Ht(this, "every", e, t, void 0, arguments);
   },
   filter(e, t) {
-    return Vt(
+    return Ht(
       this,
       "filter",
       e,
       t,
-      (n) => n.map((s) => Ot(this, s)),
+      (n) => n.map((s) => At(this, s)),
       arguments
     );
   },
   find(e, t) {
-    return Vt(
+    return Ht(
       this,
       "find",
       e,
       t,
-      (n) => Ot(this, n),
+      (n) => At(this, n),
       arguments
     );
   },
   findIndex(e, t) {
-    return Vt(this, "findIndex", e, t, void 0, arguments);
+    return Ht(this, "findIndex", e, t, void 0, arguments);
   },
   findLast(e, t) {
-    return Vt(
+    return Ht(
       this,
       "findLast",
       e,
       t,
-      (n) => Ot(this, n),
+      (n) => At(this, n),
       arguments
     );
   },
   findLastIndex(e, t) {
-    return Vt(this, "findLastIndex", e, t, void 0, arguments);
+    return Ht(this, "findLastIndex", e, t, void 0, arguments);
   },
   // flat, flatMap could benefit from ARRAY_ITERATE but are not straight-forward to implement
   forEach(e, t) {
-    return Vt(this, "forEach", e, t, void 0, arguments);
+    return Ht(this, "forEach", e, t, void 0, arguments);
   },
   includes(...e) {
-    return No(this, "includes", e);
+    return So(this, "includes", e);
   },
   indexOf(...e) {
-    return No(this, "indexOf", e);
+    return So(this, "indexOf", e);
   },
   join(e) {
-    return kn(this).join(e);
+    return xn(this).join(e);
   },
   // keys() iterator only reads `length`, no optimization required
   lastIndexOf(...e) {
-    return No(this, "lastIndexOf", e);
+    return So(this, "lastIndexOf", e);
   },
   map(e, t) {
-    return Vt(this, "map", e, t, void 0, arguments);
+    return Ht(this, "map", e, t, void 0, arguments);
   },
   pop() {
-    return Jn(this, "pop");
+    return Qn(this, "pop");
   },
   push(...e) {
-    return Jn(this, "push", e);
+    return Qn(this, "push", e);
   },
   reduce(e, ...t) {
-    return Gr(this, "reduce", e, t);
+    return Yr(this, "reduce", e, t);
   },
   reduceRight(e, ...t) {
-    return Gr(this, "reduceRight", e, t);
+    return Yr(this, "reduceRight", e, t);
   },
   shift() {
-    return Jn(this, "shift");
+    return Qn(this, "shift");
   },
   // slice could use ARRAY_ITERATE but also seems to beg for range tracking
   some(e, t) {
-    return Vt(this, "some", e, t, void 0, arguments);
+    return Ht(this, "some", e, t, void 0, arguments);
   },
   splice(...e) {
-    return Jn(this, "splice", e);
+    return Qn(this, "splice", e);
   },
   toReversed() {
-    return kn(this).toReversed();
+    return xn(this).toReversed();
   },
   toSorted(e) {
-    return kn(this).toSorted(e);
+    return xn(this).toSorted(e);
   },
   toSpliced(...e) {
-    return kn(this).toSpliced(...e);
+    return xn(this).toSpliced(...e);
   },
   unshift(...e) {
-    return Jn(this, "unshift", e);
+    return Qn(this, "unshift", e);
   },
   values() {
-    return wo(this, "values", (e) => Ot(this, e));
+    return Oo(this, "values", (e) => At(this, e));
   }
 };
-function wo(e, t, n) {
-  const s = fo(e), o = s[t]();
-  return s !== e && !/* @__PURE__ */ He(e) && (o._next = o.next, o.next = () => {
+function Oo(e, t, n) {
+  const s = ho(e), o = s[t]();
+  return s !== e && !/* @__PURE__ */ We(e) && (o._next = o.next, o.next = () => {
     const r = o._next();
     return r.done || (r.value = n(r.value)), r;
   }), o;
 }
-const xc = Array.prototype;
-function Vt(e, t, n, s, o, r) {
-  const i = fo(e), l = i !== e && !/* @__PURE__ */ He(e), a = i[t];
-  if (a !== xc[t]) {
-    const u = a.apply(e, r);
-    return l ? _t(u) : u;
+const Fc = Array.prototype;
+function Ht(e, t, n, s, o, r) {
+  const a = ho(e), c = a !== e && !/* @__PURE__ */ We(e), u = a[t];
+  if (u !== Fc[t]) {
+    const f = u.apply(e, r);
+    return c ? kt(f) : f;
   }
-  let f = n;
-  i !== e && (l ? f = function(u, m) {
-    return n.call(this, Ot(e, u), m, e);
-  } : n.length > 2 && (f = function(u, m) {
-    return n.call(this, u, m, e);
+  let p = n;
+  a !== e && (c ? p = function(f, _) {
+    return n.call(this, At(e, f), _, e);
+  } : n.length > 2 && (p = function(f, _) {
+    return n.call(this, f, _, e);
   }));
-  const p = a.call(i, f, s);
-  return l && o ? o(p) : p;
+  const h = u.call(a, p, s);
+  return c && o ? o(h) : h;
 }
-function Gr(e, t, n, s) {
-  const o = fo(e), r = o !== e && !/* @__PURE__ */ He(e);
-  let i = n, l = !1;
-  o !== e && (r ? (l = s.length === 0, i = function(f, p, u) {
-    return l && (l = !1, f = Ot(e, f)), n.call(this, f, Ot(e, p), u, e);
-  }) : n.length > 3 && (i = function(f, p, u) {
-    return n.call(this, f, p, u, e);
+function Yr(e, t, n, s) {
+  const o = ho(e), r = o !== e && !/* @__PURE__ */ We(e);
+  let a = n, c = !1;
+  o !== e && (r ? (c = s.length === 0, a = function(p, h, f) {
+    return c && (c = !1, p = At(e, p)), n.call(this, p, At(e, h), f, e);
+  }) : n.length > 3 && (a = function(p, h, f) {
+    return n.call(this, p, h, f, e);
   }));
-  const a = o[t](i, ...s);
-  return l ? Ot(e, a) : a;
+  const u = o[t](a, ...s);
+  return c ? At(e, u) : u;
 }
-function No(e, t, n) {
-  const s = /* @__PURE__ */ ne(e);
-  Re(s, "iterate", us);
+function So(e, t, n) {
+  const s = /* @__PURE__ */ de(e);
+  Fe(s, "iterate", fs);
   const o = s[t](...n);
-  return (o === -1 || o === !1) && /* @__PURE__ */ Ln(n[0]) ? (n[0] = /* @__PURE__ */ ne(n[0]), s[t](...n)) : o;
+  return (o === -1 || o === !1) && /* @__PURE__ */ Un(n[0]) ? (n[0] = /* @__PURE__ */ de(n[0]), s[t](...n)) : o;
 }
-function Jn(e, t, n = []) {
-  ht(), pr();
-  const s = (/* @__PURE__ */ ne(e))[t].apply(e, n);
-  return hr(), gt(), s;
+function Qn(e, t, n = []) {
+  $t(), vr();
+  const s = (/* @__PURE__ */ de(e))[t].apply(e, n);
+  return br(), Ot(), s;
 }
-const Tc = /* @__PURE__ */ Bt("__proto__,__v_isRef,__isVue"), El = new Set(
-  /* @__PURE__ */ Object.getOwnPropertyNames(Symbol).filter((e) => e !== "arguments" && e !== "caller").map((e) => Symbol[e]).filter(pt)
+const Lc = /* @__PURE__ */ Zt("__proto__,__v_isRef,__isVue"), Dl = new Set(
+  /* @__PURE__ */ Object.getOwnPropertyNames(Symbol).filter((e) => e !== "arguments" && e !== "caller").map((e) => Symbol[e]).filter(Nt)
 );
-function Pc(e) {
-  pt(e) || (e = String(e));
-  const t = /* @__PURE__ */ ne(this);
-  return Re(t, "has", e), t.hasOwnProperty(e);
+function jc(e) {
+  Nt(e) || (e = String(e));
+  const t = /* @__PURE__ */ de(this);
+  return Fe(t, "has", e), t.hasOwnProperty(e);
 }
-class wl {
+class Tl {
   constructor(t = !1, n = !1) {
     this._isReadonly = t, this._isShallow = n;
   }
@@ -705,187 +705,187 @@ class wl {
     if (n === "__v_isShallow")
       return r;
     if (n === "__v_raw")
-      return s === (o ? r ? Cl : $l : r ? kl : Sl).get(t) || // receiver is not the reactive proxy, but has the same prototype
+      return s === (o ? r ? Ml : Il : r ? Vl : Al).get(t) || // receiver is not the reactive proxy, but has the same prototype
       // this means the receiver is a user proxy of the reactive proxy
       Object.getPrototypeOf(t) === Object.getPrototypeOf(s) ? t : void 0;
-    const i = q(t);
+    const a = ee(t);
     if (!o) {
-      let a;
-      if (i && (a = Dc[n]))
-        return a;
+      let u;
+      if (a && (u = Mc[n]))
+        return u;
       if (n === "hasOwnProperty")
-        return Pc;
+        return jc;
     }
-    const l = Reflect.get(
+    const c = Reflect.get(
       t,
       n,
       // if this is a proxy wrapping a ref, return methods using the raw ref
       // as receiver so that we don't have to call `toRaw` on the ref in all
       // its class methods
-      /* @__PURE__ */ Ee(t) ? t : s
+      /* @__PURE__ */ ke(t) ? t : s
     );
-    if ((pt(n) ? El.has(n) : Tc(n)) || (o || Re(t, "get", n), r))
-      return l;
-    if (/* @__PURE__ */ Ee(l)) {
-      const a = i && lo(n) ? l : l.value;
-      return o && de(a) ? /* @__PURE__ */ jo(a) : a;
+    if ((Nt(n) ? Dl.has(n) : Lc(n)) || (o || Fe(t, "get", n), r))
+      return c;
+    if (/* @__PURE__ */ ke(c)) {
+      const u = a && co(n) ? c : c.value;
+      return o && ve(u) ? /* @__PURE__ */ Go(u) : u;
     }
-    return de(l) ? o ? /* @__PURE__ */ jo(l) : /* @__PURE__ */ on(l) : l;
+    return ve(c) ? o ? /* @__PURE__ */ Go(c) : /* @__PURE__ */ cn(c) : c;
   }
 }
-class Nl extends wl {
+class Pl extends Tl {
   constructor(t = !1) {
     super(!1, t);
   }
   set(t, n, s, o) {
     let r = t[n];
-    const i = q(t) && lo(n);
+    const a = ee(t) && co(n);
     if (!this._isShallow) {
-      const f = /* @__PURE__ */ mt(r);
-      if (!/* @__PURE__ */ He(s) && !/* @__PURE__ */ mt(s) && (r = /* @__PURE__ */ ne(r), s = /* @__PURE__ */ ne(s)), !i && /* @__PURE__ */ Ee(r) && !/* @__PURE__ */ Ee(s))
-        return f ? (process.env.NODE_ENV !== "production" && tt(
+      const p = /* @__PURE__ */ St(r);
+      if (!/* @__PURE__ */ We(s) && !/* @__PURE__ */ St(s) && (r = /* @__PURE__ */ de(r), s = /* @__PURE__ */ de(s)), !a && /* @__PURE__ */ ke(r) && !/* @__PURE__ */ ke(s))
+        return p ? (process.env.NODE_ENV !== "production" && ut(
           `Set operation on key "${String(n)}" failed: target is readonly.`,
           t[n]
         ), !0) : (r.value = s, !0);
     }
-    const l = i ? Number(n) < t.length : pe(t, n), a = Reflect.set(
+    const c = a ? Number(n) < t.length : be(t, n), u = Reflect.set(
       t,
       n,
       s,
-      /* @__PURE__ */ Ee(t) ? t : o
+      /* @__PURE__ */ ke(t) ? t : o
     );
-    return t === /* @__PURE__ */ ne(o) && (l ? kt(s, r) && $t(t, "set", n, s, r) : $t(t, "add", n, s)), a;
+    return t === /* @__PURE__ */ de(o) && (c ? Vt(s, r) && It(t, "set", n, s, r) : It(t, "add", n, s)), u;
   }
   deleteProperty(t, n) {
-    const s = pe(t, n), o = t[n], r = Reflect.deleteProperty(t, n);
-    return r && s && $t(t, "delete", n, void 0, o), r;
+    const s = be(t, n), o = t[n], r = Reflect.deleteProperty(t, n);
+    return r && s && It(t, "delete", n, void 0, o), r;
   }
   has(t, n) {
     const s = Reflect.has(t, n);
-    return (!pt(n) || !El.has(n)) && Re(t, "has", n), s;
+    return (!Nt(n) || !Dl.has(n)) && Fe(t, "has", n), s;
   }
   ownKeys(t) {
-    return Re(
+    return Fe(
       t,
       "iterate",
-      q(t) ? "length" : bn
+      ee(t) ? "length" : wn
     ), Reflect.ownKeys(t);
   }
 }
-class Ol extends wl {
+class Rl extends Tl {
   constructor(t = !1) {
     super(!0, t);
   }
   set(t, n) {
-    return process.env.NODE_ENV !== "production" && tt(
+    return process.env.NODE_ENV !== "production" && ut(
       `Set operation on key "${String(n)}" failed: target is readonly.`,
       t
     ), !0;
   }
   deleteProperty(t, n) {
-    return process.env.NODE_ENV !== "production" && tt(
+    return process.env.NODE_ENV !== "production" && ut(
       `Delete operation on key "${String(n)}" failed: target is readonly.`,
       t
     ), !0;
   }
 }
-const Vc = /* @__PURE__ */ new Nl(), Ac = /* @__PURE__ */ new Ol(), Rc = /* @__PURE__ */ new Nl(!0), Ic = /* @__PURE__ */ new Ol(!0), Lo = (e) => e, Os = (e) => Reflect.getPrototypeOf(e);
-function Mc(e, t, n) {
+const Uc = /* @__PURE__ */ new Pl(), Hc = /* @__PURE__ */ new Rl(), Gc = /* @__PURE__ */ new Pl(!0), Bc = /* @__PURE__ */ new Rl(!0), Ho = (e) => e, Cs = (e) => Reflect.getPrototypeOf(e);
+function Kc(e, t, n) {
   return function(...s) {
-    const o = this.__v_raw, r = /* @__PURE__ */ ne(o), i = vn(r), l = e === "entries" || e === Symbol.iterator && i, a = e === "keys" && i, f = o[e](...s), p = n ? Lo : t ? jn : _t;
-    return !t && Re(
+    const o = this.__v_raw, r = /* @__PURE__ */ de(o), a = En(r), c = e === "entries" || e === Symbol.iterator && a, u = e === "keys" && a, p = o[e](...s), h = n ? Ho : t ? Hn : kt;
+    return !t && Fe(
       r,
       "iterate",
-      a ? Mo : bn
-    ), De(
+      u ? Uo : wn
+    ), Ae(
       // inheriting all iterator properties
-      Object.create(f),
+      Object.create(p),
       {
         // iterator protocol
         next() {
-          const { value: u, done: m } = f.next();
-          return m ? { value: u, done: m } : {
-            value: l ? [p(u[0]), p(u[1])] : p(u),
-            done: m
+          const { value: f, done: _ } = p.next();
+          return _ ? { value: f, done: _ } : {
+            value: c ? [h(f[0]), h(f[1])] : h(f),
+            done: _
           };
         }
       }
     );
   };
 }
-function Ss(e) {
+function xs(e) {
   return function(...t) {
     if (process.env.NODE_ENV !== "production") {
       const n = t[0] ? `on key "${t[0]}" ` : "";
-      tt(
-        `${co(e)} operation ${n}failed: target is readonly.`,
-        /* @__PURE__ */ ne(this)
+      ut(
+        `${fo(e)} operation ${n}failed: target is readonly.`,
+        /* @__PURE__ */ de(this)
       );
     }
     return e === "delete" ? !1 : e === "clear" ? void 0 : this;
   };
 }
-function Lc(e, t) {
+function Wc(e, t) {
   const n = {
     get(o) {
-      const r = this.__v_raw, i = /* @__PURE__ */ ne(r), l = /* @__PURE__ */ ne(o);
-      e || (kt(o, l) && Re(i, "get", o), Re(i, "get", l));
-      const { has: a } = Os(i), f = t ? Lo : e ? jn : _t;
-      if (a.call(i, o))
-        return f(r.get(o));
-      if (a.call(i, l))
-        return f(r.get(l));
-      r !== i && r.get(o);
+      const r = this.__v_raw, a = /* @__PURE__ */ de(r), c = /* @__PURE__ */ de(o);
+      e || (Vt(o, c) && Fe(a, "get", o), Fe(a, "get", c));
+      const { has: u } = Cs(a), p = t ? Ho : e ? Hn : kt;
+      if (u.call(a, o))
+        return p(r.get(o));
+      if (u.call(a, c))
+        return p(r.get(c));
+      r !== a && r.get(o);
     },
     get size() {
       const o = this.__v_raw;
-      return !e && Re(/* @__PURE__ */ ne(o), "iterate", bn), o.size;
+      return !e && Fe(/* @__PURE__ */ de(o), "iterate", wn), o.size;
     },
     has(o) {
-      const r = this.__v_raw, i = /* @__PURE__ */ ne(r), l = /* @__PURE__ */ ne(o);
-      return e || (kt(o, l) && Re(i, "has", o), Re(i, "has", l)), o === l ? r.has(o) : r.has(o) || r.has(l);
+      const r = this.__v_raw, a = /* @__PURE__ */ de(r), c = /* @__PURE__ */ de(o);
+      return e || (Vt(o, c) && Fe(a, "has", o), Fe(a, "has", c)), o === c ? r.has(o) : r.has(o) || r.has(c);
     },
     forEach(o, r) {
-      const i = this, l = i.__v_raw, a = /* @__PURE__ */ ne(l), f = t ? Lo : e ? jn : _t;
-      return !e && Re(a, "iterate", bn), l.forEach((p, u) => o.call(r, f(p), f(u), i));
+      const a = this, c = a.__v_raw, u = /* @__PURE__ */ de(c), p = t ? Ho : e ? Hn : kt;
+      return !e && Fe(u, "iterate", wn), c.forEach((h, f) => o.call(r, p(h), p(f), a));
     }
   };
-  return De(
+  return Ae(
     n,
     e ? {
-      add: Ss("add"),
-      set: Ss("set"),
-      delete: Ss("delete"),
-      clear: Ss("clear")
+      add: xs("add"),
+      set: xs("set"),
+      delete: xs("delete"),
+      clear: xs("clear")
     } : {
       add(o) {
-        const r = /* @__PURE__ */ ne(this), i = Os(r), l = /* @__PURE__ */ ne(o), a = !t && !/* @__PURE__ */ He(o) && !/* @__PURE__ */ mt(o) ? l : o;
-        return i.has.call(r, a) || kt(o, a) && i.has.call(r, o) || kt(l, a) && i.has.call(r, l) || (r.add(a), $t(r, "add", a, a)), this;
+        const r = /* @__PURE__ */ de(this), a = Cs(r), c = /* @__PURE__ */ de(o), u = !t && !/* @__PURE__ */ We(o) && !/* @__PURE__ */ St(o) ? c : o;
+        return a.has.call(r, u) || Vt(o, u) && a.has.call(r, o) || Vt(c, u) && a.has.call(r, c) || (r.add(u), It(r, "add", u, u)), this;
       },
       set(o, r) {
-        !t && !/* @__PURE__ */ He(r) && !/* @__PURE__ */ mt(r) && (r = /* @__PURE__ */ ne(r));
-        const i = /* @__PURE__ */ ne(this), { has: l, get: a } = Os(i);
-        let f = l.call(i, o);
-        f ? process.env.NODE_ENV !== "production" && Wr(i, l, o) : (o = /* @__PURE__ */ ne(o), f = l.call(i, o));
-        const p = a.call(i, o);
-        return i.set(o, r), f ? kt(r, p) && $t(i, "set", o, r, p) : $t(i, "add", o, r), this;
+        !t && !/* @__PURE__ */ We(r) && !/* @__PURE__ */ St(r) && (r = /* @__PURE__ */ de(r));
+        const a = /* @__PURE__ */ de(this), { has: c, get: u } = Cs(a);
+        let p = c.call(a, o);
+        p ? process.env.NODE_ENV !== "production" && Xr(a, c, o) : (o = /* @__PURE__ */ de(o), p = c.call(a, o));
+        const h = u.call(a, o);
+        return a.set(o, r), p ? Vt(r, h) && It(a, "set", o, r, h) : It(a, "add", o, r), this;
       },
       delete(o) {
-        const r = /* @__PURE__ */ ne(this), { has: i, get: l } = Os(r);
-        let a = i.call(r, o);
-        a ? process.env.NODE_ENV !== "production" && Wr(r, i, o) : (o = /* @__PURE__ */ ne(o), a = i.call(r, o));
-        const f = l ? l.call(r, o) : void 0, p = r.delete(o);
-        return a && $t(r, "delete", o, void 0, f), p;
+        const r = /* @__PURE__ */ de(this), { has: a, get: c } = Cs(r);
+        let u = a.call(r, o);
+        u ? process.env.NODE_ENV !== "production" && Xr(r, a, o) : (o = /* @__PURE__ */ de(o), u = a.call(r, o));
+        const p = c ? c.call(r, o) : void 0, h = r.delete(o);
+        return u && It(r, "delete", o, void 0, p), h;
       },
       clear() {
-        const o = /* @__PURE__ */ ne(this), r = o.size !== 0, i = process.env.NODE_ENV !== "production" ? vn(o) ? new Map(o) : new Set(o) : void 0, l = o.clear();
-        return r && $t(
+        const o = /* @__PURE__ */ de(this), r = o.size !== 0, a = process.env.NODE_ENV !== "production" ? En(o) ? new Map(o) : new Set(o) : void 0, c = o.clear();
+        return r && It(
           o,
           "clear",
           void 0,
           void 0,
-          i
-        ), l;
+          a
+        ), c;
       }
     }
   ), [
@@ -894,37 +894,37 @@ function Lc(e, t) {
     "entries",
     Symbol.iterator
   ].forEach((o) => {
-    n[o] = Mc(o, e, t);
+    n[o] = Kc(o, e, t);
   }), n;
 }
-function po(e, t) {
-  const n = Lc(e, t);
+function _o(e, t) {
+  const n = Wc(e, t);
   return (s, o, r) => o === "__v_isReactive" ? !e : o === "__v_isReadonly" ? e : o === "__v_raw" ? s : Reflect.get(
-    pe(n, o) && o in s ? n : s,
+    be(n, o) && o in s ? n : s,
     o,
     r
   );
 }
-const jc = {
-  get: /* @__PURE__ */ po(!1, !1)
-}, Fc = {
-  get: /* @__PURE__ */ po(!1, !0)
-}, Uc = {
-  get: /* @__PURE__ */ po(!0, !1)
-}, Hc = {
-  get: /* @__PURE__ */ po(!0, !0)
+const qc = {
+  get: /* @__PURE__ */ _o(!1, !1)
+}, zc = {
+  get: /* @__PURE__ */ _o(!1, !0)
+}, Jc = {
+  get: /* @__PURE__ */ _o(!0, !1)
+}, Qc = {
+  get: /* @__PURE__ */ _o(!0, !0)
 };
-function Wr(e, t, n) {
-  const s = /* @__PURE__ */ ne(n);
+function Xr(e, t, n) {
+  const s = /* @__PURE__ */ de(n);
   if (s !== n && t.call(e, s)) {
-    const o = ur(e);
-    tt(
+    const o = _r(e);
+    ut(
       `Reactive ${o} contains both the raw and reactive versions of the same object${o === "Map" ? " as keys" : ""}, which can lead to inconsistencies. Avoid differentiating between the raw and reactive versions of an object and only use the reactive version if possible.`
     );
   }
 }
-const Sl = /* @__PURE__ */ new WeakMap(), kl = /* @__PURE__ */ new WeakMap(), $l = /* @__PURE__ */ new WeakMap(), Cl = /* @__PURE__ */ new WeakMap();
-function Bc(e) {
+const Al = /* @__PURE__ */ new WeakMap(), Vl = /* @__PURE__ */ new WeakMap(), Il = /* @__PURE__ */ new WeakMap(), Ml = /* @__PURE__ */ new WeakMap();
+function Yc(e) {
   switch (e) {
     case "Object":
     case "Array":
@@ -938,113 +938,113 @@ function Bc(e) {
       return 0;
   }
 }
-function Gc(e) {
-  return e.__v_skip || !Object.isExtensible(e) ? 0 : Bc(ur(e));
+function Xc(e) {
+  return e.__v_skip || !Object.isExtensible(e) ? 0 : Yc(_r(e));
 }
 // @__NO_SIDE_EFFECTS__
-function on(e) {
-  return /* @__PURE__ */ mt(e) ? e : ho(
+function cn(e) {
+  return /* @__PURE__ */ St(e) ? e : mo(
     e,
     !1,
-    Vc,
-    jc,
-    Sl
-  );
-}
-// @__NO_SIDE_EFFECTS__
-function Dl(e) {
-  return ho(
-    e,
-    !1,
-    Rc,
-    Fc,
-    kl
-  );
-}
-// @__NO_SIDE_EFFECTS__
-function jo(e) {
-  return ho(
-    e,
-    !0,
-    Ac,
     Uc,
-    $l
+    qc,
+    Al
   );
 }
 // @__NO_SIDE_EFFECTS__
-function Ct(e) {
-  return ho(
+function Fl(e) {
+  return mo(
     e,
-    !0,
-    Ic,
-    Hc,
-    Cl
+    !1,
+    Gc,
+    zc,
+    Vl
   );
 }
-function ho(e, t, n, s, o) {
-  if (!de(e))
-    return process.env.NODE_ENV !== "production" && tt(
+// @__NO_SIDE_EFFECTS__
+function Go(e) {
+  return mo(
+    e,
+    !0,
+    Hc,
+    Jc,
+    Il
+  );
+}
+// @__NO_SIDE_EFFECTS__
+function Mt(e) {
+  return mo(
+    e,
+    !0,
+    Bc,
+    Qc,
+    Ml
+  );
+}
+function mo(e, t, n, s, o) {
+  if (!ve(e))
+    return process.env.NODE_ENV !== "production" && ut(
       `value cannot be made ${t ? "readonly" : "reactive"}: ${String(
         e
       )}`
     ), e;
   if (e.__v_raw && !(t && e.__v_isReactive))
     return e;
-  const r = Gc(e);
+  const r = Xc(e);
   if (r === 0)
     return e;
-  const i = o.get(e);
-  if (i)
-    return i;
-  const l = new Proxy(
+  const a = o.get(e);
+  if (a)
+    return a;
+  const c = new Proxy(
     e,
     r === 2 ? s : n
   );
-  return o.set(e, l), l;
+  return o.set(e, c), c;
 }
 // @__NO_SIDE_EFFECTS__
-function it(e) {
-  return /* @__PURE__ */ mt(e) ? /* @__PURE__ */ it(e.__v_raw) : !!(e && e.__v_isReactive);
+function ht(e) {
+  return /* @__PURE__ */ St(e) ? /* @__PURE__ */ ht(e.__v_raw) : !!(e && e.__v_isReactive);
 }
 // @__NO_SIDE_EFFECTS__
-function mt(e) {
+function St(e) {
   return !!(e && e.__v_isReadonly);
 }
 // @__NO_SIDE_EFFECTS__
-function He(e) {
+function We(e) {
   return !!(e && e.__v_isShallow);
 }
 // @__NO_SIDE_EFFECTS__
-function Ln(e) {
+function Un(e) {
   return e ? !!e.__v_raw : !1;
 }
 // @__NO_SIDE_EFFECTS__
-function ne(e) {
+function de(e) {
   const t = e && e.__v_raw;
-  return t ? /* @__PURE__ */ ne(t) : e;
+  return t ? /* @__PURE__ */ de(t) : e;
 }
-function Zt(e) {
-  return !pe(e, "__v_skip") && Object.isExtensible(e) && Ks(e, "__v_skip", !0), e;
+function on(e) {
+  return !be(e, "__v_skip") && Object.isExtensible(e) && Js(e, "__v_skip", !0), e;
 }
-const _t = (e) => de(e) ? /* @__PURE__ */ on(e) : e, jn = (e) => de(e) ? /* @__PURE__ */ jo(e) : e;
+const kt = (e) => ve(e) ? /* @__PURE__ */ cn(e) : e, Hn = (e) => ve(e) ? /* @__PURE__ */ Go(e) : e;
 // @__NO_SIDE_EFFECTS__
-function Ee(e) {
+function ke(e) {
   return e ? e.__v_isRef === !0 : !1;
 }
 // @__NO_SIDE_EFFECTS__
-function me(e) {
-  return xl(e, !1);
+function Z(e) {
+  return Ll(e, !1);
 }
 // @__NO_SIDE_EFFECTS__
-function Wc(e) {
-  return xl(e, !0);
+function Zc(e) {
+  return Ll(e, !0);
 }
-function xl(e, t) {
-  return /* @__PURE__ */ Ee(e) ? e : new Kc(e, t);
+function Ll(e, t) {
+  return /* @__PURE__ */ ke(e) ? e : new eu(e, t);
 }
-class Kc {
+class eu {
   constructor(t, n) {
-    this.dep = new mr(), this.__v_isRef = !0, this.__v_isShallow = !1, this._rawValue = n ? t : /* @__PURE__ */ ne(t), this._value = n ? t : _t(t), this.__v_isShallow = n;
+    this.dep = new Er(), this.__v_isRef = !0, this.__v_isShallow = !1, this._rawValue = n ? t : /* @__PURE__ */ de(t), this._value = n ? t : kt(t), this.__v_isShallow = n;
   }
   get value() {
     return process.env.NODE_ENV !== "production" ? this.dep.track({
@@ -1054,8 +1054,8 @@ class Kc {
     }) : this.dep.track(), this._value;
   }
   set value(t) {
-    const n = this._rawValue, s = this.__v_isShallow || /* @__PURE__ */ He(t) || /* @__PURE__ */ mt(t);
-    t = s ? t : /* @__PURE__ */ ne(t), kt(t, n) && (this._rawValue = t, this._value = s ? t : _t(t), process.env.NODE_ENV !== "production" ? this.dep.trigger({
+    const n = this._rawValue, s = this.__v_isShallow || /* @__PURE__ */ We(t) || /* @__PURE__ */ St(t);
+    t = s ? t : /* @__PURE__ */ de(t), Vt(t, n) && (this._rawValue = t, this._value = s ? t : kt(t), process.env.NODE_ENV !== "production" ? this.dep.trigger({
       target: this,
       type: "set",
       key: "value",
@@ -1064,45 +1064,45 @@ class Kc {
     }) : this.dep.trigger());
   }
 }
-function d(e) {
-  return /* @__PURE__ */ Ee(e) ? e.value : e;
+function l(e) {
+  return /* @__PURE__ */ ke(e) ? e.value : e;
 }
-const zc = {
-  get: (e, t, n) => t === "__v_raw" ? e : d(Reflect.get(e, t, n)),
+const tu = {
+  get: (e, t, n) => t === "__v_raw" ? e : l(Reflect.get(e, t, n)),
   set: (e, t, n, s) => {
     const o = e[t];
-    return /* @__PURE__ */ Ee(o) && !/* @__PURE__ */ Ee(n) ? (o.value = n, !0) : Reflect.set(e, t, n, s);
+    return /* @__PURE__ */ ke(o) && !/* @__PURE__ */ ke(n) ? (o.value = n, !0) : Reflect.set(e, t, n, s);
   }
 };
-function Tl(e) {
-  return /* @__PURE__ */ it(e) ? e : new Proxy(e, zc);
+function jl(e) {
+  return /* @__PURE__ */ ht(e) ? e : new Proxy(e, tu);
 }
 // @__NO_SIDE_EFFECTS__
-function Kr(e) {
-  process.env.NODE_ENV !== "production" && !/* @__PURE__ */ Ln(e) && tt("toRefs() expects a reactive object but received a plain one.");
-  const t = q(e) ? new Array(e.length) : {};
+function Zr(e) {
+  process.env.NODE_ENV !== "production" && !/* @__PURE__ */ Un(e) && ut("toRefs() expects a reactive object but received a plain one.");
+  const t = ee(e) ? new Array(e.length) : {};
   for (const n in e)
-    t[n] = Pl(e, n);
+    t[n] = Ul(e, n);
   return t;
 }
-class qc {
+class nu {
   constructor(t, n, s) {
-    this._object = t, this._key = n, this._defaultValue = s, this.__v_isRef = !0, this._value = void 0, this._raw = /* @__PURE__ */ ne(t);
+    this._object = t, this._key = n, this._defaultValue = s, this.__v_isRef = !0, this._value = void 0, this._raw = /* @__PURE__ */ de(t);
     let o = !0, r = t;
-    if (!q(t) || !lo(String(n)))
+    if (!ee(t) || !co(String(n)))
       do
-        o = !/* @__PURE__ */ Ln(r) || /* @__PURE__ */ He(r);
+        o = !/* @__PURE__ */ Un(r) || /* @__PURE__ */ We(r);
       while (o && (r = r.__v_raw));
     this._shallow = o;
   }
   get value() {
     let t = this._object[this._key];
-    return this._shallow && (t = d(t)), this._value = t === void 0 ? this._defaultValue : t;
+    return this._shallow && (t = l(t)), this._value = t === void 0 ? this._defaultValue : t;
   }
   set value(t) {
-    if (this._shallow && /* @__PURE__ */ Ee(this._raw[this._key])) {
+    if (this._shallow && /* @__PURE__ */ ke(this._raw[this._key])) {
       const n = this._object[this._key];
-      if (/* @__PURE__ */ Ee(n)) {
+      if (/* @__PURE__ */ ke(n)) {
         n.value = t;
         return;
       }
@@ -1110,10 +1110,10 @@ class qc {
     this._object[this._key] = t;
   }
   get dep() {
-    return Cc(this._raw, this._key);
+    return Ic(this._raw, this._key);
   }
 }
-class Jc {
+class su {
   constructor(t) {
     this._getter = t, this.__v_isRef = !0, this.__v_isReadonly = !0, this._value = void 0;
   }
@@ -1122,23 +1122,23 @@ class Jc {
   }
 }
 // @__NO_SIDE_EFFECTS__
-function Ps(e, t, n) {
-  return /* @__PURE__ */ Ee(e) ? e : ee(e) ? new Jc(e) : de(e) && arguments.length > 1 ? Pl(e, t, n) : /* @__PURE__ */ me(e);
+function Vs(e, t, n) {
+  return /* @__PURE__ */ ke(e) ? e : ae(e) ? new su(e) : ve(e) && arguments.length > 1 ? Ul(e, t, n) : /* @__PURE__ */ Z(e);
 }
-function Pl(e, t, n) {
-  return new qc(e, t, n);
+function Ul(e, t, n) {
+  return new nu(e, t, n);
 }
-class Yc {
+class ou {
   constructor(t, n, s) {
-    this.fn = t, this.setter = n, this._value = void 0, this.dep = new mr(this), this.__v_isRef = !0, this.deps = void 0, this.depsTail = void 0, this.flags = 16, this.globalVersion = cs - 1, this.next = void 0, this.effect = this, this.__v_isReadonly = !n, this.isSSR = s;
+    this.fn = t, this.setter = n, this._value = void 0, this.dep = new Er(this), this.__v_isRef = !0, this.deps = void 0, this.depsTail = void 0, this.flags = 16, this.globalVersion = ds - 1, this.next = void 0, this.effect = this, this.__v_isReadonly = !n, this.isSSR = s;
   }
   /**
    * @internal
    */
   notify() {
     if (this.flags |= 16, !(this.flags & 8) && // avoid infinite self recursion
-    ve !== this)
-      return gl(this, !0), !0;
+    $e !== this)
+      return $l(this, !0), !0;
     process.env.NODE_ENV;
   }
   get value() {
@@ -1147,130 +1147,130 @@ class Yc {
       type: "get",
       key: "value"
     }) : this.dep.track();
-    return vl(this), t && (t.version = this.dep.version), this._value;
+    return kl(this), t && (t.version = this.dep.version), this._value;
   }
   set value(t) {
-    this.setter ? this.setter(t) : process.env.NODE_ENV !== "production" && tt("Write operation failed: computed value is readonly");
+    this.setter ? this.setter(t) : process.env.NODE_ENV !== "production" && ut("Write operation failed: computed value is readonly");
   }
 }
 // @__NO_SIDE_EFFECTS__
-function Qc(e, t, n = !1) {
+function ru(e, t, n = !1) {
   let s, o;
-  ee(e) ? s = e : (s = e.get, o = e.set);
-  const r = new Yc(s, o, n);
+  ae(e) ? s = e : (s = e.get, o = e.set);
+  const r = new ou(s, o, n);
   return process.env.NODE_ENV, r;
 }
-const ks = {}, qs = /* @__PURE__ */ new WeakMap();
-let hn;
-function Xc(e, t = !1, n = hn) {
+const Ds = {}, Ys = /* @__PURE__ */ new WeakMap();
+let vn;
+function iu(e, t = !1, n = vn) {
   if (n) {
-    let s = qs.get(n);
-    s || qs.set(n, s = []), s.push(e);
-  } else process.env.NODE_ENV !== "production" && !t && tt(
+    let s = Ys.get(n);
+    s || Ys.set(n, s = []), s.push(e);
+  } else process.env.NODE_ENV !== "production" && !t && ut(
     "onWatcherCleanup() was called when there was no active watcher to associate with."
   );
 }
-function Zc(e, t, n = be) {
-  const { immediate: s, deep: o, once: r, scheduler: i, augmentJob: l, call: a } = n, f = (O) => {
-    (n.onWarn || tt)(
+function lu(e, t, n = Oe) {
+  const { immediate: s, deep: o, once: r, scheduler: a, augmentJob: c, call: u } = n, p = (D) => {
+    (n.onWarn || ut)(
       "Invalid watch source: ",
-      O,
+      D,
       "A watch source can only be a getter/effect function, a ref, a reactive object, or an array of these types."
     );
-  }, p = (O) => o ? O : /* @__PURE__ */ He(O) || o === !1 || o === 0 ? Ft(O, 1) : Ft(O);
-  let u, m, b, T, $ = !1, K = !1;
-  if (/* @__PURE__ */ Ee(e) ? (m = () => e.value, $ = /* @__PURE__ */ He(e)) : /* @__PURE__ */ it(e) ? (m = () => p(e), $ = !0) : q(e) ? (K = !0, $ = e.some((O) => /* @__PURE__ */ it(O) || /* @__PURE__ */ He(O)), m = () => e.map((O) => {
-    if (/* @__PURE__ */ Ee(O))
-      return O.value;
-    if (/* @__PURE__ */ it(O))
-      return p(O);
-    if (ee(O))
-      return a ? a(O, 2) : O();
-    process.env.NODE_ENV !== "production" && f(O);
-  })) : ee(e) ? t ? m = a ? () => a(e, 2) : e : m = () => {
-    if (b) {
-      ht();
+  }, h = (D) => o ? D : /* @__PURE__ */ We(D) || o === !1 || o === 0 ? Jt(D, 1) : Jt(D);
+  let f, _, g, k, O = !1, W = !1;
+  if (/* @__PURE__ */ ke(e) ? (_ = () => e.value, O = /* @__PURE__ */ We(e)) : /* @__PURE__ */ ht(e) ? (_ = () => h(e), O = !0) : ee(e) ? (W = !0, O = e.some((D) => /* @__PURE__ */ ht(D) || /* @__PURE__ */ We(D)), _ = () => e.map((D) => {
+    if (/* @__PURE__ */ ke(D))
+      return D.value;
+    if (/* @__PURE__ */ ht(D))
+      return h(D);
+    if (ae(D))
+      return u ? u(D, 2) : D();
+    process.env.NODE_ENV !== "production" && p(D);
+  })) : ae(e) ? t ? _ = u ? () => u(e, 2) : e : _ = () => {
+    if (g) {
+      $t();
       try {
-        b();
+        g();
       } finally {
-        gt();
+        Ot();
       }
     }
-    const O = hn;
-    hn = u;
+    const D = vn;
+    vn = f;
     try {
-      return a ? a(e, 3, [T]) : e(T);
+      return u ? u(e, 3, [k]) : e(k);
     } finally {
-      hn = O;
+      vn = D;
     }
-  } : (m = Ie, process.env.NODE_ENV !== "production" && f(e)), t && o) {
-    const O = m, S = o === !0 ? 1 / 0 : o;
-    m = () => Ft(O(), S);
+  } : (_ = Le, process.env.NODE_ENV !== "production" && p(e)), t && o) {
+    const D = _, T = o === !0 ? 1 / 0 : o;
+    _ = () => Jt(D(), T);
   }
-  const F = fl(), A = () => {
-    u.stop(), F && F.active && ar(F.effects, u);
+  const V = El(), I = () => {
+    f.stop(), V && V.active && pr(V.effects, f);
   };
   if (r && t) {
-    const O = t;
-    t = (...S) => {
-      O(...S), A();
+    const D = t;
+    t = (...T) => {
+      D(...T), I();
     };
   }
-  let I = K ? new Array(e.length).fill(ks) : ks;
-  const te = (O) => {
-    if (!(!(u.flags & 1) || !u.dirty && !O))
+  let L = W ? new Array(e.length).fill(Ds) : Ds;
+  const te = (D) => {
+    if (!(!(f.flags & 1) || !f.dirty && !D))
       if (t) {
-        const S = u.run();
-        if (o || $ || (K ? S.some((v, E) => kt(v, I[E])) : kt(S, I))) {
-          b && b();
-          const v = hn;
-          hn = u;
+        const T = f.run();
+        if (o || O || (W ? T.some((b, S) => Vt(b, L[S])) : Vt(T, L))) {
+          g && g();
+          const b = vn;
+          vn = f;
           try {
-            const E = [
-              S,
+            const S = [
+              T,
               // pass undefined as the old value when it's changed for the first time
-              I === ks ? void 0 : K && I[0] === ks ? [] : I,
-              T
+              L === Ds ? void 0 : W && L[0] === Ds ? [] : L,
+              k
             ];
-            I = S, a ? a(t, 3, E) : (
+            L = T, u ? u(t, 3, S) : (
               // @ts-expect-error
-              t(...E)
+              t(...S)
             );
           } finally {
-            hn = v;
+            vn = b;
           }
         }
       } else
-        u.run();
+        f.run();
   };
-  return l && l(te), u = new pl(m), u.scheduler = i ? () => i(te, !1) : te, T = (O) => Xc(O, !1, u), b = u.onStop = () => {
-    const O = qs.get(u);
-    if (O) {
-      if (a)
-        a(O, 4);
+  return c && c(te), f = new wl(_), f.scheduler = a ? () => a(te, !1) : te, k = (D) => iu(D, !1, f), g = f.onStop = () => {
+    const D = Ys.get(f);
+    if (D) {
+      if (u)
+        u(D, 4);
       else
-        for (const S of O) S();
-      qs.delete(u);
+        for (const T of D) T();
+      Ys.delete(f);
     }
-  }, process.env.NODE_ENV !== "production" && (u.onTrack = n.onTrack, u.onTrigger = n.onTrigger), t ? s ? te(!0) : I = u.run() : i ? i(te.bind(null, !0), !0) : u.run(), A.pause = u.pause.bind(u), A.resume = u.resume.bind(u), A.stop = A, A;
+  }, process.env.NODE_ENV !== "production" && (f.onTrack = n.onTrack, f.onTrigger = n.onTrigger), t ? s ? te(!0) : L = f.run() : a ? a(te.bind(null, !0), !0) : f.run(), I.pause = f.pause.bind(f), I.resume = f.resume.bind(f), I.stop = I, I;
 }
-function Ft(e, t = 1 / 0, n) {
-  if (t <= 0 || !de(e) || e.__v_skip || (n = n || /* @__PURE__ */ new Map(), (n.get(e) || 0) >= t))
+function Jt(e, t = 1 / 0, n) {
+  if (t <= 0 || !ve(e) || e.__v_skip || (n = n || /* @__PURE__ */ new Map(), (n.get(e) || 0) >= t))
     return e;
-  if (n.set(e, t), t--, /* @__PURE__ */ Ee(e))
-    Ft(e.value, t, n);
-  else if (q(e))
+  if (n.set(e, t), t--, /* @__PURE__ */ ke(e))
+    Jt(e.value, t, n);
+  else if (ee(e))
     for (let s = 0; s < e.length; s++)
-      Ft(e[s], t, n);
-  else if (Gn(e) || vn(e))
+      Jt(e[s], t, n);
+  else if (Wn(e) || En(e))
     e.forEach((s) => {
-      Ft(s, t, n);
+      Jt(s, t, n);
     });
-  else if (il(e)) {
+  else if (_l(e)) {
     for (const s in e)
-      Ft(e[s], t, n);
+      Jt(e[s], t, n);
     for (const s of Object.getOwnPropertySymbols(e))
-      Object.prototype.propertyIsEnumerable.call(e, s) && Ft(e[s], t, n);
+      Object.prototype.propertyIsEnumerable.call(e, s) && Jt(e[s], t, n);
   }
   return e;
 }
@@ -1279,32 +1279,32 @@ function Ft(e, t = 1 / 0, n) {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-const yn = [];
-function Vs(e) {
-  yn.push(e);
+const Nn = [];
+function Is(e) {
+  Nn.push(e);
 }
-function As() {
-  yn.pop();
+function Ms() {
+  Nn.pop();
 }
-let Oo = !1;
-function j(e, ...t) {
-  if (Oo) return;
-  Oo = !0, ht();
-  const n = yn.length ? yn[yn.length - 1].component : null, s = n && n.appContext.config.warnHandler, o = eu();
+let ko = !1;
+function B(e, ...t) {
+  if (ko) return;
+  ko = !0, $t();
+  const n = Nn.length ? Nn[Nn.length - 1].component : null, s = n && n.appContext.config.warnHandler, o = au();
   if (s)
-    Wn(
+    qn(
       s,
       n,
       11,
       [
         // eslint-disable-next-line no-restricted-syntax
         e + t.map((r) => {
-          var i, l;
-          return (l = (i = r.toString) == null ? void 0 : i.call(r)) != null ? l : JSON.stringify(r);
+          var a, c;
+          return (c = (a = r.toString) == null ? void 0 : a.call(r)) != null ? c : JSON.stringify(r);
         }).join(""),
         n && n.proxy,
         o.map(
-          ({ vnode: r }) => `at <${Ns(n, r.type)}>`
+          ({ vnode: r }) => `at <${ks(n, r.type)}>`
         ).join(`
 `),
         o
@@ -1313,12 +1313,12 @@ function j(e, ...t) {
   else {
     const r = [`[Vue warn]: ${e}`, ...t];
     o.length && r.push(`
-`, ...tu(o)), console.warn(...r);
+`, ...cu(o)), console.warn(...r);
   }
-  gt(), Oo = !1;
+  Ot(), ko = !1;
 }
-function eu() {
-  let e = yn[yn.length - 1];
+function au() {
+  let e = Nn[Nn.length - 1];
   if (!e)
     return [];
   const t = [];
@@ -1333,31 +1333,31 @@ function eu() {
   }
   return t;
 }
-function tu(e) {
+function cu(e) {
   const t = [];
   return e.forEach((n, s) => {
     t.push(...s === 0 ? [] : [`
-`], ...nu(n));
+`], ...uu(n));
   }), t;
 }
-function nu({ vnode: e, recurseCount: t }) {
-  const n = t > 0 ? `... (${t} recursive calls)` : "", s = e.component ? e.component.parent == null : !1, o = ` at <${Ns(
+function uu({ vnode: e, recurseCount: t }) {
+  const n = t > 0 ? `... (${t} recursive calls)` : "", s = e.component ? e.component.parent == null : !1, o = ` at <${ks(
     e.component,
     e.type,
     s
   )}`, r = ">" + n;
-  return e.props ? [o, ...su(e.props), r] : [o + r];
+  return e.props ? [o, ...du(e.props), r] : [o + r];
 }
-function su(e) {
+function du(e) {
   const t = [], n = Object.keys(e);
   return n.slice(0, 3).forEach((s) => {
-    t.push(...Vl(s, e[s]));
+    t.push(...Hl(s, e[s]));
   }), n.length > 3 && t.push(" ..."), t;
 }
-function Vl(e, t, n) {
-  return Oe(t) ? (t = JSON.stringify(t), n ? t : [`${e}=${t}`]) : typeof t == "number" || typeof t == "boolean" || t == null ? n ? t : [`${e}=${t}`] : /* @__PURE__ */ Ee(t) ? (t = Vl(e, /* @__PURE__ */ ne(t.value), !0), n ? t : [`${e}=Ref<`, t, ">"]) : ee(t) ? [`${e}=fn${t.name ? `<${t.name}>` : ""}`] : (t = /* @__PURE__ */ ne(t), n ? t : [`${e}=`, t]);
+function Hl(e, t, n) {
+  return Te(t) ? (t = JSON.stringify(t), n ? t : [`${e}=${t}`]) : typeof t == "number" || typeof t == "boolean" || t == null ? n ? t : [`${e}=${t}`] : /* @__PURE__ */ ke(t) ? (t = Hl(e, /* @__PURE__ */ de(t.value), !0), n ? t : [`${e}=Ref<`, t, ">"]) : ae(t) ? [`${e}=fn${t.name ? `<${t.name}>` : ""}`] : (t = /* @__PURE__ */ de(t), n ? t : [`${e}=`, t]);
 }
-const _r = {
+const wr = {
   sp: "serverPrefetch hook",
   bc: "beforeCreate hook",
   c: "created hook",
@@ -1390,58 +1390,58 @@ const _r = {
   15: "component update",
   16: "app unmount cleanup function"
 };
-function Wn(e, t, n, s) {
+function qn(e, t, n, s) {
   try {
     return s ? e(...s) : e();
   } catch (o) {
-    bs(o, t, n);
+    ws(o, t, n);
   }
 }
-function Pt(e, t, n, s) {
-  if (ee(e)) {
-    const o = Wn(e, t, n, s);
-    return o && cr(o) && o.catch((r) => {
-      bs(r, t, n);
+function Ut(e, t, n, s) {
+  if (ae(e)) {
+    const o = qn(e, t, n, s);
+    return o && hr(o) && o.catch((r) => {
+      ws(r, t, n);
     }), o;
   }
-  if (q(e)) {
+  if (ee(e)) {
     const o = [];
     for (let r = 0; r < e.length; r++)
-      o.push(Pt(e[r], t, n, s));
+      o.push(Ut(e[r], t, n, s));
     return o;
-  } else process.env.NODE_ENV !== "production" && j(
+  } else process.env.NODE_ENV !== "production" && B(
     `Invalid value type passed to callWithAsyncErrorHandling(): ${typeof e}`
   );
 }
-function bs(e, t, n, s = !0) {
-  const o = t ? t.vnode : null, { errorHandler: r, throwUnhandledErrorInProduction: i } = t && t.appContext.config || be;
+function ws(e, t, n, s = !0) {
+  const o = t ? t.vnode : null, { errorHandler: r, throwUnhandledErrorInProduction: a } = t && t.appContext.config || Oe;
   if (t) {
-    let l = t.parent;
-    const a = t.proxy, f = process.env.NODE_ENV !== "production" ? _r[n] : `https://vuejs.org/error-reference/#runtime-${n}`;
-    for (; l; ) {
-      const p = l.ec;
-      if (p) {
-        for (let u = 0; u < p.length; u++)
-          if (p[u](e, a, f) === !1)
+    let c = t.parent;
+    const u = t.proxy, p = process.env.NODE_ENV !== "production" ? wr[n] : `https://vuejs.org/error-reference/#runtime-${n}`;
+    for (; c; ) {
+      const h = c.ec;
+      if (h) {
+        for (let f = 0; f < h.length; f++)
+          if (h[f](e, u, p) === !1)
             return;
       }
-      l = l.parent;
+      c = c.parent;
     }
     if (r) {
-      ht(), Wn(r, null, 10, [
+      $t(), qn(r, null, 10, [
         e,
-        a,
-        f
-      ]), gt();
+        u,
+        p
+      ]), Ot();
       return;
     }
   }
-  ou(e, n, o, s, i);
+  fu(e, n, o, s, a);
 }
-function ou(e, t, n, s = !0, o = !1) {
+function fu(e, t, n, s = !0, o = !1) {
   if (process.env.NODE_ENV !== "production") {
-    const r = _r[t];
-    if (n && Vs(n), j(`Unhandled error${r ? ` during execution of ${r}` : ""}`), n && As(), s)
+    const r = wr[t];
+    if (n && Is(n), B(`Unhandled error${r ? ` during execution of ${r}` : ""}`), n && Ms(), s)
       throw e;
     console.error(e);
   } else {
@@ -1450,75 +1450,75 @@ function ou(e, t, n, s = !0, o = !1) {
     console.error(e);
   }
 }
-const ze = [];
-let Nt = -1;
-const In = [];
-let Qt = null, Vn = 0;
-const Al = /* @__PURE__ */ Promise.resolve();
-let Js = null;
-const ru = 100;
-function ds(e) {
-  const t = Js || Al;
+const Ye = [];
+let Rt = -1;
+const Ln = [];
+let nn = null, In = 0;
+const Gl = /* @__PURE__ */ Promise.resolve();
+let Xs = null;
+const pu = 100;
+function ps(e) {
+  const t = Xs || Gl;
   return e ? t.then(this ? e.bind(this) : e) : t;
 }
-function iu(e) {
-  let t = Nt + 1, n = ze.length;
+function hu(e) {
+  let t = Rt + 1, n = Ye.length;
   for (; t < n; ) {
-    const s = t + n >>> 1, o = ze[s], r = fs(o);
+    const s = t + n >>> 1, o = Ye[s], r = hs(o);
     r < e || r === e && o.flags & 2 ? t = s + 1 : n = s;
   }
   return t;
 }
 function go(e) {
   if (!(e.flags & 1)) {
-    const t = fs(e), n = ze[ze.length - 1];
+    const t = hs(e), n = Ye[Ye.length - 1];
     !n || // fast path when the job id is larger than the tail
-    !(e.flags & 2) && t >= fs(n) ? ze.push(e) : ze.splice(iu(t), 0, e), e.flags |= 1, Rl();
+    !(e.flags & 2) && t >= hs(n) ? Ye.push(e) : Ye.splice(hu(t), 0, e), e.flags |= 1, Bl();
   }
 }
-function Rl() {
-  Js || (Js = Al.then(Ll));
+function Bl() {
+  Xs || (Xs = Gl.then(ql));
 }
-function Il(e) {
-  q(e) ? In.push(...e) : Qt && e.id === -1 ? Qt.splice(Vn + 1, 0, e) : e.flags & 1 || (In.push(e), e.flags |= 1), Rl();
+function Kl(e) {
+  ee(e) ? Ln.push(...e) : nn && e.id === -1 ? nn.splice(In + 1, 0, e) : e.flags & 1 || (Ln.push(e), e.flags |= 1), Bl();
 }
-function zr(e, t, n = Nt + 1) {
-  for (process.env.NODE_ENV !== "production" && (t = t || /* @__PURE__ */ new Map()); n < ze.length; n++) {
-    const s = ze[n];
+function ei(e, t, n = Rt + 1) {
+  for (process.env.NODE_ENV !== "production" && (t = t || /* @__PURE__ */ new Map()); n < Ye.length; n++) {
+    const s = Ye[n];
     if (s && s.flags & 2) {
-      if (e && s.id !== e.uid || process.env.NODE_ENV !== "production" && vr(t, s))
+      if (e && s.id !== e.uid || process.env.NODE_ENV !== "production" && Nr(t, s))
         continue;
-      ze.splice(n, 1), n--, s.flags & 4 && (s.flags &= -2), s(), s.flags & 4 || (s.flags &= -2);
+      Ye.splice(n, 1), n--, s.flags & 4 && (s.flags &= -2), s(), s.flags & 4 || (s.flags &= -2);
     }
   }
 }
-function Ml(e) {
-  if (In.length) {
-    const t = [...new Set(In)].sort(
-      (n, s) => fs(n) - fs(s)
+function Wl(e) {
+  if (Ln.length) {
+    const t = [...new Set(Ln)].sort(
+      (n, s) => hs(n) - hs(s)
     );
-    if (In.length = 0, Qt) {
-      Qt.push(...t);
+    if (Ln.length = 0, nn) {
+      nn.push(...t);
       return;
     }
-    for (Qt = t, process.env.NODE_ENV !== "production" && (e = e || /* @__PURE__ */ new Map()), Vn = 0; Vn < Qt.length; Vn++) {
-      const n = Qt[Vn];
-      process.env.NODE_ENV !== "production" && vr(e, n) || (n.flags & 4 && (n.flags &= -2), n.flags & 8 || n(), n.flags &= -2);
+    for (nn = t, process.env.NODE_ENV !== "production" && (e = e || /* @__PURE__ */ new Map()), In = 0; In < nn.length; In++) {
+      const n = nn[In];
+      process.env.NODE_ENV !== "production" && Nr(e, n) || (n.flags & 4 && (n.flags &= -2), n.flags & 8 || n(), n.flags &= -2);
     }
-    Qt = null, Vn = 0;
+    nn = null, In = 0;
   }
 }
-const fs = (e) => e.id == null ? e.flags & 2 ? -1 : 1 / 0 : e.id;
-function Ll(e) {
+const hs = (e) => e.id == null ? e.flags & 2 ? -1 : 1 / 0 : e.id;
+function ql(e) {
   process.env.NODE_ENV !== "production" && (e = e || /* @__PURE__ */ new Map());
-  const t = process.env.NODE_ENV !== "production" ? (n) => vr(e, n) : Ie;
+  const t = process.env.NODE_ENV !== "production" ? (n) => Nr(e, n) : Le;
   try {
-    for (Nt = 0; Nt < ze.length; Nt++) {
-      const n = ze[Nt];
+    for (Rt = 0; Rt < Ye.length; Rt++) {
+      const n = Ye[Rt];
       if (n && !(n.flags & 8)) {
         if (process.env.NODE_ENV !== "production" && t(n))
           continue;
-        n.flags & 4 && (n.flags &= -2), Wn(
+        n.flags & 4 && (n.flags &= -2), qn(
           n,
           n.i,
           n.i ? 15 : 14
@@ -1526,18 +1526,18 @@ function Ll(e) {
       }
     }
   } finally {
-    for (; Nt < ze.length; Nt++) {
-      const n = ze[Nt];
+    for (; Rt < Ye.length; Rt++) {
+      const n = Ye[Rt];
       n && (n.flags &= -2);
     }
-    Nt = -1, ze.length = 0, Ml(e), Js = null, (ze.length || In.length) && Ll(e);
+    Rt = -1, Ye.length = 0, Wl(e), Xs = null, (Ye.length || Ln.length) && ql(e);
   }
 }
-function vr(e, t) {
+function Nr(e, t) {
   const n = e.get(t) || 0;
-  if (n > ru) {
-    const s = t.i, o = s && ba(s.type);
-    return bs(
+  if (n > pu) {
+    const s = t.i, o = s && Ca(s.type);
+    return ws(
       `Maximum recursive updates exceeded${o ? ` in component <${o}>` : ""}. This means you have a reactive effect that is mutating its own dependencies and thus recursively triggering itself. Possible sources include component template, render function, updated hook or watcher source function.`,
       null,
       10
@@ -1545,61 +1545,61 @@ function vr(e, t) {
   }
   return e.set(t, n + 1), !1;
 }
-let Dt = !1;
-const Rs = /* @__PURE__ */ new Map();
-process.env.NODE_ENV !== "production" && (vs().__VUE_HMR_RUNTIME__ = {
-  createRecord: So(jl),
-  rerender: So(cu),
-  reload: So(uu)
+let Ft = !1;
+const Fs = /* @__PURE__ */ new Map();
+process.env.NODE_ENV !== "production" && (Es().__VUE_HMR_RUNTIME__ = {
+  createRecord: Co(zl),
+  rerender: Co(gu),
+  reload: Co(vu)
 });
-const Nn = /* @__PURE__ */ new Map();
-function lu(e) {
+const Sn = /* @__PURE__ */ new Map();
+function _u(e) {
   const t = e.type.__hmrId;
-  let n = Nn.get(t);
-  n || (jl(t, e.type), n = Nn.get(t)), n.instances.add(e);
+  let n = Sn.get(t);
+  n || (zl(t, e.type), n = Sn.get(t)), n.instances.add(e);
 }
-function au(e) {
-  Nn.get(e.type.__hmrId).instances.delete(e);
+function mu(e) {
+  Sn.get(e.type.__hmrId).instances.delete(e);
 }
-function jl(e, t) {
-  return Nn.has(e) ? !1 : (Nn.set(e, {
-    initialDef: Ys(t),
+function zl(e, t) {
+  return Sn.has(e) ? !1 : (Sn.set(e, {
+    initialDef: Zs(t),
     instances: /* @__PURE__ */ new Set()
   }), !0);
 }
-function Ys(e) {
-  return ya(e) ? e.__vccOpts : e;
+function Zs(e) {
+  return xa(e) ? e.__vccOpts : e;
 }
-function cu(e, t) {
-  const n = Nn.get(e);
+function gu(e, t) {
+  const n = Sn.get(e);
   n && (n.initialDef.render = t, [...n.instances].forEach((s) => {
-    t && (s.render = t, Ys(s.type).render = t), s.renderCache = [], Dt = !0, s.job.flags & 8 || s.update(), Dt = !1;
+    t && (s.render = t, Zs(s.type).render = t), s.renderCache = [], Ft = !0, s.job.flags & 8 || s.update(), Ft = !1;
   }));
 }
-function uu(e, t) {
-  const n = Nn.get(e);
+function vu(e, t) {
+  const n = Sn.get(e);
   if (!n) return;
-  t = Ys(t), qr(n.initialDef, t);
+  t = Zs(t), ti(n.initialDef, t);
   const s = [...n.instances];
   for (let o = 0; o < s.length; o++) {
-    const r = s[o], i = Ys(r.type);
-    let l = Rs.get(i);
-    l || (i !== n.initialDef && qr(i, t), Rs.set(i, l = /* @__PURE__ */ new Set())), l.add(r), r.appContext.propsCache.delete(r.type), r.appContext.emitsCache.delete(r.type), r.appContext.optionsCache.delete(r.type), r.ceReload ? (l.add(r), r.ceReload(t.styles), l.delete(r)) : r.parent ? go(() => {
-      r.job.flags & 8 || (Dt = !0, r.parent.update(), Dt = !1, l.delete(r));
+    const r = s[o], a = Zs(r.type);
+    let c = Fs.get(a);
+    c || (a !== n.initialDef && ti(a, t), Fs.set(a, c = /* @__PURE__ */ new Set())), c.add(r), r.appContext.propsCache.delete(r.type), r.appContext.emitsCache.delete(r.type), r.appContext.optionsCache.delete(r.type), r.ceReload ? (c.add(r), r.ceReload(t.styles), c.delete(r)) : r.parent ? go(() => {
+      r.job.flags & 8 || (Ft = !0, r.parent.update(), Ft = !1, c.delete(r));
     }) : r.appContext.reload ? r.appContext.reload() : typeof window < "u" ? window.location.reload() : console.warn(
       "[HMR] Root or manually mounted instance modified. Full reload required."
-    ), r.root.ce && r !== r.root && r.root.ce._removeChildStyle(i);
+    ), r.root.ce && r !== r.root && r.root.ce._removeChildStyle(a);
   }
-  Il(() => {
-    Rs.clear();
+  Kl(() => {
+    Fs.clear();
   });
 }
-function qr(e, t) {
-  De(e, t);
+function ti(e, t) {
+  Ae(e, t);
   for (const n in e)
     n !== "__file" && !(n in t) && delete e[n];
 }
-function So(e) {
+function Co(e) {
   return (t, n) => {
     try {
       return e(t, n);
@@ -1610,49 +1610,49 @@ function So(e) {
     }
   };
 }
-let ut, es = [], Fo = !1;
-function ys(e, ...t) {
-  ut ? ut.emit(e, ...t) : Fo || es.push({ event: e, args: t });
+let bt, ts = [], Bo = !1;
+function Ns(e, ...t) {
+  bt ? bt.emit(e, ...t) : Bo || ts.push({ event: e, args: t });
 }
-function br(e, t) {
+function $r(e, t) {
   var n, s;
-  ut = e, ut ? (ut.enabled = !0, es.forEach(({ event: o, args: r }) => ut.emit(o, ...r)), es = []) : /* handle late devtools injection - only do this if we are in an actual */ /* browser environment to avoid the timer handle stalling test runner exit */ /* (#4815) */ typeof window < "u" && // some envs mock window but not fully
+  bt = e, bt ? (bt.enabled = !0, ts.forEach(({ event: o, args: r }) => bt.emit(o, ...r)), ts = []) : /* handle late devtools injection - only do this if we are in an actual */ /* browser environment to avoid the timer handle stalling test runner exit */ /* (#4815) */ typeof window < "u" && // some envs mock window but not fully
   window.HTMLElement && // also exclude jsdom
   // eslint-disable-next-line no-restricted-syntax
   !((s = (n = window.navigator) == null ? void 0 : n.userAgent) != null && s.includes("jsdom")) ? ((t.__VUE_DEVTOOLS_HOOK_REPLAY__ = t.__VUE_DEVTOOLS_HOOK_REPLAY__ || []).push((r) => {
-    br(r, t);
+    $r(r, t);
   }), setTimeout(() => {
-    ut || (t.__VUE_DEVTOOLS_HOOK_REPLAY__ = null, Fo = !0, es = []);
-  }, 3e3)) : (Fo = !0, es = []);
+    bt || (t.__VUE_DEVTOOLS_HOOK_REPLAY__ = null, Bo = !0, ts = []);
+  }, 3e3)) : (Bo = !0, ts = []);
 }
-function du(e, t) {
-  ys("app:init", e, t, {
-    Fragment: X,
-    Text: Es,
-    Comment: Ze,
-    Static: Ls
+function bu(e, t) {
+  Ns("app:init", e, t, {
+    Fragment: Y,
+    Text: Os,
+    Comment: it,
+    Static: Us
   });
 }
-function fu(e) {
-  ys("app:unmount", e);
+function yu(e) {
+  Ns("app:unmount", e);
 }
-const pu = /* @__PURE__ */ yr(
+const Eu = /* @__PURE__ */ Or(
   "component:added"
   /* COMPONENT_ADDED */
-), Fl = /* @__PURE__ */ yr(
+), Jl = /* @__PURE__ */ Or(
   "component:updated"
   /* COMPONENT_UPDATED */
-), hu = /* @__PURE__ */ yr(
+), wu = /* @__PURE__ */ Or(
   "component:removed"
   /* COMPONENT_REMOVED */
-), gu = (e) => {
-  ut && typeof ut.cleanupBuffer == "function" && // remove the component if it wasn't buffered
-  !ut.cleanupBuffer(e) && hu(e);
+), Nu = (e) => {
+  bt && typeof bt.cleanupBuffer == "function" && // remove the component if it wasn't buffered
+  !bt.cleanupBuffer(e) && wu(e);
 };
 // @__NO_SIDE_EFFECTS__
-function yr(e) {
+function Or(e) {
   return (t) => {
-    ys(
+    Ns(
       e,
       t.appContext.app,
       t.uid,
@@ -1661,20 +1661,20 @@ function yr(e) {
     );
   };
 }
-const mu = /* @__PURE__ */ Ul(
+const $u = /* @__PURE__ */ Ql(
   "perf:start"
   /* PERFORMANCE_START */
-), _u = /* @__PURE__ */ Ul(
+), Ou = /* @__PURE__ */ Ql(
   "perf:end"
   /* PERFORMANCE_END */
 );
-function Ul(e) {
+function Ql(e) {
   return (t, n, s) => {
-    ys(e, t.appContext.app, t.uid, t, n, s);
+    Ns(e, t.appContext.app, t.uid, t, n, s);
   };
 }
-function vu(e, t, n) {
-  ys(
+function Su(e, t, n) {
+  Ns(
     "component:emit",
     e.appContext.app,
     e,
@@ -1682,145 +1682,145 @@ function vu(e, t, n) {
     n
   );
 }
-let Me = null, Hl = null;
-function Qs(e) {
-  const t = Me;
-  return Me = e, Hl = e && e.type.__scopeId || null, t;
+let je = null, Yl = null;
+function eo(e) {
+  const t = je;
+  return je = e, Yl = e && e.type.__scopeId || null, t;
 }
-function he(e, t = Me, n) {
+function ie(e, t = je, n) {
   if (!t || e._n)
     return e;
   const s = (...o) => {
-    s._d && no(-1);
-    const r = Qs(t);
-    let i;
+    s._d && ro(-1);
+    const r = eo(t);
+    let a;
     try {
-      i = e(...o);
+      a = e(...o);
     } finally {
-      Qs(r), s._d && no(1);
+      eo(r), s._d && ro(1);
     }
-    return process.env.NODE_ENV !== "production" && Fl(t), i;
+    return process.env.NODE_ENV !== "production" && Jl(t), a;
   };
   return s._n = !0, s._c = !0, s._d = !0, s;
 }
-function Bl(e) {
-  cc(e) && j("Do not use built-in directive ids as custom directive id: " + e);
+function Xl(e) {
+  gc(e) && B("Do not use built-in directive ids as custom directive id: " + e);
 }
-function St(e, t) {
-  if (Me === null)
-    return process.env.NODE_ENV !== "production" && j("withDirectives can only be used inside render functions."), e;
-  const n = vo(Me), s = e.dirs || (e.dirs = []);
+function Xe(e, t) {
+  if (je === null)
+    return process.env.NODE_ENV !== "production" && B("withDirectives can only be used inside render functions."), e;
+  const n = yo(je), s = e.dirs || (e.dirs = []);
   for (let o = 0; o < t.length; o++) {
-    let [r, i, l, a = be] = t[o];
-    r && (ee(r) && (r = {
+    let [r, a, c, u = Oe] = t[o];
+    r && (ae(r) && (r = {
       mounted: r,
       updated: r
-    }), r.deep && Ft(i), s.push({
+    }), r.deep && Jt(a), s.push({
       dir: r,
       instance: n,
-      value: i,
+      value: a,
       oldValue: void 0,
-      arg: l,
-      modifiers: a
+      arg: c,
+      modifiers: u
     }));
   }
   return e;
 }
-function un(e, t, n, s) {
+function _n(e, t, n, s) {
   const o = e.dirs, r = t && t.dirs;
-  for (let i = 0; i < o.length; i++) {
-    const l = o[i];
-    r && (l.oldValue = r[i].value);
-    let a = l.dir[s];
-    a && (ht(), Pt(a, n, 8, [
+  for (let a = 0; a < o.length; a++) {
+    const c = o[a];
+    r && (c.oldValue = r[a].value);
+    let u = c.dir[s];
+    u && ($t(), Ut(u, n, 8, [
       e.el,
-      l,
+      c,
       e,
       t
-    ]), gt());
+    ]), Ot());
   }
 }
-function Is(e, t) {
-  if (process.env.NODE_ENV !== "production" && (!Ae || Ae.isMounted) && j("provide() can only be used inside setup()."), Ae) {
-    let n = Ae.provides;
-    const s = Ae.parent && Ae.parent.provides;
-    s === n && (n = Ae.provides = Object.create(s)), n[e] = t;
+function Ls(e, t) {
+  if (process.env.NODE_ENV !== "production" && (!Me || Me.isMounted) && B("provide() can only be used inside setup()."), Me) {
+    let n = Me.provides;
+    const s = Me.parent && Me.parent.provides;
+    s === n && (n = Me.provides = Object.create(s)), n[e] = t;
   }
 }
-function ft(e, t, n = !1) {
-  const s = Kn();
-  if (s || wn) {
-    let o = wn ? wn._context.provides : s ? s.parent == null || s.ce ? s.vnode.appContext && s.vnode.appContext.provides : s.parent.provides : void 0;
+function _t(e, t, n = !1) {
+  const s = zn();
+  if (s || On) {
+    let o = On ? On._context.provides : s ? s.parent == null || s.ce ? s.vnode.appContext && s.vnode.appContext.provides : s.parent.provides : void 0;
     if (o && e in o)
       return o[e];
     if (arguments.length > 1)
-      return n && ee(t) ? t.call(s && s.proxy) : t;
-    process.env.NODE_ENV !== "production" && j(`injection "${String(e)}" not found.`);
-  } else process.env.NODE_ENV !== "production" && j("inject() can only be used inside setup() or functional components.");
+      return n && ae(t) ? t.call(s && s.proxy) : t;
+    process.env.NODE_ENV !== "production" && B(`injection "${String(e)}" not found.`);
+  } else process.env.NODE_ENV !== "production" && B("inject() can only be used inside setup() or functional components.");
 }
-function bu() {
-  return !!(Kn() || wn);
+function ku() {
+  return !!(zn() || On);
 }
-const yu = /* @__PURE__ */ Symbol.for("v-scx"), Eu = () => {
+const Cu = /* @__PURE__ */ Symbol.for("v-scx"), xu = () => {
   {
-    const e = ft(yu);
-    return e || process.env.NODE_ENV !== "production" && j(
+    const e = _t(Cu);
+    return e || process.env.NODE_ENV !== "production" && B(
       "Server rendering context not provided. Make sure to only call useSSRContext() conditionally in the server build."
     ), e;
   }
 };
-function wu(e, t) {
-  return Er(e, null, t);
+function Du(e, t) {
+  return Sr(e, null, t);
 }
 function qe(e, t, n) {
-  return process.env.NODE_ENV !== "production" && !ee(t) && j(
+  return process.env.NODE_ENV !== "production" && !ae(t) && B(
     "`watch(fn, options?)` signature has been moved to a separate API. Use `watchEffect(fn, options?)` instead. `watch` now only supports `watch(source, cb, options?) signature."
-  ), Er(e, t, n);
+  ), Sr(e, t, n);
 }
-function Er(e, t, n = be) {
-  const { immediate: s, deep: o, flush: r, once: i } = n;
-  process.env.NODE_ENV !== "production" && !t && (s !== void 0 && j(
+function Sr(e, t, n = Oe) {
+  const { immediate: s, deep: o, flush: r, once: a } = n;
+  process.env.NODE_ENV !== "production" && !t && (s !== void 0 && B(
     'watch() "immediate" option is only respected when using the watch(source, callback, options?) signature.'
-  ), o !== void 0 && j(
+  ), o !== void 0 && B(
     'watch() "deep" option is only respected when using the watch(source, callback, options?) signature.'
-  ), i !== void 0 && j(
+  ), a !== void 0 && B(
     'watch() "once" option is only respected when using the watch(source, callback, options?) signature.'
   ));
-  const l = De({}, n);
-  process.env.NODE_ENV !== "production" && (l.onWarn = j);
-  const a = t && s || !t && r !== "post";
-  let f;
-  if (hs) {
+  const c = Ae({}, n);
+  process.env.NODE_ENV !== "production" && (c.onWarn = B);
+  const u = t && s || !t && r !== "post";
+  let p;
+  if (ms) {
     if (r === "sync") {
-      const b = Eu();
-      f = b.__watcherHandles || (b.__watcherHandles = []);
-    } else if (!a) {
-      const b = () => {
+      const g = xu();
+      p = g.__watcherHandles || (g.__watcherHandles = []);
+    } else if (!u) {
+      const g = () => {
       };
-      return b.stop = Ie, b.resume = Ie, b.pause = Ie, b;
+      return g.stop = Le, g.resume = Le, g.pause = Le, g;
     }
   }
-  const p = Ae;
-  l.call = (b, T, $) => Pt(b, p, T, $);
-  let u = !1;
-  r === "post" ? l.scheduler = (b) => {
-    Qe(b, p && p.suspense);
-  } : r !== "sync" && (u = !0, l.scheduler = (b, T) => {
-    T ? b() : go(b);
-  }), l.augmentJob = (b) => {
-    t && (b.flags |= 4), u && (b.flags |= 2, p && (b.id = p.uid, b.i = p));
+  const h = Me;
+  c.call = (g, k, O) => Ut(g, h, k, O);
+  let f = !1;
+  r === "post" ? c.scheduler = (g) => {
+    ot(g, h && h.suspense);
+  } : r !== "sync" && (f = !0, c.scheduler = (g, k) => {
+    k ? g() : go(g);
+  }), c.augmentJob = (g) => {
+    t && (g.flags |= 4), f && (g.flags |= 2, h && (g.id = h.uid, g.i = h));
   };
-  const m = Zc(e, t, l);
-  return hs && (f ? f.push(m) : a && m()), m;
+  const _ = lu(e, t, c);
+  return ms && (p ? p.push(_) : u && _()), _;
 }
-function Nu(e, t, n) {
-  const s = this.proxy, o = Oe(e) ? e.includes(".") ? Gl(s, e) : () => s[e] : e.bind(s, s);
+function Tu(e, t, n) {
+  const s = this.proxy, o = Te(e) ? e.includes(".") ? Zl(s, e) : () => s[e] : e.bind(s, s);
   let r;
-  ee(t) ? r = t : (r = t.handler, n = t);
-  const i = ws(this), l = Er(o, r.bind(s), n);
-  return i(), l;
+  ae(t) ? r = t : (r = t.handler, n = t);
+  const a = Ss(this), c = Sr(o, r.bind(s), n);
+  return a(), c;
 }
-function Gl(e, t) {
+function Zl(e, t) {
   const n = t.split(".");
   return () => {
     let s = e;
@@ -1829,33 +1829,33 @@ function Gl(e, t) {
     return s;
   };
 }
-const Ou = /* @__PURE__ */ Symbol("_vte"), Su = (e) => e.__isTeleport, ku = /* @__PURE__ */ Symbol("_leaveCb");
-function wr(e, t) {
-  e.shapeFlag & 6 && e.component ? (e.transition = t, wr(e.component.subTree, t)) : e.shapeFlag & 128 ? (e.ssContent.transition = t.clone(e.ssContent), e.ssFallback.transition = t.clone(e.ssFallback)) : e.transition = t;
+const Pu = /* @__PURE__ */ Symbol("_vte"), Ru = (e) => e.__isTeleport, Au = /* @__PURE__ */ Symbol("_leaveCb");
+function kr(e, t) {
+  e.shapeFlag & 6 && e.component ? (e.transition = t, kr(e.component.subTree, t)) : e.shapeFlag & 128 ? (e.ssContent.transition = t.clone(e.ssContent), e.ssFallback.transition = t.clone(e.ssFallback)) : e.transition = t;
 }
 // @__NO_SIDE_EFFECTS__
-function Be(e, t) {
-  return ee(e) ? (
+function Ve(e, t) {
+  return ae(e) ? (
     // #8236: extend call and options.name access are considered side-effects
     // by Rollup, so we have to wrap it in a pure-annotated IIFE.
-    De({ name: e.name }, t, { setup: e })
+    Ae({ name: e.name }, t, { setup: e })
   ) : e;
 }
-function Wl(e) {
+function ea(e) {
   e.ids = [e.ids[0] + e.ids[2]++ + "-", 0, 0];
 }
-const Jr = /* @__PURE__ */ new WeakSet();
-function Yr(e, t) {
+const ni = /* @__PURE__ */ new WeakSet();
+function si(e, t) {
   let n;
   return !!((n = Object.getOwnPropertyDescriptor(e, t)) && !n.configurable);
 }
-const Xs = /* @__PURE__ */ new WeakMap();
-function is(e, t, n, s, o = !1) {
-  if (q(e)) {
+const to = /* @__PURE__ */ new WeakMap();
+function ls(e, t, n, s, o = !1) {
+  if (ee(e)) {
     e.forEach(
-      ($, K) => is(
-        $,
-        t && (q(t) ? t[K] : t),
+      (O, W) => ls(
+        O,
+        t && (ee(t) ? t[W] : t),
         n,
         s,
         o
@@ -1863,72 +1863,72 @@ function is(e, t, n, s, o = !1) {
     );
     return;
   }
-  if (Mn(s) && !o) {
-    s.shapeFlag & 512 && s.type.__asyncResolved && s.component.subTree.component && is(e, t, n, s.component.subTree);
+  if (jn(s) && !o) {
+    s.shapeFlag & 512 && s.type.__asyncResolved && s.component.subTree.component && ls(e, t, n, s.component.subTree);
     return;
   }
-  const r = s.shapeFlag & 4 ? vo(s.component) : s.el, i = o ? null : r, { i: l, r: a } = e;
-  if (process.env.NODE_ENV !== "production" && !l) {
-    j(
+  const r = s.shapeFlag & 4 ? yo(s.component) : s.el, a = o ? null : r, { i: c, r: u } = e;
+  if (process.env.NODE_ENV !== "production" && !c) {
+    B(
       "Missing ref owner context. ref cannot be used on hoisted vnodes. A vnode with ref must be created inside the render function."
     );
     return;
   }
-  const f = t && t.r, p = l.refs === be ? l.refs = {} : l.refs, u = l.setupState, m = /* @__PURE__ */ ne(u), b = u === be ? ol : ($) => process.env.NODE_ENV !== "production" && (pe(m, $) && !/* @__PURE__ */ Ee(m[$]) && j(
-    `Template ref "${$}" used on a non-ref value. It will not work in the production build.`
-  ), Jr.has(m[$])) || Yr(p, $) ? !1 : pe(m, $), T = ($, K) => !(process.env.NODE_ENV !== "production" && Jr.has($) || K && Yr(p, K));
-  if (f != null && f !== a) {
-    if (Qr(t), Oe(f))
-      p[f] = null, b(f) && (u[f] = null);
-    else if (/* @__PURE__ */ Ee(f)) {
-      const $ = t;
-      T(f, $.k) && (f.value = null), $.k && (p[$.k] = null);
+  const p = t && t.r, h = c.refs === Oe ? c.refs = {} : c.refs, f = c.setupState, _ = /* @__PURE__ */ de(f), g = f === Oe ? pl : (O) => process.env.NODE_ENV !== "production" && (be(_, O) && !/* @__PURE__ */ ke(_[O]) && B(
+    `Template ref "${O}" used on a non-ref value. It will not work in the production build.`
+  ), ni.has(_[O])) || si(h, O) ? !1 : be(_, O), k = (O, W) => !(process.env.NODE_ENV !== "production" && ni.has(O) || W && si(h, W));
+  if (p != null && p !== u) {
+    if (oi(t), Te(p))
+      h[p] = null, g(p) && (f[p] = null);
+    else if (/* @__PURE__ */ ke(p)) {
+      const O = t;
+      k(p, O.k) && (p.value = null), O.k && (h[O.k] = null);
     }
   }
-  if (ee(a))
-    Wn(a, l, 12, [i, p]);
+  if (ae(u))
+    qn(u, c, 12, [a, h]);
   else {
-    const $ = Oe(a), K = /* @__PURE__ */ Ee(a);
-    if ($ || K) {
-      const F = () => {
+    const O = Te(u), W = /* @__PURE__ */ ke(u);
+    if (O || W) {
+      const V = () => {
         if (e.f) {
-          const A = $ ? b(a) ? u[a] : p[a] : T(a) || !e.k ? a.value : p[e.k];
+          const I = O ? g(u) ? f[u] : h[u] : k(u) || !e.k ? u.value : h[e.k];
           if (o)
-            q(A) && ar(A, r);
-          else if (q(A))
-            A.includes(r) || A.push(r);
-          else if ($)
-            p[a] = [r], b(a) && (u[a] = p[a]);
+            ee(I) && pr(I, r);
+          else if (ee(I))
+            I.includes(r) || I.push(r);
+          else if (O)
+            h[u] = [r], g(u) && (f[u] = h[u]);
           else {
-            const I = [r];
-            T(a, e.k) && (a.value = I), e.k && (p[e.k] = I);
+            const L = [r];
+            k(u, e.k) && (u.value = L), e.k && (h[e.k] = L);
           }
-        } else $ ? (p[a] = i, b(a) && (u[a] = i)) : K ? (T(a, e.k) && (a.value = i), e.k && (p[e.k] = i)) : process.env.NODE_ENV !== "production" && j("Invalid template ref type:", a, `(${typeof a})`);
+        } else O ? (h[u] = a, g(u) && (f[u] = a)) : W ? (k(u, e.k) && (u.value = a), e.k && (h[e.k] = a)) : process.env.NODE_ENV !== "production" && B("Invalid template ref type:", u, `(${typeof u})`);
       };
-      if (i) {
-        const A = () => {
-          F(), Xs.delete(e);
+      if (a) {
+        const I = () => {
+          V(), to.delete(e);
         };
-        A.id = -1, Xs.set(e, A), Qe(A, n);
+        I.id = -1, to.set(e, I), ot(I, n);
       } else
-        Qr(e), F();
-    } else process.env.NODE_ENV !== "production" && j("Invalid template ref type:", a, `(${typeof a})`);
+        oi(e), V();
+    } else process.env.NODE_ENV !== "production" && B("Invalid template ref type:", u, `(${typeof u})`);
   }
 }
-function Qr(e) {
-  const t = Xs.get(e);
-  t && (t.flags |= 8, Xs.delete(e));
+function oi(e) {
+  const t = to.get(e);
+  t && (t.flags |= 8, to.delete(e));
 }
-vs().requestIdleCallback;
-vs().cancelIdleCallback;
-const Mn = (e) => !!e.type.__asyncLoader, Nr = (e) => e.type.__isKeepAlive;
-function $u(e, t) {
-  Kl(e, "a", t);
+Es().requestIdleCallback;
+Es().cancelIdleCallback;
+const jn = (e) => !!e.type.__asyncLoader, Cr = (e) => e.type.__isKeepAlive;
+function Vu(e, t) {
+  ta(e, "a", t);
 }
-function Cu(e, t) {
-  Kl(e, "da", t);
+function Iu(e, t) {
+  ta(e, "da", t);
 }
-function Kl(e, t, n = Ae) {
+function ta(e, t, n = Me) {
   const s = e.__wdc || (e.__wdc = () => {
     let o = n;
     for (; o; ) {
@@ -1938,157 +1938,157 @@ function Kl(e, t, n = Ae) {
     }
     return e();
   });
-  if (mo(t, s, n), n) {
+  if (vo(t, s, n), n) {
     let o = n.parent;
     for (; o && o.parent; )
-      Nr(o.parent.vnode) && Du(s, t, n, o), o = o.parent;
+      Cr(o.parent.vnode) && Mu(s, t, n, o), o = o.parent;
   }
 }
-function Du(e, t, n, s) {
-  const o = mo(
+function Mu(e, t, n, s) {
+  const o = vo(
     t,
     e,
     s,
     !0
     /* prepend */
   );
-  zl(() => {
-    ar(s[t], o);
+  na(() => {
+    pr(s[t], o);
   }, n);
 }
-function mo(e, t, n = Ae, s = !1) {
+function vo(e, t, n = Me, s = !1) {
   if (n) {
-    const o = n[e] || (n[e] = []), r = t.__weh || (t.__weh = (...i) => {
-      ht();
-      const l = ws(n), a = Pt(t, n, e, i);
-      return l(), gt(), a;
+    const o = n[e] || (n[e] = []), r = t.__weh || (t.__weh = (...a) => {
+      $t();
+      const c = Ss(n), u = Ut(t, n, e, a);
+      return c(), Ot(), u;
     });
     return s ? o.unshift(r) : o.push(r), r;
   } else if (process.env.NODE_ENV !== "production") {
-    const o = pn(_r[e].replace(/ hook$/, ""));
-    j(
+    const o = gn(wr[e].replace(/ hook$/, ""));
+    B(
       `${o} is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.`
     );
   }
 }
-const Gt = (e) => (t, n = Ae) => {
-  (!hs || e === "sp") && mo(e, (...s) => t(...s), n);
-}, xu = Gt("bm"), Or = Gt("m"), Tu = Gt(
+const en = (e) => (t, n = Me) => {
+  (!ms || e === "sp") && vo(e, (...s) => t(...s), n);
+}, Fu = en("bm"), $s = en("m"), Lu = en(
   "bu"
-), Pu = Gt("u"), Vu = Gt(
+), ju = en("u"), Uu = en(
   "bum"
-), zl = Gt("um"), Au = Gt(
+), na = en("um"), Hu = en(
   "sp"
-), Ru = Gt("rtg"), Iu = Gt("rtc");
-function Mu(e, t = Ae) {
-  mo("ec", e, t);
+), Gu = en("rtg"), Bu = en("rtc");
+function Ku(e, t = Me) {
+  vo("ec", e, t);
 }
-const Lu = /* @__PURE__ */ Symbol.for("v-ndc");
-function ke(e, t, n, s) {
+const Wu = /* @__PURE__ */ Symbol.for("v-ndc");
+function ye(e, t, n, s) {
   let o;
-  const r = n, i = q(e);
-  if (i || Oe(e)) {
-    const l = i && /* @__PURE__ */ it(e);
-    let a = !1, f = !1;
-    l && (a = !/* @__PURE__ */ He(e), f = /* @__PURE__ */ mt(e), e = fo(e)), o = new Array(e.length);
-    for (let p = 0, u = e.length; p < u; p++)
-      o[p] = t(
-        a ? f ? jn(_t(e[p])) : _t(e[p]) : e[p],
-        p,
+  const r = n, a = ee(e);
+  if (a || Te(e)) {
+    const c = a && /* @__PURE__ */ ht(e);
+    let u = !1, p = !1;
+    c && (u = !/* @__PURE__ */ We(e), p = /* @__PURE__ */ St(e), e = ho(e)), o = new Array(e.length);
+    for (let h = 0, f = e.length; h < f; h++)
+      o[h] = t(
+        u ? p ? Hn(kt(e[h])) : kt(e[h]) : e[h],
+        h,
         void 0,
         r
       );
   } else if (typeof e == "number")
     if (process.env.NODE_ENV !== "production" && (!Number.isInteger(e) || e < 0))
-      j(
+      B(
         `The v-for range expects a positive integer value but got ${e}.`
       ), o = [];
     else {
       o = new Array(e);
-      for (let l = 0; l < e; l++)
-        o[l] = t(l + 1, l, void 0, r);
+      for (let c = 0; c < e; c++)
+        o[c] = t(c + 1, c, void 0, r);
     }
-  else if (de(e))
+  else if (ve(e))
     if (e[Symbol.iterator])
       o = Array.from(
         e,
-        (l, a) => t(l, a, void 0, r)
+        (c, u) => t(c, u, void 0, r)
       );
     else {
-      const l = Object.keys(e);
-      o = new Array(l.length);
-      for (let a = 0, f = l.length; a < f; a++) {
-        const p = l[a];
-        o[a] = t(e[p], p, a, r);
+      const c = Object.keys(e);
+      o = new Array(c.length);
+      for (let u = 0, p = c.length; u < p; u++) {
+        const h = c[u];
+        o[u] = t(e[h], h, u, r);
       }
     }
   else
     o = [];
   return o;
 }
-function Xr(e, t, n = {}, s, o) {
-  if (Me.ce || Me.parent && Mn(Me.parent) && Me.parent.ce) {
-    const f = Object.keys(n).length > 0;
-    return t !== "default" && (n.name = t), D(), Fn(
-      X,
+function ri(e, t, n = {}, s, o) {
+  if (je.ce || je.parent && jn(je.parent) && je.parent.ce) {
+    const p = Object.keys(n).length > 0;
+    return t !== "default" && (n.name = t), E(), un(
+      Y,
       null,
-      [Z("slot", n, s)],
-      f ? -2 : 64
+      [X("slot", n, s)],
+      p ? -2 : 64
     );
   }
   let r = e[t];
-  process.env.NODE_ENV !== "production" && r && r.length > 1 && (j(
+  process.env.NODE_ENV !== "production" && r && r.length > 1 && (B(
     "SSR-optimized slot function detected in a non-SSR-optimized render function. You need to mark this component with $dynamic-slots in the parent template."
-  ), r = () => []), r && r._c && (r._d = !1), D();
-  const i = r && ql(r(n)), l = n.key || // slot content array of a dynamic conditional slot may have a branch
+  ), r = () => []), r && r._c && (r._d = !1), E();
+  const a = r && sa(r(n)), c = n.key || // slot content array of a dynamic conditional slot may have a branch
   // key attached in the `createSlots` helper, respect that
-  i && i.key, a = Fn(
-    X,
+  a && a.key, u = un(
+    Y,
     {
-      key: (l && !pt(l) ? l : `_${t}`) + // #7256 force differentiate fallback content from actual content
-      (!i && s ? "_fb" : "")
+      key: (c && !Nt(c) ? c : `_${t}`) + // #7256 force differentiate fallback content from actual content
+      (!a && s ? "_fb" : "")
     },
-    i || [],
-    i && e._ === 1 ? 64 : -2
+    a || [],
+    a && e._ === 1 ? 64 : -2
   );
-  return a.scopeId && (a.slotScopeIds = [a.scopeId + "-s"]), r && r._c && (r._d = !0), a;
+  return u.scopeId && (u.slotScopeIds = [u.scopeId + "-s"]), r && r._c && (r._d = !0), u;
 }
-function ql(e) {
-  return e.some((t) => On(t) ? !(t.type === Ze || t.type === X && !ql(t.children)) : !0) ? e : null;
+function sa(e) {
+  return e.some((t) => kn(t) ? !(t.type === it || t.type === Y && !sa(t.children)) : !0) ? e : null;
 }
-const Uo = (e) => e ? _a(e) ? vo(e) : Uo(e.parent) : null, En = (
+const Ko = (e) => e ? Sa(e) ? yo(e) : Ko(e.parent) : null, $n = (
   // Move PURE marker to new line to workaround compiler discarding it
   // due to type annotation
-  /* @__PURE__ */ De(/* @__PURE__ */ Object.create(null), {
+  /* @__PURE__ */ Ae(/* @__PURE__ */ Object.create(null), {
     $: (e) => e,
     $el: (e) => e.vnode.el,
     $data: (e) => e.data,
-    $props: (e) => process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Ct(e.props) : e.props,
-    $attrs: (e) => process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Ct(e.attrs) : e.attrs,
-    $slots: (e) => process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Ct(e.slots) : e.slots,
-    $refs: (e) => process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Ct(e.refs) : e.refs,
-    $parent: (e) => Uo(e.parent),
-    $root: (e) => Uo(e.root),
+    $props: (e) => process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Mt(e.props) : e.props,
+    $attrs: (e) => process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Mt(e.attrs) : e.attrs,
+    $slots: (e) => process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Mt(e.slots) : e.slots,
+    $refs: (e) => process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Mt(e.refs) : e.refs,
+    $parent: (e) => Ko(e.parent),
+    $root: (e) => Ko(e.root),
     $host: (e) => e.ce,
     $emit: (e) => e.emit,
-    $options: (e) => Ql(e),
+    $options: (e) => ia(e),
     $forceUpdate: (e) => e.f || (e.f = () => {
       go(e.update);
     }),
-    $nextTick: (e) => e.n || (e.n = ds.bind(e.proxy)),
-    $watch: (e) => Nu.bind(e)
+    $nextTick: (e) => e.n || (e.n = ps.bind(e.proxy)),
+    $watch: (e) => Tu.bind(e)
   })
-), Sr = (e) => e === "_" || e === "$", ko = (e, t) => e !== be && !e.__isScriptSetup && pe(e, t), Jl = {
+), xr = (e) => e === "_" || e === "$", xo = (e, t) => e !== Oe && !e.__isScriptSetup && be(e, t), oa = {
   get({ _: e }, t) {
     if (t === "__v_skip")
       return !0;
-    const { ctx: n, setupState: s, data: o, props: r, accessCache: i, type: l, appContext: a } = e;
+    const { ctx: n, setupState: s, data: o, props: r, accessCache: a, type: c, appContext: u } = e;
     if (process.env.NODE_ENV !== "production" && t === "__isVue")
       return !0;
     if (t[0] !== "$") {
-      const m = i[t];
-      if (m !== void 0)
-        switch (m) {
+      const _ = a[t];
+      if (_ !== void 0)
+        switch (_) {
           case 1:
             return s[t];
           case 2:
@@ -2099,46 +2099,46 @@ const Uo = (e) => e ? _a(e) ? vo(e) : Uo(e.parent) : null, En = (
             return r[t];
         }
       else {
-        if (ko(s, t))
-          return i[t] = 1, s[t];
-        if (o !== be && pe(o, t))
-          return i[t] = 2, o[t];
-        if (pe(r, t))
-          return i[t] = 3, r[t];
-        if (n !== be && pe(n, t))
-          return i[t] = 4, n[t];
-        Ho && (i[t] = 0);
+        if (xo(s, t))
+          return a[t] = 1, s[t];
+        if (o !== Oe && be(o, t))
+          return a[t] = 2, o[t];
+        if (be(r, t))
+          return a[t] = 3, r[t];
+        if (n !== Oe && be(n, t))
+          return a[t] = 4, n[t];
+        Wo && (a[t] = 0);
       }
     }
-    const f = En[t];
-    let p, u;
-    if (f)
-      return t === "$attrs" ? (Re(e.attrs, "get", ""), process.env.NODE_ENV !== "production" && eo()) : process.env.NODE_ENV !== "production" && t === "$slots" && Re(e, "get", t), f(e);
+    const p = $n[t];
+    let h, f;
+    if (p)
+      return t === "$attrs" ? (Fe(e.attrs, "get", ""), process.env.NODE_ENV !== "production" && so()) : process.env.NODE_ENV !== "production" && t === "$slots" && Fe(e, "get", t), p(e);
     if (
       // css module (injected by vue-loader)
-      (p = l.__cssModules) && (p = p[t])
+      (h = c.__cssModules) && (h = h[t])
     )
-      return p;
-    if (n !== be && pe(n, t))
-      return i[t] = 4, n[t];
+      return h;
+    if (n !== Oe && be(n, t))
+      return a[t] = 4, n[t];
     if (
       // global properties
-      u = a.config.globalProperties, pe(u, t)
+      f = u.config.globalProperties, be(f, t)
     )
-      return u[t];
-    process.env.NODE_ENV !== "production" && Me && (!Oe(t) || // #1091 avoid internal isRef/isVNode checks on component instance leading
+      return f[t];
+    process.env.NODE_ENV !== "production" && je && (!Te(t) || // #1091 avoid internal isRef/isVNode checks on component instance leading
     // to infinite warning loop
-    t.indexOf("__v") !== 0) && (o !== be && Sr(t[0]) && pe(o, t) ? j(
+    t.indexOf("__v") !== 0) && (o !== Oe && xr(t[0]) && be(o, t) ? B(
       `Property ${JSON.stringify(
         t
       )} must be accessed via $data because it starts with a reserved character ("$" or "_") and is not proxied on the render context.`
-    ) : e === Me && j(
+    ) : e === je && B(
       `Property ${JSON.stringify(t)} was accessed during render but is not defined on instance.`
     ));
   },
   set({ _: e }, t, n) {
     const { data: s, setupState: o, ctx: r } = e;
-    return ko(o, t) ? (o[t] = n, !0) : process.env.NODE_ENV !== "production" && o.__isScriptSetup && pe(o, t) ? (j(`Cannot mutate <script setup> binding "${t}" from Options API.`), !1) : s !== be && pe(s, t) ? (s[t] = n, !0) : pe(e.props, t) ? (process.env.NODE_ENV !== "production" && j(`Attempting to mutate prop "${t}". Props are readonly.`), !1) : t[0] === "$" && t.slice(1) in e ? (process.env.NODE_ENV !== "production" && j(
+    return xo(o, t) ? (o[t] = n, !0) : process.env.NODE_ENV !== "production" && o.__isScriptSetup && be(o, t) ? (B(`Cannot mutate <script setup> binding "${t}" from Options API.`), !1) : s !== Oe && be(s, t) ? (s[t] = n, !0) : be(e.props, t) ? (process.env.NODE_ENV !== "production" && B(`Attempting to mutate prop "${t}". Props are readonly.`), !1) : t[0] === "$" && t.slice(1) in e ? (process.env.NODE_ENV !== "production" && B(
       `Attempting to mutate public property "${t}". Properties starting with $ are reserved and readonly.`
     ), !1) : (process.env.NODE_ENV !== "production" && t in e.appContext.config.globalProperties ? Object.defineProperty(r, t, {
       enumerable: !0,
@@ -2147,36 +2147,36 @@ const Uo = (e) => e ? _a(e) ? vo(e) : Uo(e.parent) : null, En = (
     }) : r[t] = n, !0);
   },
   has({
-    _: { data: e, setupState: t, accessCache: n, ctx: s, appContext: o, props: r, type: i }
-  }, l) {
-    let a;
-    return !!(n[l] || e !== be && l[0] !== "$" && pe(e, l) || ko(t, l) || pe(r, l) || pe(s, l) || pe(En, l) || pe(o.config.globalProperties, l) || (a = i.__cssModules) && a[l]);
+    _: { data: e, setupState: t, accessCache: n, ctx: s, appContext: o, props: r, type: a }
+  }, c) {
+    let u;
+    return !!(n[c] || e !== Oe && c[0] !== "$" && be(e, c) || xo(t, c) || be(r, c) || be(s, c) || be($n, c) || be(o.config.globalProperties, c) || (u = a.__cssModules) && u[c]);
   },
   defineProperty(e, t, n) {
-    return n.get != null ? e._.accessCache[t] = 0 : pe(n, "value") && this.set(e, t, n.value, null), Reflect.defineProperty(e, t, n);
+    return n.get != null ? e._.accessCache[t] = 0 : be(n, "value") && this.set(e, t, n.value, null), Reflect.defineProperty(e, t, n);
   }
 };
-process.env.NODE_ENV !== "production" && (Jl.ownKeys = (e) => (j(
+process.env.NODE_ENV !== "production" && (oa.ownKeys = (e) => (B(
   "Avoid app logic that relies on enumerating keys on a component instance. The keys will be empty in production mode to avoid performance overhead."
 ), Reflect.ownKeys(e)));
-function ju(e) {
+function qu(e) {
   const t = {};
   return Object.defineProperty(t, "_", {
     configurable: !0,
     enumerable: !1,
     get: () => e
-  }), Object.keys(En).forEach((n) => {
+  }), Object.keys($n).forEach((n) => {
     Object.defineProperty(t, n, {
       configurable: !0,
       enumerable: !1,
-      get: () => En[n](e),
+      get: () => $n[n](e),
       // intercepted by the proxy so no need for implementation,
       // but needed to prevent set errors
-      set: Ie
+      set: Le
     });
   }), t;
 }
-function Fu(e) {
+function zu(e) {
   const {
     ctx: t,
     propsOptions: [n]
@@ -2186,16 +2186,16 @@ function Fu(e) {
       enumerable: !0,
       configurable: !0,
       get: () => e.props[s],
-      set: Ie
+      set: Le
     });
   });
 }
-function Uu(e) {
+function Ju(e) {
   const { ctx: t, setupState: n } = e;
-  Object.keys(/* @__PURE__ */ ne(n)).forEach((s) => {
+  Object.keys(/* @__PURE__ */ de(n)).forEach((s) => {
     if (!n.__isScriptSetup) {
-      if (Sr(s[0])) {
-        j(
+      if (xr(s[0])) {
+        B(
           `setup() return property ${JSON.stringify(
             s
           )} should not start with "$" or "_" which are reserved prefixes for Vue internals.`
@@ -2206,252 +2206,252 @@ function Uu(e) {
         enumerable: !0,
         configurable: !0,
         get: () => n[s],
-        set: Ie
+        set: Le
       });
     }
   });
 }
-function Zr(e) {
-  return q(e) ? e.reduce(
+function ii(e) {
+  return ee(e) ? e.reduce(
     (t, n) => (t[n] = null, t),
     {}
   ) : e;
 }
-function Hu() {
+function Qu() {
   const e = /* @__PURE__ */ Object.create(null);
   return (t, n) => {
-    e[n] ? j(`${t} property "${n}" is already defined in ${e[n]}.`) : e[n] = t;
+    e[n] ? B(`${t} property "${n}" is already defined in ${e[n]}.`) : e[n] = t;
   };
 }
-let Ho = !0;
-function Bu(e) {
-  const t = Ql(e), n = e.proxy, s = e.ctx;
-  Ho = !1, t.beforeCreate && ei(t.beforeCreate, e, "bc");
+let Wo = !0;
+function Yu(e) {
+  const t = ia(e), n = e.proxy, s = e.ctx;
+  Wo = !1, t.beforeCreate && li(t.beforeCreate, e, "bc");
   const {
     // state
     data: o,
     computed: r,
-    methods: i,
-    watch: l,
-    provide: a,
-    inject: f,
+    methods: a,
+    watch: c,
+    provide: u,
+    inject: p,
     // lifecycle
-    created: p,
-    beforeMount: u,
-    mounted: m,
-    beforeUpdate: b,
-    updated: T,
-    activated: $,
-    deactivated: K,
-    beforeDestroy: F,
-    beforeUnmount: A,
-    destroyed: I,
+    created: h,
+    beforeMount: f,
+    mounted: _,
+    beforeUpdate: g,
+    updated: k,
+    activated: O,
+    deactivated: W,
+    beforeDestroy: V,
+    beforeUnmount: I,
+    destroyed: L,
     unmounted: te,
-    render: O,
-    renderTracked: S,
-    renderTriggered: v,
-    errorCaptured: E,
-    serverPrefetch: N,
+    render: D,
+    renderTracked: T,
+    renderTriggered: b,
+    errorCaptured: S,
+    serverPrefetch: x,
     // public API
     expose: M,
-    inheritAttrs: C,
+    inheritAttrs: A,
     // assets
-    components: z,
-    directives: ae,
-    filters: je
-  } = t, Pe = process.env.NODE_ENV !== "production" ? Hu() : null;
+    components: Q,
+    directives: he,
+    filters: Re
+  } = t, Se = process.env.NODE_ENV !== "production" ? Qu() : null;
   if (process.env.NODE_ENV !== "production") {
-    const [ie] = e.propsOptions;
-    if (ie)
-      for (const oe in ie)
-        Pe("Props", oe);
+    const [ue] = e.propsOptions;
+    if (ue)
+      for (const se in ue)
+        Se("Props", se);
   }
-  if (f && Gu(f, s, Pe), i)
-    for (const ie in i) {
-      const oe = i[ie];
-      ee(oe) ? (process.env.NODE_ENV !== "production" ? Object.defineProperty(s, ie, {
-        value: oe.bind(n),
+  if (p && Xu(p, s, Se), a)
+    for (const ue in a) {
+      const se = a[ue];
+      ae(se) ? (process.env.NODE_ENV !== "production" ? Object.defineProperty(s, ue, {
+        value: se.bind(n),
         configurable: !0,
         enumerable: !0,
         writable: !0
-      }) : s[ie] = oe.bind(n), process.env.NODE_ENV !== "production" && Pe("Methods", ie)) : process.env.NODE_ENV !== "production" && j(
-        `Method "${ie}" has type "${typeof oe}" in the component definition. Did you reference the function correctly?`
+      }) : s[ue] = se.bind(n), process.env.NODE_ENV !== "production" && Se("Methods", ue)) : process.env.NODE_ENV !== "production" && B(
+        `Method "${ue}" has type "${typeof se}" in the component definition. Did you reference the function correctly?`
       );
     }
   if (o) {
-    process.env.NODE_ENV !== "production" && !ee(o) && j(
+    process.env.NODE_ENV !== "production" && !ae(o) && B(
       "The data option must be a function. Plain object usage is no longer supported."
     );
-    const ie = o.call(n, n);
-    if (process.env.NODE_ENV !== "production" && cr(ie) && j(
+    const ue = o.call(n, n);
+    if (process.env.NODE_ENV !== "production" && hr(ue) && B(
       "data() returned a Promise - note data() cannot be async; If you intend to perform data fetching before component renders, use async setup() + <Suspense>."
-    ), !de(ie))
-      process.env.NODE_ENV !== "production" && j("data() should return an object.");
-    else if (e.data = /* @__PURE__ */ on(ie), process.env.NODE_ENV !== "production")
-      for (const oe in ie)
-        Pe("Data", oe), Sr(oe[0]) || Object.defineProperty(s, oe, {
+    ), !ve(ue))
+      process.env.NODE_ENV !== "production" && B("data() should return an object.");
+    else if (e.data = /* @__PURE__ */ cn(ue), process.env.NODE_ENV !== "production")
+      for (const se in ue)
+        Se("Data", se), xr(se[0]) || Object.defineProperty(s, se, {
           configurable: !0,
           enumerable: !0,
-          get: () => ie[oe],
-          set: Ie
+          get: () => ue[se],
+          set: Le
         });
   }
-  if (Ho = !0, r)
-    for (const ie in r) {
-      const oe = r[ie], Ne = ee(oe) ? oe.bind(n, n) : ee(oe.get) ? oe.get.bind(n, n) : Ie;
-      process.env.NODE_ENV !== "production" && Ne === Ie && j(`Computed property "${ie}" has no getter.`);
-      const cn = !ee(oe) && ee(oe.set) ? oe.set.bind(n) : process.env.NODE_ENV !== "production" ? () => {
-        j(
-          `Write operation failed: computed property "${ie}" is readonly.`
+  if (Wo = !0, r)
+    for (const ue in r) {
+      const se = r[ue], Ee = ae(se) ? se.bind(n, n) : ae(se.get) ? se.get.bind(n, n) : Le;
+      process.env.NODE_ENV !== "production" && Ee === Le && B(`Computed property "${ue}" has no getter.`);
+      const lt = !ae(se) && ae(se.set) ? se.set.bind(n) : process.env.NODE_ENV !== "production" ? () => {
+        B(
+          `Write operation failed: computed property "${ue}" is readonly.`
         );
-      } : Ie, Kt = ue({
-        get: Ne,
-        set: cn
+      } : Le, Ct = ne({
+        get: Ee,
+        set: lt
       });
-      Object.defineProperty(s, ie, {
+      Object.defineProperty(s, ue, {
         enumerable: !0,
         configurable: !0,
-        get: () => Kt.value,
-        set: (vt) => Kt.value = vt
-      }), process.env.NODE_ENV !== "production" && Pe("Computed", ie);
+        get: () => Ct.value,
+        set: (et) => Ct.value = et
+      }), process.env.NODE_ENV !== "production" && Se("Computed", ue);
     }
-  if (l)
-    for (const ie in l)
-      Yl(l[ie], s, n, ie);
-  if (a) {
-    const ie = ee(a) ? a.call(n) : a;
-    Reflect.ownKeys(ie).forEach((oe) => {
-      Is(oe, ie[oe]);
+  if (c)
+    for (const ue in c)
+      ra(c[ue], s, n, ue);
+  if (u) {
+    const ue = ae(u) ? u.call(n) : u;
+    Reflect.ownKeys(ue).forEach((se) => {
+      Ls(se, ue[se]);
     });
   }
-  p && ei(p, e, "c");
-  function ce(ie, oe) {
-    q(oe) ? oe.forEach((Ne) => ie(Ne.bind(n))) : oe && ie(oe.bind(n));
+  h && li(h, e, "c");
+  function fe(ue, se) {
+    ee(se) ? se.forEach((Ee) => ue(Ee.bind(n))) : se && ue(se.bind(n));
   }
-  if (ce(xu, u), ce(Or, m), ce(Tu, b), ce(Pu, T), ce($u, $), ce(Cu, K), ce(Mu, E), ce(Iu, S), ce(Ru, v), ce(Vu, A), ce(zl, te), ce(Au, N), q(M))
+  if (fe(Fu, f), fe($s, _), fe(Lu, g), fe(ju, k), fe(Vu, O), fe(Iu, W), fe(Ku, S), fe(Bu, T), fe(Gu, b), fe(Uu, I), fe(na, te), fe(Hu, x), ee(M))
     if (M.length) {
-      const ie = e.exposed || (e.exposed = {});
-      M.forEach((oe) => {
-        Object.defineProperty(ie, oe, {
-          get: () => n[oe],
-          set: (Ne) => n[oe] = Ne,
+      const ue = e.exposed || (e.exposed = {});
+      M.forEach((se) => {
+        Object.defineProperty(ue, se, {
+          get: () => n[se],
+          set: (Ee) => n[se] = Ee,
           enumerable: !0
         });
       });
     } else e.exposed || (e.exposed = {});
-  O && e.render === Ie && (e.render = O), C != null && (e.inheritAttrs = C), z && (e.components = z), ae && (e.directives = ae), N && Wl(e);
+  D && e.render === Le && (e.render = D), A != null && (e.inheritAttrs = A), Q && (e.components = Q), he && (e.directives = he), x && ea(e);
 }
-function Gu(e, t, n = Ie) {
-  q(e) && (e = Bo(e));
+function Xu(e, t, n = Le) {
+  ee(e) && (e = qo(e));
   for (const s in e) {
     const o = e[s];
     let r;
-    de(o) ? "default" in o ? r = ft(
+    ve(o) ? "default" in o ? r = _t(
       o.from || s,
       o.default,
       !0
-    ) : r = ft(o.from || s) : r = ft(o), /* @__PURE__ */ Ee(r) ? Object.defineProperty(t, s, {
+    ) : r = _t(o.from || s) : r = _t(o), /* @__PURE__ */ ke(r) ? Object.defineProperty(t, s, {
       enumerable: !0,
       configurable: !0,
       get: () => r.value,
-      set: (i) => r.value = i
+      set: (a) => r.value = a
     }) : t[s] = r, process.env.NODE_ENV !== "production" && n("Inject", s);
   }
 }
-function ei(e, t, n) {
-  Pt(
-    q(e) ? e.map((s) => s.bind(t.proxy)) : e.bind(t.proxy),
+function li(e, t, n) {
+  Ut(
+    ee(e) ? e.map((s) => s.bind(t.proxy)) : e.bind(t.proxy),
     t,
     n
   );
 }
-function Yl(e, t, n, s) {
-  let o = s.includes(".") ? Gl(n, s) : () => n[s];
-  if (Oe(e)) {
+function ra(e, t, n, s) {
+  let o = s.includes(".") ? Zl(n, s) : () => n[s];
+  if (Te(e)) {
     const r = t[e];
-    ee(r) ? qe(o, r) : process.env.NODE_ENV !== "production" && j(`Invalid watch handler specified by key "${e}"`, r);
-  } else if (ee(e))
+    ae(r) ? qe(o, r) : process.env.NODE_ENV !== "production" && B(`Invalid watch handler specified by key "${e}"`, r);
+  } else if (ae(e))
     qe(o, e.bind(n));
-  else if (de(e))
-    if (q(e))
-      e.forEach((r) => Yl(r, t, n, s));
+  else if (ve(e))
+    if (ee(e))
+      e.forEach((r) => ra(r, t, n, s));
     else {
-      const r = ee(e.handler) ? e.handler.bind(n) : t[e.handler];
-      ee(r) ? qe(o, r, e) : process.env.NODE_ENV !== "production" && j(`Invalid watch handler specified by key "${e.handler}"`, r);
+      const r = ae(e.handler) ? e.handler.bind(n) : t[e.handler];
+      ae(r) ? qe(o, r, e) : process.env.NODE_ENV !== "production" && B(`Invalid watch handler specified by key "${e.handler}"`, r);
     }
-  else process.env.NODE_ENV !== "production" && j(`Invalid watch option: "${s}"`, e);
+  else process.env.NODE_ENV !== "production" && B(`Invalid watch option: "${s}"`, e);
 }
-function Ql(e) {
+function ia(e) {
   const t = e.type, { mixins: n, extends: s } = t, {
     mixins: o,
     optionsCache: r,
-    config: { optionMergeStrategies: i }
-  } = e.appContext, l = r.get(t);
-  let a;
-  return l ? a = l : !o.length && !n && !s ? a = t : (a = {}, o.length && o.forEach(
-    (f) => Zs(a, f, i, !0)
-  ), Zs(a, t, i)), de(t) && r.set(t, a), a;
+    config: { optionMergeStrategies: a }
+  } = e.appContext, c = r.get(t);
+  let u;
+  return c ? u = c : !o.length && !n && !s ? u = t : (u = {}, o.length && o.forEach(
+    (p) => no(u, p, a, !0)
+  ), no(u, t, a)), ve(t) && r.set(t, u), u;
 }
-function Zs(e, t, n, s = !1) {
+function no(e, t, n, s = !1) {
   const { mixins: o, extends: r } = t;
-  r && Zs(e, r, n, !0), o && o.forEach(
-    (i) => Zs(e, i, n, !0)
+  r && no(e, r, n, !0), o && o.forEach(
+    (a) => no(e, a, n, !0)
   );
-  for (const i in t)
-    if (s && i === "expose")
-      process.env.NODE_ENV !== "production" && j(
+  for (const a in t)
+    if (s && a === "expose")
+      process.env.NODE_ENV !== "production" && B(
         '"expose" option is ignored when declared in mixins or extends. It should only be declared in the base component itself.'
       );
     else {
-      const l = Wu[i] || n && n[i];
-      e[i] = l ? l(e[i], t[i]) : t[i];
+      const c = Zu[a] || n && n[a];
+      e[a] = c ? c(e[a], t[a]) : t[a];
     }
   return e;
 }
-const Wu = {
-  data: ti,
-  props: ni,
-  emits: ni,
+const Zu = {
+  data: ai,
+  props: ci,
+  emits: ci,
   // objects
-  methods: ts,
-  computed: ts,
+  methods: ns,
+  computed: ns,
   // lifecycle
-  beforeCreate: We,
-  created: We,
-  beforeMount: We,
-  mounted: We,
-  beforeUpdate: We,
-  updated: We,
-  beforeDestroy: We,
-  beforeUnmount: We,
-  destroyed: We,
-  unmounted: We,
-  activated: We,
-  deactivated: We,
-  errorCaptured: We,
-  serverPrefetch: We,
+  beforeCreate: Je,
+  created: Je,
+  beforeMount: Je,
+  mounted: Je,
+  beforeUpdate: Je,
+  updated: Je,
+  beforeDestroy: Je,
+  beforeUnmount: Je,
+  destroyed: Je,
+  unmounted: Je,
+  activated: Je,
+  deactivated: Je,
+  errorCaptured: Je,
+  serverPrefetch: Je,
   // assets
-  components: ts,
-  directives: ts,
+  components: ns,
+  directives: ns,
   // watch
-  watch: zu,
+  watch: td,
   // provide / inject
-  provide: ti,
-  inject: Ku
+  provide: ai,
+  inject: ed
 };
-function ti(e, t) {
+function ai(e, t) {
   return t ? e ? function() {
-    return De(
-      ee(e) ? e.call(this, this) : e,
-      ee(t) ? t.call(this, this) : t
+    return Ae(
+      ae(e) ? e.call(this, this) : e,
+      ae(t) ? t.call(this, this) : t
     );
   } : t : e;
 }
-function Ku(e, t) {
-  return ts(Bo(e), Bo(t));
+function ed(e, t) {
+  return ns(qo(e), qo(t));
 }
-function Bo(e) {
-  if (q(e)) {
+function qo(e) {
+  if (ee(e)) {
     const t = {};
     for (let n = 0; n < e.length; n++)
       t[e[n]] = e[n];
@@ -2459,32 +2459,32 @@ function Bo(e) {
   }
   return e;
 }
-function We(e, t) {
+function Je(e, t) {
   return e ? [...new Set([].concat(e, t))] : t;
 }
-function ts(e, t) {
-  return e ? De(/* @__PURE__ */ Object.create(null), e, t) : t;
+function ns(e, t) {
+  return e ? Ae(/* @__PURE__ */ Object.create(null), e, t) : t;
 }
-function ni(e, t) {
-  return e ? q(e) && q(t) ? [.../* @__PURE__ */ new Set([...e, ...t])] : De(
+function ci(e, t) {
+  return e ? ee(e) && ee(t) ? [.../* @__PURE__ */ new Set([...e, ...t])] : Ae(
     /* @__PURE__ */ Object.create(null),
-    Zr(e),
-    Zr(t ?? {})
+    ii(e),
+    ii(t ?? {})
   ) : t;
 }
-function zu(e, t) {
+function td(e, t) {
   if (!e) return t;
   if (!t) return e;
-  const n = De(/* @__PURE__ */ Object.create(null), e);
+  const n = Ae(/* @__PURE__ */ Object.create(null), e);
   for (const s in t)
-    n[s] = We(e[s], t[s]);
+    n[s] = Je(e[s], t[s]);
   return n;
 }
-function Xl() {
+function la() {
   return {
     app: null,
     config: {
-      isNativeTag: ol,
+      isNativeTag: pl,
       performance: !1,
       globalProperties: {},
       optionMergeStrategies: {},
@@ -2501,339 +2501,339 @@ function Xl() {
     emitsCache: /* @__PURE__ */ new WeakMap()
   };
 }
-let qu = 0;
-function Ju(e, t) {
+let nd = 0;
+function sd(e, t) {
   return function(s, o = null) {
-    ee(s) || (s = De({}, s)), o != null && !de(o) && (process.env.NODE_ENV !== "production" && j("root props passed to app.mount() must be an object."), o = null);
-    const r = Xl(), i = /* @__PURE__ */ new WeakSet(), l = [];
-    let a = !1;
-    const f = r.app = {
-      _uid: qu++,
+    ae(s) || (s = Ae({}, s)), o != null && !ve(o) && (process.env.NODE_ENV !== "production" && B("root props passed to app.mount() must be an object."), o = null);
+    const r = la(), a = /* @__PURE__ */ new WeakSet(), c = [];
+    let u = !1;
+    const p = r.app = {
+      _uid: nd++,
       _component: s,
       _props: o,
       _container: null,
       _context: r,
       _instance: null,
-      version: pi,
+      version: yi,
       get config() {
         return r.config;
       },
-      set config(p) {
-        process.env.NODE_ENV !== "production" && j(
+      set config(h) {
+        process.env.NODE_ENV !== "production" && B(
           "app.config cannot be replaced. Modify individual options instead."
         );
       },
-      use(p, ...u) {
-        return i.has(p) ? process.env.NODE_ENV !== "production" && j("Plugin has already been applied to target app.") : p && ee(p.install) ? (i.add(p), p.install(f, ...u)) : ee(p) ? (i.add(p), p(f, ...u)) : process.env.NODE_ENV !== "production" && j(
+      use(h, ...f) {
+        return a.has(h) ? process.env.NODE_ENV !== "production" && B("Plugin has already been applied to target app.") : h && ae(h.install) ? (a.add(h), h.install(p, ...f)) : ae(h) ? (a.add(h), h(p, ...f)) : process.env.NODE_ENV !== "production" && B(
           'A plugin must either be a function or an object with an "install" function.'
-        ), f;
+        ), p;
       },
-      mixin(p) {
-        return r.mixins.includes(p) ? process.env.NODE_ENV !== "production" && j(
-          "Mixin has already been applied to target app" + (p.name ? `: ${p.name}` : "")
-        ) : r.mixins.push(p), f;
+      mixin(h) {
+        return r.mixins.includes(h) ? process.env.NODE_ENV !== "production" && B(
+          "Mixin has already been applied to target app" + (h.name ? `: ${h.name}` : "")
+        ) : r.mixins.push(h), p;
       },
-      component(p, u) {
-        return process.env.NODE_ENV !== "production" && qo(p, r.config), u ? (process.env.NODE_ENV !== "production" && r.components[p] && j(`Component "${p}" has already been registered in target app.`), r.components[p] = u, f) : r.components[p];
+      component(h, f) {
+        return process.env.NODE_ENV !== "production" && Xo(h, r.config), f ? (process.env.NODE_ENV !== "production" && r.components[h] && B(`Component "${h}" has already been registered in target app.`), r.components[h] = f, p) : r.components[h];
       },
-      directive(p, u) {
-        return process.env.NODE_ENV !== "production" && Bl(p), u ? (process.env.NODE_ENV !== "production" && r.directives[p] && j(`Directive "${p}" has already been registered in target app.`), r.directives[p] = u, f) : r.directives[p];
+      directive(h, f) {
+        return process.env.NODE_ENV !== "production" && Xl(h), f ? (process.env.NODE_ENV !== "production" && r.directives[h] && B(`Directive "${h}" has already been registered in target app.`), r.directives[h] = f, p) : r.directives[h];
       },
-      mount(p, u, m) {
-        if (a)
-          process.env.NODE_ENV !== "production" && j(
+      mount(h, f, _) {
+        if (u)
+          process.env.NODE_ENV !== "production" && B(
             "App has already been mounted.\nIf you want to remount the same app, move your app creation logic into a factory function and create fresh app instances for each mount - e.g. `const createMyApp = () => createApp(App)`"
           );
         else {
-          process.env.NODE_ENV !== "production" && p.__vue_app__ && j(
+          process.env.NODE_ENV !== "production" && h.__vue_app__ && B(
             "There is already an app instance mounted on the host container.\n If you want to mount another app on the same host container, you need to unmount the previous app by calling `app.unmount()` first."
           );
-          const b = f._ceVNode || Z(s, o);
-          return b.appContext = r, m === !0 ? m = "svg" : m === !1 && (m = void 0), process.env.NODE_ENV !== "production" && (r.reload = () => {
-            const T = rn(b);
-            T.el = null, e(T, p, m);
-          }), e(b, p, m), a = !0, f._container = p, p.__vue_app__ = f, process.env.NODE_ENV !== "production" && (f._instance = b.component, du(f, pi)), vo(b.component);
+          const g = p._ceVNode || X(s, o);
+          return g.appContext = r, _ === !0 ? _ = "svg" : _ === !1 && (_ = void 0), process.env.NODE_ENV !== "production" && (r.reload = () => {
+            const k = dn(g);
+            k.el = null, e(k, h, _);
+          }), e(g, h, _), u = !0, p._container = h, h.__vue_app__ = p, process.env.NODE_ENV !== "production" && (p._instance = g.component, bu(p, yi)), yo(g.component);
         }
       },
-      onUnmount(p) {
-        process.env.NODE_ENV !== "production" && typeof p != "function" && j(
-          `Expected function as first argument to app.onUnmount(), but got ${typeof p}`
-        ), l.push(p);
+      onUnmount(h) {
+        process.env.NODE_ENV !== "production" && typeof h != "function" && B(
+          `Expected function as first argument to app.onUnmount(), but got ${typeof h}`
+        ), c.push(h);
       },
       unmount() {
-        a ? (Pt(
-          l,
-          f._instance,
+        u ? (Ut(
+          c,
+          p._instance,
           16
-        ), e(null, f._container), process.env.NODE_ENV !== "production" && (f._instance = null, fu(f)), delete f._container.__vue_app__) : process.env.NODE_ENV !== "production" && j("Cannot unmount an app that is not mounted.");
+        ), e(null, p._container), process.env.NODE_ENV !== "production" && (p._instance = null, yu(p)), delete p._container.__vue_app__) : process.env.NODE_ENV !== "production" && B("Cannot unmount an app that is not mounted.");
       },
-      provide(p, u) {
-        return process.env.NODE_ENV !== "production" && p in r.provides && (pe(r.provides, p) ? j(
-          `App already provides property with key "${String(p)}". It will be overwritten with the new value.`
-        ) : j(
-          `App already provides property with key "${String(p)}" inherited from its parent element. It will be overwritten with the new value.`
-        )), r.provides[p] = u, f;
+      provide(h, f) {
+        return process.env.NODE_ENV !== "production" && h in r.provides && (be(r.provides, h) ? B(
+          `App already provides property with key "${String(h)}". It will be overwritten with the new value.`
+        ) : B(
+          `App already provides property with key "${String(h)}" inherited from its parent element. It will be overwritten with the new value.`
+        )), r.provides[h] = f, p;
       },
-      runWithContext(p) {
-        const u = wn;
-        wn = f;
+      runWithContext(h) {
+        const f = On;
+        On = p;
         try {
-          return p();
+          return h();
         } finally {
-          wn = u;
+          On = f;
         }
       }
     };
-    return f;
+    return p;
   };
 }
-let wn = null;
-const Yu = (e, t) => t === "modelValue" || t === "model-value" ? e.modelModifiers : e[`${t}Modifiers`] || e[`${Xe(t)}Modifiers`] || e[`${nn(t)}Modifiers`];
-function Qu(e, t, ...n) {
+let On = null;
+const od = (e, t) => t === "modelValue" || t === "model-value" ? e.modelModifiers : e[`${t}Modifiers`] || e[`${rt(t)}Modifiers`] || e[`${Xt(t)}Modifiers`];
+function rd(e, t, ...n) {
   if (e.isUnmounted) return;
-  const s = e.vnode.props || be;
+  const s = e.vnode.props || Oe;
   if (process.env.NODE_ENV !== "production") {
     const {
-      emitsOptions: p,
-      propsOptions: [u]
+      emitsOptions: h,
+      propsOptions: [f]
     } = e;
-    if (p)
-      if (!(t in p))
-        (!u || !(pn(Xe(t)) in u)) && j(
-          `Component emitted event "${t}" but it is neither declared in the emits option nor as an "${pn(Xe(t))}" prop.`
+    if (h)
+      if (!(t in h))
+        (!f || !(gn(rt(t)) in f)) && B(
+          `Component emitted event "${t}" but it is neither declared in the emits option nor as an "${gn(rt(t))}" prop.`
         );
       else {
-        const m = p[t];
-        ee(m) && (m(...n) || j(
+        const _ = h[t];
+        ae(_) && (_(...n) || B(
           `Invalid event arguments: event validation failed for event "${t}".`
         ));
       }
   }
   let o = n;
-  const r = t.startsWith("update:"), i = r && Yu(s, t.slice(7));
-  if (i && (i.trim && (o = n.map((p) => Oe(p) ? p.trim() : p)), i.number && (o = n.map(uo))), process.env.NODE_ENV !== "production" && vu(e, t, o), process.env.NODE_ENV !== "production") {
-    const p = t.toLowerCase();
-    p !== t && s[pn(p)] && j(
-      `Event "${p}" is emitted in component ${Ns(
+  const r = t.startsWith("update:"), a = r && od(s, t.slice(7));
+  if (a && (a.trim && (o = n.map((h) => Te(h) ? h.trim() : h)), a.number && (o = n.map(po))), process.env.NODE_ENV !== "production" && Su(e, t, o), process.env.NODE_ENV !== "production") {
+    const h = t.toLowerCase();
+    h !== t && s[gn(h)] && B(
+      `Event "${h}" is emitted in component ${ks(
         e,
         e.type
-      )} but the handler is registered for "${t}". Note that HTML attributes are case-insensitive and you cannot use v-on to listen to camelCase events when using in-DOM templates. You should probably use "${nn(
+      )} but the handler is registered for "${t}". Note that HTML attributes are case-insensitive and you cannot use v-on to listen to camelCase events when using in-DOM templates. You should probably use "${Xt(
         t
       )}" instead of "${t}".`
     );
   }
-  let l, a = s[l = pn(t)] || // also try camelCase event handler (#2249)
-  s[l = pn(Xe(t))];
-  !a && r && (a = s[l = pn(nn(t))]), a && Pt(
-    a,
+  let c, u = s[c = gn(t)] || // also try camelCase event handler (#2249)
+  s[c = gn(rt(t))];
+  !u && r && (u = s[c = gn(Xt(t))]), u && Ut(
+    u,
     e,
     6,
     o
   );
-  const f = s[l + "Once"];
-  if (f) {
+  const p = s[c + "Once"];
+  if (p) {
     if (!e.emitted)
       e.emitted = {};
-    else if (e.emitted[l])
+    else if (e.emitted[c])
       return;
-    e.emitted[l] = !0, Pt(
-      f,
+    e.emitted[c] = !0, Ut(
+      p,
       e,
       6,
       o
     );
   }
 }
-const Xu = /* @__PURE__ */ new WeakMap();
-function Zl(e, t, n = !1) {
-  const s = n ? Xu : t.emitsCache, o = s.get(e);
+const id = /* @__PURE__ */ new WeakMap();
+function aa(e, t, n = !1) {
+  const s = n ? id : t.emitsCache, o = s.get(e);
   if (o !== void 0)
     return o;
   const r = e.emits;
-  let i = {}, l = !1;
-  if (!ee(e)) {
-    const a = (f) => {
-      const p = Zl(f, t, !0);
-      p && (l = !0, De(i, p));
+  let a = {}, c = !1;
+  if (!ae(e)) {
+    const u = (p) => {
+      const h = aa(p, t, !0);
+      h && (c = !0, Ae(a, h));
     };
-    !n && t.mixins.length && t.mixins.forEach(a), e.extends && a(e.extends), e.mixins && e.mixins.forEach(a);
+    !n && t.mixins.length && t.mixins.forEach(u), e.extends && u(e.extends), e.mixins && e.mixins.forEach(u);
   }
-  return !r && !l ? (de(e) && s.set(e, null), null) : (q(r) ? r.forEach((a) => i[a] = null) : De(i, r), de(e) && s.set(e, i), i);
+  return !r && !c ? (ve(e) && s.set(e, null), null) : (ee(r) ? r.forEach((u) => a[u] = null) : Ae(a, r), ve(e) && s.set(e, a), a);
 }
-function _o(e, t) {
-  return !e || !ms(t) ? !1 : (t = t.slice(2).replace(/Once$/, ""), pe(e, t[0].toLowerCase() + t.slice(1)) || pe(e, nn(t)) || pe(e, t));
+function bo(e, t) {
+  return !e || !bs(t) ? !1 : (t = t.slice(2).replace(/Once$/, ""), be(e, t[0].toLowerCase() + t.slice(1)) || be(e, Xt(t)) || be(e, t));
 }
-let Go = !1;
-function eo() {
-  Go = !0;
+let zo = !1;
+function so() {
+  zo = !0;
 }
-function si(e) {
+function ui(e) {
   const {
     type: t,
     vnode: n,
     proxy: s,
     withProxy: o,
     propsOptions: [r],
-    slots: i,
-    attrs: l,
-    emit: a,
-    render: f,
-    renderCache: p,
-    props: u,
-    data: m,
-    setupState: b,
-    ctx: T,
-    inheritAttrs: $
-  } = e, K = Qs(e);
-  let F, A;
-  process.env.NODE_ENV !== "production" && (Go = !1);
+    slots: a,
+    attrs: c,
+    emit: u,
+    render: p,
+    renderCache: h,
+    props: f,
+    data: _,
+    setupState: g,
+    ctx: k,
+    inheritAttrs: O
+  } = e, W = eo(e);
+  let V, I;
+  process.env.NODE_ENV !== "production" && (zo = !1);
   try {
     if (n.shapeFlag & 4) {
-      const O = o || s, S = process.env.NODE_ENV !== "production" && b.__isScriptSetup ? new Proxy(O, {
-        get(v, E, N) {
-          return j(
+      const D = o || s, T = process.env.NODE_ENV !== "production" && g.__isScriptSetup ? new Proxy(D, {
+        get(b, S, x) {
+          return B(
             `Property '${String(
-              E
+              S
             )}' was accessed via 'this'. Avoid using 'this' in templates.`
-          ), Reflect.get(v, E, N);
+          ), Reflect.get(b, S, x);
         }
-      }) : O;
-      F = ct(
-        f.call(
-          S,
-          O,
-          p,
-          process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Ct(u) : u,
-          b,
-          m,
-          T
+      }) : D;
+      V = vt(
+        p.call(
+          T,
+          D,
+          h,
+          process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Mt(f) : f,
+          g,
+          _,
+          k
         )
-      ), A = l;
+      ), I = c;
     } else {
-      const O = t;
-      process.env.NODE_ENV !== "production" && l === u && eo(), F = ct(
-        O.length > 1 ? O(
-          process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Ct(u) : u,
+      const D = t;
+      process.env.NODE_ENV !== "production" && c === f && so(), V = vt(
+        D.length > 1 ? D(
+          process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Mt(f) : f,
           process.env.NODE_ENV !== "production" ? {
             get attrs() {
-              return eo(), /* @__PURE__ */ Ct(l);
+              return so(), /* @__PURE__ */ Mt(c);
             },
-            slots: i,
-            emit: a
-          } : { attrs: l, slots: i, emit: a }
-        ) : O(
-          process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Ct(u) : u,
+            slots: a,
+            emit: u
+          } : { attrs: c, slots: a, emit: u }
+        ) : D(
+          process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Mt(f) : f,
           null
         )
-      ), A = t.props ? l : Zu(l);
+      ), I = t.props ? c : ld(c);
     }
-  } catch (O) {
-    ls.length = 0, bs(O, e, 1), F = Z(Ze);
+  } catch (D) {
+    as.length = 0, ws(D, e, 1), V = X(it);
   }
-  let I = F, te;
-  if (process.env.NODE_ENV !== "production" && F.patchFlag > 0 && F.patchFlag & 2048 && ([I, te] = ea(F)), A && $ !== !1) {
-    const O = Object.keys(A), { shapeFlag: S } = I;
-    if (O.length) {
-      if (S & 7)
-        r && O.some(Ws) && (A = ed(
-          A,
+  let L = V, te;
+  if (process.env.NODE_ENV !== "production" && V.patchFlag > 0 && V.patchFlag & 2048 && ([L, te] = ca(V)), I && O !== !1) {
+    const D = Object.keys(I), { shapeFlag: T } = L;
+    if (D.length) {
+      if (T & 7)
+        r && D.some(zs) && (I = ad(
+          I,
           r
-        )), I = rn(I, A, !1, !0);
-      else if (process.env.NODE_ENV !== "production" && !Go && I.type !== Ze) {
-        const v = Object.keys(l), E = [], N = [];
-        for (let M = 0, C = v.length; M < C; M++) {
-          const z = v[M];
-          ms(z) ? Ws(z) || E.push(z[2].toLowerCase() + z.slice(3)) : N.push(z);
+        )), L = dn(L, I, !1, !0);
+      else if (process.env.NODE_ENV !== "production" && !zo && L.type !== it) {
+        const b = Object.keys(c), S = [], x = [];
+        for (let M = 0, A = b.length; M < A; M++) {
+          const Q = b[M];
+          bs(Q) ? zs(Q) || S.push(Q[2].toLowerCase() + Q.slice(3)) : x.push(Q);
         }
-        N.length && j(
-          `Extraneous non-props attributes (${N.join(", ")}) were passed to component but could not be automatically inherited because component renders fragment or text or teleport root nodes.`
-        ), E.length && j(
-          `Extraneous non-emits event listeners (${E.join(", ")}) were passed to component but could not be automatically inherited because component renders fragment or text root nodes. If the listener is intended to be a component custom event listener only, declare it using the "emits" option.`
+        x.length && B(
+          `Extraneous non-props attributes (${x.join(", ")}) were passed to component but could not be automatically inherited because component renders fragment or text or teleport root nodes.`
+        ), S.length && B(
+          `Extraneous non-emits event listeners (${S.join(", ")}) were passed to component but could not be automatically inherited because component renders fragment or text root nodes. If the listener is intended to be a component custom event listener only, declare it using the "emits" option.`
         );
       }
     }
   }
-  return n.dirs && (process.env.NODE_ENV !== "production" && !oi(I) && j(
+  return n.dirs && (process.env.NODE_ENV !== "production" && !di(L) && B(
     "Runtime directive used on component with non-element root node. The directives will not function as intended."
-  ), I = rn(I, null, !1, !0), I.dirs = I.dirs ? I.dirs.concat(n.dirs) : n.dirs), n.transition && (process.env.NODE_ENV !== "production" && !oi(I) && j(
+  ), L = dn(L, null, !1, !0), L.dirs = L.dirs ? L.dirs.concat(n.dirs) : n.dirs), n.transition && (process.env.NODE_ENV !== "production" && !di(L) && B(
     "Component inside <Transition> renders non-element root node that cannot be animated."
-  ), wr(I, n.transition)), process.env.NODE_ENV !== "production" && te ? te(I) : F = I, Qs(K), F;
+  ), kr(L, n.transition)), process.env.NODE_ENV !== "production" && te ? te(L) : V = L, eo(W), V;
 }
-const ea = (e) => {
-  const t = e.children, n = e.dynamicChildren, s = kr(t, !1);
+const ca = (e) => {
+  const t = e.children, n = e.dynamicChildren, s = Dr(t, !1);
   if (s) {
     if (process.env.NODE_ENV !== "production" && s.patchFlag > 0 && s.patchFlag & 2048)
-      return ea(s);
+      return ca(s);
   } else return [e, void 0];
-  const o = t.indexOf(s), r = n ? n.indexOf(s) : -1, i = (l) => {
-    t[o] = l, n && (r > -1 ? n[r] = l : l.patchFlag > 0 && (e.dynamicChildren = [...n, l]));
+  const o = t.indexOf(s), r = n ? n.indexOf(s) : -1, a = (c) => {
+    t[o] = c, n && (r > -1 ? n[r] = c : c.patchFlag > 0 && (e.dynamicChildren = [...n, c]));
   };
-  return [ct(s), i];
+  return [vt(s), a];
 };
-function kr(e, t = !0) {
+function Dr(e, t = !0) {
   let n;
   for (let s = 0; s < e.length; s++) {
     const o = e[s];
-    if (On(o)) {
-      if (o.type !== Ze || o.children === "v-if") {
+    if (kn(o)) {
+      if (o.type !== it || o.children === "v-if") {
         if (n)
           return;
         if (n = o, process.env.NODE_ENV !== "production" && t && n.patchFlag > 0 && n.patchFlag & 2048)
-          return kr(n.children);
+          return Dr(n.children);
       }
     } else
       return;
   }
   return n;
 }
-const Zu = (e) => {
+const ld = (e) => {
   let t;
   for (const n in e)
-    (n === "class" || n === "style" || ms(n)) && ((t || (t = {}))[n] = e[n]);
+    (n === "class" || n === "style" || bs(n)) && ((t || (t = {}))[n] = e[n]);
   return t;
-}, ed = (e, t) => {
+}, ad = (e, t) => {
   const n = {};
   for (const s in e)
-    (!Ws(s) || !(s.slice(9) in t)) && (n[s] = e[s]);
+    (!zs(s) || !(s.slice(9) in t)) && (n[s] = e[s]);
   return n;
-}, oi = (e) => e.shapeFlag & 7 || e.type === Ze;
-function td(e, t, n) {
-  const { props: s, children: o, component: r } = e, { props: i, children: l, patchFlag: a } = t, f = r.emitsOptions;
-  if (process.env.NODE_ENV !== "production" && (o || l) && Dt || t.dirs || t.transition)
+}, di = (e) => e.shapeFlag & 7 || e.type === it;
+function cd(e, t, n) {
+  const { props: s, children: o, component: r } = e, { props: a, children: c, patchFlag: u } = t, p = r.emitsOptions;
+  if (process.env.NODE_ENV !== "production" && (o || c) && Ft || t.dirs || t.transition)
     return !0;
-  if (n && a >= 0) {
-    if (a & 1024)
+  if (n && u >= 0) {
+    if (u & 1024)
       return !0;
-    if (a & 16)
-      return s ? ri(s, i, f) : !!i;
-    if (a & 8) {
-      const p = t.dynamicProps;
-      for (let u = 0; u < p.length; u++) {
-        const m = p[u];
-        if (ta(i, s, m) && !_o(f, m))
+    if (u & 16)
+      return s ? fi(s, a, p) : !!a;
+    if (u & 8) {
+      const h = t.dynamicProps;
+      for (let f = 0; f < h.length; f++) {
+        const _ = h[f];
+        if (ua(a, s, _) && !bo(p, _))
           return !0;
       }
     }
   } else
-    return (o || l) && (!l || !l.$stable) ? !0 : s === i ? !1 : s ? i ? ri(s, i, f) : !0 : !!i;
+    return (o || c) && (!c || !c.$stable) ? !0 : s === a ? !1 : s ? a ? fi(s, a, p) : !0 : !!a;
   return !1;
 }
-function ri(e, t, n) {
+function fi(e, t, n) {
   const s = Object.keys(t);
   if (s.length !== Object.keys(e).length)
     return !0;
   for (let o = 0; o < s.length; o++) {
     const r = s[o];
-    if (ta(t, e, r) && !_o(n, r))
+    if (ua(t, e, r) && !bo(n, r))
       return !0;
   }
   return !1;
 }
-function ta(e, t, n) {
+function ua(e, t, n) {
   const s = e[n], o = t[n];
-  return n === "style" && de(s) && de(o) ? !sn(s, o) : s !== o;
+  return n === "style" && ve(s) && ve(o) ? !an(s, o) : s !== o;
 }
-function nd({ vnode: e, parent: t }, n) {
+function ud({ vnode: e, parent: t }, n) {
   for (; t; ) {
     const s = t.subTree;
     if (s.suspense && s.suspense.activeBranch === e && (s.el = e.el), s === e)
@@ -2842,329 +2842,329 @@ function nd({ vnode: e, parent: t }, n) {
       break;
   }
 }
-const na = {}, sa = () => Object.create(na), oa = (e) => Object.getPrototypeOf(e) === na;
-function sd(e, t, n, s = !1) {
-  const o = {}, r = sa();
-  e.propsDefaults = /* @__PURE__ */ Object.create(null), ra(e, t, o, r);
-  for (const i in e.propsOptions[0])
-    i in o || (o[i] = void 0);
-  process.env.NODE_ENV !== "production" && la(t || {}, o, e), n ? e.props = s ? o : /* @__PURE__ */ Dl(o) : e.type.props ? e.props = o : e.props = r, e.attrs = r;
+const da = {}, fa = () => Object.create(da), pa = (e) => Object.getPrototypeOf(e) === da;
+function dd(e, t, n, s = !1) {
+  const o = {}, r = fa();
+  e.propsDefaults = /* @__PURE__ */ Object.create(null), ha(e, t, o, r);
+  for (const a in e.propsOptions[0])
+    a in o || (o[a] = void 0);
+  process.env.NODE_ENV !== "production" && ma(t || {}, o, e), n ? e.props = s ? o : /* @__PURE__ */ Fl(o) : e.type.props ? e.props = o : e.props = r, e.attrs = r;
 }
-function od(e) {
+function fd(e) {
   for (; e; ) {
     if (e.type.__hmrId) return !0;
     e = e.parent;
   }
 }
-function rd(e, t, n, s) {
+function pd(e, t, n, s) {
   const {
     props: o,
     attrs: r,
-    vnode: { patchFlag: i }
-  } = e, l = /* @__PURE__ */ ne(o), [a] = e.propsOptions;
-  let f = !1;
+    vnode: { patchFlag: a }
+  } = e, c = /* @__PURE__ */ de(o), [u] = e.propsOptions;
+  let p = !1;
   if (
     // always force full diff in dev
     // - #1942 if hmr is enabled with sfc component
     // - vite#872 non-sfc component used by sfc component
-    !(process.env.NODE_ENV !== "production" && od(e)) && (s || i > 0) && !(i & 16)
+    !(process.env.NODE_ENV !== "production" && fd(e)) && (s || a > 0) && !(a & 16)
   ) {
-    if (i & 8) {
-      const p = e.vnode.dynamicProps;
-      for (let u = 0; u < p.length; u++) {
-        let m = p[u];
-        if (_o(e.emitsOptions, m))
+    if (a & 8) {
+      const h = e.vnode.dynamicProps;
+      for (let f = 0; f < h.length; f++) {
+        let _ = h[f];
+        if (bo(e.emitsOptions, _))
           continue;
-        const b = t[m];
-        if (a)
-          if (pe(r, m))
-            b !== r[m] && (r[m] = b, f = !0);
+        const g = t[_];
+        if (u)
+          if (be(r, _))
+            g !== r[_] && (r[_] = g, p = !0);
           else {
-            const T = Xe(m);
-            o[T] = Wo(
-              a,
-              l,
-              T,
-              b,
+            const k = rt(_);
+            o[k] = Jo(
+              u,
+              c,
+              k,
+              g,
               e,
               !1
             );
           }
         else
-          b !== r[m] && (r[m] = b, f = !0);
+          g !== r[_] && (r[_] = g, p = !0);
       }
     }
   } else {
-    ra(e, t, o, r) && (f = !0);
-    let p;
-    for (const u in l)
+    ha(e, t, o, r) && (p = !0);
+    let h;
+    for (const f in c)
       (!t || // for camelCase
-      !pe(t, u) && // it's possible the original props was passed in as kebab-case
+      !be(t, f) && // it's possible the original props was passed in as kebab-case
       // and converted to camelCase (#955)
-      ((p = nn(u)) === u || !pe(t, p))) && (a ? n && // for camelCase
-      (n[u] !== void 0 || // for kebab-case
-      n[p] !== void 0) && (o[u] = Wo(
-        a,
-        l,
+      ((h = Xt(f)) === f || !be(t, h))) && (u ? n && // for camelCase
+      (n[f] !== void 0 || // for kebab-case
+      n[h] !== void 0) && (o[f] = Jo(
         u,
+        c,
+        f,
         void 0,
         e,
         !0
-      )) : delete o[u]);
-    if (r !== l)
-      for (const u in r)
-        (!t || !pe(t, u)) && (delete r[u], f = !0);
+      )) : delete o[f]);
+    if (r !== c)
+      for (const f in r)
+        (!t || !be(t, f)) && (delete r[f], p = !0);
   }
-  f && $t(e.attrs, "set", ""), process.env.NODE_ENV !== "production" && la(t || {}, o, e);
+  p && It(e.attrs, "set", ""), process.env.NODE_ENV !== "production" && ma(t || {}, o, e);
 }
-function ra(e, t, n, s) {
+function ha(e, t, n, s) {
   const [o, r] = e.propsOptions;
-  let i = !1, l;
+  let a = !1, c;
   if (t)
-    for (let a in t) {
-      if (ss(a))
+    for (let u in t) {
+      if (os(u))
         continue;
-      const f = t[a];
-      let p;
-      o && pe(o, p = Xe(a)) ? !r || !r.includes(p) ? n[p] = f : (l || (l = {}))[p] = f : _o(e.emitsOptions, a) || (!(a in s) || f !== s[a]) && (s[a] = f, i = !0);
+      const p = t[u];
+      let h;
+      o && be(o, h = rt(u)) ? !r || !r.includes(h) ? n[h] = p : (c || (c = {}))[h] = p : bo(e.emitsOptions, u) || (!(u in s) || p !== s[u]) && (s[u] = p, a = !0);
     }
   if (r) {
-    const a = /* @__PURE__ */ ne(n), f = l || be;
-    for (let p = 0; p < r.length; p++) {
-      const u = r[p];
-      n[u] = Wo(
+    const u = /* @__PURE__ */ de(n), p = c || Oe;
+    for (let h = 0; h < r.length; h++) {
+      const f = r[h];
+      n[f] = Jo(
         o,
-        a,
         u,
-        f[u],
+        f,
+        p[f],
         e,
-        !pe(f, u)
+        !be(p, f)
       );
     }
   }
-  return i;
+  return a;
 }
-function Wo(e, t, n, s, o, r) {
-  const i = e[n];
-  if (i != null) {
-    const l = pe(i, "default");
-    if (l && s === void 0) {
-      const a = i.default;
-      if (i.type !== Function && !i.skipFactory && ee(a)) {
-        const { propsDefaults: f } = o;
-        if (n in f)
-          s = f[n];
+function Jo(e, t, n, s, o, r) {
+  const a = e[n];
+  if (a != null) {
+    const c = be(a, "default");
+    if (c && s === void 0) {
+      const u = a.default;
+      if (a.type !== Function && !a.skipFactory && ae(u)) {
+        const { propsDefaults: p } = o;
+        if (n in p)
+          s = p[n];
         else {
-          const p = ws(o);
-          s = f[n] = a.call(
+          const h = Ss(o);
+          s = p[n] = u.call(
             null,
             t
-          ), p();
+          ), h();
         }
       } else
-        s = a;
+        s = u;
       o.ce && o.ce._setProp(n, s);
     }
-    i[
+    a[
       0
       /* shouldCast */
-    ] && (r && !l ? s = !1 : i[
+    ] && (r && !c ? s = !1 : a[
       1
       /* shouldCastTrue */
-    ] && (s === "" || s === nn(n)) && (s = !0));
+    ] && (s === "" || s === Xt(n)) && (s = !0));
   }
   return s;
 }
-const id = /* @__PURE__ */ new WeakMap();
-function ia(e, t, n = !1) {
-  const s = n ? id : t.propsCache, o = s.get(e);
+const hd = /* @__PURE__ */ new WeakMap();
+function _a(e, t, n = !1) {
+  const s = n ? hd : t.propsCache, o = s.get(e);
   if (o)
     return o;
-  const r = e.props, i = {}, l = [];
-  let a = !1;
-  if (!ee(e)) {
-    const p = (u) => {
-      a = !0;
-      const [m, b] = ia(u, t, !0);
-      De(i, m), b && l.push(...b);
+  const r = e.props, a = {}, c = [];
+  let u = !1;
+  if (!ae(e)) {
+    const h = (f) => {
+      u = !0;
+      const [_, g] = _a(f, t, !0);
+      Ae(a, _), g && c.push(...g);
     };
-    !n && t.mixins.length && t.mixins.forEach(p), e.extends && p(e.extends), e.mixins && e.mixins.forEach(p);
+    !n && t.mixins.length && t.mixins.forEach(h), e.extends && h(e.extends), e.mixins && e.mixins.forEach(h);
   }
-  if (!r && !a)
-    return de(e) && s.set(e, Rn), Rn;
-  if (q(r))
-    for (let p = 0; p < r.length; p++) {
-      process.env.NODE_ENV !== "production" && !Oe(r[p]) && j("props must be strings when using array syntax.", r[p]);
-      const u = Xe(r[p]);
-      ii(u) && (i[u] = be);
+  if (!r && !u)
+    return ve(e) && s.set(e, Fn), Fn;
+  if (ee(r))
+    for (let h = 0; h < r.length; h++) {
+      process.env.NODE_ENV !== "production" && !Te(r[h]) && B("props must be strings when using array syntax.", r[h]);
+      const f = rt(r[h]);
+      pi(f) && (a[f] = Oe);
     }
   else if (r) {
-    process.env.NODE_ENV !== "production" && !de(r) && j("invalid props options", r);
-    for (const p in r) {
-      const u = Xe(p);
-      if (ii(u)) {
-        const m = r[p], b = i[u] = q(m) || ee(m) ? { type: m } : De({}, m), T = b.type;
-        let $ = !1, K = !0;
-        if (q(T))
-          for (let F = 0; F < T.length; ++F) {
-            const A = T[F], I = ee(A) && A.name;
-            if (I === "Boolean") {
-              $ = !0;
+    process.env.NODE_ENV !== "production" && !ve(r) && B("invalid props options", r);
+    for (const h in r) {
+      const f = rt(h);
+      if (pi(f)) {
+        const _ = r[h], g = a[f] = ee(_) || ae(_) ? { type: _ } : Ae({}, _), k = g.type;
+        let O = !1, W = !0;
+        if (ee(k))
+          for (let V = 0; V < k.length; ++V) {
+            const I = k[V], L = ae(I) && I.name;
+            if (L === "Boolean") {
+              O = !0;
               break;
-            } else I === "String" && (K = !1);
+            } else L === "String" && (W = !1);
           }
         else
-          $ = ee(T) && T.name === "Boolean";
-        b[
+          O = ae(k) && k.name === "Boolean";
+        g[
           0
           /* shouldCast */
-        ] = $, b[
+        ] = O, g[
           1
           /* shouldCastTrue */
-        ] = K, ($ || pe(b, "default")) && l.push(u);
+        ] = W, (O || be(g, "default")) && c.push(f);
       }
     }
   }
-  const f = [i, l];
-  return de(e) && s.set(e, f), f;
+  const p = [a, c];
+  return ve(e) && s.set(e, p), p;
 }
-function ii(e) {
-  return e[0] !== "$" && !ss(e) ? !0 : (process.env.NODE_ENV !== "production" && j(`Invalid prop name: "${e}" is a reserved property.`), !1);
+function pi(e) {
+  return e[0] !== "$" && !os(e) ? !0 : (process.env.NODE_ENV !== "production" && B(`Invalid prop name: "${e}" is a reserved property.`), !1);
 }
-function ld(e) {
+function _d(e) {
   return e === null ? "null" : typeof e == "function" ? e.name || "" : typeof e == "object" && e.constructor && e.constructor.name || "";
 }
-function la(e, t, n) {
-  const s = /* @__PURE__ */ ne(t), o = n.propsOptions[0], r = Object.keys(e).map((i) => Xe(i));
-  for (const i in o) {
-    let l = o[i];
-    l != null && ad(
-      i,
-      s[i],
-      l,
-      process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Ct(s) : s,
-      !r.includes(i)
+function ma(e, t, n) {
+  const s = /* @__PURE__ */ de(t), o = n.propsOptions[0], r = Object.keys(e).map((a) => rt(a));
+  for (const a in o) {
+    let c = o[a];
+    c != null && md(
+      a,
+      s[a],
+      c,
+      process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Mt(s) : s,
+      !r.includes(a)
     );
   }
 }
-function ad(e, t, n, s, o) {
-  const { type: r, required: i, validator: l, skipCheck: a } = n;
-  if (i && o) {
-    j('Missing required prop: "' + e + '"');
+function md(e, t, n, s, o) {
+  const { type: r, required: a, validator: c, skipCheck: u } = n;
+  if (a && o) {
+    B('Missing required prop: "' + e + '"');
     return;
   }
-  if (!(t == null && !i)) {
-    if (r != null && r !== !0 && !a) {
-      let f = !1;
-      const p = q(r) ? r : [r], u = [];
-      for (let m = 0; m < p.length && !f; m++) {
-        const { valid: b, expectedType: T } = ud(t, p[m]);
-        u.push(T || ""), f = b;
+  if (!(t == null && !a)) {
+    if (r != null && r !== !0 && !u) {
+      let p = !1;
+      const h = ee(r) ? r : [r], f = [];
+      for (let _ = 0; _ < h.length && !p; _++) {
+        const { valid: g, expectedType: k } = vd(t, h[_]);
+        f.push(k || ""), p = g;
       }
-      if (!f) {
-        j(dd(e, t, u));
+      if (!p) {
+        B(bd(e, t, f));
         return;
       }
     }
-    l && !l(t, s) && j('Invalid prop: custom validator check failed for prop "' + e + '".');
+    c && !c(t, s) && B('Invalid prop: custom validator check failed for prop "' + e + '".');
   }
 }
-const cd = /* @__PURE__ */ Bt(
+const gd = /* @__PURE__ */ Zt(
   "String,Number,Boolean,Function,Symbol,BigInt"
 );
-function ud(e, t) {
+function vd(e, t) {
   let n;
-  const s = ld(t);
+  const s = _d(t);
   if (s === "null")
     n = e === null;
-  else if (cd(s)) {
+  else if (gd(s)) {
     const o = typeof e;
     n = o === s.toLowerCase(), !n && o === "object" && (n = e instanceof t);
-  } else s === "Object" ? n = de(e) : s === "Array" ? n = q(e) : n = e instanceof t;
+  } else s === "Object" ? n = ve(e) : s === "Array" ? n = ee(e) : n = e instanceof t;
   return {
     valid: n,
     expectedType: s
   };
 }
-function dd(e, t, n) {
+function bd(e, t, n) {
   if (n.length === 0)
     return `Prop type [] for prop "${e}" won't match anything. Did you mean to use type Array instead?`;
-  let s = `Invalid prop: type check failed for prop "${e}". Expected ${n.map(co).join(" | ")}`;
-  const o = n[0], r = ur(t), i = li(t, o), l = li(t, r);
-  return n.length === 1 && ai(o) && !fd(o, r) && (s += ` with value ${i}`), s += `, got ${r} `, ai(r) && (s += `with value ${l}.`), s;
+  let s = `Invalid prop: type check failed for prop "${e}". Expected ${n.map(fo).join(" | ")}`;
+  const o = n[0], r = _r(t), a = hi(t, o), c = hi(t, r);
+  return n.length === 1 && _i(o) && !yd(o, r) && (s += ` with value ${a}`), s += `, got ${r} `, _i(r) && (s += `with value ${c}.`), s;
 }
-function li(e, t) {
+function hi(e, t) {
   return t === "String" ? `"${e}"` : t === "Number" ? `${Number(e)}` : `${e}`;
 }
-function ai(e) {
+function _i(e) {
   return ["string", "number", "boolean"].some((n) => e.toLowerCase() === n);
 }
-function fd(...e) {
+function yd(...e) {
   return e.some((t) => t.toLowerCase() === "boolean");
 }
-const $r = (e) => e === "_" || e === "_ctx" || e === "$stable", Cr = (e) => q(e) ? e.map(ct) : [ct(e)], pd = (e, t, n) => {
+const Tr = (e) => e === "_" || e === "_ctx" || e === "$stable", Pr = (e) => ee(e) ? e.map(vt) : [vt(e)], Ed = (e, t, n) => {
   if (t._n)
     return t;
-  const s = he((...o) => (process.env.NODE_ENV !== "production" && Ae && !(n === null && Me) && !(n && n.root !== Ae.root) && j(
+  const s = ie((...o) => (process.env.NODE_ENV !== "production" && Me && !(n === null && je) && !(n && n.root !== Me.root) && B(
     `Slot "${e}" invoked outside of the render function: this will not track dependencies used in the slot. Invoke the slot function inside the render function instead.`
-  ), Cr(t(...o))), n);
+  ), Pr(t(...o))), n);
   return s._c = !1, s;
-}, aa = (e, t, n) => {
+}, ga = (e, t, n) => {
   const s = e._ctx;
   for (const o in e) {
-    if ($r(o)) continue;
+    if (Tr(o)) continue;
     const r = e[o];
-    if (ee(r))
-      t[o] = pd(o, r, s);
+    if (ae(r))
+      t[o] = Ed(o, r, s);
     else if (r != null) {
-      process.env.NODE_ENV !== "production" && j(
+      process.env.NODE_ENV !== "production" && B(
         `Non-function value encountered for slot "${o}". Prefer function slots for better performance.`
       );
-      const i = Cr(r);
-      t[o] = () => i;
+      const a = Pr(r);
+      t[o] = () => a;
     }
   }
-}, ca = (e, t) => {
-  process.env.NODE_ENV !== "production" && !Nr(e.vnode) && j(
+}, va = (e, t) => {
+  process.env.NODE_ENV !== "production" && !Cr(e.vnode) && B(
     "Non-function value encountered for default slot. Prefer function slots for better performance."
   );
-  const n = Cr(t);
+  const n = Pr(t);
   e.slots.default = () => n;
-}, Ko = (e, t, n) => {
+}, Qo = (e, t, n) => {
   for (const s in t)
-    (n || !$r(s)) && (e[s] = t[s]);
-}, hd = (e, t, n) => {
-  const s = e.slots = sa();
+    (n || !Tr(s)) && (e[s] = t[s]);
+}, wd = (e, t, n) => {
+  const s = e.slots = fa();
   if (e.vnode.shapeFlag & 32) {
     const o = t._;
-    o ? (Ko(s, t, n), n && Ks(s, "_", o, !0)) : aa(t, s);
-  } else t && ca(e, t);
-}, gd = (e, t, n) => {
+    o ? (Qo(s, t, n), n && Js(s, "_", o, !0)) : ga(t, s);
+  } else t && va(e, t);
+}, Nd = (e, t, n) => {
   const { vnode: s, slots: o } = e;
-  let r = !0, i = be;
+  let r = !0, a = Oe;
   if (s.shapeFlag & 32) {
-    const l = t._;
-    l ? process.env.NODE_ENV !== "production" && Dt ? (Ko(o, t, n), $t(e, "set", "$slots")) : n && l === 1 ? r = !1 : Ko(o, t, n) : (r = !t.$stable, aa(t, o)), i = t;
-  } else t && (ca(e, t), i = { default: 1 });
+    const c = t._;
+    c ? process.env.NODE_ENV !== "production" && Ft ? (Qo(o, t, n), It(e, "set", "$slots")) : n && c === 1 ? r = !1 : Qo(o, t, n) : (r = !t.$stable, ga(t, o)), a = t;
+  } else t && (va(e, t), a = { default: 1 });
   if (r)
-    for (const l in o)
-      !$r(l) && i[l] == null && delete o[l];
+    for (const c in o)
+      !Tr(c) && a[c] == null && delete o[c];
 };
-let Yn, Mt;
-function $n(e, t) {
-  e.appContext.config.performance && to() && Mt.mark(`vue-${t}-${e.uid}`), process.env.NODE_ENV !== "production" && mu(e, t, to() ? Mt.now() : Date.now());
+let Yn, Wt;
+function Dn(e, t) {
+  e.appContext.config.performance && oo() && Wt.mark(`vue-${t}-${e.uid}`), process.env.NODE_ENV !== "production" && $u(e, t, oo() ? Wt.now() : Date.now());
 }
-function Cn(e, t) {
-  if (e.appContext.config.performance && to()) {
-    const n = `vue-${t}-${e.uid}`, s = n + ":end", o = `<${Ns(e, e.type)}> ${t}`;
-    Mt.mark(s), Mt.measure(o, n, s), Mt.clearMeasures(o), Mt.clearMarks(n), Mt.clearMarks(s);
+function Tn(e, t) {
+  if (e.appContext.config.performance && oo()) {
+    const n = `vue-${t}-${e.uid}`, s = n + ":end", o = `<${ks(e, e.type)}> ${t}`;
+    Wt.mark(s), Wt.measure(o, n, s), Wt.clearMeasures(o), Wt.clearMarks(n), Wt.clearMarks(s);
   }
-  process.env.NODE_ENV !== "production" && _u(e, t, to() ? Mt.now() : Date.now());
+  process.env.NODE_ENV !== "production" && Ou(e, t, oo() ? Wt.now() : Date.now());
 }
-function to() {
-  return Yn !== void 0 || (typeof window < "u" && window.performance ? (Yn = !0, Mt = window.performance) : Yn = !1), Yn;
+function oo() {
+  return Yn !== void 0 || (typeof window < "u" && window.performance ? (Yn = !0, Wt = window.performance) : Yn = !1), Yn;
 }
-function md() {
+function $d() {
   const e = [];
   if (process.env.NODE_ENV !== "production" && e.length) {
     const t = e.length > 1;
@@ -3175,927 +3175,927 @@ For more details, see https://link.vuejs.org/feature-flags.`
     );
   }
 }
-const Qe = Ed;
-function _d(e) {
-  return vd(e);
+const ot = xd;
+function Od(e) {
+  return Sd(e);
 }
-function vd(e, t) {
-  md();
-  const n = vs();
-  n.__VUE__ = !0, process.env.NODE_ENV !== "production" && br(n.__VUE_DEVTOOLS_GLOBAL_HOOK__, n);
+function Sd(e, t) {
+  $d();
+  const n = Es();
+  n.__VUE__ = !0, process.env.NODE_ENV !== "production" && $r(n.__VUE_DEVTOOLS_GLOBAL_HOOK__, n);
   const {
     insert: s,
     remove: o,
     patchProp: r,
-    createElement: i,
-    createText: l,
-    createComment: a,
-    setText: f,
-    setElementText: p,
-    parentNode: u,
-    nextSibling: m,
-    setScopeId: b = Ie,
-    insertStaticContent: T
-  } = e, $ = (h, _, y, x = null, k = null, P = null, H = void 0, U = null, L = process.env.NODE_ENV !== "production" && Dt ? !1 : !!_.dynamicChildren) => {
-    if (h === _)
+    createElement: a,
+    createText: c,
+    createComment: u,
+    setText: p,
+    setElementText: h,
+    parentNode: f,
+    nextSibling: _,
+    setScopeId: g = Le,
+    insertStaticContent: k
+  } = e, O = (m, v, $, F = null, R = null, j = null, K = void 0, G = null, H = process.env.NODE_ENV !== "production" && Ft ? !1 : !!v.dynamicChildren) => {
+    if (m === v)
       return;
-    h && !Qn(h, _) && (x = W(h), ot(h, k, P, !0), h = null), _.patchFlag === -2 && (L = !1, _.dynamicChildren = null);
-    const { type: R, ref: Q, shapeFlag: B } = _;
-    switch (R) {
-      case Es:
-        K(h, _, y, x);
+    m && !Xn(m, v) && (F = z(m), tt(m, R, j, !0), m = null), v.patchFlag === -2 && (H = !1, v.dynamicChildren = null);
+    const { type: U, ref: re, shapeFlag: y } = v;
+    switch (U) {
+      case Os:
+        W(m, v, $, F);
         break;
-      case Ze:
-        F(h, _, y, x);
+      case it:
+        V(m, v, $, F);
         break;
-      case Ls:
-        h == null ? A(_, y, x, H) : process.env.NODE_ENV !== "production" && I(h, _, y, H);
+      case Us:
+        m == null ? I(v, $, F, K) : process.env.NODE_ENV !== "production" && L(m, v, $, K);
         break;
-      case X:
-        ae(
-          h,
-          _,
-          y,
-          x,
-          k,
-          P,
-          H,
-          U,
-          L
+      case Y:
+        he(
+          m,
+          v,
+          $,
+          F,
+          R,
+          j,
+          K,
+          G,
+          H
         );
         break;
       default:
-        B & 1 ? S(
-          h,
-          _,
-          y,
-          x,
-          k,
-          P,
+        y & 1 ? T(
+          m,
+          v,
+          $,
+          F,
+          R,
+          j,
+          K,
+          G,
+          H
+        ) : y & 6 ? Re(
+          m,
+          v,
+          $,
+          F,
+          R,
+          j,
+          K,
+          G,
+          H
+        ) : y & 64 || y & 128 ? U.process(
+          m,
+          v,
+          $,
+          F,
+          R,
+          j,
+          K,
+          G,
           H,
-          U,
-          L
-        ) : B & 6 ? je(
-          h,
-          _,
-          y,
-          x,
-          k,
-          P,
-          H,
-          U,
-          L
-        ) : B & 64 || B & 128 ? R.process(
-          h,
-          _,
-          y,
-          x,
-          k,
-          P,
-          H,
-          U,
-          L,
-          se
-        ) : process.env.NODE_ENV !== "production" && j("Invalid VNode type:", R, `(${typeof R})`);
+          le
+        ) : process.env.NODE_ENV !== "production" && B("Invalid VNode type:", U, `(${typeof U})`);
     }
-    Q != null && k ? is(Q, h && h.ref, P, _ || h, !_) : Q == null && h && h.ref != null && is(h.ref, null, P, h, !0);
-  }, K = (h, _, y, x) => {
-    if (h == null)
+    re != null && R ? ls(re, m && m.ref, j, v || m, !v) : re == null && m && m.ref != null && ls(m.ref, null, j, m, !0);
+  }, W = (m, v, $, F) => {
+    if (m == null)
       s(
-        _.el = l(_.children),
-        y,
-        x
+        v.el = c(v.children),
+        $,
+        F
       );
     else {
-      const k = _.el = h.el;
-      _.children !== h.children && f(k, _.children);
+      const R = v.el = m.el;
+      v.children !== m.children && p(R, v.children);
     }
-  }, F = (h, _, y, x) => {
-    h == null ? s(
-      _.el = a(_.children || ""),
-      y,
-      x
-    ) : _.el = h.el;
-  }, A = (h, _, y, x) => {
-    [h.el, h.anchor] = T(
-      h.children,
-      _,
-      y,
-      x,
-      h.el,
-      h.anchor
+  }, V = (m, v, $, F) => {
+    m == null ? s(
+      v.el = u(v.children || ""),
+      $,
+      F
+    ) : v.el = m.el;
+  }, I = (m, v, $, F) => {
+    [m.el, m.anchor] = k(
+      m.children,
+      v,
+      $,
+      F,
+      m.el,
+      m.anchor
     );
-  }, I = (h, _, y, x) => {
-    if (_.children !== h.children) {
-      const k = m(h.anchor);
-      O(h), [_.el, _.anchor] = T(
-        _.children,
-        y,
-        k,
-        x
+  }, L = (m, v, $, F) => {
+    if (v.children !== m.children) {
+      const R = _(m.anchor);
+      D(m), [v.el, v.anchor] = k(
+        v.children,
+        $,
+        R,
+        F
       );
     } else
-      _.el = h.el, _.anchor = h.anchor;
-  }, te = ({ el: h, anchor: _ }, y, x) => {
-    let k;
-    for (; h && h !== _; )
-      k = m(h), s(h, y, x), h = k;
-    s(_, y, x);
-  }, O = ({ el: h, anchor: _ }) => {
-    let y;
-    for (; h && h !== _; )
-      y = m(h), o(h), h = y;
-    o(_);
-  }, S = (h, _, y, x, k, P, H, U, L) => {
-    if (_.type === "svg" ? H = "svg" : _.type === "math" && (H = "mathml"), h == null)
-      v(
-        _,
-        y,
-        x,
-        k,
-        P,
-        H,
-        U,
-        L
+      v.el = m.el, v.anchor = m.anchor;
+  }, te = ({ el: m, anchor: v }, $, F) => {
+    let R;
+    for (; m && m !== v; )
+      R = _(m), s(m, $, F), m = R;
+    s(v, $, F);
+  }, D = ({ el: m, anchor: v }) => {
+    let $;
+    for (; m && m !== v; )
+      $ = _(m), o(m), m = $;
+    o(v);
+  }, T = (m, v, $, F, R, j, K, G, H) => {
+    if (v.type === "svg" ? K = "svg" : v.type === "math" && (K = "mathml"), m == null)
+      b(
+        v,
+        $,
+        F,
+        R,
+        j,
+        K,
+        G,
+        H
       );
     else {
-      const R = h.el && h.el._isVueCE ? h.el : null;
+      const U = m.el && m.el._isVueCE ? m.el : null;
       try {
-        R && R._beginPatch(), M(
-          h,
-          _,
-          k,
-          P,
-          H,
-          U,
-          L
+        U && U._beginPatch(), M(
+          m,
+          v,
+          R,
+          j,
+          K,
+          G,
+          H
         );
       } finally {
-        R && R._endPatch();
+        U && U._endPatch();
       }
     }
-  }, v = (h, _, y, x, k, P, H, U) => {
-    let L, R;
-    const { props: Q, shapeFlag: B, transition: J, dirs: re } = h;
-    if (L = h.el = i(
-      h.type,
-      P,
-      Q && Q.is,
-      Q
-    ), B & 8 ? p(L, h.children) : B & 16 && N(
-      h.children,
-      L,
-      null,
-      x,
-      k,
-      $o(h, P),
+  }, b = (m, v, $, F, R, j, K, G) => {
+    let H, U;
+    const { props: re, shapeFlag: y, transition: P, dirs: N } = m;
+    if (H = m.el = a(
+      m.type,
+      j,
+      re && re.is,
+      re
+    ), y & 8 ? h(H, m.children) : y & 16 && x(
+      m.children,
       H,
-      U
-    ), re && un(h, null, x, "created"), E(L, h, h.scopeId, H, x), Q) {
-      for (const we in Q)
-        we !== "value" && !ss(we) && r(L, we, null, Q[we], P, x);
-      "value" in Q && r(L, "value", null, Q.value, P), (R = Q.onVnodeBeforeMount) && wt(R, x, h);
+      null,
+      F,
+      R,
+      Do(m, j),
+      K,
+      G
+    ), N && _n(m, null, F, "created"), S(H, m, m.scopeId, K, F), re) {
+      for (const pe in re)
+        pe !== "value" && !os(pe) && r(H, pe, null, re[pe], j, F);
+      "value" in re && r(H, "value", null, re.value, j), (U = re.onVnodeBeforeMount) && Pt(U, F, m);
     }
-    process.env.NODE_ENV !== "production" && (Ks(L, "__vnode", h, !0), Ks(L, "__vueParentComponent", x, !0)), re && un(h, null, x, "beforeMount");
-    const fe = bd(k, J);
-    fe && J.beforeEnter(L), s(L, _, y), ((R = Q && Q.onVnodeMounted) || fe || re) && Qe(() => {
-      R && wt(R, x, h), fe && J.enter(L), re && un(h, null, x, "mounted");
-    }, k);
-  }, E = (h, _, y, x, k) => {
-    if (y && b(h, y), x)
-      for (let P = 0; P < x.length; P++)
-        b(h, x[P]);
-    if (k) {
-      let P = k.subTree;
-      if (process.env.NODE_ENV !== "production" && P.patchFlag > 0 && P.patchFlag & 2048 && (P = kr(P.children) || P), _ === P || fa(P.type) && (P.ssContent === _ || P.ssFallback === _)) {
-        const H = k.vnode;
-        E(
-          h,
-          H,
-          H.scopeId,
-          H.slotScopeIds,
-          k.parent
+    process.env.NODE_ENV !== "production" && (Js(H, "__vnode", m, !0), Js(H, "__vueParentComponent", F, !0)), N && _n(m, null, F, "beforeMount");
+    const q = kd(R, P);
+    q && P.beforeEnter(H), s(H, v, $), ((U = re && re.onVnodeMounted) || q || N) && ot(() => {
+      U && Pt(U, F, m), q && P.enter(H), N && _n(m, null, F, "mounted");
+    }, R);
+  }, S = (m, v, $, F, R) => {
+    if ($ && g(m, $), F)
+      for (let j = 0; j < F.length; j++)
+        g(m, F[j]);
+    if (R) {
+      let j = R.subTree;
+      if (process.env.NODE_ENV !== "production" && j.patchFlag > 0 && j.patchFlag & 2048 && (j = Dr(j.children) || j), v === j || Ea(j.type) && (j.ssContent === v || j.ssFallback === v)) {
+        const K = R.vnode;
+        S(
+          m,
+          K,
+          K.scopeId,
+          K.slotScopeIds,
+          R.parent
         );
       }
     }
-  }, N = (h, _, y, x, k, P, H, U, L = 0) => {
-    for (let R = L; R < h.length; R++) {
-      const Q = h[R] = U ? Lt(h[R]) : ct(h[R]);
-      $(
+  }, x = (m, v, $, F, R, j, K, G, H = 0) => {
+    for (let U = H; U < m.length; U++) {
+      const re = m[U] = G ? qt(m[U]) : vt(m[U]);
+      O(
         null,
-        Q,
-        _,
-        y,
-        x,
-        k,
-        P,
-        H,
-        U
+        re,
+        v,
+        $,
+        F,
+        R,
+        j,
+        K,
+        G
       );
     }
-  }, M = (h, _, y, x, k, P, H) => {
-    const U = _.el = h.el;
-    process.env.NODE_ENV !== "production" && (U.__vnode = _);
-    let { patchFlag: L, dynamicChildren: R, dirs: Q } = _;
-    L |= h.patchFlag & 16;
-    const B = h.props || be, J = _.props || be;
-    let re;
-    if (y && dn(y, !1), (re = J.onVnodeBeforeUpdate) && wt(re, y, _, h), Q && un(_, h, y, "beforeUpdate"), y && dn(y, !0), process.env.NODE_ENV !== "production" && Dt && (L = 0, H = !1, R = null), (B.innerHTML && J.innerHTML == null || B.textContent && J.textContent == null) && p(U, ""), R ? (C(
-      h.dynamicChildren,
-      R,
+  }, M = (m, v, $, F, R, j, K) => {
+    const G = v.el = m.el;
+    process.env.NODE_ENV !== "production" && (G.__vnode = v);
+    let { patchFlag: H, dynamicChildren: U, dirs: re } = v;
+    H |= m.patchFlag & 16;
+    const y = m.props || Oe, P = v.props || Oe;
+    let N;
+    if ($ && mn($, !1), (N = P.onVnodeBeforeUpdate) && Pt(N, $, v, m), re && _n(v, m, $, "beforeUpdate"), $ && mn($, !0), process.env.NODE_ENV !== "production" && Ft && (H = 0, K = !1, U = null), (y.innerHTML && P.innerHTML == null || y.textContent && P.textContent == null) && h(G, ""), U ? (A(
+      m.dynamicChildren,
       U,
-      y,
-      x,
-      $o(_, k),
-      P
-    ), process.env.NODE_ENV !== "production" && Ms(h, _)) : H || Ne(
-      h,
-      _,
-      U,
+      G,
+      $,
+      F,
+      Do(v, R),
+      j
+    ), process.env.NODE_ENV !== "production" && js(m, v)) : K || Ee(
+      m,
+      v,
+      G,
       null,
-      y,
-      x,
-      $o(_, k),
-      P,
+      $,
+      F,
+      Do(v, R),
+      j,
       !1
-    ), L > 0) {
-      if (L & 16)
-        z(U, B, J, y, k);
-      else if (L & 2 && B.class !== J.class && r(U, "class", null, J.class, k), L & 4 && r(U, "style", B.style, J.style, k), L & 8) {
-        const fe = _.dynamicProps;
-        for (let we = 0; we < fe.length; we++) {
-          const ye = fe[we], Je = B[ye], Ye = J[ye];
-          (Ye !== Je || ye === "value") && r(U, ye, Je, Ye, k, y);
+    ), H > 0) {
+      if (H & 16)
+        Q(G, y, P, $, R);
+      else if (H & 2 && y.class !== P.class && r(G, "class", null, P.class, R), H & 4 && r(G, "style", y.style, P.style, R), H & 8) {
+        const q = v.dynamicProps;
+        for (let pe = 0; pe < q.length; pe++) {
+          const Ne = q[pe], nt = y[Ne], st = P[Ne];
+          (st !== nt || Ne === "value") && r(G, Ne, nt, st, R, $);
         }
       }
-      L & 1 && h.children !== _.children && p(U, _.children);
-    } else !H && R == null && z(U, B, J, y, k);
-    ((re = J.onVnodeUpdated) || Q) && Qe(() => {
-      re && wt(re, y, _, h), Q && un(_, h, y, "updated");
-    }, x);
-  }, C = (h, _, y, x, k, P, H) => {
-    for (let U = 0; U < _.length; U++) {
-      const L = h[U], R = _[U], Q = (
+      H & 1 && m.children !== v.children && h(G, v.children);
+    } else !K && U == null && Q(G, y, P, $, R);
+    ((N = P.onVnodeUpdated) || re) && ot(() => {
+      N && Pt(N, $, v, m), re && _n(v, m, $, "updated");
+    }, F);
+  }, A = (m, v, $, F, R, j, K) => {
+    for (let G = 0; G < v.length; G++) {
+      const H = m[G], U = v[G], re = (
         // oldVNode may be an errored async setup() component inside Suspense
         // which will not have a mounted element
-        L.el && // - In the case of a Fragment, we need to provide the actual parent
+        H.el && // - In the case of a Fragment, we need to provide the actual parent
         // of the Fragment itself so it can move its children.
-        (L.type === X || // - In the case of different nodes, there is going to be a replacement
+        (H.type === Y || // - In the case of different nodes, there is going to be a replacement
         // which also requires the correct parent container
-        !Qn(L, R) || // - In the case of a component, it could contain anything.
-        L.shapeFlag & 198) ? u(L.el) : (
+        !Xn(H, U) || // - In the case of a component, it could contain anything.
+        H.shapeFlag & 198) ? f(H.el) : (
           // In other cases, the parent container is not actually used so we
           // just pass the block element here to avoid a DOM parentNode call.
-          y
+          $
         )
       );
-      $(
-        L,
-        R,
-        Q,
-        null,
-        x,
-        k,
-        P,
+      O(
         H,
+        U,
+        re,
+        null,
+        F,
+        R,
+        j,
+        K,
         !0
       );
     }
-  }, z = (h, _, y, x, k) => {
-    if (_ !== y) {
-      if (_ !== be)
-        for (const P in _)
-          !ss(P) && !(P in y) && r(
-            h,
-            P,
-            _[P],
+  }, Q = (m, v, $, F, R) => {
+    if (v !== $) {
+      if (v !== Oe)
+        for (const j in v)
+          !os(j) && !(j in $) && r(
+            m,
+            j,
+            v[j],
             null,
-            k,
-            x
+            R,
+            F
           );
-      for (const P in y) {
-        if (ss(P)) continue;
-        const H = y[P], U = _[P];
-        H !== U && P !== "value" && r(h, P, U, H, k, x);
+      for (const j in $) {
+        if (os(j)) continue;
+        const K = $[j], G = v[j];
+        K !== G && j !== "value" && r(m, j, G, K, R, F);
       }
-      "value" in y && r(h, "value", _.value, y.value, k);
+      "value" in $ && r(m, "value", v.value, $.value, R);
     }
-  }, ae = (h, _, y, x, k, P, H, U, L) => {
-    const R = _.el = h ? h.el : l(""), Q = _.anchor = h ? h.anchor : l("");
-    let { patchFlag: B, dynamicChildren: J, slotScopeIds: re } = _;
+  }, he = (m, v, $, F, R, j, K, G, H) => {
+    const U = v.el = m ? m.el : c(""), re = v.anchor = m ? m.anchor : c("");
+    let { patchFlag: y, dynamicChildren: P, slotScopeIds: N } = v;
     process.env.NODE_ENV !== "production" && // #5523 dev root fragment may inherit directives
-    (Dt || B & 2048) && (B = 0, L = !1, J = null), re && (U = U ? U.concat(re) : re), h == null ? (s(R, y, x), s(Q, y, x), N(
+    (Ft || y & 2048) && (y = 0, H = !1, P = null), N && (G = G ? G.concat(N) : N), m == null ? (s(U, $, F), s(re, $, F), x(
       // #10007
       // such fragment like `<></>` will be compiled into
       // a fragment which doesn't have a children.
       // In this case fallback to an empty array
-      _.children || [],
-      y,
-      Q,
-      k,
-      P,
-      H,
-      U,
-      L
-    )) : B > 0 && B & 64 && J && // #2715 the previous fragment could've been a BAILed one as a result
+      v.children || [],
+      $,
+      re,
+      R,
+      j,
+      K,
+      G,
+      H
+    )) : y > 0 && y & 64 && P && // #2715 the previous fragment could've been a BAILed one as a result
     // of renderSlot() with no valid children
-    h.dynamicChildren && h.dynamicChildren.length === J.length ? (C(
-      h.dynamicChildren,
-      J,
-      y,
-      k,
+    m.dynamicChildren && m.dynamicChildren.length === P.length ? (A(
+      m.dynamicChildren,
       P,
-      H,
-      U
-    ), process.env.NODE_ENV !== "production" ? Ms(h, _) : (
+      $,
+      R,
+      j,
+      K,
+      G
+    ), process.env.NODE_ENV !== "production" ? js(m, v) : (
       // #2080 if the stable fragment has a key, it's a <template v-for> that may
       //  get moved around. Make sure all root level vnodes inherit el.
       // #2134 or if it's a component root, it may also get moved around
       // as the component is being moved.
-      (_.key != null || k && _ === k.subTree) && Ms(
-        h,
-        _,
+      (v.key != null || R && v === R.subTree) && js(
+        m,
+        v,
         !0
         /* shallow */
       )
-    )) : Ne(
-      h,
-      _,
-      y,
-      Q,
-      k,
-      P,
-      H,
-      U,
-      L
+    )) : Ee(
+      m,
+      v,
+      $,
+      re,
+      R,
+      j,
+      K,
+      G,
+      H
     );
-  }, je = (h, _, y, x, k, P, H, U, L) => {
-    _.slotScopeIds = U, h == null ? _.shapeFlag & 512 ? k.ctx.activate(
-      _,
-      y,
-      x,
-      H,
-      L
-    ) : Pe(
-      _,
-      y,
-      x,
-      k,
-      P,
-      H,
-      L
-    ) : ce(h, _, L);
-  }, Pe = (h, _, y, x, k, P, H) => {
-    const U = h.component = Cd(
-      h,
-      x,
-      k
+  }, Re = (m, v, $, F, R, j, K, G, H) => {
+    v.slotScopeIds = G, m == null ? v.shapeFlag & 512 ? R.ctx.activate(
+      v,
+      $,
+      F,
+      K,
+      H
+    ) : Se(
+      v,
+      $,
+      F,
+      R,
+      j,
+      K,
+      H
+    ) : fe(m, v, H);
+  }, Se = (m, v, $, F, R, j, K) => {
+    const G = m.component = Id(
+      m,
+      F,
+      R
     );
-    if (process.env.NODE_ENV !== "production" && U.type.__hmrId && lu(U), process.env.NODE_ENV !== "production" && (Vs(h), $n(U, "mount")), Nr(h) && (U.ctx.renderer = se), process.env.NODE_ENV !== "production" && $n(U, "init"), xd(U, !1, H), process.env.NODE_ENV !== "production" && Cn(U, "init"), process.env.NODE_ENV !== "production" && Dt && (h.el = null), U.asyncDep) {
-      if (k && k.registerDep(U, ie, H), !h.el) {
-        const L = U.subTree = Z(Ze);
-        F(null, L, _, y), h.placeholder = L.el;
+    if (process.env.NODE_ENV !== "production" && G.type.__hmrId && _u(G), process.env.NODE_ENV !== "production" && (Is(m), Dn(G, "mount")), Cr(m) && (G.ctx.renderer = le), process.env.NODE_ENV !== "production" && Dn(G, "init"), Fd(G, !1, K), process.env.NODE_ENV !== "production" && Tn(G, "init"), process.env.NODE_ENV !== "production" && Ft && (m.el = null), G.asyncDep) {
+      if (R && R.registerDep(G, ue, K), !m.el) {
+        const H = G.subTree = X(it);
+        V(null, H, v, $), m.placeholder = H.el;
       }
     } else
-      ie(
-        U,
-        h,
-        _,
-        y,
-        k,
-        P,
-        H
+      ue(
+        G,
+        m,
+        v,
+        $,
+        R,
+        j,
+        K
       );
-    process.env.NODE_ENV !== "production" && (As(), Cn(U, "mount"));
-  }, ce = (h, _, y) => {
-    const x = _.component = h.component;
-    if (td(h, _, y))
-      if (x.asyncDep && !x.asyncResolved) {
-        process.env.NODE_ENV !== "production" && Vs(_), oe(x, _, y), process.env.NODE_ENV !== "production" && As();
+    process.env.NODE_ENV !== "production" && (Ms(), Tn(G, "mount"));
+  }, fe = (m, v, $) => {
+    const F = v.component = m.component;
+    if (cd(m, v, $))
+      if (F.asyncDep && !F.asyncResolved) {
+        process.env.NODE_ENV !== "production" && Is(v), se(F, v, $), process.env.NODE_ENV !== "production" && Ms();
         return;
       } else
-        x.next = _, x.update();
+        F.next = v, F.update();
     else
-      _.el = h.el, x.vnode = _;
-  }, ie = (h, _, y, x, k, P, H) => {
-    const U = () => {
-      if (h.isMounted) {
-        let { next: B, bu: J, u: re, parent: fe, vnode: we } = h;
+      v.el = m.el, F.vnode = v;
+  }, ue = (m, v, $, F, R, j, K) => {
+    const G = () => {
+      if (m.isMounted) {
+        let { next: y, bu: P, u: N, parent: q, vnode: pe } = m;
         {
-          const yt = ua(h);
-          if (yt) {
-            B && (B.el = we.el, oe(h, B, H)), yt.asyncDep.then(() => {
-              Qe(() => {
-                h.isUnmounted || R();
-              }, k);
+          const Dt = ba(m);
+          if (Dt) {
+            y && (y.el = pe.el, se(m, y, K)), Dt.asyncDep.then(() => {
+              ot(() => {
+                m.isUnmounted || U();
+              }, R);
             });
             return;
           }
         }
-        let ye = B, Je;
-        process.env.NODE_ENV !== "production" && Vs(B || h.vnode), dn(h, !1), B ? (B.el = we.el, oe(h, B, H)) : B = we, J && Pn(J), (Je = B.props && B.props.onVnodeBeforeUpdate) && wt(Je, fe, B, we), dn(h, !0), process.env.NODE_ENV !== "production" && $n(h, "render");
-        const Ye = si(h);
-        process.env.NODE_ENV !== "production" && Cn(h, "render");
-        const bt = h.subTree;
-        h.subTree = Ye, process.env.NODE_ENV !== "production" && $n(h, "patch"), $(
-          bt,
-          Ye,
+        let Ne = y, nt;
+        process.env.NODE_ENV !== "production" && Is(y || m.vnode), mn(m, !1), y ? (y.el = pe.el, se(m, y, K)) : y = pe, P && Vn(P), (nt = y.props && y.props.onVnodeBeforeUpdate) && Pt(nt, q, y, pe), mn(m, !0), process.env.NODE_ENV !== "production" && Dn(m, "render");
+        const st = ui(m);
+        process.env.NODE_ENV !== "production" && Tn(m, "render");
+        const xt = m.subTree;
+        m.subTree = st, process.env.NODE_ENV !== "production" && Dn(m, "patch"), O(
+          xt,
+          st,
           // parent may have changed if it's in a teleport
-          u(bt.el),
+          f(xt.el),
           // anchor may have changed if it's in a fragment
-          W(bt),
-          h,
-          k,
-          P
-        ), process.env.NODE_ENV !== "production" && Cn(h, "patch"), B.el = Ye.el, ye === null && nd(h, Ye.el), re && Qe(re, k), (Je = B.props && B.props.onVnodeUpdated) && Qe(
-          () => wt(Je, fe, B, we),
-          k
-        ), process.env.NODE_ENV !== "production" && Fl(h), process.env.NODE_ENV !== "production" && As();
+          z(xt),
+          m,
+          R,
+          j
+        ), process.env.NODE_ENV !== "production" && Tn(m, "patch"), y.el = st.el, Ne === null && ud(m, st.el), N && ot(N, R), (nt = y.props && y.props.onVnodeUpdated) && ot(
+          () => Pt(nt, q, y, pe),
+          R
+        ), process.env.NODE_ENV !== "production" && Jl(m), process.env.NODE_ENV !== "production" && Ms();
       } else {
-        let B;
-        const { el: J, props: re } = _, { bm: fe, m: we, parent: ye, root: Je, type: Ye } = h, bt = Mn(_);
-        dn(h, !1), fe && Pn(fe), !bt && (B = re && re.onVnodeBeforeMount) && wt(B, ye, _), dn(h, !0);
+        let y;
+        const { el: P, props: N } = v, { bm: q, m: pe, parent: Ne, root: nt, type: st } = m, xt = jn(v);
+        mn(m, !1), q && Vn(q), !xt && (y = N && N.onVnodeBeforeMount) && Pt(y, Ne, v), mn(m, !0);
         {
-          Je.ce && Je.ce._hasShadowRoot() && Je.ce._injectChildStyle(
-            Ye,
-            h.parent ? h.parent.type : void 0
-          ), process.env.NODE_ENV !== "production" && $n(h, "render");
-          const yt = h.subTree = si(h);
-          process.env.NODE_ENV !== "production" && Cn(h, "render"), process.env.NODE_ENV !== "production" && $n(h, "patch"), $(
+          nt.ce && nt.ce._hasShadowRoot() && nt.ce._injectChildStyle(
+            st,
+            m.parent ? m.parent.type : void 0
+          ), process.env.NODE_ENV !== "production" && Dn(m, "render");
+          const Dt = m.subTree = ui(m);
+          process.env.NODE_ENV !== "production" && Tn(m, "render"), process.env.NODE_ENV !== "production" && Dn(m, "patch"), O(
             null,
-            yt,
-            y,
-            x,
-            h,
-            k,
-            P
-          ), process.env.NODE_ENV !== "production" && Cn(h, "patch"), _.el = yt.el;
+            Dt,
+            $,
+            F,
+            m,
+            R,
+            j
+          ), process.env.NODE_ENV !== "production" && Tn(m, "patch"), v.el = Dt.el;
         }
-        if (we && Qe(we, k), !bt && (B = re && re.onVnodeMounted)) {
-          const yt = _;
-          Qe(
-            () => wt(B, ye, yt),
-            k
+        if (pe && ot(pe, R), !xt && (y = N && N.onVnodeMounted)) {
+          const Dt = v;
+          ot(
+            () => Pt(y, Ne, Dt),
+            R
           );
         }
-        (_.shapeFlag & 256 || ye && Mn(ye.vnode) && ye.vnode.shapeFlag & 256) && h.a && Qe(h.a, k), h.isMounted = !0, process.env.NODE_ENV !== "production" && pu(h), _ = y = x = null;
+        (v.shapeFlag & 256 || Ne && jn(Ne.vnode) && Ne.vnode.shapeFlag & 256) && m.a && ot(m.a, R), m.isMounted = !0, process.env.NODE_ENV !== "production" && Eu(m), v = $ = F = null;
       }
     };
-    h.scope.on();
-    const L = h.effect = new pl(U);
-    h.scope.off();
-    const R = h.update = L.run.bind(L), Q = h.job = L.runIfDirty.bind(L);
-    Q.i = h, Q.id = h.uid, L.scheduler = () => go(Q), dn(h, !0), process.env.NODE_ENV !== "production" && (L.onTrack = h.rtc ? (B) => Pn(h.rtc, B) : void 0, L.onTrigger = h.rtg ? (B) => Pn(h.rtg, B) : void 0), R();
-  }, oe = (h, _, y) => {
-    _.component = h;
-    const x = h.vnode.props;
-    h.vnode = _, h.next = null, rd(h, _.props, x, y), gd(h, _.children, y), ht(), zr(h), gt();
-  }, Ne = (h, _, y, x, k, P, H, U, L = !1) => {
-    const R = h && h.children, Q = h ? h.shapeFlag : 0, B = _.children, { patchFlag: J, shapeFlag: re } = _;
-    if (J > 0) {
-      if (J & 128) {
-        Kt(
-          R,
-          B,
-          y,
-          x,
-          k,
-          P,
-          H,
+    m.scope.on();
+    const H = m.effect = new wl(G);
+    m.scope.off();
+    const U = m.update = H.run.bind(H), re = m.job = H.runIfDirty.bind(H);
+    re.i = m, re.id = m.uid, H.scheduler = () => go(re), mn(m, !0), process.env.NODE_ENV !== "production" && (H.onTrack = m.rtc ? (y) => Vn(m.rtc, y) : void 0, H.onTrigger = m.rtg ? (y) => Vn(m.rtg, y) : void 0), U();
+  }, se = (m, v, $) => {
+    v.component = m;
+    const F = m.vnode.props;
+    m.vnode = v, m.next = null, pd(m, v.props, F, $), Nd(m, v.children, $), $t(), ei(m), Ot();
+  }, Ee = (m, v, $, F, R, j, K, G, H = !1) => {
+    const U = m && m.children, re = m ? m.shapeFlag : 0, y = v.children, { patchFlag: P, shapeFlag: N } = v;
+    if (P > 0) {
+      if (P & 128) {
+        Ct(
           U,
-          L
+          y,
+          $,
+          F,
+          R,
+          j,
+          K,
+          G,
+          H
         );
         return;
-      } else if (J & 256) {
-        cn(
-          R,
-          B,
-          y,
-          x,
-          k,
-          P,
-          H,
+      } else if (P & 256) {
+        lt(
           U,
-          L
+          y,
+          $,
+          F,
+          R,
+          j,
+          K,
+          G,
+          H
         );
         return;
       }
     }
-    re & 8 ? (Q & 16 && w(R, k, P), B !== R && p(y, B)) : Q & 16 ? re & 16 ? Kt(
+    N & 8 ? (re & 16 && C(U, R, j), y !== U && h($, y)) : re & 16 ? N & 16 ? Ct(
+      U,
+      y,
+      $,
+      F,
       R,
-      B,
+      j,
+      K,
+      G,
+      H
+    ) : C(U, R, j, !0) : (re & 8 && h($, ""), N & 16 && x(
       y,
-      x,
-      k,
-      P,
-      H,
-      U,
-      L
-    ) : w(R, k, P, !0) : (Q & 8 && p(y, ""), re & 16 && N(
-      B,
-      y,
-      x,
-      k,
-      P,
-      H,
-      U,
-      L
+      $,
+      F,
+      R,
+      j,
+      K,
+      G,
+      H
     ));
-  }, cn = (h, _, y, x, k, P, H, U, L) => {
-    h = h || Rn, _ = _ || Rn;
-    const R = h.length, Q = _.length, B = Math.min(R, Q);
-    let J;
-    for (J = 0; J < B; J++) {
-      const re = _[J] = L ? Lt(_[J]) : ct(_[J]);
-      $(
-        h[J],
-        re,
-        y,
+  }, lt = (m, v, $, F, R, j, K, G, H) => {
+    m = m || Fn, v = v || Fn;
+    const U = m.length, re = v.length, y = Math.min(U, re);
+    let P;
+    for (P = 0; P < y; P++) {
+      const N = v[P] = H ? qt(v[P]) : vt(v[P]);
+      O(
+        m[P],
+        N,
+        $,
         null,
-        k,
-        P,
-        H,
-        U,
-        L
+        R,
+        j,
+        K,
+        G,
+        H
       );
     }
-    R > Q ? w(
-      h,
-      k,
-      P,
+    U > re ? C(
+      m,
+      R,
+      j,
       !0,
       !1,
-      B
-    ) : N(
-      _,
-      y,
-      x,
-      k,
-      P,
+      y
+    ) : x(
+      v,
+      $,
+      F,
+      R,
+      j,
+      K,
+      G,
       H,
-      U,
-      L,
-      B
+      y
     );
-  }, Kt = (h, _, y, x, k, P, H, U, L) => {
-    let R = 0;
-    const Q = _.length;
-    let B = h.length - 1, J = Q - 1;
-    for (; R <= B && R <= J; ) {
-      const re = h[R], fe = _[R] = L ? Lt(_[R]) : ct(_[R]);
-      if (Qn(re, fe))
-        $(
-          re,
-          fe,
-          y,
+  }, Ct = (m, v, $, F, R, j, K, G, H) => {
+    let U = 0;
+    const re = v.length;
+    let y = m.length - 1, P = re - 1;
+    for (; U <= y && U <= P; ) {
+      const N = m[U], q = v[U] = H ? qt(v[U]) : vt(v[U]);
+      if (Xn(N, q))
+        O(
+          N,
+          q,
+          $,
           null,
-          k,
-          P,
-          H,
-          U,
-          L
+          R,
+          j,
+          K,
+          G,
+          H
         );
       else
         break;
-      R++;
+      U++;
     }
-    for (; R <= B && R <= J; ) {
-      const re = h[B], fe = _[J] = L ? Lt(_[J]) : ct(_[J]);
-      if (Qn(re, fe))
-        $(
-          re,
-          fe,
-          y,
+    for (; U <= y && U <= P; ) {
+      const N = m[y], q = v[P] = H ? qt(v[P]) : vt(v[P]);
+      if (Xn(N, q))
+        O(
+          N,
+          q,
+          $,
           null,
-          k,
-          P,
-          H,
-          U,
-          L
+          R,
+          j,
+          K,
+          G,
+          H
         );
       else
         break;
-      B--, J--;
+      y--, P--;
     }
-    if (R > B) {
-      if (R <= J) {
-        const re = J + 1, fe = re < Q ? _[re].el : x;
-        for (; R <= J; )
-          $(
+    if (U > y) {
+      if (U <= P) {
+        const N = P + 1, q = N < re ? v[N].el : F;
+        for (; U <= P; )
+          O(
             null,
-            _[R] = L ? Lt(_[R]) : ct(_[R]),
-            y,
-            fe,
-            k,
-            P,
-            H,
-            U,
-            L
-          ), R++;
+            v[U] = H ? qt(v[U]) : vt(v[U]),
+            $,
+            q,
+            R,
+            j,
+            K,
+            G,
+            H
+          ), U++;
       }
-    } else if (R > J)
-      for (; R <= B; )
-        ot(h[R], k, P, !0), R++;
+    } else if (U > P)
+      for (; U <= y; )
+        tt(m[U], R, j, !0), U++;
     else {
-      const re = R, fe = R, we = /* @__PURE__ */ new Map();
-      for (R = fe; R <= J; R++) {
-        const Ge = _[R] = L ? Lt(_[R]) : ct(_[R]);
-        Ge.key != null && (process.env.NODE_ENV !== "production" && we.has(Ge.key) && j(
+      const N = U, q = U, pe = /* @__PURE__ */ new Map();
+      for (U = q; U <= P; U++) {
+        const ze = v[U] = H ? qt(v[U]) : vt(v[U]);
+        ze.key != null && (process.env.NODE_ENV !== "production" && pe.has(ze.key) && B(
           "Duplicate keys found during update:",
-          JSON.stringify(Ge.key),
+          JSON.stringify(ze.key),
           "Make sure keys are unique."
-        ), we.set(Ge.key, R));
+        ), pe.set(ze.key, U));
       }
-      let ye, Je = 0;
-      const Ye = J - fe + 1;
-      let bt = !1, yt = 0;
-      const qn = new Array(Ye);
-      for (R = 0; R < Ye; R++) qn[R] = 0;
-      for (R = re; R <= B; R++) {
-        const Ge = h[R];
-        if (Je >= Ye) {
-          ot(Ge, k, P, !0);
+      let Ne, nt = 0;
+      const st = P - q + 1;
+      let xt = !1, Dt = 0;
+      const Jn = new Array(st);
+      for (U = 0; U < st; U++) Jn[U] = 0;
+      for (U = N; U <= y; U++) {
+        const ze = m[U];
+        if (nt >= st) {
+          tt(ze, R, j, !0);
           continue;
         }
-        let Et;
-        if (Ge.key != null)
-          Et = we.get(Ge.key);
+        let Tt;
+        if (ze.key != null)
+          Tt = pe.get(ze.key);
         else
-          for (ye = fe; ye <= J; ye++)
-            if (qn[ye - fe] === 0 && Qn(Ge, _[ye])) {
-              Et = ye;
+          for (Ne = q; Ne <= P; Ne++)
+            if (Jn[Ne - q] === 0 && Xn(ze, v[Ne])) {
+              Tt = Ne;
               break;
             }
-        Et === void 0 ? ot(Ge, k, P, !0) : (qn[Et - fe] = R + 1, Et >= yt ? yt = Et : bt = !0, $(
-          Ge,
-          _[Et],
-          y,
+        Tt === void 0 ? tt(ze, R, j, !0) : (Jn[Tt - q] = U + 1, Tt >= Dt ? Dt = Tt : xt = !0, O(
+          ze,
+          v[Tt],
+          $,
           null,
-          k,
-          P,
-          H,
-          U,
-          L
-        ), Je++);
+          R,
+          j,
+          K,
+          G,
+          H
+        ), nt++);
       }
-      const Lr = bt ? yd(qn) : Rn;
-      for (ye = Lr.length - 1, R = Ye - 1; R >= 0; R--) {
-        const Ge = fe + R, Et = _[Ge], jr = _[Ge + 1], Fr = Ge + 1 < Q ? (
+      const Kr = xt ? Cd(Jn) : Fn;
+      for (Ne = Kr.length - 1, U = st - 1; U >= 0; U--) {
+        const ze = q + U, Tt = v[ze], Wr = v[ze + 1], qr = ze + 1 < re ? (
           // #13559, #14173 fallback to el placeholder for unresolved async component
-          jr.el || da(jr)
-        ) : x;
-        qn[R] === 0 ? $(
+          Wr.el || ya(Wr)
+        ) : F;
+        Jn[U] === 0 ? O(
           null,
-          Et,
-          y,
-          Fr,
-          k,
-          P,
-          H,
-          U,
-          L
-        ) : bt && (ye < 0 || R !== Lr[ye] ? vt(Et, y, Fr, 2) : ye--);
+          Tt,
+          $,
+          qr,
+          R,
+          j,
+          K,
+          G,
+          H
+        ) : xt && (Ne < 0 || U !== Kr[Ne] ? et(Tt, $, qr, 2) : Ne--);
       }
     }
-  }, vt = (h, _, y, x, k = null) => {
-    const { el: P, type: H, transition: U, children: L, shapeFlag: R } = h;
-    if (R & 6) {
-      vt(h.component.subTree, _, y, x);
+  }, et = (m, v, $, F, R = null) => {
+    const { el: j, type: K, transition: G, children: H, shapeFlag: U } = m;
+    if (U & 6) {
+      et(m.component.subTree, v, $, F);
       return;
     }
-    if (R & 128) {
-      h.suspense.move(_, y, x);
+    if (U & 128) {
+      m.suspense.move(v, $, F);
       return;
     }
-    if (R & 64) {
-      H.move(h, _, y, se);
+    if (U & 64) {
+      K.move(m, v, $, le);
       return;
     }
-    if (H === X) {
-      s(P, _, y);
-      for (let B = 0; B < L.length; B++)
-        vt(L[B], _, y, x);
-      s(h.anchor, _, y);
+    if (K === Y) {
+      s(j, v, $);
+      for (let y = 0; y < H.length; y++)
+        et(H[y], v, $, F);
+      s(m.anchor, v, $);
       return;
     }
-    if (H === Ls) {
-      te(h, _, y);
+    if (K === Us) {
+      te(m, v, $);
       return;
     }
-    if (x !== 2 && R & 1 && U)
-      if (x === 0)
-        U.beforeEnter(P), s(P, _, y), Qe(() => U.enter(P), k);
+    if (F !== 2 && U & 1 && G)
+      if (F === 0)
+        G.beforeEnter(j), s(j, v, $), ot(() => G.enter(j), R);
       else {
-        const { leave: B, delayLeave: J, afterLeave: re } = U, fe = () => {
-          h.ctx.isUnmounted ? o(P) : s(P, _, y);
-        }, we = () => {
-          P._isLeaving && P[ku](
+        const { leave: y, delayLeave: P, afterLeave: N } = G, q = () => {
+          m.ctx.isUnmounted ? o(j) : s(j, v, $);
+        }, pe = () => {
+          j._isLeaving && j[Au](
             !0
             /* cancelled */
-          ), B(P, () => {
-            fe(), re && re();
+          ), y(j, () => {
+            q(), N && N();
           });
         };
-        J ? J(P, fe, we) : we();
+        P ? P(j, q, pe) : pe();
       }
     else
-      s(P, _, y);
-  }, ot = (h, _, y, x = !1, k = !1) => {
+      s(j, v, $);
+  }, tt = (m, v, $, F = !1, R = !1) => {
     const {
-      type: P,
-      props: H,
-      ref: U,
-      children: L,
-      dynamicChildren: R,
-      shapeFlag: Q,
-      patchFlag: B,
-      dirs: J,
-      cacheIndex: re
-    } = h;
-    if (B === -2 && (k = !1), U != null && (ht(), is(U, null, y, h, !0), gt()), re != null && (_.renderCache[re] = void 0), Q & 256) {
-      _.ctx.deactivate(h);
+      type: j,
+      props: K,
+      ref: G,
+      children: H,
+      dynamicChildren: U,
+      shapeFlag: re,
+      patchFlag: y,
+      dirs: P,
+      cacheIndex: N
+    } = m;
+    if (y === -2 && (R = !1), G != null && ($t(), ls(G, null, $, m, !0), Ot()), N != null && (v.renderCache[N] = void 0), re & 256) {
+      v.ctx.deactivate(m);
       return;
     }
-    const fe = Q & 1 && J, we = !Mn(h);
-    let ye;
-    if (we && (ye = H && H.onVnodeBeforeUnmount) && wt(ye, _, h), Q & 6)
-      Jt(h.component, y, x);
+    const q = re & 1 && P, pe = !jn(m);
+    let Ne;
+    if (pe && (Ne = K && K.onVnodeBeforeUnmount) && Pt(Ne, v, m), re & 6)
+      at(m.component, $, F);
     else {
-      if (Q & 128) {
-        h.suspense.unmount(y, x);
+      if (re & 128) {
+        m.suspense.unmount($, F);
         return;
       }
-      fe && un(h, null, _, "beforeUnmount"), Q & 64 ? h.type.remove(
-        h,
-        _,
-        y,
-        se,
-        x
-      ) : R && // #5154
+      q && _n(m, null, v, "beforeUnmount"), re & 64 ? m.type.remove(
+        m,
+        v,
+        $,
+        le,
+        F
+      ) : U && // #5154
       // when v-once is used inside a block, setBlockTracking(-1) marks the
       // parent block with hasOnce: true
       // so that it doesn't take the fast path during unmount - otherwise
       // components nested in v-once are never unmounted.
-      !R.hasOnce && // #1153: fast path should not be taken for non-stable (v-for) fragments
-      (P !== X || B > 0 && B & 64) ? w(
-        R,
-        _,
-        y,
+      !U.hasOnce && // #1153: fast path should not be taken for non-stable (v-for) fragments
+      (j !== Y || y > 0 && y & 64) ? C(
+        U,
+        v,
+        $,
         !1,
         !0
-      ) : (P === X && B & 384 || !k && Q & 16) && w(L, _, y), x && zt(h);
+      ) : (j === Y && y & 384 || !R && re & 16) && C(H, v, $), F && Ge(m);
     }
-    (we && (ye = H && H.onVnodeUnmounted) || fe) && Qe(() => {
-      ye && wt(ye, _, h), fe && un(h, null, _, "unmounted");
-    }, y);
-  }, zt = (h) => {
-    const { type: _, el: y, anchor: x, transition: k } = h;
-    if (_ === X) {
-      process.env.NODE_ENV !== "production" && h.patchFlag > 0 && h.patchFlag & 2048 && k && !k.persisted ? h.children.forEach((H) => {
-        H.type === Ze ? o(H.el) : zt(H);
-      }) : qt(y, x);
+    (pe && (Ne = K && K.onVnodeUnmounted) || q) && ot(() => {
+      Ne && Pt(Ne, v, m), q && _n(m, null, v, "unmounted");
+    }, $);
+  }, Ge = (m) => {
+    const { type: v, el: $, anchor: F, transition: R } = m;
+    if (v === Y) {
+      process.env.NODE_ENV !== "production" && m.patchFlag > 0 && m.patchFlag & 2048 && R && !R.persisted ? m.children.forEach((K) => {
+        K.type === it ? o(K.el) : Ge(K);
+      }) : Ue($, F);
       return;
     }
-    if (_ === Ls) {
-      O(h);
+    if (v === Us) {
+      D(m);
       return;
     }
-    const P = () => {
-      o(y), k && !k.persisted && k.afterLeave && k.afterLeave();
+    const j = () => {
+      o($), R && !R.persisted && R.afterLeave && R.afterLeave();
     };
-    if (h.shapeFlag & 1 && k && !k.persisted) {
-      const { leave: H, delayLeave: U } = k, L = () => H(y, P);
-      U ? U(h.el, P, L) : L();
+    if (m.shapeFlag & 1 && R && !R.persisted) {
+      const { leave: K, delayLeave: G } = R, H = () => K($, j);
+      G ? G(m.el, j, H) : H();
     } else
-      P();
-  }, qt = (h, _) => {
-    let y;
-    for (; h !== _; )
-      y = m(h), o(h), h = y;
-    o(_);
-  }, Jt = (h, _, y) => {
-    process.env.NODE_ENV !== "production" && h.type.__hmrId && au(h);
-    const { bum: x, scope: k, job: P, subTree: H, um: U, m: L, a: R } = h;
-    ci(L), ci(R), x && Pn(x), k.stop(), P && (P.flags |= 8, ot(H, h, _, y)), U && Qe(U, _), Qe(() => {
-      h.isUnmounted = !0;
-    }, _), process.env.NODE_ENV !== "production" && gu(h);
-  }, w = (h, _, y, x = !1, k = !1, P = 0) => {
-    for (let H = P; H < h.length; H++)
-      ot(h[H], _, y, x, k);
-  }, W = (h) => {
-    if (h.shapeFlag & 6)
-      return W(h.component.subTree);
-    if (h.shapeFlag & 128)
-      return h.suspense.next();
-    const _ = m(h.anchor || h.el), y = _ && _[Ou];
-    return y ? m(y) : _;
+      j();
+  }, Ue = (m, v) => {
+    let $;
+    for (; m !== v; )
+      $ = _(m), o(m), m = $;
+    o(v);
+  }, at = (m, v, $) => {
+    process.env.NODE_ENV !== "production" && m.type.__hmrId && mu(m);
+    const { bum: F, scope: R, job: j, subTree: K, um: G, m: H, a: U } = m;
+    mi(H), mi(U), F && Vn(F), R.stop(), j && (j.flags |= 8, tt(K, m, v, $)), G && ot(G, v), ot(() => {
+      m.isUnmounted = !0;
+    }, v), process.env.NODE_ENV !== "production" && Nu(m);
+  }, C = (m, v, $, F = !1, R = !1, j = 0) => {
+    for (let K = j; K < m.length; K++)
+      tt(m[K], v, $, F, R);
+  }, z = (m) => {
+    if (m.shapeFlag & 6)
+      return z(m.component.subTree);
+    if (m.shapeFlag & 128)
+      return m.suspense.next();
+    const v = _(m.anchor || m.el), $ = v && v[Pu];
+    return $ ? _($) : v;
   };
-  let G = !1;
-  const Y = (h, _, y) => {
-    let x;
-    h == null ? _._vnode && (ot(_._vnode, null, null, !0), x = _._vnode.component) : $(
-      _._vnode || null,
-      h,
-      _,
+  let J = !1;
+  const oe = (m, v, $) => {
+    let F;
+    m == null ? v._vnode && (tt(v._vnode, null, null, !0), F = v._vnode.component) : O(
+      v._vnode || null,
+      m,
+      v,
       null,
       null,
       null,
-      y
-    ), _._vnode = h, G || (G = !0, zr(x), Ml(), G = !1);
-  }, se = {
-    p: $,
-    um: ot,
-    m: vt,
-    r: zt,
-    mt: Pe,
-    mc: N,
-    pc: Ne,
-    pbc: C,
-    n: W,
+      $
+    ), v._vnode = m, J || (J = !0, ei(F), Wl(), J = !1);
+  }, le = {
+    p: O,
+    um: tt,
+    m: et,
+    r: Ge,
+    mt: Se,
+    mc: x,
+    pc: Ee,
+    pbc: A,
+    n: z,
     o: e
   };
   return {
-    render: Y,
+    render: oe,
     hydrate: void 0,
-    createApp: Ju(Y)
+    createApp: sd(oe)
   };
 }
-function $o({ type: e, props: t }, n) {
+function Do({ type: e, props: t }, n) {
   return n === "svg" && e === "foreignObject" || n === "mathml" && e === "annotation-xml" && t && t.encoding && t.encoding.includes("html") ? void 0 : n;
 }
-function dn({ effect: e, job: t }, n) {
+function mn({ effect: e, job: t }, n) {
   n ? (e.flags |= 32, t.flags |= 4) : (e.flags &= -33, t.flags &= -5);
 }
-function bd(e, t) {
+function kd(e, t) {
   return (!e || e && !e.pendingBranch) && t && !t.persisted;
 }
-function Ms(e, t, n = !1) {
+function js(e, t, n = !1) {
   const s = e.children, o = t.children;
-  if (q(s) && q(o))
+  if (ee(s) && ee(o))
     for (let r = 0; r < s.length; r++) {
-      const i = s[r];
-      let l = o[r];
-      l.shapeFlag & 1 && !l.dynamicChildren && ((l.patchFlag <= 0 || l.patchFlag === 32) && (l = o[r] = Lt(o[r]), l.el = i.el), !n && l.patchFlag !== -2 && Ms(i, l)), l.type === Es && (l.patchFlag === -1 && (l = o[r] = Lt(l)), l.el = i.el), l.type === Ze && !l.el && (l.el = i.el), process.env.NODE_ENV !== "production" && l.el && (l.el.__vnode = l);
+      const a = s[r];
+      let c = o[r];
+      c.shapeFlag & 1 && !c.dynamicChildren && ((c.patchFlag <= 0 || c.patchFlag === 32) && (c = o[r] = qt(o[r]), c.el = a.el), !n && c.patchFlag !== -2 && js(a, c)), c.type === Os && (c.patchFlag === -1 && (c = o[r] = qt(c)), c.el = a.el), c.type === it && !c.el && (c.el = a.el), process.env.NODE_ENV !== "production" && c.el && (c.el.__vnode = c);
     }
 }
-function yd(e) {
+function Cd(e) {
   const t = e.slice(), n = [0];
-  let s, o, r, i, l;
-  const a = e.length;
-  for (s = 0; s < a; s++) {
-    const f = e[s];
-    if (f !== 0) {
-      if (o = n[n.length - 1], e[o] < f) {
+  let s, o, r, a, c;
+  const u = e.length;
+  for (s = 0; s < u; s++) {
+    const p = e[s];
+    if (p !== 0) {
+      if (o = n[n.length - 1], e[o] < p) {
         t[s] = o, n.push(s);
         continue;
       }
-      for (r = 0, i = n.length - 1; r < i; )
-        l = r + i >> 1, e[n[l]] < f ? r = l + 1 : i = l;
-      f < e[n[r]] && (r > 0 && (t[s] = n[r - 1]), n[r] = s);
+      for (r = 0, a = n.length - 1; r < a; )
+        c = r + a >> 1, e[n[c]] < p ? r = c + 1 : a = c;
+      p < e[n[r]] && (r > 0 && (t[s] = n[r - 1]), n[r] = s);
     }
   }
-  for (r = n.length, i = n[r - 1]; r-- > 0; )
-    n[r] = i, i = t[i];
+  for (r = n.length, a = n[r - 1]; r-- > 0; )
+    n[r] = a, a = t[a];
   return n;
 }
-function ua(e) {
+function ba(e) {
   const t = e.subTree.component;
   if (t)
-    return t.asyncDep && !t.asyncResolved ? t : ua(t);
+    return t.asyncDep && !t.asyncResolved ? t : ba(t);
 }
-function ci(e) {
+function mi(e) {
   if (e)
     for (let t = 0; t < e.length; t++)
       e[t].flags |= 8;
 }
-function da(e) {
+function ya(e) {
   if (e.placeholder)
     return e.placeholder;
   const t = e.component;
-  return t ? da(t.subTree) : null;
+  return t ? ya(t.subTree) : null;
 }
-const fa = (e) => e.__isSuspense;
-function Ed(e, t) {
-  t && t.pendingBranch ? q(e) ? t.effects.push(...e) : t.effects.push(e) : Il(e);
+const Ea = (e) => e.__isSuspense;
+function xd(e, t) {
+  t && t.pendingBranch ? ee(e) ? t.effects.push(...e) : t.effects.push(e) : Kl(e);
 }
-const X = /* @__PURE__ */ Symbol.for("v-fgt"), Es = /* @__PURE__ */ Symbol.for("v-txt"), Ze = /* @__PURE__ */ Symbol.for("v-cmt"), Ls = /* @__PURE__ */ Symbol.for("v-stc"), ls = [];
-let et = null;
-function D(e = !1) {
-  ls.push(et = e ? null : []);
+const Y = /* @__PURE__ */ Symbol.for("v-fgt"), Os = /* @__PURE__ */ Symbol.for("v-txt"), it = /* @__PURE__ */ Symbol.for("v-cmt"), Us = /* @__PURE__ */ Symbol.for("v-stc"), as = [];
+let ct = null;
+function E(e = !1) {
+  as.push(ct = e ? null : []);
 }
-function wd() {
-  ls.pop(), et = ls[ls.length - 1] || null;
+function Dd() {
+  as.pop(), ct = as[as.length - 1] || null;
 }
-let ps = 1;
-function no(e, t = !1) {
-  ps += e, e < 0 && et && t && (et.hasOnce = !0);
+let _s = 1;
+function ro(e, t = !1) {
+  _s += e, e < 0 && ct && t && (ct.hasOnce = !0);
 }
-function pa(e) {
-  return e.dynamicChildren = ps > 0 ? et || Rn : null, wd(), ps > 0 && et && et.push(e), e;
+function wa(e) {
+  return e.dynamicChildren = _s > 0 ? ct || Fn : null, Dd(), _s > 0 && ct && ct.push(e), e;
 }
-function V(e, t, n, s, o, r) {
-  return pa(
-    c(
+function w(e, t, n, s, o, r) {
+  return wa(
+    i(
       e,
       t,
       n,
@@ -4106,9 +4106,9 @@ function V(e, t, n, s, o, r) {
     )
   );
 }
-function Fn(e, t, n, s, o) {
-  return pa(
-    Z(
+function un(e, t, n, s, o) {
+  return wa(
+    X(
       e,
       t,
       n,
@@ -4118,33 +4118,33 @@ function Fn(e, t, n, s, o) {
     )
   );
 }
-function On(e) {
+function kn(e) {
   return e ? e.__v_isVNode === !0 : !1;
 }
-function Qn(e, t) {
+function Xn(e, t) {
   if (process.env.NODE_ENV !== "production" && t.shapeFlag & 6 && e.component) {
-    const n = Rs.get(t.type);
+    const n = Fs.get(t.type);
     if (n && n.has(e.component))
       return e.shapeFlag &= -257, t.shapeFlag &= -513, !1;
   }
   return e.type === t.type && e.key === t.key;
 }
-const Nd = (...e) => ga(
+const Td = (...e) => $a(
   ...e
-), ha = ({ key: e }) => e ?? null, js = ({
+), Na = ({ key: e }) => e ?? null, Hs = ({
   ref: e,
   ref_key: t,
   ref_for: n
-}) => (typeof e == "number" && (e = "" + e), e != null ? Oe(e) || /* @__PURE__ */ Ee(e) || ee(e) ? { i: Me, r: e, k: t, f: !!n } : e : null);
-function c(e, t = null, n = null, s = 0, o = null, r = e === X ? 0 : 1, i = !1, l = !1) {
-  const a = {
+}) => (typeof e == "number" && (e = "" + e), e != null ? Te(e) || /* @__PURE__ */ ke(e) || ae(e) ? { i: je, r: e, k: t, f: !!n } : e : null);
+function i(e, t = null, n = null, s = 0, o = null, r = e === Y ? 0 : 1, a = !1, c = !1) {
+  const u = {
     __v_isVNode: !0,
     __v_skip: !0,
     type: e,
     props: t,
-    key: t && ha(t),
-    ref: t && js(t),
-    scopeId: Hl,
+    key: t && Na(t),
+    ref: t && Hs(t),
+    scopeId: Yl,
     slotScopeIds: null,
     children: n,
     component: null,
@@ -4164,70 +4164,70 @@ function c(e, t = null, n = null, s = 0, o = null, r = e === X ? 0 : 1, i = !1, 
     dynamicProps: o,
     dynamicChildren: null,
     appContext: null,
-    ctx: Me
+    ctx: je
   };
-  return l ? (xr(a, n), r & 128 && e.normalize(a)) : n && (a.shapeFlag |= Oe(n) ? 8 : 16), process.env.NODE_ENV !== "production" && a.key !== a.key && j("VNode created with invalid key (NaN). VNode type:", a.type), ps > 0 && // avoid a block node from tracking itself
-  !i && // has current parent block
-  et && // presence of a patch flag indicates this node needs patching on updates.
+  return c ? (Ar(u, n), r & 128 && e.normalize(u)) : n && (u.shapeFlag |= Te(n) ? 8 : 16), process.env.NODE_ENV !== "production" && u.key !== u.key && B("VNode created with invalid key (NaN). VNode type:", u.type), _s > 0 && // avoid a block node from tracking itself
+  !a && // has current parent block
+  ct && // presence of a patch flag indicates this node needs patching on updates.
   // component nodes also should always be patched, because even if the
   // component doesn't need to update, it needs to persist the instance on to
   // the next vnode so that it can be properly unmounted later.
-  (a.patchFlag > 0 || r & 6) && // the EVENTS flag is only for hydration and if it is the only flag, the
+  (u.patchFlag > 0 || r & 6) && // the EVENTS flag is only for hydration and if it is the only flag, the
   // vnode should not be considered dynamic due to handler caching.
-  a.patchFlag !== 32 && et.push(a), a;
+  u.patchFlag !== 32 && ct.push(u), u;
 }
-const Z = process.env.NODE_ENV !== "production" ? Nd : ga;
-function ga(e, t = null, n = null, s = 0, o = null, r = !1) {
-  if ((!e || e === Lu) && (process.env.NODE_ENV !== "production" && !e && j(`Invalid vnode type when creating vnode: ${e}.`), e = Ze), On(e)) {
-    const l = rn(
+const X = process.env.NODE_ENV !== "production" ? Td : $a;
+function $a(e, t = null, n = null, s = 0, o = null, r = !1) {
+  if ((!e || e === Wu) && (process.env.NODE_ENV !== "production" && !e && B(`Invalid vnode type when creating vnode: ${e}.`), e = it), kn(e)) {
+    const c = dn(
       e,
       t,
       !0
       /* mergeRef: true */
     );
-    return n && xr(l, n), ps > 0 && !r && et && (l.shapeFlag & 6 ? et[et.indexOf(e)] = l : et.push(l)), l.patchFlag = -2, l;
+    return n && Ar(c, n), _s > 0 && !r && ct && (c.shapeFlag & 6 ? ct[ct.indexOf(e)] = c : ct.push(c)), c.patchFlag = -2, c;
   }
-  if (ya(e) && (e = e.__vccOpts), t) {
-    t = Od(t);
-    let { class: l, style: a } = t;
-    l && !Oe(l) && (t.class = $e(l)), de(a) && (/* @__PURE__ */ Ln(a) && !q(a) && (a = De({}, a)), t.style = dr(a));
+  if (xa(e) && (e = e.__vccOpts), t) {
+    t = Pd(t);
+    let { class: c, style: u } = t;
+    c && !Te(c) && (t.class = ge(c)), ve(u) && (/* @__PURE__ */ Un(u) && !ee(u) && (u = Ae({}, u)), t.style = mr(u));
   }
-  const i = Oe(e) ? 1 : fa(e) ? 128 : Su(e) ? 64 : de(e) ? 4 : ee(e) ? 2 : 0;
-  return process.env.NODE_ENV !== "production" && i & 4 && /* @__PURE__ */ Ln(e) && (e = /* @__PURE__ */ ne(e), j(
+  const a = Te(e) ? 1 : Ea(e) ? 128 : Ru(e) ? 64 : ve(e) ? 4 : ae(e) ? 2 : 0;
+  return process.env.NODE_ENV !== "production" && a & 4 && /* @__PURE__ */ Un(e) && (e = /* @__PURE__ */ de(e), B(
     "Vue received a Component that was made a reactive object. This can lead to unnecessary performance overhead and should be avoided by marking the component with `markRaw` or using `shallowRef` instead of `ref`.",
     `
 Component that was made reactive: `,
     e
-  )), c(
+  )), i(
     e,
     t,
     n,
     s,
     o,
-    i,
+    a,
     r,
     !0
   );
 }
-function Od(e) {
-  return e ? /* @__PURE__ */ Ln(e) || oa(e) ? De({}, e) : e : null;
+function Pd(e) {
+  return e ? /* @__PURE__ */ Un(e) || pa(e) ? Ae({}, e) : e : null;
 }
-function rn(e, t, n = !1, s = !1) {
-  const { props: o, ref: r, patchFlag: i, children: l, transition: a } = e, f = t ? Sd(o || {}, t) : o, p = {
+function dn(e, t, n = !1, s = !1) {
+  const { props: o, ref: r, patchFlag: a, children: c, transition: u } = e, p = t ? Rd(o || {}, t) : o, h = {
     __v_isVNode: !0,
     __v_skip: !0,
     type: e.type,
-    props: f,
-    key: f && ha(f),
+    props: p,
+    key: p && Na(p),
     ref: t && t.ref ? (
       // #2078 in the case of <component :is="vnode" ref="extra"/>
       // if the vnode itself already has a ref, cloneVNode will need to merge
       // the refs so the single vnode can be set on multiple refs
-      n && r ? q(r) ? r.concat(js(t)) : [r, js(t)] : js(t)
+      n && r ? ee(r) ? r.concat(Hs(t)) : [r, Hs(t)] : Hs(t)
     ) : r,
     scopeId: e.scopeId,
     slotScopeIds: e.slotScopeIds,
-    children: process.env.NODE_ENV !== "production" && i === -1 && q(l) ? l.map(ma) : l,
+    children: process.env.NODE_ENV !== "production" && a === -1 && ee(c) ? c.map(Oa) : c,
     target: e.target,
     targetStart: e.targetStart,
     targetAnchor: e.targetAnchor,
@@ -4237,99 +4237,99 @@ function rn(e, t, n = !1, s = !1) {
     // existing patch flag to be reliable and need to add the FULL_PROPS flag.
     // note: preserve flag for fragments since they use the flag for children
     // fast paths only.
-    patchFlag: t && e.type !== X ? i === -1 ? 16 : i | 16 : i,
+    patchFlag: t && e.type !== Y ? a === -1 ? 16 : a | 16 : a,
     dynamicProps: e.dynamicProps,
     dynamicChildren: e.dynamicChildren,
     appContext: e.appContext,
     dirs: e.dirs,
-    transition: a,
+    transition: u,
     // These should technically only be non-null on mounted VNodes. However,
     // they *should* be copied for kept-alive vnodes. So we just always copy
     // them since them being non-null during a mount doesn't affect the logic as
     // they will simply be overwritten.
     component: e.component,
     suspense: e.suspense,
-    ssContent: e.ssContent && rn(e.ssContent),
-    ssFallback: e.ssFallback && rn(e.ssFallback),
+    ssContent: e.ssContent && dn(e.ssContent),
+    ssFallback: e.ssFallback && dn(e.ssFallback),
     placeholder: e.placeholder,
     el: e.el,
     anchor: e.anchor,
     ctx: e.ctx,
     ce: e.ce
   };
-  return a && s && wr(
-    p,
-    a.clone(p)
-  ), p;
+  return u && s && kr(
+    h,
+    u.clone(h)
+  ), h;
 }
-function ma(e) {
-  const t = rn(e);
-  return q(e.children) && (t.children = e.children.map(ma)), t;
+function Oa(e) {
+  const t = dn(e);
+  return ee(e.children) && (t.children = e.children.map(Oa)), t;
 }
-function Dr(e = " ", t = 0) {
-  return Z(Es, null, e, t);
+function Rr(e = " ", t = 0) {
+  return X(Os, null, e, t);
 }
-function xe(e = "", t = !1) {
-  return t ? (D(), Fn(Ze, null, e)) : Z(Ze, null, e);
+function Ce(e = "", t = !1) {
+  return t ? (E(), un(it, null, e)) : X(it, null, e);
 }
-function ct(e) {
-  return e == null || typeof e == "boolean" ? Z(Ze) : q(e) ? Z(
-    X,
+function vt(e) {
+  return e == null || typeof e == "boolean" ? X(it) : ee(e) ? X(
+    Y,
     null,
     // #3666, avoid reference pollution when reusing vnode
     e.slice()
-  ) : On(e) ? Lt(e) : Z(Es, null, String(e));
+  ) : kn(e) ? qt(e) : X(Os, null, String(e));
 }
-function Lt(e) {
-  return e.el === null && e.patchFlag !== -1 || e.memo ? e : rn(e);
+function qt(e) {
+  return e.el === null && e.patchFlag !== -1 || e.memo ? e : dn(e);
 }
-function xr(e, t) {
+function Ar(e, t) {
   let n = 0;
   const { shapeFlag: s } = e;
   if (t == null)
     t = null;
-  else if (q(t))
+  else if (ee(t))
     n = 16;
   else if (typeof t == "object")
     if (s & 65) {
       const o = t.default;
-      o && (o._c && (o._d = !1), xr(e, o()), o._c && (o._d = !0));
+      o && (o._c && (o._d = !1), Ar(e, o()), o._c && (o._d = !0));
       return;
     } else {
       n = 32;
       const o = t._;
-      !o && !oa(t) ? t._ctx = Me : o === 3 && Me && (Me.slots._ === 1 ? t._ = 1 : (t._ = 2, e.patchFlag |= 1024));
+      !o && !pa(t) ? t._ctx = je : o === 3 && je && (je.slots._ === 1 ? t._ = 1 : (t._ = 2, e.patchFlag |= 1024));
     }
-  else ee(t) ? (t = { default: t, _ctx: Me }, n = 32) : (t = String(t), s & 64 ? (n = 16, t = [Dr(t)]) : n = 8);
+  else ae(t) ? (t = { default: t, _ctx: je }, n = 32) : (t = String(t), s & 64 ? (n = 16, t = [Rr(t)]) : n = 8);
   e.children = t, e.shapeFlag |= n;
 }
-function Sd(...e) {
+function Rd(...e) {
   const t = {};
   for (let n = 0; n < e.length; n++) {
     const s = e[n];
     for (const o in s)
       if (o === "class")
-        t.class !== s.class && (t.class = $e([t.class, s.class]));
+        t.class !== s.class && (t.class = ge([t.class, s.class]));
       else if (o === "style")
-        t.style = dr([t.style, s.style]);
-      else if (ms(o)) {
-        const r = t[o], i = s[o];
-        i && r !== i && !(q(r) && r.includes(i)) && (t[o] = r ? [].concat(r, i) : i);
+        t.style = mr([t.style, s.style]);
+      else if (bs(o)) {
+        const r = t[o], a = s[o];
+        a && r !== a && !(ee(r) && r.includes(a)) && (t[o] = r ? [].concat(r, a) : a);
       } else o !== "" && (t[o] = s[o]);
   }
   return t;
 }
-function wt(e, t, n, s = null) {
-  Pt(e, t, 7, [
+function Pt(e, t, n, s = null) {
+  Ut(e, t, 7, [
     n,
     s
   ]);
 }
-const kd = Xl();
-let $d = 0;
-function Cd(e, t, n) {
-  const s = e.type, o = (t ? t.appContext : e.appContext) || kd, r = {
-    uid: $d++,
+const Ad = la();
+let Vd = 0;
+function Id(e, t, n) {
+  const s = e.type, o = (t ? t.appContext : e.appContext) || Ad, r = {
+    uid: Vd++,
     vnode: e,
     type: s,
     parent: t,
@@ -4343,7 +4343,7 @@ function Cd(e, t, n) {
     update: null,
     // will be set synchronously right after creation
     job: null,
-    scope: new ul(
+    scope: new bl(
       !0
       /* detached */
     ),
@@ -4360,24 +4360,24 @@ function Cd(e, t, n) {
     components: null,
     directives: null,
     // resolved props and emits options
-    propsOptions: ia(s, o),
-    emitsOptions: Zl(s, o),
+    propsOptions: _a(s, o),
+    emitsOptions: aa(s, o),
     // emit
     emit: null,
     // to be set immediately
     emitted: null,
     // props default value
-    propsDefaults: be,
+    propsDefaults: Oe,
     // inheritAttrs
     inheritAttrs: s.inheritAttrs,
     // state
-    ctx: be,
-    data: be,
-    props: be,
-    attrs: be,
-    slots: be,
-    refs: be,
-    setupState: be,
+    ctx: Oe,
+    data: Oe,
+    props: Oe,
+    attrs: Oe,
+    slots: Oe,
+    refs: Oe,
+    setupState: Oe,
     setupContext: null,
     // suspense related
     suspense: n,
@@ -4404,149 +4404,149 @@ function Cd(e, t, n) {
     ec: null,
     sp: null
   };
-  return process.env.NODE_ENV !== "production" ? r.ctx = ju(r) : r.ctx = { _: r }, r.root = t ? t.root : r, r.emit = Qu.bind(null, r), e.ce && e.ce(r), r;
+  return process.env.NODE_ENV !== "production" ? r.ctx = qu(r) : r.ctx = { _: r }, r.root = t ? t.root : r, r.emit = rd.bind(null, r), e.ce && e.ce(r), r;
 }
-let Ae = null;
-const Kn = () => Ae || Me;
-let so, zo;
+let Me = null;
+const zn = () => Me || je;
+let io, Yo;
 {
-  const e = vs(), t = (n, s) => {
+  const e = Es(), t = (n, s) => {
     let o;
     return (o = e[n]) || (o = e[n] = []), o.push(s), (r) => {
-      o.length > 1 ? o.forEach((i) => i(r)) : o[0](r);
+      o.length > 1 ? o.forEach((a) => a(r)) : o[0](r);
     };
   };
-  so = t(
+  io = t(
     "__VUE_INSTANCE_SETTERS__",
-    (n) => Ae = n
-  ), zo = t(
+    (n) => Me = n
+  ), Yo = t(
     "__VUE_SSR_SETTERS__",
-    (n) => hs = n
+    (n) => ms = n
   );
 }
-const ws = (e) => {
-  const t = Ae;
-  return so(e), e.scope.on(), () => {
-    e.scope.off(), so(t);
+const Ss = (e) => {
+  const t = Me;
+  return io(e), e.scope.on(), () => {
+    e.scope.off(), io(t);
   };
-}, ui = () => {
-  Ae && Ae.scope.off(), so(null);
-}, Dd = /* @__PURE__ */ Bt("slot,component");
-function qo(e, { isNativeTag: t }) {
-  (Dd(e) || t(e)) && j(
+}, gi = () => {
+  Me && Me.scope.off(), io(null);
+}, Md = /* @__PURE__ */ Zt("slot,component");
+function Xo(e, { isNativeTag: t }) {
+  (Md(e) || t(e)) && B(
     "Do not use built-in or reserved HTML elements as component id: " + e
   );
 }
-function _a(e) {
+function Sa(e) {
   return e.vnode.shapeFlag & 4;
 }
-let hs = !1;
-function xd(e, t = !1, n = !1) {
-  t && zo(t);
-  const { props: s, children: o } = e.vnode, r = _a(e);
-  sd(e, s, r, t), hd(e, o, n || t);
-  const i = r ? Td(e, t) : void 0;
-  return t && zo(!1), i;
+let ms = !1;
+function Fd(e, t = !1, n = !1) {
+  t && Yo(t);
+  const { props: s, children: o } = e.vnode, r = Sa(e);
+  dd(e, s, r, t), wd(e, o, n || t);
+  const a = r ? Ld(e, t) : void 0;
+  return t && Yo(!1), a;
 }
-function Td(e, t) {
+function Ld(e, t) {
   const n = e.type;
   if (process.env.NODE_ENV !== "production") {
-    if (n.name && qo(n.name, e.appContext.config), n.components) {
+    if (n.name && Xo(n.name, e.appContext.config), n.components) {
       const o = Object.keys(n.components);
       for (let r = 0; r < o.length; r++)
-        qo(o[r], e.appContext.config);
+        Xo(o[r], e.appContext.config);
     }
     if (n.directives) {
       const o = Object.keys(n.directives);
       for (let r = 0; r < o.length; r++)
-        Bl(o[r]);
+        Xl(o[r]);
     }
-    n.compilerOptions && Pd() && j(
+    n.compilerOptions && jd() && B(
       '"compilerOptions" is only supported when using a build of Vue that includes the runtime compiler. Since you are using a runtime-only build, the options should be passed via your build tool config instead.'
     );
   }
-  e.accessCache = /* @__PURE__ */ Object.create(null), e.proxy = new Proxy(e.ctx, Jl), process.env.NODE_ENV !== "production" && Fu(e);
+  e.accessCache = /* @__PURE__ */ Object.create(null), e.proxy = new Proxy(e.ctx, oa), process.env.NODE_ENV !== "production" && zu(e);
   const { setup: s } = n;
   if (s) {
-    ht();
-    const o = e.setupContext = s.length > 1 ? Ad(e) : null, r = ws(e), i = Wn(
+    $t();
+    const o = e.setupContext = s.length > 1 ? Hd(e) : null, r = Ss(e), a = qn(
       s,
       e,
       0,
       [
-        process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Ct(e.props) : e.props,
+        process.env.NODE_ENV !== "production" ? /* @__PURE__ */ Mt(e.props) : e.props,
         o
       ]
-    ), l = cr(i);
-    if (gt(), r(), (l || e.sp) && !Mn(e) && Wl(e), l) {
-      if (i.then(ui, ui), t)
-        return i.then((a) => {
-          di(e, a, t);
-        }).catch((a) => {
-          bs(a, e, 0);
+    ), c = hr(a);
+    if (Ot(), r(), (c || e.sp) && !jn(e) && ea(e), c) {
+      if (a.then(gi, gi), t)
+        return a.then((u) => {
+          vi(e, u, t);
+        }).catch((u) => {
+          ws(u, e, 0);
         });
-      if (e.asyncDep = i, process.env.NODE_ENV !== "production" && !e.suspense) {
-        const a = Ns(e, n);
-        j(
-          `Component <${a}>: setup function returned a promise, but no <Suspense> boundary was found in the parent component tree. A component with async setup() must be nested in a <Suspense> in order to be rendered.`
+      if (e.asyncDep = a, process.env.NODE_ENV !== "production" && !e.suspense) {
+        const u = ks(e, n);
+        B(
+          `Component <${u}>: setup function returned a promise, but no <Suspense> boundary was found in the parent component tree. A component with async setup() must be nested in a <Suspense> in order to be rendered.`
         );
       }
     } else
-      di(e, i, t);
+      vi(e, a, t);
   } else
-    va(e, t);
+    ka(e, t);
 }
-function di(e, t, n) {
-  ee(t) ? e.type.__ssrInlineRender ? e.ssrRender = t : e.render = t : de(t) ? (process.env.NODE_ENV !== "production" && On(t) && j(
+function vi(e, t, n) {
+  ae(t) ? e.type.__ssrInlineRender ? e.ssrRender = t : e.render = t : ve(t) ? (process.env.NODE_ENV !== "production" && kn(t) && B(
     "setup() should not return VNodes directly - return a render function instead."
-  ), process.env.NODE_ENV !== "production" && (e.devtoolsRawSetupState = t), e.setupState = Tl(t), process.env.NODE_ENV !== "production" && Uu(e)) : process.env.NODE_ENV !== "production" && t !== void 0 && j(
+  ), process.env.NODE_ENV !== "production" && (e.devtoolsRawSetupState = t), e.setupState = jl(t), process.env.NODE_ENV !== "production" && Ju(e)) : process.env.NODE_ENV !== "production" && t !== void 0 && B(
     `setup() should return an object. Received: ${t === null ? "null" : typeof t}`
-  ), va(e, n);
+  ), ka(e, n);
 }
-const Pd = () => !0;
-function va(e, t, n) {
+const jd = () => !0;
+function ka(e, t, n) {
   const s = e.type;
-  e.render || (e.render = s.render || Ie);
+  e.render || (e.render = s.render || Le);
   {
-    const o = ws(e);
-    ht();
+    const o = Ss(e);
+    $t();
     try {
-      Bu(e);
+      Yu(e);
     } finally {
-      gt(), o();
+      Ot(), o();
     }
   }
-  process.env.NODE_ENV !== "production" && !s.render && e.render === Ie && !t && (s.template ? j(
+  process.env.NODE_ENV !== "production" && !s.render && e.render === Le && !t && (s.template ? B(
     'Component provided template option but runtime compilation is not supported in this build of Vue. Configure your bundler to alias "vue" to "vue/dist/vue.esm-bundler.js".'
-  ) : j("Component is missing template or render function: ", s));
+  ) : B("Component is missing template or render function: ", s));
 }
-const fi = process.env.NODE_ENV !== "production" ? {
+const bi = process.env.NODE_ENV !== "production" ? {
   get(e, t) {
-    return eo(), Re(e, "get", ""), e[t];
+    return so(), Fe(e, "get", ""), e[t];
   },
   set() {
-    return j("setupContext.attrs is readonly."), !1;
+    return B("setupContext.attrs is readonly."), !1;
   },
   deleteProperty() {
-    return j("setupContext.attrs is readonly."), !1;
+    return B("setupContext.attrs is readonly."), !1;
   }
 } : {
   get(e, t) {
-    return Re(e, "get", ""), e[t];
+    return Fe(e, "get", ""), e[t];
   }
 };
-function Vd(e) {
+function Ud(e) {
   return new Proxy(e.slots, {
     get(t, n) {
-      return Re(e, "get", "$slots"), t[n];
+      return Fe(e, "get", "$slots"), t[n];
     }
   });
 }
-function Ad(e) {
+function Hd(e) {
   const t = (n) => {
-    if (process.env.NODE_ENV !== "production" && (e.exposed && j("expose() should be called only once per setup()."), n != null)) {
+    if (process.env.NODE_ENV !== "production" && (e.exposed && B("expose() should be called only once per setup()."), n != null)) {
       let s = typeof n;
-      s === "object" && (q(n) ? s = "array" : /* @__PURE__ */ Ee(n) && (s = "ref")), s !== "object" && j(
+      s === "object" && (ee(n) ? s = "array" : /* @__PURE__ */ ke(n) && (s = "ref")), s !== "object" && B(
         `expose() should be passed a plain object, received ${s}.`
       );
     }
@@ -4556,10 +4556,10 @@ function Ad(e) {
     let n, s;
     return Object.freeze({
       get attrs() {
-        return n || (n = new Proxy(e.attrs, fi));
+        return n || (n = new Proxy(e.attrs, bi));
       },
       get slots() {
-        return s || (s = Vd(e));
+        return s || (s = Ud(e));
       },
       get emit() {
         return (o, ...r) => e.emit(o, ...r);
@@ -4568,129 +4568,129 @@ function Ad(e) {
     });
   } else
     return {
-      attrs: new Proxy(e.attrs, fi),
+      attrs: new Proxy(e.attrs, bi),
       slots: e.slots,
       emit: e.emit,
       expose: t
     };
 }
-function vo(e) {
-  return e.exposed ? e.exposeProxy || (e.exposeProxy = new Proxy(Tl(Zt(e.exposed)), {
+function yo(e) {
+  return e.exposed ? e.exposeProxy || (e.exposeProxy = new Proxy(jl(on(e.exposed)), {
     get(t, n) {
       if (n in t)
         return t[n];
-      if (n in En)
-        return En[n](e);
+      if (n in $n)
+        return $n[n](e);
     },
     has(t, n) {
-      return n in t || n in En;
+      return n in t || n in $n;
     }
   })) : e.proxy;
 }
-const Rd = /(?:^|[-_])\w/g, Id = (e) => e.replace(Rd, (t) => t.toUpperCase()).replace(/[-_]/g, "");
-function ba(e, t = !0) {
-  return ee(e) ? e.displayName || e.name : e.name || t && e.__name;
+const Gd = /(?:^|[-_])\w/g, Bd = (e) => e.replace(Gd, (t) => t.toUpperCase()).replace(/[-_]/g, "");
+function Ca(e, t = !0) {
+  return ae(e) ? e.displayName || e.name : e.name || t && e.__name;
 }
-function Ns(e, t, n = !1) {
-  let s = ba(t);
+function ks(e, t, n = !1) {
+  let s = Ca(t);
   if (!s && t.__file) {
     const o = t.__file.match(/([^/\\]+)\.\w+$/);
     o && (s = o[1]);
   }
   if (!s && e) {
     const o = (r) => {
-      for (const i in r)
-        if (r[i] === t)
-          return i;
+      for (const a in r)
+        if (r[a] === t)
+          return a;
     };
     s = o(e.components) || e.parent && o(
       e.parent.type.components
     ) || o(e.appContext.components);
   }
-  return s ? Id(s) : n ? "App" : "Anonymous";
+  return s ? Bd(s) : n ? "App" : "Anonymous";
 }
-function ya(e) {
-  return ee(e) && "__vccOpts" in e;
+function xa(e) {
+  return ae(e) && "__vccOpts" in e;
 }
-const ue = (e, t) => {
-  const n = /* @__PURE__ */ Qc(e, t, hs);
+const ne = (e, t) => {
+  const n = /* @__PURE__ */ ru(e, t, ms);
   if (process.env.NODE_ENV !== "production") {
-    const s = Kn();
+    const s = zn();
     s && s.appContext.config.warnRecursiveComputed && (n._warnRecursive = !0);
   }
   return n;
 };
-function Ea(e, t, n) {
+function Da(e, t, n) {
   try {
-    no(-1);
+    ro(-1);
     const s = arguments.length;
-    return s === 2 ? de(t) && !q(t) ? On(t) ? Z(e, null, [t]) : Z(e, t) : Z(e, null, t) : (s > 3 ? n = Array.prototype.slice.call(arguments, 2) : s === 3 && On(n) && (n = [n]), Z(e, t, n));
+    return s === 2 ? ve(t) && !ee(t) ? kn(t) ? X(e, null, [t]) : X(e, t) : X(e, null, t) : (s > 3 ? n = Array.prototype.slice.call(arguments, 2) : s === 3 && kn(n) && (n = [n]), X(e, t, n));
   } finally {
-    no(1);
+    ro(1);
   }
 }
-function Md() {
+function Kd() {
   if (process.env.NODE_ENV === "production" || typeof window > "u")
     return;
   const e = { style: "color:#3ba776" }, t = { style: "color:#1677ff" }, n = { style: "color:#f5222d" }, s = { style: "color:#eb2f96" }, o = {
     __vue_custom_formatter: !0,
-    header(u) {
-      if (!de(u))
+    header(f) {
+      if (!ve(f))
         return null;
-      if (u.__isVue)
+      if (f.__isVue)
         return ["div", e, "VueInstance"];
-      if (/* @__PURE__ */ Ee(u)) {
-        ht();
-        const m = u.value;
-        return gt(), [
+      if (/* @__PURE__ */ ke(f)) {
+        $t();
+        const _ = f.value;
+        return Ot(), [
           "div",
           {},
-          ["span", e, p(u)],
+          ["span", e, h(f)],
           "<",
-          l(m),
+          c(_),
           ">"
         ];
       } else {
-        if (/* @__PURE__ */ it(u))
+        if (/* @__PURE__ */ ht(f))
           return [
             "div",
             {},
-            ["span", e, /* @__PURE__ */ He(u) ? "ShallowReactive" : "Reactive"],
+            ["span", e, /* @__PURE__ */ We(f) ? "ShallowReactive" : "Reactive"],
             "<",
-            l(u),
-            `>${/* @__PURE__ */ mt(u) ? " (readonly)" : ""}`
+            c(f),
+            `>${/* @__PURE__ */ St(f) ? " (readonly)" : ""}`
           ];
-        if (/* @__PURE__ */ mt(u))
+        if (/* @__PURE__ */ St(f))
           return [
             "div",
             {},
-            ["span", e, /* @__PURE__ */ He(u) ? "ShallowReadonly" : "Readonly"],
+            ["span", e, /* @__PURE__ */ We(f) ? "ShallowReadonly" : "Readonly"],
             "<",
-            l(u),
+            c(f),
             ">"
           ];
       }
       return null;
     },
-    hasBody(u) {
-      return u && u.__isVue;
+    hasBody(f) {
+      return f && f.__isVue;
     },
-    body(u) {
-      if (u && u.__isVue)
+    body(f) {
+      if (f && f.__isVue)
         return [
           "div",
           {},
-          ...r(u.$)
+          ...r(f.$)
         ];
     }
   };
-  function r(u) {
-    const m = [];
-    u.type.props && u.props && m.push(i("props", /* @__PURE__ */ ne(u.props))), u.setupState !== be && m.push(i("setup", u.setupState)), u.data !== be && m.push(i("data", /* @__PURE__ */ ne(u.data)));
-    const b = a(u, "computed");
-    b && m.push(i("computed", b));
-    const T = a(u, "inject");
-    return T && m.push(i("injected", T)), m.push([
+  function r(f) {
+    const _ = [];
+    f.type.props && f.props && _.push(a("props", /* @__PURE__ */ de(f.props))), f.setupState !== Oe && _.push(a("setup", f.setupState)), f.data !== Oe && _.push(a("data", /* @__PURE__ */ de(f.data)));
+    const g = u(f, "computed");
+    g && _.push(a("computed", g));
+    const k = u(f, "inject");
+    return k && _.push(a("injected", k)), _.push([
       "div",
       {},
       [
@@ -4700,11 +4700,11 @@ function Md() {
         },
         "$ (internal): "
       ],
-      ["object", { object: u }]
-    ]), m;
+      ["object", { object: f }]
+    ]), _;
   }
-  function i(u, m) {
-    return m = De({}, m), Object.keys(m).length ? [
+  function a(f, _) {
+    return _ = Ae({}, _), Object.keys(_).length ? [
       "div",
       { style: "line-height:1.25em;margin-bottom:0.6em" },
       [
@@ -4712,45 +4712,45 @@ function Md() {
         {
           style: "color:#476582"
         },
-        u
+        f
       ],
       [
         "div",
         {
           style: "padding-left:1.25em"
         },
-        ...Object.keys(m).map((b) => [
+        ...Object.keys(_).map((g) => [
           "div",
           {},
-          ["span", s, b + ": "],
-          l(m[b], !1)
+          ["span", s, g + ": "],
+          c(_[g], !1)
         ])
       ]
     ] : ["span", {}];
   }
-  function l(u, m = !0) {
-    return typeof u == "number" ? ["span", t, u] : typeof u == "string" ? ["span", n, JSON.stringify(u)] : typeof u == "boolean" ? ["span", s, u] : de(u) ? ["object", { object: m ? /* @__PURE__ */ ne(u) : u }] : ["span", n, String(u)];
+  function c(f, _ = !0) {
+    return typeof f == "number" ? ["span", t, f] : typeof f == "string" ? ["span", n, JSON.stringify(f)] : typeof f == "boolean" ? ["span", s, f] : ve(f) ? ["object", { object: _ ? /* @__PURE__ */ de(f) : f }] : ["span", n, String(f)];
   }
-  function a(u, m) {
-    const b = u.type;
-    if (ee(b))
+  function u(f, _) {
+    const g = f.type;
+    if (ae(g))
       return;
-    const T = {};
-    for (const $ in u.ctx)
-      f(b, $, m) && (T[$] = u.ctx[$]);
-    return T;
+    const k = {};
+    for (const O in f.ctx)
+      p(g, O, _) && (k[O] = f.ctx[O]);
+    return k;
   }
-  function f(u, m, b) {
-    const T = u[b];
-    if (q(T) && T.includes(m) || de(T) && m in T || u.extends && f(u.extends, m, b) || u.mixins && u.mixins.some(($) => f($, m, b)))
+  function p(f, _, g) {
+    const k = f[g];
+    if (ee(k) && k.includes(_) || ve(k) && _ in k || f.extends && p(f.extends, _, g) || f.mixins && f.mixins.some((O) => p(O, _, g)))
       return !0;
   }
-  function p(u) {
-    return /* @__PURE__ */ He(u) ? "ShallowRef" : u.effect ? "ComputedRef" : "Ref";
+  function h(f) {
+    return /* @__PURE__ */ We(f) ? "ShallowRef" : f.effect ? "ComputedRef" : "Ref";
   }
   window.devtoolsFormatters ? window.devtoolsFormatters.push(o) : window.devtoolsFormatters = [o];
 }
-const pi = "3.5.30", xt = process.env.NODE_ENV !== "production" ? j : Ie;
+const yi = "3.5.30", Lt = process.env.NODE_ENV !== "production" ? B : Le;
 process.env.NODE_ENV;
 process.env.NODE_ENV;
 /**
@@ -4758,17 +4758,17 @@ process.env.NODE_ENV;
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-let Jo;
-const hi = typeof window < "u" && window.trustedTypes;
-if (hi)
+let Zo;
+const Ei = typeof window < "u" && window.trustedTypes;
+if (Ei)
   try {
-    Jo = /* @__PURE__ */ hi.createPolicy("vue", {
+    Zo = /* @__PURE__ */ Ei.createPolicy("vue", {
       createHTML: (e) => e
     });
   } catch (e) {
-    process.env.NODE_ENV !== "production" && xt(`Error creating trusted types policy: ${e}`);
+    process.env.NODE_ENV !== "production" && Lt(`Error creating trusted types policy: ${e}`);
   }
-const wa = Jo ? (e) => Jo.createHTML(e) : (e) => e, Ld = "http://www.w3.org/2000/svg", jd = "http://www.w3.org/1998/Math/MathML", It = typeof document < "u" ? document : null, gi = It && /* @__PURE__ */ It.createElement("template"), Fd = {
+const Ta = Zo ? (e) => Zo.createHTML(e) : (e) => e, Wd = "http://www.w3.org/2000/svg", qd = "http://www.w3.org/1998/Math/MathML", Kt = typeof document < "u" ? document : null, wi = Kt && /* @__PURE__ */ Kt.createElement("template"), zd = {
   insert: (e, t, n) => {
     t.insertBefore(e, n || null);
   },
@@ -4777,11 +4777,11 @@ const wa = Jo ? (e) => Jo.createHTML(e) : (e) => e, Ld = "http://www.w3.org/2000
     t && t.removeChild(e);
   },
   createElement: (e, t, n, s) => {
-    const o = t === "svg" ? It.createElementNS(Ld, e) : t === "mathml" ? It.createElementNS(jd, e) : n ? It.createElement(e, { is: n }) : It.createElement(e);
+    const o = t === "svg" ? Kt.createElementNS(Wd, e) : t === "mathml" ? Kt.createElementNS(qd, e) : n ? Kt.createElement(e, { is: n }) : Kt.createElement(e);
     return e === "select" && s && s.multiple != null && o.setAttribute("multiple", s.multiple), o;
   },
-  createText: (e) => It.createTextNode(e),
-  createComment: (e) => It.createComment(e),
+  createText: (e) => Kt.createTextNode(e),
+  createComment: (e) => Kt.createComment(e),
   setText: (e, t) => {
     e.nodeValue = t;
   },
@@ -4790,7 +4790,7 @@ const wa = Jo ? (e) => Jo.createHTML(e) : (e) => e, Ld = "http://www.w3.org/2000
   },
   parentNode: (e) => e.parentNode,
   nextSibling: (e) => e.nextSibling,
-  querySelector: (e) => It.querySelector(e),
+  querySelector: (e) => Kt.querySelector(e),
   setScopeId(e, t) {
     e.setAttribute(t, "");
   },
@@ -4799,188 +4799,188 @@ const wa = Jo ? (e) => Jo.createHTML(e) : (e) => e, Ld = "http://www.w3.org/2000
   // Static content here can only come from compiled templates.
   // As long as the user only uses trusted templates, this is safe.
   insertStaticContent(e, t, n, s, o, r) {
-    const i = n ? n.previousSibling : t.lastChild;
+    const a = n ? n.previousSibling : t.lastChild;
     if (o && (o === r || o.nextSibling))
       for (; t.insertBefore(o.cloneNode(!0), n), !(o === r || !(o = o.nextSibling)); )
         ;
     else {
-      gi.innerHTML = wa(
+      wi.innerHTML = Ta(
         s === "svg" ? `<svg>${e}</svg>` : s === "mathml" ? `<math>${e}</math>` : e
       );
-      const l = gi.content;
+      const c = wi.content;
       if (s === "svg" || s === "mathml") {
-        const a = l.firstChild;
-        for (; a.firstChild; )
-          l.appendChild(a.firstChild);
-        l.removeChild(a);
+        const u = c.firstChild;
+        for (; u.firstChild; )
+          c.appendChild(u.firstChild);
+        c.removeChild(u);
       }
-      t.insertBefore(l, n);
+      t.insertBefore(c, n);
     }
     return [
       // first
-      i ? i.nextSibling : t.firstChild,
+      a ? a.nextSibling : t.firstChild,
       // last
       n ? n.previousSibling : t.lastChild
     ];
   }
-}, Ud = /* @__PURE__ */ Symbol("_vtc");
-function Hd(e, t, n) {
-  const s = e[Ud];
+}, Jd = /* @__PURE__ */ Symbol("_vtc");
+function Qd(e, t, n) {
+  const s = e[Jd];
   s && (t = (t ? [t, ...s] : [...s]).join(" ")), t == null ? e.removeAttribute("class") : n ? e.setAttribute("class", t) : e.className = t;
 }
-const mi = /* @__PURE__ */ Symbol("_vod"), Bd = /* @__PURE__ */ Symbol("_vsh"), Gd = /* @__PURE__ */ Symbol(process.env.NODE_ENV !== "production" ? "CSS_VAR_TEXT" : ""), Wd = /(?:^|;)\s*display\s*:/;
-function Kd(e, t, n) {
-  const s = e.style, o = Oe(n);
+const Ni = /* @__PURE__ */ Symbol("_vod"), Yd = /* @__PURE__ */ Symbol("_vsh"), Xd = /* @__PURE__ */ Symbol(process.env.NODE_ENV !== "production" ? "CSS_VAR_TEXT" : ""), Zd = /(?:^|;)\s*display\s*:/;
+function ef(e, t, n) {
+  const s = e.style, o = Te(n);
   let r = !1;
   if (n && !o) {
     if (t)
-      if (Oe(t))
-        for (const i of t.split(";")) {
-          const l = i.slice(0, i.indexOf(":")).trim();
-          n[l] == null && Fs(s, l, "");
+      if (Te(t))
+        for (const a of t.split(";")) {
+          const c = a.slice(0, a.indexOf(":")).trim();
+          n[c] == null && Gs(s, c, "");
         }
       else
-        for (const i in t)
-          n[i] == null && Fs(s, i, "");
-    for (const i in n)
-      i === "display" && (r = !0), Fs(s, i, n[i]);
+        for (const a in t)
+          n[a] == null && Gs(s, a, "");
+    for (const a in n)
+      a === "display" && (r = !0), Gs(s, a, n[a]);
   } else if (o) {
     if (t !== n) {
-      const i = s[Gd];
-      i && (n += ";" + i), s.cssText = n, r = Wd.test(n);
+      const a = s[Xd];
+      a && (n += ";" + a), s.cssText = n, r = Zd.test(n);
     }
   } else t && e.removeAttribute("style");
-  mi in e && (e[mi] = r ? s.display : "", e[Bd] && (s.display = "none"));
+  Ni in e && (e[Ni] = r ? s.display : "", e[Yd] && (s.display = "none"));
 }
-const zd = /[^\\];\s*$/, _i = /\s*!important$/;
-function Fs(e, t, n) {
-  if (q(n))
-    n.forEach((s) => Fs(e, t, s));
-  else if (n == null && (n = ""), process.env.NODE_ENV !== "production" && zd.test(n) && xt(
+const tf = /[^\\];\s*$/, $i = /\s*!important$/;
+function Gs(e, t, n) {
+  if (ee(n))
+    n.forEach((s) => Gs(e, t, s));
+  else if (n == null && (n = ""), process.env.NODE_ENV !== "production" && tf.test(n) && Lt(
     `Unexpected semicolon at the end of '${t}' style value: '${n}'`
   ), t.startsWith("--"))
     e.setProperty(t, n);
   else {
-    const s = qd(e, t);
-    _i.test(n) ? e.setProperty(
-      nn(s),
-      n.replace(_i, ""),
+    const s = nf(e, t);
+    $i.test(n) ? e.setProperty(
+      Xt(s),
+      n.replace($i, ""),
       "important"
     ) : e[s] = n;
   }
 }
-const vi = ["Webkit", "Moz", "ms"], Co = {};
-function qd(e, t) {
-  const n = Co[t];
+const Oi = ["Webkit", "Moz", "ms"], To = {};
+function nf(e, t) {
+  const n = To[t];
   if (n)
     return n;
-  let s = Xe(t);
+  let s = rt(t);
   if (s !== "filter" && s in e)
-    return Co[t] = s;
-  s = co(s);
-  for (let o = 0; o < vi.length; o++) {
-    const r = vi[o] + s;
+    return To[t] = s;
+  s = fo(s);
+  for (let o = 0; o < Oi.length; o++) {
+    const r = Oi[o] + s;
     if (r in e)
-      return Co[t] = r;
+      return To[t] = r;
   }
   return t;
 }
-const bi = "http://www.w3.org/1999/xlink";
-function yi(e, t, n, s, o, r = Nc(t)) {
-  s && t.startsWith("xlink:") ? n == null ? e.removeAttributeNS(bi, t.slice(6, t.length)) : e.setAttributeNS(bi, t, n) : n == null || r && !ll(n) ? e.removeAttribute(t) : e.setAttribute(
+const Si = "http://www.w3.org/1999/xlink";
+function ki(e, t, n, s, o, r = Tc(t)) {
+  s && t.startsWith("xlink:") ? n == null ? e.removeAttributeNS(Si, t.slice(6, t.length)) : e.setAttributeNS(Si, t, n) : n == null || r && !ml(n) ? e.removeAttribute(t) : e.setAttribute(
     t,
-    r ? "" : pt(n) ? String(n) : n
+    r ? "" : Nt(n) ? String(n) : n
   );
 }
-function Ei(e, t, n, s, o) {
+function Ci(e, t, n, s, o) {
   if (t === "innerHTML" || t === "textContent") {
-    n != null && (e[t] = t === "innerHTML" ? wa(n) : n);
+    n != null && (e[t] = t === "innerHTML" ? Ta(n) : n);
     return;
   }
   const r = e.tagName;
   if (t === "value" && r !== "PROGRESS" && // custom elements may use _value internally
   !r.includes("-")) {
-    const l = r === "OPTION" ? e.getAttribute("value") || "" : e.value, a = n == null ? (
+    const c = r === "OPTION" ? e.getAttribute("value") || "" : e.value, u = n == null ? (
       // #11647: value should be set as empty string for null and undefined,
       // but <input type="checkbox"> should be set as 'on'.
       e.type === "checkbox" ? "on" : ""
     ) : String(n);
-    (l !== a || !("_value" in e)) && (e.value = a), n == null && e.removeAttribute(t), e._value = n;
+    (c !== u || !("_value" in e)) && (e.value = u), n == null && e.removeAttribute(t), e._value = n;
     return;
   }
-  let i = !1;
+  let a = !1;
   if (n === "" || n == null) {
-    const l = typeof e[t];
-    l === "boolean" ? n = ll(n) : n == null && l === "string" ? (n = "", i = !0) : l === "number" && (n = 0, i = !0);
+    const c = typeof e[t];
+    c === "boolean" ? n = ml(n) : n == null && c === "string" ? (n = "", a = !0) : c === "number" && (n = 0, a = !0);
   }
   try {
     e[t] = n;
-  } catch (l) {
-    process.env.NODE_ENV !== "production" && !i && xt(
+  } catch (c) {
+    process.env.NODE_ENV !== "production" && !a && Lt(
       `Failed setting prop "${t}" on <${r.toLowerCase()}>: value ${n} is invalid.`,
-      l
+      c
     );
   }
-  i && e.removeAttribute(o || t);
+  a && e.removeAttribute(o || t);
 }
-function Ut(e, t, n, s) {
+function Qt(e, t, n, s) {
   e.addEventListener(t, n, s);
 }
-function Jd(e, t, n, s) {
+function sf(e, t, n, s) {
   e.removeEventListener(t, n, s);
 }
-const wi = /* @__PURE__ */ Symbol("_vei");
-function Yd(e, t, n, s, o = null) {
-  const r = e[wi] || (e[wi] = {}), i = r[t];
-  if (s && i)
-    i.value = process.env.NODE_ENV !== "production" ? Oi(s, t) : s;
+const xi = /* @__PURE__ */ Symbol("_vei");
+function of(e, t, n, s, o = null) {
+  const r = e[xi] || (e[xi] = {}), a = r[t];
+  if (s && a)
+    a.value = process.env.NODE_ENV !== "production" ? Ti(s, t) : s;
   else {
-    const [l, a] = Qd(t);
+    const [c, u] = rf(t);
     if (s) {
-      const f = r[t] = ef(
-        process.env.NODE_ENV !== "production" ? Oi(s, t) : s,
+      const p = r[t] = cf(
+        process.env.NODE_ENV !== "production" ? Ti(s, t) : s,
         o
       );
-      Ut(e, l, f, a);
-    } else i && (Jd(e, l, i, a), r[t] = void 0);
+      Qt(e, c, p, u);
+    } else a && (sf(e, c, a, u), r[t] = void 0);
   }
 }
-const Ni = /(?:Once|Passive|Capture)$/;
-function Qd(e) {
+const Di = /(?:Once|Passive|Capture)$/;
+function rf(e) {
   let t;
-  if (Ni.test(e)) {
+  if (Di.test(e)) {
     t = {};
     let s;
-    for (; s = e.match(Ni); )
+    for (; s = e.match(Di); )
       e = e.slice(0, e.length - s[0].length), t[s[0].toLowerCase()] = !0;
   }
-  return [e[2] === ":" ? e.slice(3) : nn(e.slice(2)), t];
+  return [e[2] === ":" ? e.slice(3) : Xt(e.slice(2)), t];
 }
-let Do = 0;
-const Xd = /* @__PURE__ */ Promise.resolve(), Zd = () => Do || (Xd.then(() => Do = 0), Do = Date.now());
-function ef(e, t) {
+let Po = 0;
+const lf = /* @__PURE__ */ Promise.resolve(), af = () => Po || (lf.then(() => Po = 0), Po = Date.now());
+function cf(e, t) {
   const n = (s) => {
     if (!s._vts)
       s._vts = Date.now();
     else if (s._vts <= n.attached)
       return;
-    Pt(
-      tf(s, n.value),
+    Ut(
+      uf(s, n.value),
       t,
       5,
       [s]
     );
   };
-  return n.value = e, n.attached = Zd(), n;
+  return n.value = e, n.attached = af(), n;
 }
-function Oi(e, t) {
-  return ee(e) || q(e) ? e : (xt(
+function Ti(e, t) {
+  return ae(e) || ee(e) ? e : (Lt(
     `Wrong type passed as event handler to ${t} - did you forget @ or : in front of your prop?
 Expected function or array of functions, received type ${typeof e}.`
-  ), Ie);
+  ), Le);
 }
-function tf(e, t) {
-  if (q(t)) {
+function uf(e, t) {
+  if (ee(t)) {
     const n = e.stopImmediatePropagation;
     return e.stopImmediatePropagation = () => {
       n.call(e), e._stopped = !0;
@@ -4990,16 +4990,16 @@ function tf(e, t) {
   } else
     return t;
 }
-const Si = (e) => e.charCodeAt(0) === 111 && e.charCodeAt(1) === 110 && // lowercase letter
-e.charCodeAt(2) > 96 && e.charCodeAt(2) < 123, nf = (e, t, n, s, o, r) => {
-  const i = o === "svg";
-  t === "class" ? Hd(e, s, i) : t === "style" ? Kd(e, n, s) : ms(t) ? Ws(t) || Yd(e, t, n, s, r) : (t[0] === "." ? (t = t.slice(1), !0) : t[0] === "^" ? (t = t.slice(1), !1) : sf(e, t, s, i)) ? (Ei(e, t, s), !e.tagName.includes("-") && (t === "value" || t === "checked" || t === "selected") && yi(e, t, s, i, r, t !== "value")) : /* #11081 force set props for possible async custom element */ e._isVueCE && // #12408 check if it's declared prop or it's async custom element
-  (of(e, t) || // @ts-expect-error _def is private
-  e._def.__asyncLoader && (/[A-Z]/.test(t) || !Oe(s))) ? Ei(e, Xe(t), s, r, t) : (t === "true-value" ? e._trueValue = s : t === "false-value" && (e._falseValue = s), yi(e, t, s, i));
+const Pi = (e) => e.charCodeAt(0) === 111 && e.charCodeAt(1) === 110 && // lowercase letter
+e.charCodeAt(2) > 96 && e.charCodeAt(2) < 123, df = (e, t, n, s, o, r) => {
+  const a = o === "svg";
+  t === "class" ? Qd(e, s, a) : t === "style" ? ef(e, n, s) : bs(t) ? zs(t) || of(e, t, n, s, r) : (t[0] === "." ? (t = t.slice(1), !0) : t[0] === "^" ? (t = t.slice(1), !1) : ff(e, t, s, a)) ? (Ci(e, t, s), !e.tagName.includes("-") && (t === "value" || t === "checked" || t === "selected") && ki(e, t, s, a, r, t !== "value")) : /* #11081 force set props for possible async custom element */ e._isVueCE && // #12408 check if it's declared prop or it's async custom element
+  (pf(e, t) || // @ts-expect-error _def is private
+  e._def.__asyncLoader && (/[A-Z]/.test(t) || !Te(s))) ? Ci(e, rt(t), s, r, t) : (t === "true-value" ? e._trueValue = s : t === "false-value" && (e._falseValue = s), ki(e, t, s, a));
 };
-function sf(e, t, n, s) {
+function ff(e, t, n, s) {
   if (s)
-    return !!(t === "innerHTML" || t === "textContent" || t in e && Si(t) && ee(n));
+    return !!(t === "innerHTML" || t === "textContent" || t in e && Pi(t) && ae(n));
   if (t === "spellcheck" || t === "draggable" || t === "translate" || t === "autocorrect" || t === "sandbox" && e.tagName === "IFRAME" || t === "form" || t === "list" && e.tagName === "INPUT" || t === "type" && e.tagName === "TEXTAREA")
     return !1;
   if (t === "width" || t === "height") {
@@ -5007,198 +5007,198 @@ function sf(e, t, n, s) {
     if (o === "IMG" || o === "VIDEO" || o === "CANVAS" || o === "SOURCE")
       return !1;
   }
-  return Si(t) && Oe(n) ? !1 : t in e;
+  return Pi(t) && Te(n) ? !1 : t in e;
 }
-function of(e, t) {
+function pf(e, t) {
   const n = (
     // @ts-expect-error _def is private
     e._def.props
   );
   if (!n)
     return !1;
-  const s = Xe(t);
-  return Array.isArray(n) ? n.some((o) => Xe(o) === s) : Object.keys(n).some((o) => Xe(o) === s);
+  const s = rt(t);
+  return Array.isArray(n) ? n.some((o) => rt(o) === s) : Object.keys(n).some((o) => rt(o) === s);
 }
-const ln = (e) => {
+const fn = (e) => {
   const t = e.props["onUpdate:modelValue"] || !1;
-  return q(t) ? (n) => Pn(t, n) : t;
+  return ee(t) ? (n) => Vn(t, n) : t;
 };
-function rf(e) {
+function hf(e) {
   e.target.composing = !0;
 }
-function ki(e) {
+function Ri(e) {
   const t = e.target;
   t.composing && (t.composing = !1, t.dispatchEvent(new Event("input")));
 }
-const lt = /* @__PURE__ */ Symbol("_assign");
-function $i(e, t, n) {
-  return t && (e = e.trim()), n && (e = uo(e)), e;
+const mt = /* @__PURE__ */ Symbol("_assign");
+function Ai(e, t, n) {
+  return t && (e = e.trim()), n && (e = po(e)), e;
 }
-const mn = {
+const yt = {
   created(e, { modifiers: { lazy: t, trim: n, number: s } }, o) {
-    e[lt] = ln(o);
+    e[mt] = fn(o);
     const r = s || o.props && o.props.type === "number";
-    Ut(e, t ? "change" : "input", (i) => {
-      i.target.composing || e[lt]($i(e.value, n, r));
-    }), (n || r) && Ut(e, "change", () => {
-      e.value = $i(e.value, n, r);
-    }), t || (Ut(e, "compositionstart", rf), Ut(e, "compositionend", ki), Ut(e, "change", ki));
+    Qt(e, t ? "change" : "input", (a) => {
+      a.target.composing || e[mt](Ai(e.value, n, r));
+    }), (n || r) && Qt(e, "change", () => {
+      e.value = Ai(e.value, n, r);
+    }), t || (Qt(e, "compositionstart", hf), Qt(e, "compositionend", Ri), Qt(e, "change", Ri));
   },
   // set value on mounted so it's after min/max for type="range"
   mounted(e, { value: t }) {
     e.value = t ?? "";
   },
-  beforeUpdate(e, { value: t, oldValue: n, modifiers: { lazy: s, trim: o, number: r } }, i) {
-    if (e[lt] = ln(i), e.composing) return;
-    const l = (r || e.type === "number") && !/^0\d/.test(e.value) ? uo(e.value) : e.value, a = t ?? "";
-    l !== a && (document.activeElement === e && e.type !== "range" && (s && t === n || o && e.value.trim() === a) || (e.value = a));
+  beforeUpdate(e, { value: t, oldValue: n, modifiers: { lazy: s, trim: o, number: r } }, a) {
+    if (e[mt] = fn(a), e.composing) return;
+    const c = (r || e.type === "number") && !/^0\d/.test(e.value) ? po(e.value) : e.value, u = t ?? "";
+    c !== u && (document.activeElement === e && e.type !== "range" && (s && t === n || o && e.value.trim() === u) || (e.value = u));
   }
-}, Na = {
+}, Pa = {
   // #4096 array checkboxes need to be deep traversed
   deep: !0,
   created(e, t, n) {
-    e[lt] = ln(n), Ut(e, "change", () => {
-      const s = e._modelValue, o = Un(e), r = e.checked, i = e[lt];
-      if (q(s)) {
-        const l = fr(s, o), a = l !== -1;
-        if (r && !a)
-          i(s.concat(o));
-        else if (!r && a) {
-          const f = [...s];
-          f.splice(l, 1), i(f);
+    e[mt] = fn(n), Qt(e, "change", () => {
+      const s = e._modelValue, o = Gn(e), r = e.checked, a = e[mt];
+      if (ee(s)) {
+        const c = gr(s, o), u = c !== -1;
+        if (r && !u)
+          a(s.concat(o));
+        else if (!r && u) {
+          const p = [...s];
+          p.splice(c, 1), a(p);
         }
-      } else if (Gn(s)) {
-        const l = new Set(s);
-        r ? l.add(o) : l.delete(o), i(l);
+      } else if (Wn(s)) {
+        const c = new Set(s);
+        r ? c.add(o) : c.delete(o), a(c);
       } else
-        i(Oa(e, r));
+        a(Ra(e, r));
     });
   },
   // set initial checked on mount to wait for true-value/false-value
-  mounted: Ci,
+  mounted: Vi,
   beforeUpdate(e, t, n) {
-    e[lt] = ln(n), Ci(e, t, n);
+    e[mt] = fn(n), Vi(e, t, n);
   }
 };
-function Ci(e, { value: t, oldValue: n }, s) {
+function Vi(e, { value: t, oldValue: n }, s) {
   e._modelValue = t;
   let o;
-  if (q(t))
-    o = fr(t, s.props.value) > -1;
-  else if (Gn(t))
+  if (ee(t))
+    o = gr(t, s.props.value) > -1;
+  else if (Wn(t))
     o = t.has(s.props.value);
   else {
     if (t === n) return;
-    o = sn(t, Oa(e, !0));
+    o = an(t, Ra(e, !0));
   }
   e.checked !== o && (e.checked = o);
 }
-const lf = {
+const _f = {
   created(e, { value: t }, n) {
-    e.checked = sn(t, n.props.value), e[lt] = ln(n), Ut(e, "change", () => {
-      e[lt](Un(e));
+    e.checked = an(t, n.props.value), e[mt] = fn(n), Qt(e, "change", () => {
+      e[mt](Gn(e));
     });
   },
   beforeUpdate(e, { value: t, oldValue: n }, s) {
-    e[lt] = ln(s), t !== n && (e.checked = sn(t, s.props.value));
+    e[mt] = fn(s), t !== n && (e.checked = an(t, s.props.value));
   }
-}, oo = {
+}, gs = {
   // <select multiple> value need to be deep traversed
   deep: !0,
   created(e, { value: t, modifiers: { number: n } }, s) {
-    const o = Gn(t);
-    Ut(e, "change", () => {
-      const r = Array.prototype.filter.call(e.options, (i) => i.selected).map(
-        (i) => n ? uo(Un(i)) : Un(i)
+    const o = Wn(t);
+    Qt(e, "change", () => {
+      const r = Array.prototype.filter.call(e.options, (a) => a.selected).map(
+        (a) => n ? po(Gn(a)) : Gn(a)
       );
-      e[lt](
+      e[mt](
         e.multiple ? o ? new Set(r) : r : r[0]
-      ), e._assigning = !0, ds(() => {
+      ), e._assigning = !0, ps(() => {
         e._assigning = !1;
       });
-    }), e[lt] = ln(s);
+    }), e[mt] = fn(s);
   },
   // set value in mounted & updated because <select> relies on its children
   // <option>s.
   mounted(e, { value: t }) {
-    Di(e, t);
+    Ii(e, t);
   },
   beforeUpdate(e, t, n) {
-    e[lt] = ln(n);
+    e[mt] = fn(n);
   },
   updated(e, { value: t }) {
-    e._assigning || Di(e, t);
+    e._assigning || Ii(e, t);
   }
 };
-function Di(e, t) {
-  const n = e.multiple, s = q(t);
-  if (n && !s && !Gn(t)) {
-    process.env.NODE_ENV !== "production" && xt(
+function Ii(e, t) {
+  const n = e.multiple, s = ee(t);
+  if (n && !s && !Wn(t)) {
+    process.env.NODE_ENV !== "production" && Lt(
       `<select multiple v-model> expects an Array or Set value for its binding, but got ${Object.prototype.toString.call(t).slice(8, -1)}.`
     );
     return;
   }
   for (let o = 0, r = e.options.length; o < r; o++) {
-    const i = e.options[o], l = Un(i);
+    const a = e.options[o], c = Gn(a);
     if (n)
       if (s) {
-        const a = typeof l;
-        a === "string" || a === "number" ? i.selected = t.some((f) => String(f) === String(l)) : i.selected = fr(t, l) > -1;
+        const u = typeof c;
+        u === "string" || u === "number" ? a.selected = t.some((p) => String(p) === String(c)) : a.selected = gr(t, c) > -1;
       } else
-        i.selected = t.has(l);
-    else if (sn(Un(i), t)) {
+        a.selected = t.has(c);
+    else if (an(Gn(a), t)) {
       e.selectedIndex !== o && (e.selectedIndex = o);
       return;
     }
   }
   !n && e.selectedIndex !== -1 && (e.selectedIndex = -1);
 }
-function Un(e) {
+function Gn(e) {
   return "_value" in e ? e._value : e.value;
 }
-function Oa(e, t) {
+function Ra(e, t) {
   const n = t ? "_trueValue" : "_falseValue";
   return n in e ? e[n] : t;
 }
-const af = {
+const mf = {
   created(e, t, n) {
-    $s(e, t, n, null, "created");
+    Ts(e, t, n, null, "created");
   },
   mounted(e, t, n) {
-    $s(e, t, n, null, "mounted");
+    Ts(e, t, n, null, "mounted");
   },
   beforeUpdate(e, t, n, s) {
-    $s(e, t, n, s, "beforeUpdate");
+    Ts(e, t, n, s, "beforeUpdate");
   },
   updated(e, t, n, s) {
-    $s(e, t, n, s, "updated");
+    Ts(e, t, n, s, "updated");
   }
 };
-function cf(e, t) {
+function gf(e, t) {
   switch (e) {
     case "SELECT":
-      return oo;
+      return gs;
     case "TEXTAREA":
-      return mn;
+      return yt;
     default:
       switch (t) {
         case "checkbox":
-          return Na;
+          return Pa;
         case "radio":
-          return lf;
+          return _f;
         default:
-          return mn;
+          return yt;
       }
   }
 }
-function $s(e, t, n, s, o) {
-  const i = cf(
+function Ts(e, t, n, s, o) {
+  const a = gf(
     e.tagName,
     n.props && n.props.type
   )[o];
-  i && i(e, t, n, s);
+  a && a(e, t, n, s);
 }
-const uf = ["ctrl", "shift", "alt", "meta"], df = {
+const vf = ["ctrl", "shift", "alt", "meta"], bf = {
   stop: (e) => e.stopPropagation(),
   prevent: (e) => e.preventDefault(),
   self: (e) => e.target !== e.currentTarget,
@@ -5209,48 +5209,67 @@ const uf = ["ctrl", "shift", "alt", "meta"], df = {
   left: (e) => "button" in e && e.button !== 0,
   middle: (e) => "button" in e && e.button !== 1,
   right: (e) => "button" in e && e.button !== 2,
-  exact: (e, t) => uf.some((n) => e[`${n}Key`] && !t.includes(n))
-}, ff = (e, t) => {
+  exact: (e, t) => vf.some((n) => e[`${n}Key`] && !t.includes(n))
+}, Vr = (e, t) => {
   if (!e) return e;
   const n = e._withMods || (e._withMods = {}), s = t.join(".");
   return n[s] || (n[s] = (o, ...r) => {
-    for (let i = 0; i < t.length; i++) {
-      const l = df[t[i]];
-      if (l && l(o, t)) return;
+    for (let a = 0; a < t.length; a++) {
+      const c = bf[t[a]];
+      if (c && c(o, t)) return;
     }
     return e(o, ...r);
   });
-}, pf = /* @__PURE__ */ De({ patchProp: nf }, Fd);
-let xi;
-function hf() {
-  return xi || (xi = _d(pf));
+}, yf = {
+  esc: "escape",
+  space: " ",
+  up: "arrow-up",
+  left: "arrow-left",
+  right: "arrow-right",
+  down: "arrow-down",
+  delete: "backspace"
+}, Ef = (e, t) => {
+  const n = e._withKeys || (e._withKeys = {}), s = t.join(".");
+  return n[s] || (n[s] = (o) => {
+    if (!("key" in o))
+      return;
+    const r = Xt(o.key);
+    if (t.some(
+      (a) => a === r || yf[a] === r
+    ))
+      return e(o);
+  });
+}, wf = /* @__PURE__ */ Ae({ patchProp: df }, zd);
+let Mi;
+function Nf() {
+  return Mi || (Mi = Od(wf));
 }
-const gf = (...e) => {
-  const t = hf().createApp(...e);
-  process.env.NODE_ENV !== "production" && (_f(t), vf(t));
+const $f = (...e) => {
+  const t = Nf().createApp(...e);
+  process.env.NODE_ENV !== "production" && (Sf(t), kf(t));
   const { mount: n } = t;
   return t.mount = (s) => {
-    const o = bf(s);
+    const o = Cf(s);
     if (!o) return;
     const r = t._component;
-    !ee(r) && !r.render && !r.template && (r.template = o.innerHTML), o.nodeType === 1 && (o.textContent = "");
-    const i = n(o, !1, mf(o));
-    return o instanceof Element && (o.removeAttribute("v-cloak"), o.setAttribute("data-v-app", "")), i;
+    !ae(r) && !r.render && !r.template && (r.template = o.innerHTML), o.nodeType === 1 && (o.textContent = "");
+    const a = n(o, !1, Of(o));
+    return o instanceof Element && (o.removeAttribute("v-cloak"), o.setAttribute("data-v-app", "")), a;
   }, t;
 };
-function mf(e) {
+function Of(e) {
   if (e instanceof SVGElement)
     return "svg";
   if (typeof MathMLElement == "function" && e instanceof MathMLElement)
     return "mathml";
 }
-function _f(e) {
+function Sf(e) {
   Object.defineProperty(e.config, "isNativeTag", {
-    value: (t) => bc(t) || yc(t) || Ec(t),
+    value: (t) => kc(t) || Cc(t) || xc(t),
     writable: !1
   });
 }
-function vf(e) {
+function kf(e) {
   {
     const t = e.config.isCustomElement;
     Object.defineProperty(e.config, "isCustomElement", {
@@ -5258,7 +5277,7 @@ function vf(e) {
         return t;
       },
       set() {
-        xt(
+        Lt(
           "The `isCustomElement` config option is deprecated. Use `compilerOptions.isCustomElement` instead."
         );
       }
@@ -5266,22 +5285,22 @@ function vf(e) {
     const n = e.config.compilerOptions, s = 'The `compilerOptions` config option is only respected when using a build of Vue.js that includes the runtime compiler (aka "full build"). Since you are using the runtime-only build, `compilerOptions` must be passed to `@vue/compiler-dom` in the build setup instead.\n- For vue-loader: pass it via vue-loader\'s `compilerOptions` loader option.\n- For vue-cli: see https://cli.vuejs.org/guide/webpack.html#modifying-options-of-a-loader\n- For vite: pass it via @vitejs/plugin-vue options. See https://github.com/vitejs/vite-plugin-vue/tree/main/packages/plugin-vue#example-for-passing-options-to-vuecompiler-sfc';
     Object.defineProperty(e.config, "compilerOptions", {
       get() {
-        return xt(s), n;
+        return Lt(s), n;
       },
       set() {
-        xt(s);
+        Lt(s);
       }
     });
   }
 }
-function bf(e) {
-  if (Oe(e)) {
+function Cf(e) {
+  if (Te(e)) {
     const t = document.querySelector(e);
-    return process.env.NODE_ENV !== "production" && !t && xt(
+    return process.env.NODE_ENV !== "production" && !t && Lt(
       `Failed to mount app: mount target selector "${e}" returned null.`
     ), t;
   }
-  return process.env.NODE_ENV !== "production" && window.ShadowRoot && e instanceof window.ShadowRoot && e.mode === "closed" && xt(
+  return process.env.NODE_ENV !== "production" && window.ShadowRoot && e instanceof window.ShadowRoot && e.mode === "closed" && Lt(
     'mounting on a ShadowRoot with `{mode: "closed"}` may lead to unpredictable bugs'
   ), e;
 }
@@ -5290,85 +5309,85 @@ function bf(e) {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-function yf() {
-  Md();
+function xf() {
+  Kd();
 }
-process.env.NODE_ENV !== "production" && yf();
-function Cs(e, t, n) {
+process.env.NODE_ENV !== "production" && xf();
+function Ps(e, t, n) {
   return Array.isArray(e) ? (e.length = Math.max(e.length, t), e.splice(t, 1, n), n) : (e[t] = n, n);
 }
-function xo(e, t) {
+function Ro(e, t) {
   if (Array.isArray(e)) {
     e.splice(t, 1);
     return;
   }
   delete e[t];
 }
-function Ef() {
-  return Sa().__VUE_DEVTOOLS_GLOBAL_HOOK__;
+function Df() {
+  return Aa().__VUE_DEVTOOLS_GLOBAL_HOOK__;
 }
-function Sa() {
+function Aa() {
   return typeof navigator < "u" && typeof window < "u" ? window : typeof globalThis < "u" ? globalThis : {};
 }
-const wf = typeof Proxy == "function", Nf = "devtools-plugin:setup", Of = "plugin:settings:set";
-let Dn, Yo;
-function Sf() {
+const Tf = typeof Proxy == "function", Pf = "devtools-plugin:setup", Rf = "plugin:settings:set";
+let Pn, er;
+function Af() {
   var e;
-  return Dn !== void 0 || (typeof window < "u" && window.performance ? (Dn = !0, Yo = window.performance) : typeof globalThis < "u" && (!((e = globalThis.perf_hooks) === null || e === void 0) && e.performance) ? (Dn = !0, Yo = globalThis.perf_hooks.performance) : Dn = !1), Dn;
+  return Pn !== void 0 || (typeof window < "u" && window.performance ? (Pn = !0, er = window.performance) : typeof globalThis < "u" && (!((e = globalThis.perf_hooks) === null || e === void 0) && e.performance) ? (Pn = !0, er = globalThis.perf_hooks.performance) : Pn = !1), Pn;
 }
-function kf() {
-  return Sf() ? Yo.now() : Date.now();
+function Vf() {
+  return Af() ? er.now() : Date.now();
 }
-let $f = class {
+let If = class {
   constructor(t, n) {
     this.target = null, this.targetQueue = [], this.onQueue = [], this.plugin = t, this.hook = n;
     const s = {};
     if (t.settings)
-      for (const i in t.settings) {
-        const l = t.settings[i];
-        s[i] = l.defaultValue;
+      for (const a in t.settings) {
+        const c = t.settings[a];
+        s[a] = c.defaultValue;
       }
     const o = `__vue-devtools-plugin-settings__${t.id}`;
     let r = Object.assign({}, s);
     try {
-      const i = localStorage.getItem(o), l = JSON.parse(i);
-      Object.assign(r, l);
+      const a = localStorage.getItem(o), c = JSON.parse(a);
+      Object.assign(r, c);
     } catch {
     }
     this.fallbacks = {
       getSettings() {
         return r;
       },
-      setSettings(i) {
+      setSettings(a) {
         try {
-          localStorage.setItem(o, JSON.stringify(i));
+          localStorage.setItem(o, JSON.stringify(a));
         } catch {
         }
-        r = i;
+        r = a;
       },
       now() {
-        return kf();
+        return Vf();
       }
-    }, n && n.on(Of, (i, l) => {
-      i === this.plugin.id && this.fallbacks.setSettings(l);
+    }, n && n.on(Rf, (a, c) => {
+      a === this.plugin.id && this.fallbacks.setSettings(c);
     }), this.proxiedOn = new Proxy({}, {
-      get: (i, l) => this.target ? this.target.on[l] : (...a) => {
+      get: (a, c) => this.target ? this.target.on[c] : (...u) => {
         this.onQueue.push({
-          method: l,
-          args: a
+          method: c,
+          args: u
         });
       }
     }), this.proxiedTarget = new Proxy({}, {
-      get: (i, l) => this.target ? this.target[l] : l === "on" ? this.proxiedOn : Object.keys(this.fallbacks).includes(l) ? (...a) => (this.targetQueue.push({
-        method: l,
-        args: a,
+      get: (a, c) => this.target ? this.target[c] : c === "on" ? this.proxiedOn : Object.keys(this.fallbacks).includes(c) ? (...u) => (this.targetQueue.push({
+        method: c,
+        args: u,
         resolve: () => {
         }
-      }), this.fallbacks[l](...a)) : (...a) => new Promise((f) => {
+      }), this.fallbacks[c](...u)) : (...u) => new Promise((p) => {
         this.targetQueue.push({
-          method: l,
-          args: a,
-          resolve: f
+          method: c,
+          args: u,
+          resolve: p
         });
       })
     });
@@ -5381,17 +5400,17 @@ let $f = class {
       n.resolve(await this.target[n.method](...n.args));
   }
 };
-function ka(e, t) {
-  const n = e, s = Sa(), o = Ef(), r = wf && n.enableEarlyProxy;
+function Va(e, t) {
+  const n = e, s = Aa(), o = Df(), r = Tf && n.enableEarlyProxy;
   if (o && (s.__VUE_DEVTOOLS_PLUGIN_API_AVAILABLE__ || !r))
-    o.emit(Nf, e, t);
+    o.emit(Pf, e, t);
   else {
-    const i = r ? new $f(n, o) : null;
+    const a = r ? new If(n, o) : null;
     (s.__VUE_DEVTOOLS_PLUGINS__ = s.__VUE_DEVTOOLS_PLUGINS__ || []).push({
       pluginDescriptor: n,
       setupFn: t,
-      proxy: i
-    }), i && t(i.proxiedTarget);
+      proxy: a
+    }), a && t(a.proxiedTarget);
   }
 }
 /*!
@@ -5399,31 +5418,31 @@ function ka(e, t) {
  * (c) 2025 Eduardo San Martin Morote
  * @license MIT
  */
-let ns;
-const gs = (e) => ns = e, $a = process.env.NODE_ENV !== "production" ? Symbol("pinia") : (
+let ss;
+const vs = (e) => ss = e, Ia = process.env.NODE_ENV !== "production" ? Symbol("pinia") : (
   /* istanbul ignore next */
   Symbol()
 );
-function Sn(e) {
+function Cn(e) {
   return e && typeof e == "object" && Object.prototype.toString.call(e) === "[object Object]" && typeof e.toJSON != "function";
 }
-var Tt;
+var jt;
 (function(e) {
   e.direct = "direct", e.patchObject = "patch object", e.patchFunction = "patch function";
-})(Tt || (Tt = {}));
-const en = typeof window < "u", Ti = typeof window == "object" && window.window === window ? window : typeof self == "object" && self.self === self ? self : typeof global == "object" && global.global === global ? global : typeof globalThis == "object" ? globalThis : { HTMLElement: null };
-function Cf(e, { autoBom: t = !1 } = {}) {
+})(jt || (jt = {}));
+const rn = typeof window < "u", Fi = typeof window == "object" && window.window === window ? window : typeof self == "object" && self.self === self ? self : typeof global == "object" && global.global === global ? global : typeof globalThis == "object" ? globalThis : { HTMLElement: null };
+function Mf(e, { autoBom: t = !1 } = {}) {
   return t && /^\s*(?:text\/\S*|application\/xml|\S*\/\S*\+xml)\s*;.*charset\s*=\s*utf-8/i.test(e.type) ? new Blob(["\uFEFF", e], { type: e.type }) : e;
 }
-function Tr(e, t, n) {
+function Ir(e, t, n) {
   const s = new XMLHttpRequest();
   s.open("GET", e), s.responseType = "blob", s.onload = function() {
-    xa(s.response, t, n);
+    La(s.response, t, n);
   }, s.onerror = function() {
     console.error("could not download file");
   }, s.send();
 }
-function Ca(e) {
+function Ma(e) {
   const t = new XMLHttpRequest();
   t.open("HEAD", e, !1);
   try {
@@ -5432,7 +5451,7 @@ function Ca(e) {
   }
   return t.status >= 200 && t.status <= 299;
 }
-function Us(e) {
+function Bs(e) {
   try {
     e.dispatchEvent(new MouseEvent("click"));
   } catch {
@@ -5440,152 +5459,152 @@ function Us(e) {
     n.initMouseEvent("click", !0, !0, window, 0, 0, 0, 80, 20, !1, !1, !1, !1, 0, null), e.dispatchEvent(n);
   }
 }
-const Hs = typeof navigator == "object" ? navigator : { userAgent: "" }, Da = /Macintosh/.test(Hs.userAgent) && /AppleWebKit/.test(Hs.userAgent) && !/Safari/.test(Hs.userAgent), xa = en ? (
+const Ks = typeof navigator == "object" ? navigator : { userAgent: "" }, Fa = /Macintosh/.test(Ks.userAgent) && /AppleWebKit/.test(Ks.userAgent) && !/Safari/.test(Ks.userAgent), La = rn ? (
   // Use download attribute first if possible (#193 Lumia mobile) unless this is a macOS WebView or mini program
-  typeof HTMLAnchorElement < "u" && "download" in HTMLAnchorElement.prototype && !Da ? Df : (
+  typeof HTMLAnchorElement < "u" && "download" in HTMLAnchorElement.prototype && !Fa ? Ff : (
     // Use msSaveOrOpenBlob as a second approach
-    "msSaveOrOpenBlob" in Hs ? xf : (
+    "msSaveOrOpenBlob" in Ks ? Lf : (
       // Fallback to using FileReader and a popup
-      Tf
+      jf
     )
   )
 ) : () => {
 };
-function Df(e, t = "download", n) {
+function Ff(e, t = "download", n) {
   const s = document.createElement("a");
-  s.download = t, s.rel = "noopener", typeof e == "string" ? (s.href = e, s.origin !== location.origin ? Ca(s.href) ? Tr(e, t, n) : (s.target = "_blank", Us(s)) : Us(s)) : (s.href = URL.createObjectURL(e), setTimeout(function() {
+  s.download = t, s.rel = "noopener", typeof e == "string" ? (s.href = e, s.origin !== location.origin ? Ma(s.href) ? Ir(e, t, n) : (s.target = "_blank", Bs(s)) : Bs(s)) : (s.href = URL.createObjectURL(e), setTimeout(function() {
     URL.revokeObjectURL(s.href);
   }, 4e4), setTimeout(function() {
-    Us(s);
+    Bs(s);
   }, 0));
 }
-function xf(e, t = "download", n) {
+function Lf(e, t = "download", n) {
   if (typeof e == "string")
-    if (Ca(e))
-      Tr(e, t, n);
+    if (Ma(e))
+      Ir(e, t, n);
     else {
       const s = document.createElement("a");
       s.href = e, s.target = "_blank", setTimeout(function() {
-        Us(s);
+        Bs(s);
       });
     }
   else
-    navigator.msSaveOrOpenBlob(Cf(e, n), t);
+    navigator.msSaveOrOpenBlob(Mf(e, n), t);
 }
-function Tf(e, t, n, s) {
+function jf(e, t, n, s) {
   if (s = s || open("", "_blank"), s && (s.document.title = s.document.body.innerText = "downloading..."), typeof e == "string")
-    return Tr(e, t, n);
-  const o = e.type === "application/octet-stream", r = /constructor/i.test(String(Ti.HTMLElement)) || "safari" in Ti, i = /CriOS\/[\d]+/.test(navigator.userAgent);
-  if ((i || o && r || Da) && typeof FileReader < "u") {
-    const l = new FileReader();
-    l.onloadend = function() {
-      let a = l.result;
-      if (typeof a != "string")
+    return Ir(e, t, n);
+  const o = e.type === "application/octet-stream", r = /constructor/i.test(String(Fi.HTMLElement)) || "safari" in Fi, a = /CriOS\/[\d]+/.test(navigator.userAgent);
+  if ((a || o && r || Fa) && typeof FileReader < "u") {
+    const c = new FileReader();
+    c.onloadend = function() {
+      let u = c.result;
+      if (typeof u != "string")
         throw s = null, new Error("Wrong reader.result type");
-      a = i ? a : a.replace(/^data:[^;]*;/, "data:attachment/file;"), s ? s.location.href = a : location.assign(a), s = null;
-    }, l.readAsDataURL(e);
+      u = a ? u : u.replace(/^data:[^;]*;/, "data:attachment/file;"), s ? s.location.href = u : location.assign(u), s = null;
+    }, c.readAsDataURL(e);
   } else {
-    const l = URL.createObjectURL(e);
-    s ? s.location.assign(l) : location.href = l, s = null, setTimeout(function() {
-      URL.revokeObjectURL(l);
+    const c = URL.createObjectURL(e);
+    s ? s.location.assign(c) : location.href = c, s = null, setTimeout(function() {
+      URL.revokeObjectURL(c);
     }, 4e4);
   }
 }
-function Le(e, t) {
+function He(e, t) {
   const n = "🍍 " + e;
   typeof __VUE_DEVTOOLS_TOAST__ == "function" ? __VUE_DEVTOOLS_TOAST__(n, t) : t === "error" ? console.error(n) : t === "warn" ? console.warn(n) : console.log(n);
 }
-function Pr(e) {
+function Mr(e) {
   return "_a" in e && "install" in e;
 }
-function Ta() {
+function ja() {
   if (!("clipboard" in navigator))
-    return Le("Your browser doesn't support the Clipboard API", "error"), !0;
+    return He("Your browser doesn't support the Clipboard API", "error"), !0;
 }
-function Pa(e) {
-  return e instanceof Error && e.message.toLowerCase().includes("document is not focused") ? (Le('You need to activate the "Emulate a focused page" setting in the "Rendering" panel of devtools.', "warn"), !0) : !1;
+function Ua(e) {
+  return e instanceof Error && e.message.toLowerCase().includes("document is not focused") ? (He('You need to activate the "Emulate a focused page" setting in the "Rendering" panel of devtools.', "warn"), !0) : !1;
 }
-async function Pf(e) {
-  if (!Ta())
+async function Uf(e) {
+  if (!ja())
     try {
-      await navigator.clipboard.writeText(JSON.stringify(e.state.value)), Le("Global state copied to clipboard.");
+      await navigator.clipboard.writeText(JSON.stringify(e.state.value)), He("Global state copied to clipboard.");
     } catch (t) {
-      if (Pa(t))
+      if (Ua(t))
         return;
-      Le("Failed to serialize the state. Check the console for more details.", "error"), console.error(t);
+      He("Failed to serialize the state. Check the console for more details.", "error"), console.error(t);
     }
 }
-async function Vf(e) {
-  if (!Ta())
+async function Hf(e) {
+  if (!ja())
     try {
-      Va(e, JSON.parse(await navigator.clipboard.readText())), Le("Global state pasted from clipboard.");
+      Ha(e, JSON.parse(await navigator.clipboard.readText())), He("Global state pasted from clipboard.");
     } catch (t) {
-      if (Pa(t))
+      if (Ua(t))
         return;
-      Le("Failed to deserialize the state from clipboard. Check the console for more details.", "error"), console.error(t);
+      He("Failed to deserialize the state from clipboard. Check the console for more details.", "error"), console.error(t);
     }
 }
-async function Af(e) {
+async function Gf(e) {
   try {
-    xa(new Blob([JSON.stringify(e.state.value)], {
+    La(new Blob([JSON.stringify(e.state.value)], {
       type: "text/plain;charset=utf-8"
     }), "pinia-state.json");
   } catch (t) {
-    Le("Failed to export the state as JSON. Check the console for more details.", "error"), console.error(t);
+    He("Failed to export the state as JSON. Check the console for more details.", "error"), console.error(t);
   }
 }
-let At;
-function Rf() {
-  At || (At = document.createElement("input"), At.type = "file", At.accept = ".json");
+let Gt;
+function Bf() {
+  Gt || (Gt = document.createElement("input"), Gt.type = "file", Gt.accept = ".json");
   function e() {
     return new Promise((t, n) => {
-      At.onchange = async () => {
-        const s = At.files;
+      Gt.onchange = async () => {
+        const s = Gt.files;
         if (!s)
           return t(null);
         const o = s.item(0);
         return t(o ? { text: await o.text(), file: o } : null);
-      }, At.oncancel = () => t(null), At.onerror = n, At.click();
+      }, Gt.oncancel = () => t(null), Gt.onerror = n, Gt.click();
     });
   }
   return e;
 }
-async function If(e) {
+async function Kf(e) {
   try {
-    const n = await Rf()();
+    const n = await Bf()();
     if (!n)
       return;
     const { text: s, file: o } = n;
-    Va(e, JSON.parse(s)), Le(`Global state imported from "${o.name}".`);
+    Ha(e, JSON.parse(s)), He(`Global state imported from "${o.name}".`);
   } catch (t) {
-    Le("Failed to import the state from JSON. Check the console for more details.", "error"), console.error(t);
+    He("Failed to import the state from JSON. Check the console for more details.", "error"), console.error(t);
   }
 }
-function Va(e, t) {
+function Ha(e, t) {
   for (const n in t) {
     const s = e.state.value[n];
     s ? Object.assign(s, t[n]) : e.state.value[n] = t[n];
   }
 }
-function at(e) {
+function gt(e) {
   return {
     _custom: {
       display: e
     }
   };
 }
-const Aa = "🍍 Pinia (root)", Bs = "_root";
-function Mf(e) {
-  return Pr(e) ? {
-    id: Bs,
-    label: Aa
+const Ga = "🍍 Pinia (root)", Ws = "_root";
+function Wf(e) {
+  return Mr(e) ? {
+    id: Ws,
+    label: Ga
   } : {
     id: e.$id,
     label: e.$id
   };
 }
-function Lf(e) {
-  if (Pr(e)) {
+function qf(e) {
+  if (Mr(e)) {
     const n = Array.from(e._s.keys()), s = e._s;
     return {
       state: n.map((r) => ({
@@ -5594,11 +5613,11 @@ function Lf(e) {
         value: e.state.value[r]
       })),
       getters: n.filter((r) => s.get(r)._getters).map((r) => {
-        const i = s.get(r);
+        const a = s.get(r);
         return {
           editable: !1,
           key: r,
-          value: i._getters.reduce((l, a) => (l[a] = i[a], l), {})
+          value: a._getters.reduce((c, u) => (c[u] = a[u], c), {})
         };
       })
     };
@@ -5620,49 +5639,49 @@ function Lf(e) {
     value: e[n]
   }))), t;
 }
-function jf(e) {
+function zf(e) {
   return e ? Array.isArray(e) ? e.reduce((t, n) => (t.keys.push(n.key), t.operations.push(n.type), t.oldValue[n.key] = n.oldValue, t.newValue[n.key] = n.newValue, t), {
     oldValue: {},
     keys: [],
     operations: [],
     newValue: {}
   }) : {
-    operation: at(e.type),
-    key: at(e.key),
+    operation: gt(e.type),
+    key: gt(e.key),
     oldValue: e.oldValue,
     newValue: e.newValue
   } : {};
 }
-function Ff(e) {
+function Jf(e) {
   switch (e) {
-    case Tt.direct:
+    case jt.direct:
       return "mutation";
-    case Tt.patchFunction:
+    case jt.patchFunction:
       return "$patch";
-    case Tt.patchObject:
+    case jt.patchObject:
       return "$patch";
     default:
       return "unknown";
   }
 }
-let An = !0;
-const Gs = [], gn = "pinia:mutations", Ue = "pinia", { assign: Uf } = Object, ro = (e) => "🍍 " + e;
-function Hf(e, t) {
-  ka({
+let Mn = !0;
+const qs = [], bn = "pinia:mutations", Ke = "pinia", { assign: Qf } = Object, lo = (e) => "🍍 " + e;
+function Yf(e, t) {
+  Va({
     id: "dev.esm.pinia",
     label: "Pinia 🍍",
     logo: "https://pinia.vuejs.org/logo.svg",
     packageName: "pinia",
     homepage: "https://pinia.vuejs.org",
-    componentStateTypes: Gs,
+    componentStateTypes: qs,
     app: e
   }, (n) => {
-    typeof n.now != "function" && Le("You seem to be using an outdated version of Vue Devtools. Are you still using the Beta release instead of the stable one? You can find the links at https://devtools.vuejs.org/guide/installation.html."), n.addTimelineLayer({
-      id: gn,
+    typeof n.now != "function" && He("You seem to be using an outdated version of Vue Devtools. Are you still using the Beta release instead of the stable one? You can find the links at https://devtools.vuejs.org/guide/installation.html."), n.addTimelineLayer({
+      id: bn,
       label: "Pinia 🍍",
       color: 15064968
     }), n.addInspector({
-      id: Ue,
+      id: Ke,
       label: "Pinia 🍍",
       icon: "storage",
       treeFilterPlaceholder: "Search stores",
@@ -5670,28 +5689,28 @@ function Hf(e, t) {
         {
           icon: "content_copy",
           action: () => {
-            Pf(t);
+            Uf(t);
           },
           tooltip: "Serialize and copy the state"
         },
         {
           icon: "content_paste",
           action: async () => {
-            await Vf(t), n.sendInspectorTree(Ue), n.sendInspectorState(Ue);
+            await Hf(t), n.sendInspectorTree(Ke), n.sendInspectorState(Ke);
           },
           tooltip: "Replace the state with the content of your clipboard"
         },
         {
           icon: "save",
           action: () => {
-            Af(t);
+            Gf(t);
           },
           tooltip: "Save the state as a JSON file"
         },
         {
           icon: "folder_open",
           action: async () => {
-            await If(t), n.sendInspectorTree(Ue), n.sendInspectorState(Ue);
+            await Kf(t), n.sendInspectorTree(Ke), n.sendInspectorState(Ke);
           },
           tooltip: "Import the state from a JSON file"
         }
@@ -5702,92 +5721,92 @@ function Hf(e, t) {
           tooltip: 'Reset the state (with "$reset")',
           action: (s) => {
             const o = t._s.get(s);
-            o ? typeof o.$reset != "function" ? Le(`Cannot reset "${s}" store because it doesn't have a "$reset" method implemented.`, "warn") : (o.$reset(), Le(`Store "${s}" reset.`)) : Le(`Cannot reset "${s}" store because it wasn't found.`, "warn");
+            o ? typeof o.$reset != "function" ? He(`Cannot reset "${s}" store because it doesn't have a "$reset" method implemented.`, "warn") : (o.$reset(), He(`Store "${s}" reset.`)) : He(`Cannot reset "${s}" store because it wasn't found.`, "warn");
           }
         }
       ]
     }), n.on.inspectComponent((s, o) => {
       const r = s.componentInstance && s.componentInstance.proxy;
       if (r && r._pStores) {
-        const i = s.componentInstance.proxy._pStores;
-        Object.values(i).forEach((l) => {
+        const a = s.componentInstance.proxy._pStores;
+        Object.values(a).forEach((c) => {
           s.instanceData.state.push({
-            type: ro(l.$id),
+            type: lo(c.$id),
             key: "state",
             editable: !0,
-            value: l._isOptionsAPI ? {
+            value: c._isOptionsAPI ? {
               _custom: {
-                value: /* @__PURE__ */ ne(l.$state),
+                value: /* @__PURE__ */ de(c.$state),
                 actions: [
                   {
                     icon: "restore",
                     tooltip: "Reset the state of this store",
-                    action: () => l.$reset()
+                    action: () => c.$reset()
                   }
                 ]
               }
             } : (
               // NOTE: workaround to unwrap transferred refs
-              Object.keys(l.$state).reduce((a, f) => (a[f] = l.$state[f], a), {})
+              Object.keys(c.$state).reduce((u, p) => (u[p] = c.$state[p], u), {})
             )
-          }), l._getters && l._getters.length && s.instanceData.state.push({
-            type: ro(l.$id),
+          }), c._getters && c._getters.length && s.instanceData.state.push({
+            type: lo(c.$id),
             key: "getters",
             editable: !1,
-            value: l._getters.reduce((a, f) => {
+            value: c._getters.reduce((u, p) => {
               try {
-                a[f] = l[f];
-              } catch (p) {
-                a[f] = p;
+                u[p] = c[p];
+              } catch (h) {
+                u[p] = h;
               }
-              return a;
+              return u;
             }, {})
           });
         });
       }
     }), n.on.getInspectorTree((s) => {
-      if (s.app === e && s.inspectorId === Ue) {
+      if (s.app === e && s.inspectorId === Ke) {
         let o = [t];
-        o = o.concat(Array.from(t._s.values())), s.rootNodes = (s.filter ? o.filter((r) => "$id" in r ? r.$id.toLowerCase().includes(s.filter.toLowerCase()) : Aa.toLowerCase().includes(s.filter.toLowerCase())) : o).map(Mf);
+        o = o.concat(Array.from(t._s.values())), s.rootNodes = (s.filter ? o.filter((r) => "$id" in r ? r.$id.toLowerCase().includes(s.filter.toLowerCase()) : Ga.toLowerCase().includes(s.filter.toLowerCase())) : o).map(Wf);
       }
     }), globalThis.$pinia = t, n.on.getInspectorState((s) => {
-      if (s.app === e && s.inspectorId === Ue) {
-        const o = s.nodeId === Bs ? t : t._s.get(s.nodeId);
+      if (s.app === e && s.inspectorId === Ke) {
+        const o = s.nodeId === Ws ? t : t._s.get(s.nodeId);
         if (!o)
           return;
-        o && (s.nodeId !== Bs && (globalThis.$store = /* @__PURE__ */ ne(o)), s.state = Lf(o));
+        o && (s.nodeId !== Ws && (globalThis.$store = /* @__PURE__ */ de(o)), s.state = qf(o));
       }
     }), n.on.editInspectorState((s, o) => {
-      if (s.app === e && s.inspectorId === Ue) {
-        const r = s.nodeId === Bs ? t : t._s.get(s.nodeId);
+      if (s.app === e && s.inspectorId === Ke) {
+        const r = s.nodeId === Ws ? t : t._s.get(s.nodeId);
         if (!r)
-          return Le(`store "${s.nodeId}" not found`, "error");
-        const { path: i } = s;
-        Pr(r) ? i.unshift("state") : (i.length !== 1 || !r._customProperties.has(i[0]) || i[0] in r.$state) && i.unshift("$state"), An = !1, s.set(r, i, s.state.value), An = !0;
+          return He(`store "${s.nodeId}" not found`, "error");
+        const { path: a } = s;
+        Mr(r) ? a.unshift("state") : (a.length !== 1 || !r._customProperties.has(a[0]) || a[0] in r.$state) && a.unshift("$state"), Mn = !1, s.set(r, a, s.state.value), Mn = !0;
       }
     }), n.on.editComponentState((s) => {
       if (s.type.startsWith("🍍")) {
         const o = s.type.replace(/^🍍\s*/, ""), r = t._s.get(o);
         if (!r)
-          return Le(`store "${o}" not found`, "error");
-        const { path: i } = s;
-        if (i[0] !== "state")
-          return Le(`Invalid path for store "${o}":
-${i}
+          return He(`store "${o}" not found`, "error");
+        const { path: a } = s;
+        if (a[0] !== "state")
+          return He(`Invalid path for store "${o}":
+${a}
 Only state can be modified.`);
-        i[0] = "$state", An = !1, s.set(r, i, s.state.value), An = !0;
+        a[0] = "$state", Mn = !1, s.set(r, a, s.state.value), Mn = !0;
       }
     });
   });
 }
-function Bf(e, t) {
-  Gs.includes(ro(t.$id)) || Gs.push(ro(t.$id)), ka({
+function Xf(e, t) {
+  qs.includes(lo(t.$id)) || qs.push(lo(t.$id)), Va({
     id: "dev.esm.pinia",
     label: "Pinia 🍍",
     logo: "https://pinia.vuejs.org/logo.svg",
     packageName: "pinia",
     homepage: "https://pinia.vuejs.org",
-    componentStateTypes: Gs,
+    componentStateTypes: qs,
     app: e,
     settings: {
       logStoreChanges: {
@@ -5803,153 +5822,153 @@ function Bf(e, t) {
     }
   }, (n) => {
     const s = typeof n.now == "function" ? n.now.bind(n) : Date.now;
-    t.$onAction(({ after: i, onError: l, name: a, args: f }) => {
-      const p = Ra++;
+    t.$onAction(({ after: a, onError: c, name: u, args: p }) => {
+      const h = Ba++;
       n.addTimelineEvent({
-        layerId: gn,
+        layerId: bn,
         event: {
           time: s(),
-          title: "🛫 " + a,
+          title: "🛫 " + u,
           subtitle: "start",
           data: {
-            store: at(t.$id),
-            action: at(a),
-            args: f
+            store: gt(t.$id),
+            action: gt(u),
+            args: p
           },
-          groupId: p
+          groupId: h
         }
-      }), i((u) => {
-        tn = void 0, n.addTimelineEvent({
-          layerId: gn,
+      }), a((f) => {
+        ln = void 0, n.addTimelineEvent({
+          layerId: bn,
           event: {
             time: s(),
-            title: "🛬 " + a,
+            title: "🛬 " + u,
             subtitle: "end",
             data: {
-              store: at(t.$id),
-              action: at(a),
-              args: f,
-              result: u
+              store: gt(t.$id),
+              action: gt(u),
+              args: p,
+              result: f
             },
-            groupId: p
+            groupId: h
           }
         });
-      }), l((u) => {
-        tn = void 0, n.addTimelineEvent({
-          layerId: gn,
+      }), c((f) => {
+        ln = void 0, n.addTimelineEvent({
+          layerId: bn,
           event: {
             time: s(),
             logType: "error",
-            title: "💥 " + a,
+            title: "💥 " + u,
             subtitle: "end",
             data: {
-              store: at(t.$id),
-              action: at(a),
-              args: f,
-              error: u
+              store: gt(t.$id),
+              action: gt(u),
+              args: p,
+              error: f
             },
-            groupId: p
+            groupId: h
           }
         });
       });
-    }, !0), t._customProperties.forEach((i) => {
-      qe(() => d(t[i]), (l, a) => {
-        n.notifyComponentUpdate(), n.sendInspectorState(Ue), An && n.addTimelineEvent({
-          layerId: gn,
+    }, !0), t._customProperties.forEach((a) => {
+      qe(() => l(t[a]), (c, u) => {
+        n.notifyComponentUpdate(), n.sendInspectorState(Ke), Mn && n.addTimelineEvent({
+          layerId: bn,
           event: {
             time: s(),
             title: "Change",
-            subtitle: i,
+            subtitle: a,
             data: {
-              newValue: l,
-              oldValue: a
+              newValue: c,
+              oldValue: u
             },
-            groupId: tn
+            groupId: ln
           }
         });
       }, { deep: !0 });
-    }), t.$subscribe(({ events: i, type: l }, a) => {
-      if (n.notifyComponentUpdate(), n.sendInspectorState(Ue), !An)
+    }), t.$subscribe(({ events: a, type: c }, u) => {
+      if (n.notifyComponentUpdate(), n.sendInspectorState(Ke), !Mn)
         return;
-      const f = {
+      const p = {
         time: s(),
-        title: Ff(l),
-        data: Uf({ store: at(t.$id) }, jf(i)),
-        groupId: tn
+        title: Jf(c),
+        data: Qf({ store: gt(t.$id) }, zf(a)),
+        groupId: ln
       };
-      l === Tt.patchFunction ? f.subtitle = "⤵️" : l === Tt.patchObject ? f.subtitle = "🧩" : i && !Array.isArray(i) && (f.subtitle = i.type), i && (f.data["rawEvent(s)"] = {
+      c === jt.patchFunction ? p.subtitle = "⤵️" : c === jt.patchObject ? p.subtitle = "🧩" : a && !Array.isArray(a) && (p.subtitle = a.type), a && (p.data["rawEvent(s)"] = {
         _custom: {
           display: "DebuggerEvent",
           type: "object",
           tooltip: "raw DebuggerEvent[]",
-          value: i
+          value: a
         }
       }), n.addTimelineEvent({
-        layerId: gn,
-        event: f
+        layerId: bn,
+        event: p
       });
     }, { detached: !0, flush: "sync" });
     const o = t._hotUpdate;
-    t._hotUpdate = Zt((i) => {
-      o(i), n.addTimelineEvent({
-        layerId: gn,
+    t._hotUpdate = on((a) => {
+      o(a), n.addTimelineEvent({
+        layerId: bn,
         event: {
           time: s(),
           title: "🔥 " + t.$id,
           subtitle: "HMR update",
           data: {
-            store: at(t.$id),
-            info: at("HMR update")
+            store: gt(t.$id),
+            info: gt("HMR update")
           }
         }
-      }), n.notifyComponentUpdate(), n.sendInspectorTree(Ue), n.sendInspectorState(Ue);
+      }), n.notifyComponentUpdate(), n.sendInspectorTree(Ke), n.sendInspectorState(Ke);
     });
     const { $dispose: r } = t;
     t.$dispose = () => {
-      r(), n.notifyComponentUpdate(), n.sendInspectorTree(Ue), n.sendInspectorState(Ue), n.getSettings().logStoreChanges && Le(`Disposed "${t.$id}" store 🗑`);
-    }, n.notifyComponentUpdate(), n.sendInspectorTree(Ue), n.sendInspectorState(Ue), n.getSettings().logStoreChanges && Le(`"${t.$id}" store installed 🆕`);
+      r(), n.notifyComponentUpdate(), n.sendInspectorTree(Ke), n.sendInspectorState(Ke), n.getSettings().logStoreChanges && He(`Disposed "${t.$id}" store 🗑`);
+    }, n.notifyComponentUpdate(), n.sendInspectorTree(Ke), n.sendInspectorState(Ke), n.getSettings().logStoreChanges && He(`"${t.$id}" store installed 🆕`);
   });
 }
-let Ra = 0, tn;
-function Pi(e, t, n) {
-  const s = t.reduce((o, r) => (o[r] = (/* @__PURE__ */ ne(e))[r], o), {});
+let Ba = 0, ln;
+function Li(e, t, n) {
+  const s = t.reduce((o, r) => (o[r] = (/* @__PURE__ */ de(e))[r], o), {});
   for (const o in s)
     e[o] = function() {
-      const r = Ra, i = n ? new Proxy(e, {
-        get(...a) {
-          return tn = r, Reflect.get(...a);
+      const r = Ba, a = n ? new Proxy(e, {
+        get(...u) {
+          return ln = r, Reflect.get(...u);
         },
-        set(...a) {
-          return tn = r, Reflect.set(...a);
+        set(...u) {
+          return ln = r, Reflect.set(...u);
         }
       }) : e;
-      tn = r;
-      const l = s[o].apply(i, arguments);
-      return tn = void 0, l;
+      ln = r;
+      const c = s[o].apply(a, arguments);
+      return ln = void 0, c;
     };
 }
-function Gf({ app: e, store: t, options: n }) {
+function Zf({ app: e, store: t, options: n }) {
   if (!t.$id.startsWith("__hot:")) {
     if (t._isOptionsAPI = !!n.state, !t._p._testing) {
-      Pi(t, Object.keys(n.actions), t._isOptionsAPI);
+      Li(t, Object.keys(n.actions), t._isOptionsAPI);
       const s = t._hotUpdate;
-      (/* @__PURE__ */ ne(t))._hotUpdate = function(o) {
-        s.apply(this, arguments), Pi(t, Object.keys(o._hmrPayload.actions), !!t._isOptionsAPI);
+      (/* @__PURE__ */ de(t))._hotUpdate = function(o) {
+        s.apply(this, arguments), Li(t, Object.keys(o._hmrPayload.actions), !!t._isOptionsAPI);
       };
     }
-    Bf(
+    Xf(
       e,
       // FIXME: is there a way to allow the assignment from Store<Id, S, G, A> to StoreGeneric?
       t
     );
   }
 }
-function Wf() {
-  const e = dl(!0), t = e.run(() => /* @__PURE__ */ me({}));
+function ep() {
+  const e = yl(!0), t = e.run(() => /* @__PURE__ */ Z({}));
   let n = [], s = [];
-  const o = Zt({
+  const o = on({
     install(r) {
-      gs(o), o._a = r, r.provide($a, o), r.config.globalProperties.$pinia = o, process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test" && en && Hf(r, o), s.forEach((i) => n.push(i)), s = [];
+      vs(o), o._a = r, r.provide(Ia, o), r.config.globalProperties.$pinia = o, process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test" && rn && Yf(r, o), s.forEach((a) => n.push(a)), s = [];
     },
     use(r) {
       return this._a ? n.push(r) : s.push(r), this;
@@ -5962,345 +5981,345 @@ function Wf() {
     _s: /* @__PURE__ */ new Map(),
     state: t
   });
-  return process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test" && en && typeof Proxy < "u" && o.use(Gf), o;
+  return process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test" && rn && typeof Proxy < "u" && o.use(Zf), o;
 }
-function Ia(e, t) {
+function Ka(e, t) {
   for (const n in t) {
     const s = t[n];
     if (!(n in e))
       continue;
     const o = e[n];
-    Sn(o) && Sn(s) && !/* @__PURE__ */ Ee(s) && !/* @__PURE__ */ it(s) ? e[n] = Ia(o, s) : e[n] = s;
+    Cn(o) && Cn(s) && !/* @__PURE__ */ ke(s) && !/* @__PURE__ */ ht(s) ? e[n] = Ka(o, s) : e[n] = s;
   }
   return e;
 }
-const Ma = () => {
+const Wa = () => {
 };
-function Vi(e, t, n, s = Ma) {
+function ji(e, t, n, s = Wa) {
   e.push(t);
   const o = () => {
     const r = e.indexOf(t);
     r > -1 && (e.splice(r, 1), s());
   };
-  return !n && fl() && Sc(o), o;
+  return !n && El() && Rc(o), o;
 }
-function xn(e, ...t) {
+function Rn(e, ...t) {
   e.slice().forEach((n) => {
     n(...t);
   });
 }
-const Kf = (e) => e(), Ai = Symbol(), To = Symbol();
-function Qo(e, t) {
+const tp = (e) => e(), Ui = Symbol(), Ao = Symbol();
+function tr(e, t) {
   e instanceof Map && t instanceof Map ? t.forEach((n, s) => e.set(s, n)) : e instanceof Set && t instanceof Set && t.forEach(e.add, e);
   for (const n in t) {
     if (!t.hasOwnProperty(n))
       continue;
     const s = t[n], o = e[n];
-    Sn(o) && Sn(s) && e.hasOwnProperty(n) && !/* @__PURE__ */ Ee(s) && !/* @__PURE__ */ it(s) ? e[n] = Qo(o, s) : e[n] = s;
+    Cn(o) && Cn(s) && e.hasOwnProperty(n) && !/* @__PURE__ */ ke(s) && !/* @__PURE__ */ ht(s) ? e[n] = tr(o, s) : e[n] = s;
   }
   return e;
 }
-const zf = process.env.NODE_ENV !== "production" ? Symbol("pinia:skipHydration") : (
+const np = process.env.NODE_ENV !== "production" ? Symbol("pinia:skipHydration") : (
   /* istanbul ignore next */
   Symbol()
 );
-function qf(e) {
-  return !Sn(e) || !e.hasOwnProperty(zf);
+function sp(e) {
+  return !Cn(e) || !e.hasOwnProperty(np);
 }
-const { assign: rt } = Object;
-function Ri(e) {
-  return !!(/* @__PURE__ */ Ee(e) && e.effect);
+const { assign: pt } = Object;
+function Hi(e) {
+  return !!(/* @__PURE__ */ ke(e) && e.effect);
 }
-function Ii(e, t, n, s) {
-  const { state: o, actions: r, getters: i } = t, l = n.state.value[e];
-  let a;
-  function f() {
-    !l && (process.env.NODE_ENV === "production" || !s) && (n.state.value[e] = o ? o() : {});
-    const p = process.env.NODE_ENV !== "production" && s ? (
+function Gi(e, t, n, s) {
+  const { state: o, actions: r, getters: a } = t, c = n.state.value[e];
+  let u;
+  function p() {
+    !c && (process.env.NODE_ENV === "production" || !s) && (n.state.value[e] = o ? o() : {});
+    const h = process.env.NODE_ENV !== "production" && s ? (
       // use ref() to unwrap refs inside state TODO: check if this is still necessary
-      /* @__PURE__ */ Kr((/* @__PURE__ */ me(o ? o() : {})).value)
-    ) : /* @__PURE__ */ Kr(n.state.value[e]);
-    return rt(p, r, Object.keys(i || {}).reduce((u, m) => (process.env.NODE_ENV !== "production" && m in p && console.warn(`[🍍]: A getter cannot have the same name as another state property. Rename one of them. Found with "${m}" in store "${e}".`), u[m] = Zt(ue(() => {
-      gs(n);
-      const b = n._s.get(e);
-      return i[m].call(b, b);
-    })), u), {}));
+      /* @__PURE__ */ Zr((/* @__PURE__ */ Z(o ? o() : {})).value)
+    ) : /* @__PURE__ */ Zr(n.state.value[e]);
+    return pt(h, r, Object.keys(a || {}).reduce((f, _) => (process.env.NODE_ENV !== "production" && _ in h && console.warn(`[🍍]: A getter cannot have the same name as another state property. Rename one of them. Found with "${_}" in store "${e}".`), f[_] = on(ne(() => {
+      vs(n);
+      const g = n._s.get(e);
+      return a[_].call(g, g);
+    })), f), {}));
   }
-  return a = Xo(e, f, t, n, s, !0), a;
+  return u = nr(e, p, t, n, s, !0), u;
 }
-function Xo(e, t, n = {}, s, o, r) {
-  let i;
-  const l = rt({ actions: {} }, n);
+function nr(e, t, n = {}, s, o, r) {
+  let a;
+  const c = pt({ actions: {} }, n);
   if (process.env.NODE_ENV !== "production" && !s._e.active)
     throw new Error("Pinia destroyed");
-  const a = { deep: !0 };
-  process.env.NODE_ENV !== "production" && (a.onTrigger = (M) => {
-    f ? b = M : f == !1 && !v._hotUpdating && (Array.isArray(b) ? b.push(M) : console.error("🍍 debuggerEvents should be an array. This is most likely an internal Pinia bug."));
+  const u = { deep: !0 };
+  process.env.NODE_ENV !== "production" && (u.onTrigger = (M) => {
+    p ? g = M : p == !1 && !b._hotUpdating && (Array.isArray(g) ? g.push(M) : console.error("🍍 debuggerEvents should be an array. This is most likely an internal Pinia bug."));
   });
-  let f, p, u = [], m = [], b;
-  const T = s.state.value[e];
-  !r && !T && (process.env.NODE_ENV === "production" || !o) && (s.state.value[e] = {});
-  const $ = /* @__PURE__ */ me({});
-  let K;
-  function F(M) {
-    let C;
-    f = p = !1, process.env.NODE_ENV !== "production" && (b = []), typeof M == "function" ? (M(s.state.value[e]), C = {
-      type: Tt.patchFunction,
+  let p, h, f = [], _ = [], g;
+  const k = s.state.value[e];
+  !r && !k && (process.env.NODE_ENV === "production" || !o) && (s.state.value[e] = {});
+  const O = /* @__PURE__ */ Z({});
+  let W;
+  function V(M) {
+    let A;
+    p = h = !1, process.env.NODE_ENV !== "production" && (g = []), typeof M == "function" ? (M(s.state.value[e]), A = {
+      type: jt.patchFunction,
       storeId: e,
-      events: b
-    }) : (Qo(s.state.value[e], M), C = {
-      type: Tt.patchObject,
+      events: g
+    }) : (tr(s.state.value[e], M), A = {
+      type: jt.patchObject,
       payload: M,
       storeId: e,
-      events: b
+      events: g
     });
-    const z = K = Symbol();
-    ds().then(() => {
-      K === z && (f = !0);
-    }), p = !0, xn(u, C, s.state.value[e]);
+    const Q = W = Symbol();
+    ps().then(() => {
+      W === Q && (p = !0);
+    }), h = !0, Rn(f, A, s.state.value[e]);
   }
-  const A = r ? function() {
-    const { state: C } = n, z = C ? C() : {};
-    this.$patch((ae) => {
-      rt(ae, z);
+  const I = r ? function() {
+    const { state: A } = n, Q = A ? A() : {};
+    this.$patch((he) => {
+      pt(he, Q);
     });
   } : (
     /* istanbul ignore next */
     process.env.NODE_ENV !== "production" ? () => {
       throw new Error(`🍍: Store "${e}" is built using the setup syntax and does not implement $reset().`);
-    } : Ma
+    } : Wa
   );
-  function I() {
-    i.stop(), u = [], m = [], s._s.delete(e);
+  function L() {
+    a.stop(), f = [], _ = [], s._s.delete(e);
   }
-  const te = (M, C = "") => {
-    if (Ai in M)
-      return M[To] = C, M;
-    const z = function() {
-      gs(s);
-      const ae = Array.from(arguments), je = [], Pe = [];
-      function ce(Ne) {
-        je.push(Ne);
+  const te = (M, A = "") => {
+    if (Ui in M)
+      return M[Ao] = A, M;
+    const Q = function() {
+      vs(s);
+      const he = Array.from(arguments), Re = [], Se = [];
+      function fe(Ee) {
+        Re.push(Ee);
       }
-      function ie(Ne) {
-        Pe.push(Ne);
+      function ue(Ee) {
+        Se.push(Ee);
       }
-      xn(m, {
-        args: ae,
-        name: z[To],
-        store: v,
-        after: ce,
-        onError: ie
+      Rn(_, {
+        args: he,
+        name: Q[Ao],
+        store: b,
+        after: fe,
+        onError: ue
       });
-      let oe;
+      let se;
       try {
-        oe = M.apply(this && this.$id === e ? this : v, ae);
-      } catch (Ne) {
-        throw xn(Pe, Ne), Ne;
+        se = M.apply(this && this.$id === e ? this : b, he);
+      } catch (Ee) {
+        throw Rn(Se, Ee), Ee;
       }
-      return oe instanceof Promise ? oe.then((Ne) => (xn(je, Ne), Ne)).catch((Ne) => (xn(Pe, Ne), Promise.reject(Ne))) : (xn(je, oe), oe);
+      return se instanceof Promise ? se.then((Ee) => (Rn(Re, Ee), Ee)).catch((Ee) => (Rn(Se, Ee), Promise.reject(Ee))) : (Rn(Re, se), se);
     };
-    return z[Ai] = !0, z[To] = C, z;
-  }, O = /* @__PURE__ */ Zt({
+    return Q[Ui] = !0, Q[Ao] = A, Q;
+  }, D = /* @__PURE__ */ on({
     actions: {},
     getters: {},
     state: [],
-    hotState: $
-  }), S = {
+    hotState: O
+  }), T = {
     _p: s,
     // _s: scope,
     $id: e,
-    $onAction: Vi.bind(null, m),
-    $patch: F,
-    $reset: A,
-    $subscribe(M, C = {}) {
-      const z = Vi(u, M, C.detached, () => ae()), ae = i.run(() => qe(() => s.state.value[e], (je) => {
-        (C.flush === "sync" ? p : f) && M({
+    $onAction: ji.bind(null, _),
+    $patch: V,
+    $reset: I,
+    $subscribe(M, A = {}) {
+      const Q = ji(f, M, A.detached, () => he()), he = a.run(() => qe(() => s.state.value[e], (Re) => {
+        (A.flush === "sync" ? h : p) && M({
           storeId: e,
-          type: Tt.direct,
-          events: b
-        }, je);
-      }, rt({}, a, C)));
-      return z;
+          type: jt.direct,
+          events: g
+        }, Re);
+      }, pt({}, u, A)));
+      return Q;
     },
-    $dispose: I
-  }, v = /* @__PURE__ */ on(process.env.NODE_ENV !== "production" || process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test" && en ? rt(
+    $dispose: L
+  }, b = /* @__PURE__ */ cn(process.env.NODE_ENV !== "production" || process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test" && rn ? pt(
     {
-      _hmrPayload: O,
-      _customProperties: Zt(/* @__PURE__ */ new Set())
+      _hmrPayload: D,
+      _customProperties: on(/* @__PURE__ */ new Set())
       // devtools custom properties
     },
-    S
+    T
     // must be added later
     // setupStore
-  ) : S);
-  s._s.set(e, v);
-  const N = (s._a && s._a.runWithContext || Kf)(() => s._e.run(() => (i = dl()).run(() => t({ action: te }))));
-  for (const M in N) {
-    const C = N[M];
-    if (/* @__PURE__ */ Ee(C) && !Ri(C) || /* @__PURE__ */ it(C))
-      process.env.NODE_ENV !== "production" && o ? Cs($.value, M, /* @__PURE__ */ Ps(N, M)) : r || (T && qf(C) && (/* @__PURE__ */ Ee(C) ? C.value = T[M] : Qo(C, T[M])), s.state.value[e][M] = C), process.env.NODE_ENV !== "production" && O.state.push(M);
-    else if (typeof C == "function") {
-      const z = process.env.NODE_ENV !== "production" && o ? C : te(C, M);
-      N[M] = z, process.env.NODE_ENV !== "production" && (O.actions[M] = C), l.actions[M] = C;
-    } else process.env.NODE_ENV !== "production" && Ri(C) && (O.getters[M] = r ? (
+  ) : T);
+  s._s.set(e, b);
+  const x = (s._a && s._a.runWithContext || tp)(() => s._e.run(() => (a = yl()).run(() => t({ action: te }))));
+  for (const M in x) {
+    const A = x[M];
+    if (/* @__PURE__ */ ke(A) && !Hi(A) || /* @__PURE__ */ ht(A))
+      process.env.NODE_ENV !== "production" && o ? Ps(O.value, M, /* @__PURE__ */ Vs(x, M)) : r || (k && sp(A) && (/* @__PURE__ */ ke(A) ? A.value = k[M] : tr(A, k[M])), s.state.value[e][M] = A), process.env.NODE_ENV !== "production" && D.state.push(M);
+    else if (typeof A == "function") {
+      const Q = process.env.NODE_ENV !== "production" && o ? A : te(A, M);
+      x[M] = Q, process.env.NODE_ENV !== "production" && (D.actions[M] = A), c.actions[M] = A;
+    } else process.env.NODE_ENV !== "production" && Hi(A) && (D.getters[M] = r ? (
       // @ts-expect-error
       n.getters[M]
-    ) : C, en && (N._getters || // @ts-expect-error: same
-    (N._getters = Zt([]))).push(M));
+    ) : A, rn && (x._getters || // @ts-expect-error: same
+    (x._getters = on([]))).push(M));
   }
-  if (rt(v, N), rt(/* @__PURE__ */ ne(v), N), Object.defineProperty(v, "$state", {
-    get: () => process.env.NODE_ENV !== "production" && o ? $.value : s.state.value[e],
+  if (pt(b, x), pt(/* @__PURE__ */ de(b), x), Object.defineProperty(b, "$state", {
+    get: () => process.env.NODE_ENV !== "production" && o ? O.value : s.state.value[e],
     set: (M) => {
       if (process.env.NODE_ENV !== "production" && o)
         throw new Error("cannot set hotState");
-      F((C) => {
-        rt(C, M);
+      V((A) => {
+        pt(A, M);
       });
     }
-  }), process.env.NODE_ENV !== "production" && (v._hotUpdate = Zt((M) => {
-    v._hotUpdating = !0, M._hmrPayload.state.forEach((C) => {
-      if (C in v.$state) {
-        const z = M.$state[C], ae = v.$state[C];
-        typeof z == "object" && Sn(z) && Sn(ae) ? Ia(z, ae) : M.$state[C] = ae;
+  }), process.env.NODE_ENV !== "production" && (b._hotUpdate = on((M) => {
+    b._hotUpdating = !0, M._hmrPayload.state.forEach((A) => {
+      if (A in b.$state) {
+        const Q = M.$state[A], he = b.$state[A];
+        typeof Q == "object" && Cn(Q) && Cn(he) ? Ka(Q, he) : M.$state[A] = he;
       }
-      Cs(v, C, /* @__PURE__ */ Ps(M.$state, C));
-    }), Object.keys(v.$state).forEach((C) => {
-      C in M.$state || xo(v, C);
-    }), f = !1, p = !1, s.state.value[e] = /* @__PURE__ */ Ps(M._hmrPayload, "hotState"), p = !0, ds().then(() => {
-      f = !0;
+      Ps(b, A, /* @__PURE__ */ Vs(M.$state, A));
+    }), Object.keys(b.$state).forEach((A) => {
+      A in M.$state || Ro(b, A);
+    }), p = !1, h = !1, s.state.value[e] = /* @__PURE__ */ Vs(M._hmrPayload, "hotState"), h = !0, ps().then(() => {
+      p = !0;
     });
-    for (const C in M._hmrPayload.actions) {
-      const z = M[C];
-      Cs(v, C, te(z, C));
+    for (const A in M._hmrPayload.actions) {
+      const Q = M[A];
+      Ps(b, A, te(Q, A));
     }
-    for (const C in M._hmrPayload.getters) {
-      const z = M._hmrPayload.getters[C], ae = r ? (
+    for (const A in M._hmrPayload.getters) {
+      const Q = M._hmrPayload.getters[A], he = r ? (
         // special handling of options api
-        ue(() => (gs(s), z.call(v, v)))
-      ) : z;
-      Cs(v, C, ae);
+        ne(() => (vs(s), Q.call(b, b)))
+      ) : Q;
+      Ps(b, A, he);
     }
-    Object.keys(v._hmrPayload.getters).forEach((C) => {
-      C in M._hmrPayload.getters || xo(v, C);
-    }), Object.keys(v._hmrPayload.actions).forEach((C) => {
-      C in M._hmrPayload.actions || xo(v, C);
-    }), v._hmrPayload = M._hmrPayload, v._getters = M._getters, v._hotUpdating = !1;
-  })), process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test" && en) {
+    Object.keys(b._hmrPayload.getters).forEach((A) => {
+      A in M._hmrPayload.getters || Ro(b, A);
+    }), Object.keys(b._hmrPayload.actions).forEach((A) => {
+      A in M._hmrPayload.actions || Ro(b, A);
+    }), b._hmrPayload = M._hmrPayload, b._getters = M._getters, b._hotUpdating = !1;
+  })), process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test" && rn) {
     const M = {
       writable: !0,
       configurable: !0,
       // avoid warning on devtools trying to display this property
       enumerable: !1
     };
-    ["_p", "_hmrPayload", "_getters", "_customProperties"].forEach((C) => {
-      Object.defineProperty(v, C, rt({ value: v[C] }, M));
+    ["_p", "_hmrPayload", "_getters", "_customProperties"].forEach((A) => {
+      Object.defineProperty(b, A, pt({ value: b[A] }, M));
     });
   }
   return s._p.forEach((M) => {
-    if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test" && en) {
-      const C = i.run(() => M({
-        store: v,
+    if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test" && rn) {
+      const A = a.run(() => M({
+        store: b,
         app: s._a,
         pinia: s,
-        options: l
+        options: c
       }));
-      Object.keys(C || {}).forEach((z) => v._customProperties.add(z)), rt(v, C);
+      Object.keys(A || {}).forEach((Q) => b._customProperties.add(Q)), pt(b, A);
     } else
-      rt(v, i.run(() => M({
-        store: v,
+      pt(b, a.run(() => M({
+        store: b,
         app: s._a,
         pinia: s,
-        options: l
+        options: c
       })));
-  }), process.env.NODE_ENV !== "production" && v.$state && typeof v.$state == "object" && typeof v.$state.constructor == "function" && !v.$state.constructor.toString().includes("[native code]") && console.warn(`[🍍]: The "state" must be a plain object. It cannot be
+  }), process.env.NODE_ENV !== "production" && b.$state && typeof b.$state == "object" && typeof b.$state.constructor == "function" && !b.$state.constructor.toString().includes("[native code]") && console.warn(`[🍍]: The "state" must be a plain object. It cannot be
 	state: () => new MyClass()
-Found in store "${v.$id}".`), T && r && n.hydrate && n.hydrate(v.$state, T), f = !0, p = !0, v;
+Found in store "${b.$id}".`), k && r && n.hydrate && n.hydrate(b.$state, k), p = !0, h = !0, b;
 }
 /*! #__NO_SIDE_EFFECTS__ */
 // @__NO_SIDE_EFFECTS__
-function La(e, t, n) {
+function Fr(e, t, n) {
   let s, o;
   const r = typeof t == "function";
   if (typeof e == "string")
     s = e, o = r ? n : t;
   else if (o = e, s = e.id, process.env.NODE_ENV !== "production" && typeof s != "string")
     throw new Error('[🍍]: "defineStore()" must be passed a store id as its first argument.');
-  function i(l, a) {
-    const f = bu();
-    if (l = // in test mode, ignore the argument provided as we can always retrieve a
+  function a(c, u) {
+    const p = ku();
+    if (c = // in test mode, ignore the argument provided as we can always retrieve a
     // pinia instance with getActivePinia()
-    (process.env.NODE_ENV === "test" && ns && ns._testing ? null : l) || (f ? ft($a, null) : null), l && gs(l), process.env.NODE_ENV !== "production" && !ns)
+    (process.env.NODE_ENV === "test" && ss && ss._testing ? null : c) || (p ? _t(Ia, null) : null), c && vs(c), process.env.NODE_ENV !== "production" && !ss)
       throw new Error(`[🍍]: "getActivePinia()" was called but there was no active Pinia. Are you trying to use a store before calling "app.use(pinia)"?
 See https://pinia.vuejs.org/core-concepts/outside-component-usage.html for help.
 This will fail in production.`);
-    l = ns, l._s.has(s) || (r ? Xo(s, t, o, l) : Ii(s, o, l), process.env.NODE_ENV !== "production" && (i._pinia = l));
-    const p = l._s.get(s);
-    if (process.env.NODE_ENV !== "production" && a) {
-      const u = "__hot:" + s, m = r ? Xo(u, t, o, l, !0) : Ii(u, rt({}, o), l, !0);
-      a._hotUpdate(m), delete l.state.value[u], l._s.delete(u);
+    c = ss, c._s.has(s) || (r ? nr(s, t, o, c) : Gi(s, o, c), process.env.NODE_ENV !== "production" && (a._pinia = c));
+    const h = c._s.get(s);
+    if (process.env.NODE_ENV !== "production" && u) {
+      const f = "__hot:" + s, _ = r ? nr(f, t, o, c, !0) : Gi(f, pt({}, o), c, !0);
+      u._hotUpdate(_), delete c.state.value[f], c._s.delete(f);
     }
-    if (process.env.NODE_ENV !== "production" && en) {
-      const u = Kn();
-      if (u && u.proxy && // avoid adding stores that are just built for hot module replacement
-      !a) {
-        const m = u.proxy, b = "_pStores" in m ? m._pStores : m._pStores = {};
-        b[s] = p;
+    if (process.env.NODE_ENV !== "production" && rn) {
+      const f = zn();
+      if (f && f.proxy && // avoid adding stores that are just built for hot module replacement
+      !u) {
+        const _ = f.proxy, g = "_pStores" in _ ? _._pStores : _._pStores = {};
+        g[s] = h;
       }
     }
-    return p;
+    return h;
   }
-  return i.$id = s, i;
+  return a.$id = s, a;
 }
-function ja(e) {
+function qa(e) {
   {
-    const t = /* @__PURE__ */ ne(e), n = {};
+    const t = /* @__PURE__ */ de(e), n = {};
     for (const s in t) {
       const o = t[s];
       o.effect ? n[s] = // ...
-      ue({
+      ne({
         get: () => e[s],
         set(r) {
           e[s] = r;
         }
-      }) : (/* @__PURE__ */ Ee(o) || /* @__PURE__ */ it(o)) && (n[s] = // ---
-      /* @__PURE__ */ Ps(e, s));
+      }) : (/* @__PURE__ */ ke(o) || /* @__PURE__ */ ht(o)) && (n[s] = // ---
+      /* @__PURE__ */ Vs(e, s));
     }
     return n;
   }
 }
-let Jf = 0;
-const zn = /* @__PURE__ */ La("feedback", () => {
-  const e = /* @__PURE__ */ me([]), t = /* @__PURE__ */ me(null);
+let op = 0;
+const hn = /* @__PURE__ */ Fr("feedback", () => {
+  const e = /* @__PURE__ */ Z([]), t = /* @__PURE__ */ Z(null);
   let n = null;
-  function s(l) {
-    const a = {
-      id: ++Jf,
-      title: l.title,
-      message: l.message,
-      tone: l.tone || "info"
+  function s(c) {
+    const u = {
+      id: ++op,
+      title: c.title,
+      message: c.message,
+      tone: c.tone || "info"
     };
-    e.value.push(a);
-    const f = typeof l.durationMs == "number" ? l.durationMs : 3600;
-    return typeof window < "u" && f > 0 && window.setTimeout(() => o(a.id), f), a.id;
+    e.value.push(u);
+    const p = typeof c.durationMs == "number" ? c.durationMs : 3600;
+    return typeof window < "u" && p > 0 && window.setTimeout(() => o(u.id), p), u.id;
   }
-  function o(l) {
-    e.value = e.value.filter((a) => a.id !== l);
+  function o(c) {
+    e.value = e.value.filter((u) => u.id !== c);
   }
-  function r(l) {
+  function r(c) {
     return n && (n(!1), n = null), t.value = {
-      title: l.title,
-      message: l.message,
-      confirmLabel: l.confirmLabel || "Confirm",
-      cancelLabel: l.cancelLabel || "Cancel",
-      tone: l.tone || "default"
-    }, new Promise((a) => {
-      n = a;
+      title: c.title,
+      message: c.message,
+      confirmLabel: c.confirmLabel || "Confirm",
+      cancelLabel: c.cancelLabel || "Cancel",
+      tone: c.tone || "default"
+    }, new Promise((u) => {
+      n = u;
     });
   }
-  function i(l) {
-    const a = n;
-    n = null, t.value = null, a == null || a(l);
+  function a(c) {
+    const u = n;
+    n = null, t.value = null, u == null || u(c);
   }
   return {
     toasts: e,
@@ -6308,134 +6327,134 @@ const zn = /* @__PURE__ */ La("feedback", () => {
     pushToast: s,
     dismissToast: o,
     confirm: r,
-    resolveConfirm: i
+    resolveConfirm: a
   };
-}), Yf = { class: "confirm-dialog__header" }, Qf = { class: "page-card__title" }, Xf = { class: "confirm-dialog__body" }, Zf = { class: "confirm-dialog__footer" }, ep = /* @__PURE__ */ Be({
+}), rp = { class: "confirm-dialog__header" }, ip = { class: "page-card__title" }, lp = { class: "confirm-dialog__body" }, ap = { class: "confirm-dialog__footer" }, cp = /* @__PURE__ */ Ve({
   __name: "ConfirmDialog",
   setup(e) {
-    const t = zn(), { confirmRequest: n } = ja(t), s = ue(() => !!n.value);
+    const t = hn(), { confirmRequest: n } = qa(t), s = ne(() => !!n.value);
     return (o, r) => {
-      var i, l, a, f, p, u;
-      return s.value ? (D(), V("div", {
+      var a, c, u, p, h, f;
+      return s.value ? (E(), w("div", {
         key: 0,
         class: "confirm-backdrop",
-        onClick: r[2] || (r[2] = ff((m) => d(t).resolveConfirm(!1), ["self"]))
+        onClick: r[2] || (r[2] = Vr((_) => l(t).resolveConfirm(!1), ["self"]))
       }, [
-        c("section", {
-          class: $e(["confirm-dialog", { "confirm-dialog--danger": ((i = d(n)) == null ? void 0 : i.tone) === "danger" }])
+        i("section", {
+          class: ge(["confirm-dialog", { "confirm-dialog--danger": ((a = l(n)) == null ? void 0 : a.tone) === "danger" }])
         }, [
-          c("header", Yf, [
-            r[3] || (r[3] = c("p", { class: "page-card__eyebrow" }, "Confirm", -1)),
-            c("h2", Qf, g((l = d(n)) == null ? void 0 : l.title), 1)
+          i("header", rp, [
+            r[3] || (r[3] = i("p", { class: "page-card__eyebrow" }, "Confirm", -1)),
+            i("h2", ip, d((c = l(n)) == null ? void 0 : c.title), 1)
           ]),
-          c("p", Xf, g((a = d(n)) == null ? void 0 : a.message), 1),
-          c("footer", Zf, [
-            c("button", {
+          i("p", lp, d((u = l(n)) == null ? void 0 : u.message), 1),
+          i("footer", ap, [
+            i("button", {
               class: "inline-link",
               type: "button",
-              onClick: r[0] || (r[0] = (m) => d(t).resolveConfirm(!1))
-            }, g((f = d(n)) == null ? void 0 : f.cancelLabel), 1),
-            c("button", {
-              class: $e(["inline-link", { "inline-link--danger": ((p = d(n)) == null ? void 0 : p.tone) === "danger" }]),
+              onClick: r[0] || (r[0] = (_) => l(t).resolveConfirm(!1))
+            }, d((p = l(n)) == null ? void 0 : p.cancelLabel), 1),
+            i("button", {
+              class: ge(["inline-link", { "inline-link--danger": ((h = l(n)) == null ? void 0 : h.tone) === "danger" }]),
               type: "button",
-              onClick: r[1] || (r[1] = (m) => d(t).resolveConfirm(!0))
-            }, g((u = d(n)) == null ? void 0 : u.confirmLabel), 3)
+              onClick: r[1] || (r[1] = (_) => l(t).resolveConfirm(!0))
+            }, d((f = l(n)) == null ? void 0 : f.confirmLabel), 3)
           ])
         ], 2)
-      ])) : xe("", !0);
+      ])) : Ce("", !0);
     };
   }
-}), tp = {
+}), up = {
   class: "toast-viewport",
   "aria-live": "polite",
   "aria-atomic": "true"
-}, np = { class: "toast-card__content" }, sp = { key: 0 }, op = ["onClick"], rp = /* @__PURE__ */ Be({
+}, dp = { class: "toast-card__content" }, fp = { key: 0 }, pp = ["onClick"], hp = /* @__PURE__ */ Ve({
   __name: "ToastViewport",
   setup(e) {
-    const t = zn(), { toasts: n } = ja(t);
-    return (s, o) => (D(), V("div", tp, [
-      (D(!0), V(X, null, ke(d(n), (r) => (D(), V("article", {
+    const t = hn(), { toasts: n } = qa(t);
+    return (s, o) => (E(), w("div", up, [
+      (E(!0), w(Y, null, ye(l(n), (r) => (E(), w("article", {
         key: r.id,
-        class: $e(["toast-card", `toast-card--${r.tone}`])
+        class: ge(["toast-card", `toast-card--${r.tone}`])
       }, [
-        c("div", np, [
-          r.title ? (D(), V("strong", sp, g(r.title), 1)) : xe("", !0),
-          c("p", null, g(r.message), 1)
+        i("div", dp, [
+          r.title ? (E(), w("strong", fp, d(r.title), 1)) : Ce("", !0),
+          i("p", null, d(r.message), 1)
         ]),
-        c("button", {
+        i("button", {
           class: "toast-card__close",
           type: "button",
-          onClick: (i) => d(t).dismissToast(r.id)
-        }, " × ", 8, op)
+          onClick: (a) => l(t).dismissToast(r.id)
+        }, " × ", 8, pp)
       ], 2))), 128))
     ]));
   }
 });
-function ip() {
-  return Fa().__VUE_DEVTOOLS_GLOBAL_HOOK__;
+function _p() {
+  return za().__VUE_DEVTOOLS_GLOBAL_HOOK__;
 }
-function Fa() {
+function za() {
   return typeof navigator < "u" && typeof window < "u" ? window : typeof globalThis < "u" ? globalThis : {};
 }
-const lp = typeof Proxy == "function", ap = "devtools-plugin:setup", cp = "plugin:settings:set";
-let Tn, Zo;
-function up() {
+const mp = typeof Proxy == "function", gp = "devtools-plugin:setup", vp = "plugin:settings:set";
+let An, sr;
+function bp() {
   var e;
-  return Tn !== void 0 || (typeof window < "u" && window.performance ? (Tn = !0, Zo = window.performance) : typeof globalThis < "u" && (!((e = globalThis.perf_hooks) === null || e === void 0) && e.performance) ? (Tn = !0, Zo = globalThis.perf_hooks.performance) : Tn = !1), Tn;
+  return An !== void 0 || (typeof window < "u" && window.performance ? (An = !0, sr = window.performance) : typeof globalThis < "u" && (!((e = globalThis.perf_hooks) === null || e === void 0) && e.performance) ? (An = !0, sr = globalThis.perf_hooks.performance) : An = !1), An;
 }
-function dp() {
-  return up() ? Zo.now() : Date.now();
+function yp() {
+  return bp() ? sr.now() : Date.now();
 }
-class fp {
+class Ep {
   constructor(t, n) {
     this.target = null, this.targetQueue = [], this.onQueue = [], this.plugin = t, this.hook = n;
     const s = {};
     if (t.settings)
-      for (const i in t.settings) {
-        const l = t.settings[i];
-        s[i] = l.defaultValue;
+      for (const a in t.settings) {
+        const c = t.settings[a];
+        s[a] = c.defaultValue;
       }
     const o = `__vue-devtools-plugin-settings__${t.id}`;
     let r = Object.assign({}, s);
     try {
-      const i = localStorage.getItem(o), l = JSON.parse(i);
-      Object.assign(r, l);
+      const a = localStorage.getItem(o), c = JSON.parse(a);
+      Object.assign(r, c);
     } catch {
     }
     this.fallbacks = {
       getSettings() {
         return r;
       },
-      setSettings(i) {
+      setSettings(a) {
         try {
-          localStorage.setItem(o, JSON.stringify(i));
+          localStorage.setItem(o, JSON.stringify(a));
         } catch {
         }
-        r = i;
+        r = a;
       },
       now() {
-        return dp();
+        return yp();
       }
-    }, n && n.on(cp, (i, l) => {
-      i === this.plugin.id && this.fallbacks.setSettings(l);
+    }, n && n.on(vp, (a, c) => {
+      a === this.plugin.id && this.fallbacks.setSettings(c);
     }), this.proxiedOn = new Proxy({}, {
-      get: (i, l) => this.target ? this.target.on[l] : (...a) => {
+      get: (a, c) => this.target ? this.target.on[c] : (...u) => {
         this.onQueue.push({
-          method: l,
-          args: a
+          method: c,
+          args: u
         });
       }
     }), this.proxiedTarget = new Proxy({}, {
-      get: (i, l) => this.target ? this.target[l] : l === "on" ? this.proxiedOn : Object.keys(this.fallbacks).includes(l) ? (...a) => (this.targetQueue.push({
-        method: l,
-        args: a,
+      get: (a, c) => this.target ? this.target[c] : c === "on" ? this.proxiedOn : Object.keys(this.fallbacks).includes(c) ? (...u) => (this.targetQueue.push({
+        method: c,
+        args: u,
         resolve: () => {
         }
-      }), this.fallbacks[l](...a)) : (...a) => new Promise((f) => {
+      }), this.fallbacks[c](...u)) : (...u) => new Promise((p) => {
         this.targetQueue.push({
-          method: l,
-          args: a,
-          resolve: f
+          method: c,
+          args: u,
+          resolve: p
         });
       })
     });
@@ -6448,17 +6467,17 @@ class fp {
       n.resolve(await this.target[n.method](...n.args));
   }
 }
-function pp(e, t) {
-  const n = e, s = Fa(), o = ip(), r = lp && n.enableEarlyProxy;
+function wp(e, t) {
+  const n = e, s = za(), o = _p(), r = mp && n.enableEarlyProxy;
   if (o && (s.__VUE_DEVTOOLS_PLUGIN_API_AVAILABLE__ || !r))
-    o.emit(ap, e, t);
+    o.emit(gp, e, t);
   else {
-    const i = r ? new fp(n, o) : null;
+    const a = r ? new Ep(n, o) : null;
     (s.__VUE_DEVTOOLS_PLUGINS__ = s.__VUE_DEVTOOLS_PLUGINS__ || []).push({
       pluginDescriptor: n,
       setupFn: t,
-      proxy: i
-    }), i && t(i.proxiedTarget);
+      proxy: a
+    }), a && t(a.proxiedTarget);
   }
 }
 /*!
@@ -6466,114 +6485,114 @@ function pp(e, t) {
  * (c) 2025 Eduardo San Martin Morote
  * @license MIT
  */
-const jt = typeof document < "u";
-function Ua(e) {
+const zt = typeof document < "u";
+function Ja(e) {
   return typeof e == "object" || "displayName" in e || "props" in e || "__vccOpts" in e;
 }
-function hp(e) {
-  return e.__esModule || e[Symbol.toStringTag] === "Module" || e.default && Ua(e.default);
+function Np(e) {
+  return e.__esModule || e[Symbol.toStringTag] === "Module" || e.default && Ja(e.default);
 }
-const ge = Object.assign;
-function Po(e, t) {
+const we = Object.assign;
+function Vo(e, t) {
   const n = {};
   for (const s in t) {
     const o = t[s];
-    n[s] = nt(o) ? o.map(e) : e(o);
+    n[s] = dt(o) ? o.map(e) : e(o);
   }
   return n;
 }
-const as = () => {
-}, nt = Array.isArray;
-function Mi(e, t) {
+const cs = () => {
+}, dt = Array.isArray;
+function Bi(e, t) {
   const n = {};
   for (const s in e) n[s] = s in t ? t[s] : e[s];
   return n;
 }
-function le(e) {
+function _e(e) {
   const t = Array.from(arguments).slice(1);
   console.warn.apply(console, ["[Vue Router warn]: " + e].concat(t));
 }
-const Ha = /#/g, gp = /&/g, mp = /\//g, _p = /=/g, vp = /\?/g, Ba = /\+/g, bp = /%5B/g, yp = /%5D/g, Ga = /%5E/g, Ep = /%60/g, Wa = /%7B/g, wp = /%7C/g, Ka = /%7D/g, Np = /%20/g;
-function Vr(e) {
-  return e == null ? "" : encodeURI("" + e).replace(wp, "|").replace(bp, "[").replace(yp, "]");
+const Qa = /#/g, $p = /&/g, Op = /\//g, Sp = /=/g, kp = /\?/g, Ya = /\+/g, Cp = /%5B/g, xp = /%5D/g, Xa = /%5E/g, Dp = /%60/g, Za = /%7B/g, Tp = /%7C/g, ec = /%7D/g, Pp = /%20/g;
+function Lr(e) {
+  return e == null ? "" : encodeURI("" + e).replace(Tp, "|").replace(Cp, "[").replace(xp, "]");
 }
-function Op(e) {
-  return Vr(e).replace(Wa, "{").replace(Ka, "}").replace(Ga, "^");
+function Rp(e) {
+  return Lr(e).replace(Za, "{").replace(ec, "}").replace(Xa, "^");
 }
-function er(e) {
-  return Vr(e).replace(Ba, "%2B").replace(Np, "+").replace(Ha, "%23").replace(gp, "%26").replace(Ep, "`").replace(Wa, "{").replace(Ka, "}").replace(Ga, "^");
+function or(e) {
+  return Lr(e).replace(Ya, "%2B").replace(Pp, "+").replace(Qa, "%23").replace($p, "%26").replace(Dp, "`").replace(Za, "{").replace(ec, "}").replace(Xa, "^");
 }
-function Sp(e) {
-  return er(e).replace(_p, "%3D");
+function Ap(e) {
+  return or(e).replace(Sp, "%3D");
 }
-function kp(e) {
-  return Vr(e).replace(Ha, "%23").replace(vp, "%3F");
+function Vp(e) {
+  return Lr(e).replace(Qa, "%23").replace(kp, "%3F");
 }
-function $p(e) {
-  return kp(e).replace(mp, "%2F");
+function Ip(e) {
+  return Vp(e).replace(Op, "%2F");
 }
-function Hn(e) {
+function Bn(e) {
   if (e == null) return null;
   try {
     return decodeURIComponent("" + e);
   } catch {
-    process.env.NODE_ENV !== "production" && le(`Error decoding "${e}". Using original value`);
+    process.env.NODE_ENV !== "production" && _e(`Error decoding "${e}". Using original value`);
   }
   return "" + e;
 }
-const Cp = /\/$/, Dp = (e) => e.replace(Cp, "");
-function Vo(e, t, n = "/") {
-  let s, o = {}, r = "", i = "";
-  const l = t.indexOf("#");
-  let a = t.indexOf("?");
-  return a = l >= 0 && a > l ? -1 : a, a >= 0 && (s = t.slice(0, a), r = t.slice(a, l > 0 ? l : t.length), o = e(r.slice(1))), l >= 0 && (s = s || t.slice(0, l), i = t.slice(l, t.length)), s = Pp(s ?? t, n), {
-    fullPath: s + r + i,
+const Mp = /\/$/, Fp = (e) => e.replace(Mp, "");
+function Io(e, t, n = "/") {
+  let s, o = {}, r = "", a = "";
+  const c = t.indexOf("#");
+  let u = t.indexOf("?");
+  return u = c >= 0 && u > c ? -1 : u, u >= 0 && (s = t.slice(0, u), r = t.slice(u, c > 0 ? c : t.length), o = e(r.slice(1))), c >= 0 && (s = s || t.slice(0, c), a = t.slice(c, t.length)), s = Up(s ?? t, n), {
+    fullPath: s + r + a,
     path: s,
     query: o,
-    hash: Hn(i)
+    hash: Bn(a)
   };
 }
-function xp(e, t) {
+function Lp(e, t) {
   const n = t.query ? e(t.query) : "";
   return t.path + (n && "?") + n + (t.hash || "");
 }
-function Li(e, t) {
+function Ki(e, t) {
   return !t || !e.toLowerCase().startsWith(t.toLowerCase()) ? e : e.slice(t.length) || "/";
 }
-function ji(e, t, n) {
+function Wi(e, t, n) {
   const s = t.matched.length - 1, o = n.matched.length - 1;
-  return s > -1 && s === o && an(t.matched[s], n.matched[o]) && za(t.params, n.params) && e(t.query) === e(n.query) && t.hash === n.hash;
+  return s > -1 && s === o && pn(t.matched[s], n.matched[o]) && tc(t.params, n.params) && e(t.query) === e(n.query) && t.hash === n.hash;
 }
-function an(e, t) {
+function pn(e, t) {
   return (e.aliasOf || e) === (t.aliasOf || t);
 }
-function za(e, t) {
+function tc(e, t) {
   if (Object.keys(e).length !== Object.keys(t).length) return !1;
-  for (var n in e) if (!Tp(e[n], t[n])) return !1;
+  for (var n in e) if (!jp(e[n], t[n])) return !1;
   return !0;
 }
-function Tp(e, t) {
-  return nt(e) ? Fi(e, t) : nt(t) ? Fi(t, e) : (e == null ? void 0 : e.valueOf()) === (t == null ? void 0 : t.valueOf());
+function jp(e, t) {
+  return dt(e) ? qi(e, t) : dt(t) ? qi(t, e) : (e == null ? void 0 : e.valueOf()) === (t == null ? void 0 : t.valueOf());
 }
-function Fi(e, t) {
-  return nt(t) ? e.length === t.length && e.every((n, s) => n === t[s]) : e.length === 1 && e[0] === t;
+function qi(e, t) {
+  return dt(t) ? e.length === t.length && e.every((n, s) => n === t[s]) : e.length === 1 && e[0] === t;
 }
-function Pp(e, t) {
+function Up(e, t) {
   if (e.startsWith("/")) return e;
   if (process.env.NODE_ENV !== "production" && !t.startsWith("/"))
-    return le(`Cannot resolve a relative location without an absolute path. Trying to resolve "${e}" from "${t}". It should look like "/${t}".`), e;
+    return _e(`Cannot resolve a relative location without an absolute path. Trying to resolve "${e}" from "${t}". It should look like "/${t}".`), e;
   if (!e) return t;
   const n = t.split("/"), s = e.split("/"), o = s[s.length - 1];
   (o === ".." || o === ".") && s.push("");
-  let r = n.length - 1, i, l;
-  for (i = 0; i < s.length; i++)
-    if (l = s[i], l !== ".")
-      if (l === "..")
+  let r = n.length - 1, a, c;
+  for (a = 0; a < s.length; a++)
+    if (c = s[a], c !== ".")
+      if (c === "..")
         r > 1 && r--;
       else break;
-  return n.slice(0, r).join("/") + "/" + s.slice(i).join("/");
+  return n.slice(0, r).join("/") + "/" + s.slice(a).join("/");
 }
-const Yt = {
+const tn = {
   path: "/",
   name: void 0,
   params: {},
@@ -6584,23 +6603,23 @@ const Yt = {
   meta: {},
   redirectedFrom: void 0
 };
-let tr = /* @__PURE__ */ function(e) {
+let rr = /* @__PURE__ */ function(e) {
   return e.pop = "pop", e.push = "push", e;
-}({}), Ao = /* @__PURE__ */ function(e) {
+}({}), Mo = /* @__PURE__ */ function(e) {
   return e.back = "back", e.forward = "forward", e.unknown = "", e;
 }({});
-function Vp(e) {
-  if (!e) if (jt) {
+function Hp(e) {
+  if (!e) if (zt) {
     const t = document.querySelector("base");
     e = t && t.getAttribute("href") || "/", e = e.replace(/^\w+:\/\/[^\/]+/, "");
   } else e = "/";
-  return e[0] !== "/" && e[0] !== "#" && (e = "/" + e), Dp(e);
+  return e[0] !== "/" && e[0] !== "#" && (e = "/" + e), Fp(e);
 }
-const Ap = /^[^#]+#/;
-function Rp(e, t) {
-  return e.replace(Ap, "#") + t;
+const Gp = /^[^#]+#/;
+function Bp(e, t) {
+  return e.replace(Gp, "#") + t;
 }
-function Ip(e, t) {
+function Kp(e, t) {
   const n = document.documentElement.getBoundingClientRect(), s = e.getBoundingClientRect();
   return {
     behavior: t.behavior,
@@ -6608,11 +6627,11 @@ function Ip(e, t) {
     top: s.top - n.top - (t.top || 0)
   };
 }
-const bo = () => ({
+const Eo = () => ({
   left: window.scrollX,
   top: window.scrollY
 });
-function Mp(e) {
+function Wp(e) {
   let t;
   if ("el" in e) {
     const n = e.el, s = typeof n == "string" && n.startsWith("#");
@@ -6620,123 +6639,123 @@ function Mp(e) {
       try {
         const r = document.querySelector(e.el);
         if (s && r) {
-          le(`The selector "${e.el}" should be passed as "el: document.querySelector('${e.el}')" because it starts with "#".`);
+          _e(`The selector "${e.el}" should be passed as "el: document.querySelector('${e.el}')" because it starts with "#".`);
           return;
         }
       } catch {
-        le(`The selector "${e.el}" is invalid. If you are using an id selector, make sure to escape it. You can find more information about escaping characters in selectors at https://mathiasbynens.be/notes/css-escapes or use CSS.escape (https://developer.mozilla.org/en-US/docs/Web/API/CSS/escape).`);
+        _e(`The selector "${e.el}" is invalid. If you are using an id selector, make sure to escape it. You can find more information about escaping characters in selectors at https://mathiasbynens.be/notes/css-escapes or use CSS.escape (https://developer.mozilla.org/en-US/docs/Web/API/CSS/escape).`);
         return;
       }
     const o = typeof n == "string" ? s ? document.getElementById(n.slice(1)) : document.querySelector(n) : n;
     if (!o) {
-      process.env.NODE_ENV !== "production" && le(`Couldn't find element using selector "${e.el}" returned by scrollBehavior.`);
+      process.env.NODE_ENV !== "production" && _e(`Couldn't find element using selector "${e.el}" returned by scrollBehavior.`);
       return;
     }
-    t = Ip(o, e);
+    t = Kp(o, e);
   } else t = e;
   "scrollBehavior" in document.documentElement.style ? window.scrollTo(t) : window.scrollTo(t.left != null ? t.left : window.scrollX, t.top != null ? t.top : window.scrollY);
 }
-function Ui(e, t) {
+function zi(e, t) {
   return (history.state ? history.state.position - t : -1) + e;
 }
-const nr = /* @__PURE__ */ new Map();
-function Lp(e, t) {
-  nr.set(e, t);
+const ir = /* @__PURE__ */ new Map();
+function qp(e, t) {
+  ir.set(e, t);
 }
-function jp(e) {
-  const t = nr.get(e);
-  return nr.delete(e), t;
+function zp(e) {
+  const t = ir.get(e);
+  return ir.delete(e), t;
 }
-function io(e) {
+function ao(e) {
   return typeof e == "string" || e && typeof e == "object";
 }
-function qa(e) {
+function nc(e) {
   return typeof e == "string" || typeof e == "symbol";
 }
-let Se = /* @__PURE__ */ function(e) {
+let Pe = /* @__PURE__ */ function(e) {
   return e[e.MATCHER_NOT_FOUND = 1] = "MATCHER_NOT_FOUND", e[e.NAVIGATION_GUARD_REDIRECT = 2] = "NAVIGATION_GUARD_REDIRECT", e[e.NAVIGATION_ABORTED = 4] = "NAVIGATION_ABORTED", e[e.NAVIGATION_CANCELLED = 8] = "NAVIGATION_CANCELLED", e[e.NAVIGATION_DUPLICATED = 16] = "NAVIGATION_DUPLICATED", e;
 }({});
-const sr = Symbol(process.env.NODE_ENV !== "production" ? "navigation failure" : ""), Fp = {
-  [Se.MATCHER_NOT_FOUND]({ location: e, currentLocation: t }) {
+const lr = Symbol(process.env.NODE_ENV !== "production" ? "navigation failure" : ""), Jp = {
+  [Pe.MATCHER_NOT_FOUND]({ location: e, currentLocation: t }) {
     return `No match for
  ${JSON.stringify(e)}${t ? `
 while being at
 ` + JSON.stringify(t) : ""}`;
   },
-  [Se.NAVIGATION_GUARD_REDIRECT]({ from: e, to: t }) {
-    return `Redirected from "${e.fullPath}" to "${Hp(t)}" via a navigation guard.`;
+  [Pe.NAVIGATION_GUARD_REDIRECT]({ from: e, to: t }) {
+    return `Redirected from "${e.fullPath}" to "${Yp(t)}" via a navigation guard.`;
   },
-  [Se.NAVIGATION_ABORTED]({ from: e, to: t }) {
+  [Pe.NAVIGATION_ABORTED]({ from: e, to: t }) {
     return `Navigation aborted from "${e.fullPath}" to "${t.fullPath}" via a navigation guard.`;
   },
-  [Se.NAVIGATION_CANCELLED]({ from: e, to: t }) {
+  [Pe.NAVIGATION_CANCELLED]({ from: e, to: t }) {
     return `Navigation cancelled from "${e.fullPath}" to "${t.fullPath}" with a new navigation.`;
   },
-  [Se.NAVIGATION_DUPLICATED]({ from: e, to: t }) {
+  [Pe.NAVIGATION_DUPLICATED]({ from: e, to: t }) {
     return `Avoided redundant navigation to current location: "${e.fullPath}".`;
   }
 };
-function Bn(e, t) {
-  return process.env.NODE_ENV !== "production" ? ge(new Error(Fp[e](t)), {
+function Kn(e, t) {
+  return process.env.NODE_ENV !== "production" ? we(new Error(Jp[e](t)), {
     type: e,
-    [sr]: !0
-  }, t) : ge(/* @__PURE__ */ new Error(), {
+    [lr]: !0
+  }, t) : we(/* @__PURE__ */ new Error(), {
     type: e,
-    [sr]: !0
+    [lr]: !0
   }, t);
 }
-function Rt(e, t) {
-  return e instanceof Error && sr in e && (t == null || !!(e.type & t));
+function Bt(e, t) {
+  return e instanceof Error && lr in e && (t == null || !!(e.type & t));
 }
-const Up = [
+const Qp = [
   "params",
   "query",
   "hash"
 ];
-function Hp(e) {
+function Yp(e) {
   if (typeof e == "string") return e;
   if (e.path != null) return e.path;
   const t = {};
-  for (const n of Up) n in e && (t[n] = e[n]);
+  for (const n of Qp) n in e && (t[n] = e[n]);
   return JSON.stringify(t, null, 2);
 }
-function Bp(e) {
+function Xp(e) {
   const t = {};
   if (e === "" || e === "?") return t;
   const n = (e[0] === "?" ? e.slice(1) : e).split("&");
   for (let s = 0; s < n.length; ++s) {
-    const o = n[s].replace(Ba, " "), r = o.indexOf("="), i = Hn(r < 0 ? o : o.slice(0, r)), l = r < 0 ? null : Hn(o.slice(r + 1));
-    if (i in t) {
-      let a = t[i];
-      nt(a) || (a = t[i] = [a]), a.push(l);
-    } else t[i] = l;
+    const o = n[s].replace(Ya, " "), r = o.indexOf("="), a = Bn(r < 0 ? o : o.slice(0, r)), c = r < 0 ? null : Bn(o.slice(r + 1));
+    if (a in t) {
+      let u = t[a];
+      dt(u) || (u = t[a] = [u]), u.push(c);
+    } else t[a] = c;
   }
   return t;
 }
-function Hi(e) {
+function Ji(e) {
   let t = "";
   for (let n in e) {
     const s = e[n];
-    if (n = Sp(n), s == null) {
+    if (n = Ap(n), s == null) {
       s !== void 0 && (t += (t.length ? "&" : "") + n);
       continue;
     }
-    (nt(s) ? s.map((o) => o && er(o)) : [s && er(s)]).forEach((o) => {
+    (dt(s) ? s.map((o) => o && or(o)) : [s && or(s)]).forEach((o) => {
       o !== void 0 && (t += (t.length ? "&" : "") + n, o != null && (t += "=" + o));
     });
   }
   return t;
 }
-function Gp(e) {
+function Zp(e) {
   const t = {};
   for (const n in e) {
     const s = e[n];
-    s !== void 0 && (t[n] = nt(s) ? s.map((o) => o == null ? null : "" + o) : s == null ? s : "" + s);
+    s !== void 0 && (t[n] = dt(s) ? s.map((o) => o == null ? null : "" + o) : s == null ? s : "" + s);
   }
   return t;
 }
-const Wp = Symbol(process.env.NODE_ENV !== "production" ? "router view location matched" : ""), Bi = Symbol(process.env.NODE_ENV !== "production" ? "router view depth" : ""), Ar = Symbol(process.env.NODE_ENV !== "production" ? "router" : ""), Rr = Symbol(process.env.NODE_ENV !== "production" ? "route location" : ""), or = Symbol(process.env.NODE_ENV !== "production" ? "router view location" : "");
-function Xn() {
+const eh = Symbol(process.env.NODE_ENV !== "production" ? "router view location matched" : ""), Qi = Symbol(process.env.NODE_ENV !== "production" ? "router view depth" : ""), wo = Symbol(process.env.NODE_ENV !== "production" ? "router" : ""), jr = Symbol(process.env.NODE_ENV !== "production" ? "route location" : ""), ar = Symbol(process.env.NODE_ENV !== "production" ? "router view location" : "");
+function Zn() {
   let e = [];
   function t(s) {
     return e.push(s), () => {
@@ -6753,78 +6772,78 @@ function Xn() {
     reset: n
   };
 }
-function Xt(e, t, n, s, o, r = (i) => i()) {
-  const i = s && (s.enterCallbacks[o] = s.enterCallbacks[o] || []);
-  return () => new Promise((l, a) => {
-    const f = (m) => {
-      m === !1 ? a(Bn(Se.NAVIGATION_ABORTED, {
+function sn(e, t, n, s, o, r = (a) => a()) {
+  const a = s && (s.enterCallbacks[o] = s.enterCallbacks[o] || []);
+  return () => new Promise((c, u) => {
+    const p = (_) => {
+      _ === !1 ? u(Kn(Pe.NAVIGATION_ABORTED, {
         from: n,
         to: t
-      })) : m instanceof Error ? a(m) : io(m) ? a(Bn(Se.NAVIGATION_GUARD_REDIRECT, {
+      })) : _ instanceof Error ? u(_) : ao(_) ? u(Kn(Pe.NAVIGATION_GUARD_REDIRECT, {
         from: t,
-        to: m
-      })) : (i && s.enterCallbacks[o] === i && typeof m == "function" && i.push(m), l());
-    }, p = r(() => e.call(s && s.instances[o], t, n, process.env.NODE_ENV !== "production" ? Kp(f, t, n) : f));
-    let u = Promise.resolve(p);
-    if (e.length < 3 && (u = u.then(f)), process.env.NODE_ENV !== "production" && e.length > 2) {
-      const m = `The "next" callback was never called inside of ${e.name ? '"' + e.name + '"' : ""}:
+        to: _
+      })) : (a && s.enterCallbacks[o] === a && typeof _ == "function" && a.push(_), c());
+    }, h = r(() => e.call(s && s.instances[o], t, n, process.env.NODE_ENV !== "production" ? th(p, t, n) : p));
+    let f = Promise.resolve(h);
+    if (e.length < 3 && (f = f.then(p)), process.env.NODE_ENV !== "production" && e.length > 2) {
+      const _ = `The "next" callback was never called inside of ${e.name ? '"' + e.name + '"' : ""}:
 ${e.toString()}
 . If you are returning a value instead of calling "next", make sure to remove the "next" parameter from your function.`;
-      if (typeof p == "object" && "then" in p) u = u.then((b) => f._called ? b : (le(m), Promise.reject(/* @__PURE__ */ new Error("Invalid navigation guard"))));
-      else if (p !== void 0 && !f._called) {
-        le(m), a(/* @__PURE__ */ new Error("Invalid navigation guard"));
+      if (typeof h == "object" && "then" in h) f = f.then((g) => p._called ? g : (_e(_), Promise.reject(/* @__PURE__ */ new Error("Invalid navigation guard"))));
+      else if (h !== void 0 && !p._called) {
+        _e(_), u(/* @__PURE__ */ new Error("Invalid navigation guard"));
         return;
       }
     }
-    u.catch((m) => a(m));
+    f.catch((_) => u(_));
   });
 }
-function Kp(e, t, n) {
+function th(e, t, n) {
   let s = 0;
   return function() {
-    s++ === 1 && le(`The "next" callback was called more than once in one navigation guard when going from "${n.fullPath}" to "${t.fullPath}". It should be called exactly one time in each navigation guard. This will fail in production.`), e._called = !0, s === 1 && e.apply(null, arguments);
+    s++ === 1 && _e(`The "next" callback was called more than once in one navigation guard when going from "${n.fullPath}" to "${t.fullPath}". It should be called exactly one time in each navigation guard. This will fail in production.`), e._called = !0, s === 1 && e.apply(null, arguments);
   };
 }
-function Ro(e, t, n, s, o = (r) => r()) {
+function Fo(e, t, n, s, o = (r) => r()) {
   const r = [];
-  for (const i of e) {
-    process.env.NODE_ENV !== "production" && !i.components && i.children && !i.children.length && le(`Record with path "${i.path}" is either missing a "component(s)" or "children" property.`);
-    for (const l in i.components) {
-      let a = i.components[l];
+  for (const a of e) {
+    process.env.NODE_ENV !== "production" && !a.components && a.children && !a.children.length && _e(`Record with path "${a.path}" is either missing a "component(s)" or "children" property.`);
+    for (const c in a.components) {
+      let u = a.components[c];
       if (process.env.NODE_ENV !== "production") {
-        if (!a || typeof a != "object" && typeof a != "function")
-          throw le(`Component "${l}" in record with path "${i.path}" is not a valid component. Received "${String(a)}".`), new Error("Invalid route component");
-        if ("then" in a) {
-          le(`Component "${l}" in record with path "${i.path}" is a Promise instead of a function that returns a Promise. Did you write "import('./MyPage.vue')" instead of "() => import('./MyPage.vue')" ? This will break in production if not fixed.`);
-          const f = a;
-          a = () => f;
-        } else a.__asyncLoader && !a.__warnedDefineAsync && (a.__warnedDefineAsync = !0, le(`Component "${l}" in record with path "${i.path}" is defined using "defineAsyncComponent()". Write "() => import('./MyPage.vue')" instead of "defineAsyncComponent(() => import('./MyPage.vue'))".`));
+        if (!u || typeof u != "object" && typeof u != "function")
+          throw _e(`Component "${c}" in record with path "${a.path}" is not a valid component. Received "${String(u)}".`), new Error("Invalid route component");
+        if ("then" in u) {
+          _e(`Component "${c}" in record with path "${a.path}" is a Promise instead of a function that returns a Promise. Did you write "import('./MyPage.vue')" instead of "() => import('./MyPage.vue')" ? This will break in production if not fixed.`);
+          const p = u;
+          u = () => p;
+        } else u.__asyncLoader && !u.__warnedDefineAsync && (u.__warnedDefineAsync = !0, _e(`Component "${c}" in record with path "${a.path}" is defined using "defineAsyncComponent()". Write "() => import('./MyPage.vue')" instead of "defineAsyncComponent(() => import('./MyPage.vue'))".`));
       }
-      if (!(t !== "beforeRouteEnter" && !i.instances[l]))
-        if (Ua(a)) {
-          const f = (a.__vccOpts || a)[t];
-          f && r.push(Xt(f, n, s, i, l, o));
+      if (!(t !== "beforeRouteEnter" && !a.instances[c]))
+        if (Ja(u)) {
+          const p = (u.__vccOpts || u)[t];
+          p && r.push(sn(p, n, s, a, c, o));
         } else {
-          let f = a();
-          process.env.NODE_ENV !== "production" && !("catch" in f) && (le(`Component "${l}" in record with path "${i.path}" is a function that does not return a Promise. If you were passing a functional component, make sure to add a "displayName" to the component. This will break in production if not fixed.`), f = Promise.resolve(f)), r.push(() => f.then((p) => {
-            if (!p) throw new Error(`Couldn't resolve component "${l}" at "${i.path}"`);
-            const u = hp(p) ? p.default : p;
-            i.mods[l] = p, i.components[l] = u;
-            const m = (u.__vccOpts || u)[t];
-            return m && Xt(m, n, s, i, l, o)();
+          let p = u();
+          process.env.NODE_ENV !== "production" && !("catch" in p) && (_e(`Component "${c}" in record with path "${a.path}" is a function that does not return a Promise. If you were passing a functional component, make sure to add a "displayName" to the component. This will break in production if not fixed.`), p = Promise.resolve(p)), r.push(() => p.then((h) => {
+            if (!h) throw new Error(`Couldn't resolve component "${c}" at "${a.path}"`);
+            const f = Np(h) ? h.default : h;
+            a.mods[c] = h, a.components[c] = f;
+            const _ = (f.__vccOpts || f)[t];
+            return _ && sn(_, n, s, a, c, o)();
           }));
         }
     }
   }
   return r;
 }
-function zp(e, t) {
+function nh(e, t) {
   const n = [], s = [], o = [], r = Math.max(t.matched.length, e.matched.length);
-  for (let i = 0; i < r; i++) {
-    const l = t.matched[i];
-    l && (e.matched.find((f) => an(f, l)) ? s.push(l) : n.push(l));
-    const a = e.matched[i];
-    a && (t.matched.find((f) => an(f, a)) || o.push(a));
+  for (let a = 0; a < r; a++) {
+    const c = t.matched[a];
+    c && (e.matched.find((p) => pn(p, c)) ? s.push(c) : n.push(c));
+    const u = e.matched[a];
+    u && (t.matched.find((p) => pn(p, u)) || o.push(u));
   }
   return [
     n,
@@ -6832,8 +6851,8 @@ function zp(e, t) {
     o
   ];
 }
-function Zn(e, t) {
-  const n = ge({}, e, { matched: e.matched.map((s) => oh(s, [
+function es(e, t) {
+  const n = we({}, e, { matched: e.matched.map((s) => ph(s, [
     "instances",
     "children",
     "aliasOf"
@@ -6846,15 +6865,15 @@ function Zn(e, t) {
     value: n
   } };
 }
-function Ds(e) {
+function Rs(e) {
   return { _custom: { display: e } };
 }
-let qp = 0;
-function Jp(e, t, n) {
+let sh = 0;
+function oh(e, t, n) {
   if (t.__hasDevtools) return;
   t.__hasDevtools = !0;
-  const s = qp++;
-  pp({
+  const s = sh++;
+  wp({
     id: "org.vuejs.router" + (s ? "." + s : ""),
     label: "Vue Router",
     packageName: "vue-router",
@@ -6863,118 +6882,118 @@ function Jp(e, t, n) {
     componentStateTypes: ["Routing"],
     app: e
   }, (o) => {
-    typeof o.now != "function" && le("[Vue Router]: You seem to be using an outdated version of Vue Devtools. Are you still using the Beta release instead of the stable one? You can find the links at https://devtools.vuejs.org/guide/installation.html."), o.on.inspectComponent((p, u) => {
-      p.instanceData && p.instanceData.state.push({
+    typeof o.now != "function" && _e("[Vue Router]: You seem to be using an outdated version of Vue Devtools. Are you still using the Beta release instead of the stable one? You can find the links at https://devtools.vuejs.org/guide/installation.html."), o.on.inspectComponent((h, f) => {
+      h.instanceData && h.instanceData.state.push({
         type: "Routing",
         key: "$route",
         editable: !1,
-        value: Zn(t.currentRoute.value, "Current Route")
+        value: es(t.currentRoute.value, "Current Route")
       });
-    }), o.on.visitComponentTree(({ treeNode: p, componentInstance: u }) => {
-      if (u.__vrv_devtools) {
-        const m = u.__vrv_devtools;
-        p.tags.push({
-          label: (m.name ? `${m.name.toString()}: ` : "") + m.path,
+    }), o.on.visitComponentTree(({ treeNode: h, componentInstance: f }) => {
+      if (f.__vrv_devtools) {
+        const _ = f.__vrv_devtools;
+        h.tags.push({
+          label: (_.name ? `${_.name.toString()}: ` : "") + _.path,
           textColor: 0,
           tooltip: "This component is rendered by &lt;router-view&gt;",
-          backgroundColor: Ja
+          backgroundColor: sc
         });
       }
-      nt(u.__vrl_devtools) && (u.__devtoolsApi = o, u.__vrl_devtools.forEach((m) => {
-        let b = m.route.path, T = Xa, $ = "", K = 0;
-        m.error ? (b = m.error, T = eh, K = th) : m.isExactActive ? (T = Qa, $ = "This is exactly active") : m.isActive && (T = Ya, $ = "This link is active"), p.tags.push({
-          label: b,
-          textColor: K,
-          tooltip: $,
-          backgroundColor: T
+      dt(f.__vrl_devtools) && (f.__devtoolsApi = o, f.__vrl_devtools.forEach((_) => {
+        let g = _.route.path, k = ic, O = "", W = 0;
+        _.error ? (g = _.error, k = ch, W = uh) : _.isExactActive ? (k = rc, O = "This is exactly active") : _.isActive && (k = oc, O = "This link is active"), h.tags.push({
+          label: g,
+          textColor: W,
+          tooltip: O,
+          backgroundColor: k
         });
       }));
     }), qe(t.currentRoute, () => {
-      a(), o.notifyComponentUpdate(), o.sendInspectorTree(l), o.sendInspectorState(l);
+      u(), o.notifyComponentUpdate(), o.sendInspectorTree(c), o.sendInspectorState(c);
     });
     const r = "router:navigations:" + s;
     o.addTimelineLayer({
       id: r,
       label: `Router${s ? " " + s : ""} Navigations`,
       color: 4237508
-    }), t.onError((p, u) => {
+    }), t.onError((h, f) => {
       o.addTimelineEvent({
         layerId: r,
         event: {
           title: "Error during Navigation",
-          subtitle: u.fullPath,
+          subtitle: f.fullPath,
           logType: "error",
           time: o.now(),
-          data: { error: p },
-          groupId: u.meta.__navigationId
+          data: { error: h },
+          groupId: f.meta.__navigationId
         }
       });
     });
-    let i = 0;
-    t.beforeEach((p, u) => {
-      const m = {
-        guard: Ds("beforeEach"),
-        from: Zn(u, "Current Location during this navigation"),
-        to: Zn(p, "Target location")
+    let a = 0;
+    t.beforeEach((h, f) => {
+      const _ = {
+        guard: Rs("beforeEach"),
+        from: es(f, "Current Location during this navigation"),
+        to: es(h, "Target location")
       };
-      Object.defineProperty(p.meta, "__navigationId", { value: i++ }), o.addTimelineEvent({
+      Object.defineProperty(h.meta, "__navigationId", { value: a++ }), o.addTimelineEvent({
         layerId: r,
         event: {
           time: o.now(),
           title: "Start of navigation",
-          subtitle: p.fullPath,
-          data: m,
-          groupId: p.meta.__navigationId
+          subtitle: h.fullPath,
+          data: _,
+          groupId: h.meta.__navigationId
         }
       });
-    }), t.afterEach((p, u, m) => {
-      const b = { guard: Ds("afterEach") };
-      m ? (b.failure = { _custom: {
+    }), t.afterEach((h, f, _) => {
+      const g = { guard: Rs("afterEach") };
+      _ ? (g.failure = { _custom: {
         type: Error,
         readOnly: !0,
-        display: m ? m.message : "",
+        display: _ ? _.message : "",
         tooltip: "Navigation Failure",
-        value: m
-      } }, b.status = Ds("❌")) : b.status = Ds("✅"), b.from = Zn(u, "Current Location during this navigation"), b.to = Zn(p, "Target location"), o.addTimelineEvent({
+        value: _
+      } }, g.status = Rs("❌")) : g.status = Rs("✅"), g.from = es(f, "Current Location during this navigation"), g.to = es(h, "Target location"), o.addTimelineEvent({
         layerId: r,
         event: {
           title: "End of navigation",
-          subtitle: p.fullPath,
+          subtitle: h.fullPath,
           time: o.now(),
-          data: b,
-          logType: m ? "warning" : "default",
-          groupId: p.meta.__navigationId
+          data: g,
+          logType: _ ? "warning" : "default",
+          groupId: h.meta.__navigationId
         }
       });
     });
-    const l = "router-inspector:" + s;
+    const c = "router-inspector:" + s;
     o.addInspector({
-      id: l,
+      id: c,
       label: "Routes" + (s ? " " + s : ""),
       icon: "book",
       treeFilterPlaceholder: "Search routes"
     });
-    function a() {
-      if (!f) return;
-      const p = f;
-      let u = n.getRoutes().filter((m) => !m.parent || !m.parent.record.components);
-      u.forEach(tc), p.filter && (u = u.filter((m) => rr(m, p.filter.toLowerCase()))), u.forEach((m) => ec(m, t.currentRoute.value)), p.rootNodes = u.map(Za);
+    function u() {
+      if (!p) return;
+      const h = p;
+      let f = n.getRoutes().filter((_) => !_.parent || !_.parent.record.components);
+      f.forEach(cc), h.filter && (f = f.filter((_) => cr(_, h.filter.toLowerCase()))), f.forEach((_) => ac(_, t.currentRoute.value)), h.rootNodes = f.map(lc);
     }
-    let f;
-    o.on.getInspectorTree((p) => {
-      f = p, p.app === e && p.inspectorId === l && a();
-    }), o.on.getInspectorState((p) => {
-      if (p.app === e && p.inspectorId === l) {
-        const u = n.getRoutes().find((m) => m.record.__vd_id === p.nodeId);
-        u && (p.state = { options: Qp(u) });
+    let p;
+    o.on.getInspectorTree((h) => {
+      p = h, h.app === e && h.inspectorId === c && u();
+    }), o.on.getInspectorState((h) => {
+      if (h.app === e && h.inspectorId === c) {
+        const f = n.getRoutes().find((_) => _.record.__vd_id === h.nodeId);
+        f && (h.state = { options: ih(f) });
       }
-    }), o.sendInspectorTree(l), o.sendInspectorState(l);
+    }), o.sendInspectorTree(c), o.sendInspectorState(c);
   });
 }
-function Yp(e) {
+function rh(e) {
   return e.optional ? e.repeatable ? "*" : "?" : e.repeatable ? "+" : "";
 }
-function Qp(e) {
+function ih(e) {
   const { record: t } = e, n = [{
     editable: !1,
     key: "path",
@@ -6994,7 +7013,7 @@ function Qp(e) {
     value: { _custom: {
       type: null,
       readOnly: !0,
-      display: e.keys.map((s) => `${s.name}${Yp(s)}`).join(" "),
+      display: e.keys.map((s) => `${s.name}${rh(s)}`).join(" "),
       tooltip: "Param keys",
       value: e.keys
     } }
@@ -7022,60 +7041,60 @@ function Qp(e) {
     } }
   }), n;
 }
-const Ja = 15485081, Ya = 2450411, Qa = 8702998, Xp = 2282478, Xa = 16486972, Zp = 6710886, eh = 16704226, th = 12131356;
-function Za(e) {
+const sc = 15485081, oc = 2450411, rc = 8702998, lh = 2282478, ic = 16486972, ah = 6710886, ch = 16704226, uh = 12131356;
+function lc(e) {
   const t = [], { record: n } = e;
   n.name != null && t.push({
     label: String(n.name),
     textColor: 0,
-    backgroundColor: Xp
+    backgroundColor: lh
   }), n.aliasOf && t.push({
     label: "alias",
     textColor: 0,
-    backgroundColor: Xa
+    backgroundColor: ic
   }), e.__vd_match && t.push({
     label: "matches",
     textColor: 0,
-    backgroundColor: Ja
+    backgroundColor: sc
   }), e.__vd_exactActive && t.push({
     label: "exact",
     textColor: 0,
-    backgroundColor: Qa
+    backgroundColor: rc
   }), e.__vd_active && t.push({
     label: "active",
     textColor: 0,
-    backgroundColor: Ya
+    backgroundColor: oc
   }), n.redirect && t.push({
     label: typeof n.redirect == "string" ? `redirect: ${n.redirect}` : "redirects",
     textColor: 16777215,
-    backgroundColor: Zp
+    backgroundColor: ah
   });
   let s = n.__vd_id;
-  return s == null && (s = String(nh++), n.__vd_id = s), {
+  return s == null && (s = String(dh++), n.__vd_id = s), {
     id: s,
     label: n.path,
     tags: t,
-    children: e.children.map(Za)
+    children: e.children.map(lc)
   };
 }
-let nh = 0;
-const sh = /^\/(.*)\/([a-z]*)$/;
-function ec(e, t) {
-  const n = t.matched.length && an(t.matched[t.matched.length - 1], e.record);
-  e.__vd_exactActive = e.__vd_active = n, n || (e.__vd_active = t.matched.some((s) => an(s, e.record))), e.children.forEach((s) => ec(s, t));
+let dh = 0;
+const fh = /^\/(.*)\/([a-z]*)$/;
+function ac(e, t) {
+  const n = t.matched.length && pn(t.matched[t.matched.length - 1], e.record);
+  e.__vd_exactActive = e.__vd_active = n, n || (e.__vd_active = t.matched.some((s) => pn(s, e.record))), e.children.forEach((s) => ac(s, t));
 }
-function tc(e) {
-  e.__vd_match = !1, e.children.forEach(tc);
+function cc(e) {
+  e.__vd_match = !1, e.children.forEach(cc);
 }
-function rr(e, t) {
-  const n = String(e.re).match(sh);
+function cr(e, t) {
+  const n = String(e.re).match(fh);
   if (e.__vd_match = !1, !n || n.length < 3) return !1;
   if (new RegExp(n[1].replace(/\$$/, ""), n[2]).test(t))
-    return e.children.forEach((r) => rr(r, t)), e.record.path !== "/" || t === "/" ? (e.__vd_match = e.re.test(t), !0) : !1;
-  const s = e.record.path.toLowerCase(), o = Hn(s);
-  return !t.startsWith("/") && (o.includes(t) || s.includes(t)) || o.startsWith(t) || s.startsWith(t) || e.record.name && String(e.record.name).includes(t) ? !0 : e.children.some((r) => rr(r, t));
+    return e.children.forEach((r) => cr(r, t)), e.record.path !== "/" || t === "/" ? (e.__vd_match = e.re.test(t), !0) : !1;
+  const s = e.record.path.toLowerCase(), o = Bn(s);
+  return !t.startsWith("/") && (o.includes(t) || s.includes(t)) || o.startsWith(t) || s.startsWith(t) || e.record.name && String(e.record.name).includes(t) ? !0 : e.children.some((r) => cr(r, t));
 }
-function oh(e, t) {
+function ph(e, t) {
   const n = {};
   for (const s in e) t.includes(s) || (n[s] = e[s]);
   return n;
@@ -7085,75 +7104,75 @@ function oh(e, t) {
  * (c) 2025 Eduardo San Martin Morote
  * @license MIT
  */
-let rh = () => location.protocol + "//" + location.host;
-function nc(e, t) {
+let hh = () => location.protocol + "//" + location.host;
+function uc(e, t) {
   const { pathname: n, search: s, hash: o } = t, r = e.indexOf("#");
   if (r > -1) {
-    let i = o.includes(e.slice(r)) ? e.slice(r).length : 1, l = o.slice(i);
-    return l[0] !== "/" && (l = "/" + l), Li(l, "");
+    let a = o.includes(e.slice(r)) ? e.slice(r).length : 1, c = o.slice(a);
+    return c[0] !== "/" && (c = "/" + c), Ki(c, "");
   }
-  return Li(n, e) + s + o;
+  return Ki(n, e) + s + o;
 }
-function ih(e, t, n, s) {
-  let o = [], r = [], i = null;
-  const l = ({ state: m }) => {
-    const b = nc(e, location), T = n.value, $ = t.value;
-    let K = 0;
-    if (m) {
-      if (n.value = b, t.value = m, i && i === T) {
-        i = null;
+function _h(e, t, n, s) {
+  let o = [], r = [], a = null;
+  const c = ({ state: _ }) => {
+    const g = uc(e, location), k = n.value, O = t.value;
+    let W = 0;
+    if (_) {
+      if (n.value = g, t.value = _, a && a === k) {
+        a = null;
         return;
       }
-      K = $ ? m.position - $.position : 0;
-    } else s(b);
-    o.forEach((F) => {
-      F(n.value, T, {
-        delta: K,
-        type: tr.pop,
-        direction: K ? K > 0 ? Ao.forward : Ao.back : Ao.unknown
+      W = O ? _.position - O.position : 0;
+    } else s(g);
+    o.forEach((V) => {
+      V(n.value, k, {
+        delta: W,
+        type: rr.pop,
+        direction: W ? W > 0 ? Mo.forward : Mo.back : Mo.unknown
       });
     });
   };
-  function a() {
-    i = n.value;
+  function u() {
+    a = n.value;
   }
-  function f(m) {
-    o.push(m);
-    const b = () => {
-      const T = o.indexOf(m);
-      T > -1 && o.splice(T, 1);
+  function p(_) {
+    o.push(_);
+    const g = () => {
+      const k = o.indexOf(_);
+      k > -1 && o.splice(k, 1);
     };
-    return r.push(b), b;
+    return r.push(g), g;
   }
-  function p() {
+  function h() {
     if (document.visibilityState === "hidden") {
-      const { history: m } = window;
-      if (!m.state) return;
-      m.replaceState(ge({}, m.state, { scroll: bo() }), "");
+      const { history: _ } = window;
+      if (!_.state) return;
+      _.replaceState(we({}, _.state, { scroll: Eo() }), "");
     }
   }
-  function u() {
-    for (const m of r) m();
-    r = [], window.removeEventListener("popstate", l), window.removeEventListener("pagehide", p), document.removeEventListener("visibilitychange", p);
+  function f() {
+    for (const _ of r) _();
+    r = [], window.removeEventListener("popstate", c), window.removeEventListener("pagehide", h), document.removeEventListener("visibilitychange", h);
   }
-  return window.addEventListener("popstate", l), window.addEventListener("pagehide", p), document.addEventListener("visibilitychange", p), {
-    pauseListeners: a,
-    listen: f,
-    destroy: u
+  return window.addEventListener("popstate", c), window.addEventListener("pagehide", h), document.addEventListener("visibilitychange", h), {
+    pauseListeners: u,
+    listen: p,
+    destroy: f
   };
 }
-function Gi(e, t, n, s = !1, o = !1) {
+function Yi(e, t, n, s = !1, o = !1) {
   return {
     back: e,
     current: t,
     forward: n,
     replaced: s,
     position: window.history.length,
-    scroll: o ? bo() : null
+    scroll: o ? Eo() : null
   };
 }
-function lh(e) {
-  const { history: t, location: n } = window, s = { value: nc(e, n) }, o = { value: t.state };
+function mh(e) {
+  const { history: t, location: n } = window, s = { value: uc(e, n) }, o = { value: t.state };
   o.value || r(s.value, {
     back: null,
     current: s.value,
@@ -7162,46 +7181,46 @@ function lh(e) {
     replaced: !0,
     scroll: null
   }, !0);
-  function r(a, f, p) {
-    const u = e.indexOf("#"), m = u > -1 ? (n.host && document.querySelector("base") ? e : e.slice(u)) + a : rh() + e + a;
+  function r(u, p, h) {
+    const f = e.indexOf("#"), _ = f > -1 ? (n.host && document.querySelector("base") ? e : e.slice(f)) + u : hh() + e + u;
     try {
-      t[p ? "replaceState" : "pushState"](f, "", m), o.value = f;
-    } catch (b) {
-      process.env.NODE_ENV !== "production" ? le("Error with push/replace State", b) : console.error(b), n[p ? "replace" : "assign"](m);
+      t[h ? "replaceState" : "pushState"](p, "", _), o.value = p;
+    } catch (g) {
+      process.env.NODE_ENV !== "production" ? _e("Error with push/replace State", g) : console.error(g), n[h ? "replace" : "assign"](_);
     }
   }
-  function i(a, f) {
-    r(a, ge({}, t.state, Gi(o.value.back, a, o.value.forward, !0), f, { position: o.value.position }), !0), s.value = a;
+  function a(u, p) {
+    r(u, we({}, t.state, Yi(o.value.back, u, o.value.forward, !0), p, { position: o.value.position }), !0), s.value = u;
   }
-  function l(a, f) {
-    const p = ge({}, o.value, t.state, {
-      forward: a,
-      scroll: bo()
+  function c(u, p) {
+    const h = we({}, o.value, t.state, {
+      forward: u,
+      scroll: Eo()
     });
-    process.env.NODE_ENV !== "production" && !t.state && le(`history.state seems to have been manually replaced without preserving the necessary values. Make sure to preserve existing history state if you are manually calling history.replaceState:
+    process.env.NODE_ENV !== "production" && !t.state && _e(`history.state seems to have been manually replaced without preserving the necessary values. Make sure to preserve existing history state if you are manually calling history.replaceState:
 
 history.replaceState(history.state, '', url)
 
-You can find more information at https://router.vuejs.org/guide/migration/#Usage-of-history-state`), r(p.current, p, !0), r(a, ge({}, Gi(s.value, a, null), { position: p.position + 1 }, f), !1), s.value = a;
+You can find more information at https://router.vuejs.org/guide/migration/#Usage-of-history-state`), r(h.current, h, !0), r(u, we({}, Yi(s.value, u, null), { position: h.position + 1 }, p), !1), s.value = u;
   }
   return {
     location: s,
     state: o,
-    push: l,
-    replace: i
+    push: c,
+    replace: a
   };
 }
-function ah(e) {
-  e = Vp(e);
-  const t = lh(e), n = ih(e, t.state, t.location, t.replace);
-  function s(r, i = !0) {
-    i || n.pauseListeners(), history.go(r);
+function gh(e) {
+  e = Hp(e);
+  const t = mh(e), n = _h(e, t.state, t.location, t.replace);
+  function s(r, a = !0) {
+    a || n.pauseListeners(), history.go(r);
   }
-  const o = ge({
+  const o = we({
     location: "",
     base: e,
     go: s,
-    createHref: Rp.bind(null, e)
+    createHref: Bp.bind(null, e)
   }, t, n);
   return Object.defineProperty(o, "location", {
     enumerable: !0,
@@ -7211,202 +7230,202 @@ function ah(e) {
     get: () => t.state.value
   }), o;
 }
-function ch(e) {
-  return e = location.host ? e || location.pathname + location.search : "", e.includes("#") || (e += "#"), process.env.NODE_ENV !== "production" && !e.endsWith("#/") && !e.endsWith("#") && le(`A hash base must end with a "#":
-"${e}" should be "${e.replace(/#.*$/, "#")}".`), ah(e);
+function vh(e) {
+  return e = location.host ? e || location.pathname + location.search : "", e.includes("#") || (e += "#"), process.env.NODE_ENV !== "production" && !e.endsWith("#/") && !e.endsWith("#") && _e(`A hash base must end with a "#":
+"${e}" should be "${e.replace(/#.*$/, "#")}".`), gh(e);
 }
-let _n = /* @__PURE__ */ function(e) {
+let yn = /* @__PURE__ */ function(e) {
   return e[e.Static = 0] = "Static", e[e.Param = 1] = "Param", e[e.Group = 2] = "Group", e;
 }({});
-var Ve = /* @__PURE__ */ function(e) {
+var Ie = /* @__PURE__ */ function(e) {
   return e[e.Static = 0] = "Static", e[e.Param = 1] = "Param", e[e.ParamRegExp = 2] = "ParamRegExp", e[e.ParamRegExpEnd = 3] = "ParamRegExpEnd", e[e.EscapeNext = 4] = "EscapeNext", e;
-}(Ve || {});
-const uh = {
-  type: _n.Static,
+}(Ie || {});
+const bh = {
+  type: yn.Static,
   value: ""
-}, dh = /[a-zA-Z0-9_]/;
-function fh(e) {
+}, yh = /[a-zA-Z0-9_]/;
+function Eh(e) {
   if (!e) return [[]];
-  if (e === "/") return [[uh]];
+  if (e === "/") return [[bh]];
   if (!e.startsWith("/")) throw new Error(process.env.NODE_ENV !== "production" ? `Route paths should start with a "/": "${e}" should be "/${e}".` : `Invalid path "${e}"`);
-  function t(b) {
-    throw new Error(`ERR (${n})/"${f}": ${b}`);
+  function t(g) {
+    throw new Error(`ERR (${n})/"${p}": ${g}`);
   }
-  let n = Ve.Static, s = n;
+  let n = Ie.Static, s = n;
   const o = [];
   let r;
-  function i() {
+  function a() {
     r && o.push(r), r = [];
   }
-  let l = 0, a, f = "", p = "";
-  function u() {
-    f && (n === Ve.Static ? r.push({
-      type: _n.Static,
-      value: f
-    }) : n === Ve.Param || n === Ve.ParamRegExp || n === Ve.ParamRegExpEnd ? (r.length > 1 && (a === "*" || a === "+") && t(`A repeatable param (${f}) must be alone in its segment. eg: '/:ids+.`), r.push({
-      type: _n.Param,
-      value: f,
-      regexp: p,
-      repeatable: a === "*" || a === "+",
-      optional: a === "*" || a === "?"
-    })) : t("Invalid state to consume buffer"), f = "");
+  let c = 0, u, p = "", h = "";
+  function f() {
+    p && (n === Ie.Static ? r.push({
+      type: yn.Static,
+      value: p
+    }) : n === Ie.Param || n === Ie.ParamRegExp || n === Ie.ParamRegExpEnd ? (r.length > 1 && (u === "*" || u === "+") && t(`A repeatable param (${p}) must be alone in its segment. eg: '/:ids+.`), r.push({
+      type: yn.Param,
+      value: p,
+      regexp: h,
+      repeatable: u === "*" || u === "+",
+      optional: u === "*" || u === "?"
+    })) : t("Invalid state to consume buffer"), p = "");
   }
-  function m() {
-    f += a;
+  function _() {
+    p += u;
   }
-  for (; l < e.length; ) {
-    if (a = e[l++], a === "\\" && n !== Ve.ParamRegExp) {
-      s = n, n = Ve.EscapeNext;
+  for (; c < e.length; ) {
+    if (u = e[c++], u === "\\" && n !== Ie.ParamRegExp) {
+      s = n, n = Ie.EscapeNext;
       continue;
     }
     switch (n) {
-      case Ve.Static:
-        a === "/" ? (f && u(), i()) : a === ":" ? (u(), n = Ve.Param) : m();
+      case Ie.Static:
+        u === "/" ? (p && f(), a()) : u === ":" ? (f(), n = Ie.Param) : _();
         break;
-      case Ve.EscapeNext:
-        m(), n = s;
+      case Ie.EscapeNext:
+        _(), n = s;
         break;
-      case Ve.Param:
-        a === "(" ? n = Ve.ParamRegExp : dh.test(a) ? m() : (u(), n = Ve.Static, a !== "*" && a !== "?" && a !== "+" && l--);
+      case Ie.Param:
+        u === "(" ? n = Ie.ParamRegExp : yh.test(u) ? _() : (f(), n = Ie.Static, u !== "*" && u !== "?" && u !== "+" && c--);
         break;
-      case Ve.ParamRegExp:
-        a === ")" ? p[p.length - 1] == "\\" ? p = p.slice(0, -1) + a : n = Ve.ParamRegExpEnd : p += a;
+      case Ie.ParamRegExp:
+        u === ")" ? h[h.length - 1] == "\\" ? h = h.slice(0, -1) + u : n = Ie.ParamRegExpEnd : h += u;
         break;
-      case Ve.ParamRegExpEnd:
-        u(), n = Ve.Static, a !== "*" && a !== "?" && a !== "+" && l--, p = "";
+      case Ie.ParamRegExpEnd:
+        f(), n = Ie.Static, u !== "*" && u !== "?" && u !== "+" && c--, h = "";
         break;
       default:
         t("Unknown state");
         break;
     }
   }
-  return n === Ve.ParamRegExp && t(`Unfinished custom RegExp for param "${f}"`), u(), i(), o;
+  return n === Ie.ParamRegExp && t(`Unfinished custom RegExp for param "${p}"`), f(), a(), o;
 }
-const Wi = "[^/]+?", ph = {
+const Xi = "[^/]+?", wh = {
   sensitive: !1,
   strict: !1,
   start: !0,
   end: !0
 };
-var Ke = /* @__PURE__ */ function(e) {
+var Qe = /* @__PURE__ */ function(e) {
   return e[e._multiplier = 10] = "_multiplier", e[e.Root = 90] = "Root", e[e.Segment = 40] = "Segment", e[e.SubSegment = 30] = "SubSegment", e[e.Static = 40] = "Static", e[e.Dynamic = 20] = "Dynamic", e[e.BonusCustomRegExp = 10] = "BonusCustomRegExp", e[e.BonusWildcard = -50] = "BonusWildcard", e[e.BonusRepeatable = -20] = "BonusRepeatable", e[e.BonusOptional = -8] = "BonusOptional", e[e.BonusStrict = 0.7000000000000001] = "BonusStrict", e[e.BonusCaseSensitive = 0.25] = "BonusCaseSensitive", e;
-}(Ke || {});
-const hh = /[.+*?^${}()[\]/\\]/g;
-function gh(e, t) {
-  const n = ge({}, ph, t), s = [];
+}(Qe || {});
+const Nh = /[.+*?^${}()[\]/\\]/g;
+function $h(e, t) {
+  const n = we({}, wh, t), s = [];
   let o = n.start ? "^" : "";
   const r = [];
-  for (const f of e) {
-    const p = f.length ? [] : [Ke.Root];
-    n.strict && !f.length && (o += "/");
-    for (let u = 0; u < f.length; u++) {
-      const m = f[u];
-      let b = Ke.Segment + (n.sensitive ? Ke.BonusCaseSensitive : 0);
-      if (m.type === _n.Static)
-        u || (o += "/"), o += m.value.replace(hh, "\\$&"), b += Ke.Static;
-      else if (m.type === _n.Param) {
-        const { value: T, repeatable: $, optional: K, regexp: F } = m;
+  for (const p of e) {
+    const h = p.length ? [] : [Qe.Root];
+    n.strict && !p.length && (o += "/");
+    for (let f = 0; f < p.length; f++) {
+      const _ = p[f];
+      let g = Qe.Segment + (n.sensitive ? Qe.BonusCaseSensitive : 0);
+      if (_.type === yn.Static)
+        f || (o += "/"), o += _.value.replace(Nh, "\\$&"), g += Qe.Static;
+      else if (_.type === yn.Param) {
+        const { value: k, repeatable: O, optional: W, regexp: V } = _;
         r.push({
-          name: T,
-          repeatable: $,
-          optional: K
+          name: k,
+          repeatable: O,
+          optional: W
         });
-        const A = F || Wi;
-        if (A !== Wi) {
-          b += Ke.BonusCustomRegExp;
+        const I = V || Xi;
+        if (I !== Xi) {
+          g += Qe.BonusCustomRegExp;
           try {
-            `${A}`;
+            `${I}`;
           } catch (te) {
-            throw new Error(`Invalid custom RegExp for param "${T}" (${A}): ` + te.message);
+            throw new Error(`Invalid custom RegExp for param "${k}" (${I}): ` + te.message);
           }
         }
-        let I = $ ? `((?:${A})(?:/(?:${A}))*)` : `(${A})`;
-        u || (I = K && f.length < 2 ? `(?:/${I})` : "/" + I), K && (I += "?"), o += I, b += Ke.Dynamic, K && (b += Ke.BonusOptional), $ && (b += Ke.BonusRepeatable), A === ".*" && (b += Ke.BonusWildcard);
+        let L = O ? `((?:${I})(?:/(?:${I}))*)` : `(${I})`;
+        f || (L = W && p.length < 2 ? `(?:/${L})` : "/" + L), W && (L += "?"), o += L, g += Qe.Dynamic, W && (g += Qe.BonusOptional), O && (g += Qe.BonusRepeatable), I === ".*" && (g += Qe.BonusWildcard);
       }
-      p.push(b);
+      h.push(g);
     }
-    s.push(p);
+    s.push(h);
   }
   if (n.strict && n.end) {
-    const f = s.length - 1;
-    s[f][s[f].length - 1] += Ke.BonusStrict;
+    const p = s.length - 1;
+    s[p][s[p].length - 1] += Qe.BonusStrict;
   }
   n.strict || (o += "/?"), n.end ? o += "$" : n.strict && !o.endsWith("/") && (o += "(?:/|$)");
-  const i = new RegExp(o, n.sensitive ? "" : "i");
-  function l(f) {
-    const p = f.match(i), u = {};
-    if (!p) return null;
-    for (let m = 1; m < p.length; m++) {
-      const b = p[m] || "", T = r[m - 1];
-      u[T.name] = b && T.repeatable ? b.split("/") : b;
+  const a = new RegExp(o, n.sensitive ? "" : "i");
+  function c(p) {
+    const h = p.match(a), f = {};
+    if (!h) return null;
+    for (let _ = 1; _ < h.length; _++) {
+      const g = h[_] || "", k = r[_ - 1];
+      f[k.name] = g && k.repeatable ? g.split("/") : g;
     }
-    return u;
+    return f;
   }
-  function a(f) {
-    let p = "", u = !1;
-    for (const m of e) {
-      (!u || !p.endsWith("/")) && (p += "/"), u = !1;
-      for (const b of m) if (b.type === _n.Static) p += b.value;
-      else if (b.type === _n.Param) {
-        const { value: T, repeatable: $, optional: K } = b, F = T in f ? f[T] : "";
-        if (nt(F) && !$) throw new Error(`Provided param "${T}" is an array but it is not repeatable (* or + modifiers)`);
-        const A = nt(F) ? F.join("/") : F;
-        if (!A) if (K)
-          m.length < 2 && (p.endsWith("/") ? p = p.slice(0, -1) : u = !0);
-        else throw new Error(`Missing required param "${T}"`);
-        p += A;
+  function u(p) {
+    let h = "", f = !1;
+    for (const _ of e) {
+      (!f || !h.endsWith("/")) && (h += "/"), f = !1;
+      for (const g of _) if (g.type === yn.Static) h += g.value;
+      else if (g.type === yn.Param) {
+        const { value: k, repeatable: O, optional: W } = g, V = k in p ? p[k] : "";
+        if (dt(V) && !O) throw new Error(`Provided param "${k}" is an array but it is not repeatable (* or + modifiers)`);
+        const I = dt(V) ? V.join("/") : V;
+        if (!I) if (W)
+          _.length < 2 && (h.endsWith("/") ? h = h.slice(0, -1) : f = !0);
+        else throw new Error(`Missing required param "${k}"`);
+        h += I;
       }
     }
-    return p || "/";
+    return h || "/";
   }
   return {
-    re: i,
+    re: a,
     score: s,
     keys: r,
-    parse: l,
-    stringify: a
+    parse: c,
+    stringify: u
   };
 }
-function mh(e, t) {
+function Oh(e, t) {
   let n = 0;
   for (; n < e.length && n < t.length; ) {
     const s = t[n] - e[n];
     if (s) return s;
     n++;
   }
-  return e.length < t.length ? e.length === 1 && e[0] === Ke.Static + Ke.Segment ? -1 : 1 : e.length > t.length ? t.length === 1 && t[0] === Ke.Static + Ke.Segment ? 1 : -1 : 0;
+  return e.length < t.length ? e.length === 1 && e[0] === Qe.Static + Qe.Segment ? -1 : 1 : e.length > t.length ? t.length === 1 && t[0] === Qe.Static + Qe.Segment ? 1 : -1 : 0;
 }
-function sc(e, t) {
+function dc(e, t) {
   let n = 0;
   const s = e.score, o = t.score;
   for (; n < s.length && n < o.length; ) {
-    const r = mh(s[n], o[n]);
+    const r = Oh(s[n], o[n]);
     if (r) return r;
     n++;
   }
   if (Math.abs(o.length - s.length) === 1) {
-    if (Ki(s)) return 1;
-    if (Ki(o)) return -1;
+    if (Zi(s)) return 1;
+    if (Zi(o)) return -1;
   }
   return o.length - s.length;
 }
-function Ki(e) {
+function Zi(e) {
   const t = e[e.length - 1];
   return e.length > 0 && t[t.length - 1] < 0;
 }
-const _h = {
+const Sh = {
   strict: !1,
   end: !0,
   sensitive: !1
 };
-function vh(e, t, n) {
-  const s = gh(fh(e.path), n);
+function kh(e, t, n) {
+  const s = $h(Eh(e.path), n);
   if (process.env.NODE_ENV !== "production") {
     const r = /* @__PURE__ */ new Set();
-    for (const i of s.keys)
-      r.has(i.name) && le(`Found duplicated params with name "${i.name}" for path "${e.path}". Only the last one will be available on "$route.params".`), r.add(i.name);
+    for (const a of s.keys)
+      r.has(a.name) && _e(`Found duplicated params with name "${a.name}" for path "${e.path}". Only the last one will be available on "$route.params".`), r.add(a.name);
   }
-  const o = ge(s, {
+  const o = we(s, {
     record: e,
     parent: t,
     children: [],
@@ -7414,108 +7433,108 @@ function vh(e, t, n) {
   });
   return t && !o.record.aliasOf == !t.record.aliasOf && t.children.push(o), o;
 }
-function bh(e, t) {
+function Ch(e, t) {
   const n = [], s = /* @__PURE__ */ new Map();
-  t = Mi(_h, t);
-  function o(u) {
-    return s.get(u);
+  t = Bi(Sh, t);
+  function o(f) {
+    return s.get(f);
   }
-  function r(u, m, b) {
-    const T = !b, $ = qi(u);
-    process.env.NODE_ENV !== "production" && Nh($, m), $.aliasOf = b && b.record;
-    const K = Mi(t, u), F = [$];
-    if ("alias" in u) {
-      const te = typeof u.alias == "string" ? [u.alias] : u.alias;
-      for (const O of te) F.push(qi(ge({}, $, {
-        components: b ? b.record.components : $.components,
-        path: O,
-        aliasOf: b ? b.record : $
+  function r(f, _, g) {
+    const k = !g, O = tl(f);
+    process.env.NODE_ENV !== "production" && Ph(O, _), O.aliasOf = g && g.record;
+    const W = Bi(t, f), V = [O];
+    if ("alias" in f) {
+      const te = typeof f.alias == "string" ? [f.alias] : f.alias;
+      for (const D of te) V.push(tl(we({}, O, {
+        components: g ? g.record.components : O.components,
+        path: D,
+        aliasOf: g ? g.record : O
       })));
     }
-    let A, I;
-    for (const te of F) {
-      const { path: O } = te;
-      if (m && O[0] !== "/") {
-        const S = m.record.path, v = S[S.length - 1] === "/" ? "" : "/";
-        te.path = m.record.path + (O && v + O);
+    let I, L;
+    for (const te of V) {
+      const { path: D } = te;
+      if (_ && D[0] !== "/") {
+        const T = _.record.path, b = T[T.length - 1] === "/" ? "" : "/";
+        te.path = _.record.path + (D && b + D);
       }
       if (process.env.NODE_ENV !== "production" && te.path === "*") throw new Error(`Catch all routes ("*") must now be defined using a param with a custom regexp.
 See more at https://router.vuejs.org/guide/migration/#Removed-star-or-catch-all-routes.`);
-      if (A = vh(te, m, K), process.env.NODE_ENV !== "production" && m && O[0] === "/" && Sh(A, m), b ? (b.alias.push(A), process.env.NODE_ENV !== "production" && wh(b, A)) : (I = I || A, I !== A && I.alias.push(A), T && u.name && !Ji(A) && (process.env.NODE_ENV !== "production" && Oh(u, m), i(u.name))), oc(A) && a(A), $.children) {
-        const S = $.children;
-        for (let v = 0; v < S.length; v++) r(S[v], A, b && b.children[v]);
+      if (I = kh(te, _, W), process.env.NODE_ENV !== "production" && _ && D[0] === "/" && Ah(I, _), g ? (g.alias.push(I), process.env.NODE_ENV !== "production" && Th(g, I)) : (L = L || I, L !== I && L.alias.push(I), k && f.name && !nl(I) && (process.env.NODE_ENV !== "production" && Rh(f, _), a(f.name))), fc(I) && u(I), O.children) {
+        const T = O.children;
+        for (let b = 0; b < T.length; b++) r(T[b], I, g && g.children[b]);
       }
-      b = b || A;
+      g = g || I;
     }
-    return I ? () => {
-      i(I);
-    } : as;
+    return L ? () => {
+      a(L);
+    } : cs;
   }
-  function i(u) {
-    if (qa(u)) {
-      const m = s.get(u);
-      m && (s.delete(u), n.splice(n.indexOf(m), 1), m.children.forEach(i), m.alias.forEach(i));
+  function a(f) {
+    if (nc(f)) {
+      const _ = s.get(f);
+      _ && (s.delete(f), n.splice(n.indexOf(_), 1), _.children.forEach(a), _.alias.forEach(a));
     } else {
-      const m = n.indexOf(u);
-      m > -1 && (n.splice(m, 1), u.record.name && s.delete(u.record.name), u.children.forEach(i), u.alias.forEach(i));
+      const _ = n.indexOf(f);
+      _ > -1 && (n.splice(_, 1), f.record.name && s.delete(f.record.name), f.children.forEach(a), f.alias.forEach(a));
     }
   }
-  function l() {
+  function c() {
     return n;
   }
-  function a(u) {
-    const m = kh(u, n);
-    n.splice(m, 0, u), u.record.name && !Ji(u) && s.set(u.record.name, u);
+  function u(f) {
+    const _ = Vh(f, n);
+    n.splice(_, 0, f), f.record.name && !nl(f) && s.set(f.record.name, f);
   }
-  function f(u, m) {
-    let b, T = {}, $, K;
-    if ("name" in u && u.name) {
-      if (b = s.get(u.name), !b) throw Bn(Se.MATCHER_NOT_FOUND, { location: u });
+  function p(f, _) {
+    let g, k = {}, O, W;
+    if ("name" in f && f.name) {
+      if (g = s.get(f.name), !g) throw Kn(Pe.MATCHER_NOT_FOUND, { location: f });
       if (process.env.NODE_ENV !== "production") {
-        const I = Object.keys(u.params || {}).filter((te) => !b.keys.find((O) => O.name === te));
-        I.length && le(`Discarded invalid param(s) "${I.join('", "')}" when navigating. See https://github.com/vuejs/router/blob/main/packages/router/CHANGELOG.md#414-2022-08-22 for more details.`);
+        const L = Object.keys(f.params || {}).filter((te) => !g.keys.find((D) => D.name === te));
+        L.length && _e(`Discarded invalid param(s) "${L.join('", "')}" when navigating. See https://github.com/vuejs/router/blob/main/packages/router/CHANGELOG.md#414-2022-08-22 for more details.`);
       }
-      K = b.record.name, T = ge(zi(m.params, b.keys.filter((I) => !I.optional).concat(b.parent ? b.parent.keys.filter((I) => I.optional) : []).map((I) => I.name)), u.params && zi(u.params, b.keys.map((I) => I.name))), $ = b.stringify(T);
-    } else if (u.path != null)
-      $ = u.path, process.env.NODE_ENV !== "production" && !$.startsWith("/") && le(`The Matcher cannot resolve relative paths but received "${$}". Unless you directly called \`matcher.resolve("${$}")\`, this is probably a bug in vue-router. Please open an issue at https://github.com/vuejs/router/issues/new/choose.`), b = n.find((I) => I.re.test($)), b && (T = b.parse($), K = b.record.name);
+      W = g.record.name, k = we(el(_.params, g.keys.filter((L) => !L.optional).concat(g.parent ? g.parent.keys.filter((L) => L.optional) : []).map((L) => L.name)), f.params && el(f.params, g.keys.map((L) => L.name))), O = g.stringify(k);
+    } else if (f.path != null)
+      O = f.path, process.env.NODE_ENV !== "production" && !O.startsWith("/") && _e(`The Matcher cannot resolve relative paths but received "${O}". Unless you directly called \`matcher.resolve("${O}")\`, this is probably a bug in vue-router. Please open an issue at https://github.com/vuejs/router/issues/new/choose.`), g = n.find((L) => L.re.test(O)), g && (k = g.parse(O), W = g.record.name);
     else {
-      if (b = m.name ? s.get(m.name) : n.find((I) => I.re.test(m.path)), !b) throw Bn(Se.MATCHER_NOT_FOUND, {
-        location: u,
-        currentLocation: m
+      if (g = _.name ? s.get(_.name) : n.find((L) => L.re.test(_.path)), !g) throw Kn(Pe.MATCHER_NOT_FOUND, {
+        location: f,
+        currentLocation: _
       });
-      K = b.record.name, T = ge({}, m.params, u.params), $ = b.stringify(T);
+      W = g.record.name, k = we({}, _.params, f.params), O = g.stringify(k);
     }
-    const F = [];
-    let A = b;
-    for (; A; )
-      F.unshift(A.record), A = A.parent;
+    const V = [];
+    let I = g;
+    for (; I; )
+      V.unshift(I.record), I = I.parent;
     return {
-      name: K,
-      path: $,
-      params: T,
-      matched: F,
-      meta: Eh(F)
+      name: W,
+      path: O,
+      params: k,
+      matched: V,
+      meta: Dh(V)
     };
   }
-  e.forEach((u) => r(u));
-  function p() {
+  e.forEach((f) => r(f));
+  function h() {
     n.length = 0, s.clear();
   }
   return {
     addRoute: r,
-    resolve: f,
-    removeRoute: i,
-    clearRoutes: p,
-    getRoutes: l,
+    resolve: p,
+    removeRoute: a,
+    clearRoutes: h,
+    getRoutes: c,
     getRecordMatcher: o
   };
 }
-function zi(e, t) {
+function el(e, t) {
   const n = {};
   for (const s of t) s in e && (n[s] = e[s]);
   return n;
 }
-function qi(e) {
+function tl(e) {
   const t = {
     path: e.path,
     redirect: e.redirect,
@@ -7523,7 +7542,7 @@ function qi(e) {
     meta: e.meta || {},
     aliasOf: e.aliasOf,
     beforeEnter: e.beforeEnter,
-    props: yh(e),
+    props: xh(e),
     children: e.children || [],
     instances: {},
     leaveGuards: /* @__PURE__ */ new Set(),
@@ -7533,106 +7552,106 @@ function qi(e) {
   };
   return Object.defineProperty(t, "mods", { value: {} }), t;
 }
-function yh(e) {
+function xh(e) {
   const t = {}, n = e.props || !1;
   if ("component" in e) t.default = n;
   else for (const s in e.components) t[s] = typeof n == "object" ? n[s] : n;
   return t;
 }
-function Ji(e) {
+function nl(e) {
   for (; e; ) {
     if (e.record.aliasOf) return !0;
     e = e.parent;
   }
   return !1;
 }
-function Eh(e) {
-  return e.reduce((t, n) => ge(t, n.meta), {});
+function Dh(e) {
+  return e.reduce((t, n) => we(t, n.meta), {});
 }
-function ir(e, t) {
+function ur(e, t) {
   return e.name === t.name && e.optional === t.optional && e.repeatable === t.repeatable;
 }
-function wh(e, t) {
-  for (const n of e.keys) if (!n.optional && !t.keys.find(ir.bind(null, n))) return le(`Alias "${t.record.path}" and the original record: "${e.record.path}" must have the exact same param named "${n.name}"`);
-  for (const n of t.keys) if (!n.optional && !e.keys.find(ir.bind(null, n))) return le(`Alias "${t.record.path}" and the original record: "${e.record.path}" must have the exact same param named "${n.name}"`);
+function Th(e, t) {
+  for (const n of e.keys) if (!n.optional && !t.keys.find(ur.bind(null, n))) return _e(`Alias "${t.record.path}" and the original record: "${e.record.path}" must have the exact same param named "${n.name}"`);
+  for (const n of t.keys) if (!n.optional && !e.keys.find(ur.bind(null, n))) return _e(`Alias "${t.record.path}" and the original record: "${e.record.path}" must have the exact same param named "${n.name}"`);
 }
-function Nh(e, t) {
-  t && t.record.name && !e.name && !e.path && le(`The route named "${String(t.record.name)}" has a child without a name and an empty path. Using that name won't render the empty path child so you probably want to move the name to the child instead. If this is intentional, add a name to the child route to remove the warning.`);
+function Ph(e, t) {
+  t && t.record.name && !e.name && !e.path && _e(`The route named "${String(t.record.name)}" has a child without a name and an empty path. Using that name won't render the empty path child so you probably want to move the name to the child instead. If this is intentional, add a name to the child route to remove the warning.`);
 }
-function Oh(e, t) {
+function Rh(e, t) {
   for (let n = t; n; n = n.parent) if (n.record.name === e.name) throw new Error(`A route named "${String(e.name)}" has been added as a ${t === n ? "child" : "descendant"} of a route with the same name. Route names must be unique and a nested route cannot use the same name as an ancestor.`);
 }
-function Sh(e, t) {
-  for (const n of t.keys) if (!e.keys.find(ir.bind(null, n))) return le(`Absolute path "${e.record.path}" must have the exact same param named "${n.name}" as its parent "${t.record.path}".`);
+function Ah(e, t) {
+  for (const n of t.keys) if (!e.keys.find(ur.bind(null, n))) return _e(`Absolute path "${e.record.path}" must have the exact same param named "${n.name}" as its parent "${t.record.path}".`);
 }
-function kh(e, t) {
+function Vh(e, t) {
   let n = 0, s = t.length;
   for (; n !== s; ) {
     const r = n + s >> 1;
-    sc(e, t[r]) < 0 ? s = r : n = r + 1;
+    dc(e, t[r]) < 0 ? s = r : n = r + 1;
   }
-  const o = $h(e);
-  return o && (s = t.lastIndexOf(o, s - 1), process.env.NODE_ENV !== "production" && s < 0 && le(`Finding ancestor route "${o.record.path}" failed for "${e.record.path}"`)), s;
+  const o = Ih(e);
+  return o && (s = t.lastIndexOf(o, s - 1), process.env.NODE_ENV !== "production" && s < 0 && _e(`Finding ancestor route "${o.record.path}" failed for "${e.record.path}"`)), s;
 }
-function $h(e) {
+function Ih(e) {
   let t = e;
-  for (; t = t.parent; ) if (oc(t) && sc(e, t) === 0) return t;
+  for (; t = t.parent; ) if (fc(t) && dc(e, t) === 0) return t;
 }
-function oc({ record: e }) {
+function fc({ record: e }) {
   return !!(e.name || e.components && Object.keys(e.components).length || e.redirect);
 }
-function Yi(e) {
-  const t = ft(Ar), n = ft(Rr);
+function sl(e) {
+  const t = _t(wo), n = _t(jr);
   let s = !1, o = null;
-  const r = ue(() => {
-    const p = d(e.to);
-    return process.env.NODE_ENV !== "production" && (!s || p !== o) && (io(p) || (s ? le(`Invalid value for prop "to" in useLink()
-- to:`, p, `
+  const r = ne(() => {
+    const h = l(e.to);
+    return process.env.NODE_ENV !== "production" && (!s || h !== o) && (ao(h) || (s ? _e(`Invalid value for prop "to" in useLink()
+- to:`, h, `
 - previous to:`, o, `
-- props:`, e) : le(`Invalid value for prop "to" in useLink()
-- to:`, p, `
-- props:`, e)), o = p, s = !0), t.resolve(p);
-  }), i = ue(() => {
-    const { matched: p } = r.value, { length: u } = p, m = p[u - 1], b = n.matched;
-    if (!m || !b.length) return -1;
-    const T = b.findIndex(an.bind(null, m));
-    if (T > -1) return T;
-    const $ = Qi(p[u - 2]);
-    return u > 1 && Qi(m) === $ && b[b.length - 1].path !== $ ? b.findIndex(an.bind(null, p[u - 2])) : T;
-  }), l = ue(() => i.value > -1 && Th(n.params, r.value.params)), a = ue(() => i.value > -1 && i.value === n.matched.length - 1 && za(n.params, r.value.params));
-  function f(p = {}) {
-    if (xh(p)) {
-      const u = t[d(e.replace) ? "replace" : "push"](d(e.to)).catch(as);
-      return e.viewTransition && typeof document < "u" && "startViewTransition" in document && document.startViewTransition(() => u), u;
+- props:`, e) : _e(`Invalid value for prop "to" in useLink()
+- to:`, h, `
+- props:`, e)), o = h, s = !0), t.resolve(h);
+  }), a = ne(() => {
+    const { matched: h } = r.value, { length: f } = h, _ = h[f - 1], g = n.matched;
+    if (!_ || !g.length) return -1;
+    const k = g.findIndex(pn.bind(null, _));
+    if (k > -1) return k;
+    const O = ol(h[f - 2]);
+    return f > 1 && ol(_) === O && g[g.length - 1].path !== O ? g.findIndex(pn.bind(null, h[f - 2])) : k;
+  }), c = ne(() => a.value > -1 && jh(n.params, r.value.params)), u = ne(() => a.value > -1 && a.value === n.matched.length - 1 && tc(n.params, r.value.params));
+  function p(h = {}) {
+    if (Lh(h)) {
+      const f = t[l(e.replace) ? "replace" : "push"](l(e.to)).catch(cs);
+      return e.viewTransition && typeof document < "u" && "startViewTransition" in document && document.startViewTransition(() => f), f;
     }
     return Promise.resolve();
   }
-  if (process.env.NODE_ENV !== "production" && jt) {
-    const p = Kn();
-    if (p) {
-      const u = {
+  if (process.env.NODE_ENV !== "production" && zt) {
+    const h = zn();
+    if (h) {
+      const f = {
         route: r.value,
-        isActive: l.value,
-        isExactActive: a.value,
+        isActive: c.value,
+        isExactActive: u.value,
         error: null
       };
-      p.__vrl_devtools = p.__vrl_devtools || [], p.__vrl_devtools.push(u), wu(() => {
-        u.route = r.value, u.isActive = l.value, u.isExactActive = a.value, u.error = io(d(e.to)) ? null : 'Invalid "to" value';
+      h.__vrl_devtools = h.__vrl_devtools || [], h.__vrl_devtools.push(f), Du(() => {
+        f.route = r.value, f.isActive = c.value, f.isExactActive = u.value, f.error = ao(l(e.to)) ? null : 'Invalid "to" value';
       }, { flush: "post" });
     }
   }
   return {
     route: r,
-    href: ue(() => r.value.href),
-    isActive: l,
-    isExactActive: a,
-    navigate: f
+    href: ne(() => r.value.href),
+    isActive: c,
+    isExactActive: u,
+    navigate: p
   };
 }
-function Ch(e) {
+function Mh(e) {
   return e.length === 1 ? e[0] : e;
 }
-const Dh = /* @__PURE__ */ Be({
+const Fh = /* @__PURE__ */ Ve({
   name: "RouterLink",
   compatConfig: { MODE: 3 },
   props: {
@@ -7650,15 +7669,15 @@ const Dh = /* @__PURE__ */ Be({
     },
     viewTransition: Boolean
   },
-  useLink: Yi,
+  useLink: sl,
   setup(e, { slots: t }) {
-    const n = /* @__PURE__ */ on(Yi(e)), { options: s } = ft(Ar), o = ue(() => ({
-      [Xi(e.activeClass, s.linkActiveClass, "router-link-active")]: n.isActive,
-      [Xi(e.exactActiveClass, s.linkExactActiveClass, "router-link-exact-active")]: n.isExactActive
+    const n = /* @__PURE__ */ cn(sl(e)), { options: s } = _t(wo), o = ne(() => ({
+      [rl(e.activeClass, s.linkActiveClass, "router-link-active")]: n.isActive,
+      [rl(e.exactActiveClass, s.linkExactActiveClass, "router-link-exact-active")]: n.isExactActive
     }));
     return () => {
-      const r = t.default && Ch(t.default(n));
-      return e.custom ? r : Ea("a", {
+      const r = t.default && Mh(t.default(n));
+      return e.custom ? r : Da("a", {
         "aria-current": n.isExactActive ? e.ariaCurrentValue : null,
         href: n.href,
         onClick: n.navigate,
@@ -7666,8 +7685,8 @@ const Dh = /* @__PURE__ */ Be({
       }, r);
     };
   }
-}), Ir = Dh;
-function xh(e) {
+}), Ur = Fh;
+function Lh(e) {
   if (!(e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) && !e.defaultPrevented && !(e.button !== void 0 && e.button !== 0)) {
     if (e.currentTarget && e.currentTarget.getAttribute) {
       const t = e.currentTarget.getAttribute("target");
@@ -7676,19 +7695,19 @@ function xh(e) {
     return e.preventDefault && e.preventDefault(), !0;
   }
 }
-function Th(e, t) {
+function jh(e, t) {
   for (const n in t) {
     const s = t[n], o = e[n];
     if (typeof s == "string") {
       if (s !== o) return !1;
-    } else if (!nt(o) || o.length !== s.length || s.some((r, i) => r.valueOf() !== o[i].valueOf())) return !1;
+    } else if (!dt(o) || o.length !== s.length || s.some((r, a) => r.valueOf() !== o[a].valueOf())) return !1;
   }
   return !0;
 }
-function Qi(e) {
+function ol(e) {
   return e ? e.aliasOf ? e.aliasOf.path : e.path : "";
 }
-const Xi = (e, t, n) => e ?? t ?? n, Ph = /* @__PURE__ */ Be({
+const rl = (e, t, n) => e ?? t ?? n, Uh = /* @__PURE__ */ Ve({
   name: "RouterView",
   inheritAttrs: !1,
   props: {
@@ -7700,63 +7719,63 @@ const Xi = (e, t, n) => e ?? t ?? n, Ph = /* @__PURE__ */ Be({
   },
   compatConfig: { MODE: 3 },
   setup(e, { attrs: t, slots: n }) {
-    process.env.NODE_ENV !== "production" && Vh();
-    const s = ft(or), o = ue(() => e.route || s.value), r = ft(Bi, 0), i = ue(() => {
-      let f = d(r);
-      const { matched: p } = o.value;
-      let u;
-      for (; (u = p[f]) && !u.components; ) f++;
-      return f;
-    }), l = ue(() => o.value.matched[i.value]);
-    Is(Bi, ue(() => i.value + 1)), Is(Wp, l), Is(or, o);
-    const a = /* @__PURE__ */ me();
+    process.env.NODE_ENV !== "production" && Hh();
+    const s = _t(ar), o = ne(() => e.route || s.value), r = _t(Qi, 0), a = ne(() => {
+      let p = l(r);
+      const { matched: h } = o.value;
+      let f;
+      for (; (f = h[p]) && !f.components; ) p++;
+      return p;
+    }), c = ne(() => o.value.matched[a.value]);
+    Ls(Qi, ne(() => a.value + 1)), Ls(eh, c), Ls(ar, o);
+    const u = /* @__PURE__ */ Z();
     return qe(() => [
-      a.value,
-      l.value,
+      u.value,
+      c.value,
       e.name
-    ], ([f, p, u], [m, b, T]) => {
-      p && (p.instances[u] = f, b && b !== p && f && f === m && (p.leaveGuards.size || (p.leaveGuards = b.leaveGuards), p.updateGuards.size || (p.updateGuards = b.updateGuards))), f && p && (!b || !an(p, b) || !m) && (p.enterCallbacks[u] || []).forEach(($) => $(f));
+    ], ([p, h, f], [_, g, k]) => {
+      h && (h.instances[f] = p, g && g !== h && p && p === _ && (h.leaveGuards.size || (h.leaveGuards = g.leaveGuards), h.updateGuards.size || (h.updateGuards = g.updateGuards))), p && h && (!g || !pn(h, g) || !_) && (h.enterCallbacks[f] || []).forEach((O) => O(p));
     }, { flush: "post" }), () => {
-      const f = o.value, p = e.name, u = l.value, m = u && u.components[p];
-      if (!m) return Zi(n.default, {
-        Component: m,
-        route: f
+      const p = o.value, h = e.name, f = c.value, _ = f && f.components[h];
+      if (!_) return il(n.default, {
+        Component: _,
+        route: p
       });
-      const b = u.props[p], T = b ? b === !0 ? f.params : typeof b == "function" ? b(f) : b : null, K = Ea(m, ge({}, T, t, {
-        onVnodeUnmounted: (F) => {
-          F.component.isUnmounted && (u.instances[p] = null);
+      const g = f.props[h], k = g ? g === !0 ? p.params : typeof g == "function" ? g(p) : g : null, W = Da(_, we({}, k, t, {
+        onVnodeUnmounted: (V) => {
+          V.component.isUnmounted && (f.instances[h] = null);
         },
-        ref: a
+        ref: u
       }));
-      if (process.env.NODE_ENV !== "production" && jt && K.ref) {
-        const F = {
-          depth: i.value,
-          name: u.name,
-          path: u.path,
-          meta: u.meta
+      if (process.env.NODE_ENV !== "production" && zt && W.ref) {
+        const V = {
+          depth: a.value,
+          name: f.name,
+          path: f.path,
+          meta: f.meta
         };
-        (nt(K.ref) ? K.ref.map((A) => A.i) : [K.ref.i]).forEach((A) => {
-          A.__vrv_devtools = F;
+        (dt(W.ref) ? W.ref.map((I) => I.i) : [W.ref.i]).forEach((I) => {
+          I.__vrv_devtools = V;
         });
       }
-      return Zi(n.default, {
-        Component: K,
-        route: f
-      }) || K;
+      return il(n.default, {
+        Component: W,
+        route: p
+      }) || W;
     };
   }
 });
-function Zi(e, t) {
+function il(e, t) {
   if (!e) return null;
   const n = e(t);
   return n.length === 1 ? n[0] : n;
 }
-const rc = Ph;
-function Vh() {
-  const e = Kn(), t = e.parent && e.parent.type.name, n = e.parent && e.parent.subTree && e.parent.subTree.type;
+const pc = Uh;
+function Hh() {
+  const e = zn(), t = e.parent && e.parent.type.name, n = e.parent && e.parent.subTree && e.parent.subTree.type;
   if (t && (t === "KeepAlive" || t.includes("Transition")) && typeof n == "object" && n.name === "RouterView") {
     const s = t === "KeepAlive" ? "keep-alive" : "transition";
-    le(`<router-view> can no longer be used directly inside <transition> or <keep-alive>.
+    _e(`<router-view> can no longer be used directly inside <transition> or <keep-alive>.
 Use slot props instead:
 
 <router-view v-slot="{ Component }">
@@ -7766,261 +7785,264 @@ Use slot props instead:
 </router-view>`);
   }
 }
-function Ah(e) {
-  const t = bh(e.routes, e), n = e.parseQuery || Bp, s = e.stringifyQuery || Hi, o = e.history;
+function Gh(e) {
+  const t = Ch(e.routes, e), n = e.parseQuery || Xp, s = e.stringifyQuery || Ji, o = e.history;
   if (process.env.NODE_ENV !== "production" && !o) throw new Error('Provide the "history" option when calling "createRouter()": https://router.vuejs.org/api/interfaces/RouterOptions.html#history');
-  const r = Xn(), i = Xn(), l = Xn(), a = /* @__PURE__ */ Wc(Yt);
-  let f = Yt;
-  jt && e.scrollBehavior && "scrollRestoration" in history && (history.scrollRestoration = "manual");
-  const p = Po.bind(null, (w) => "" + w), u = Po.bind(null, $p), m = Po.bind(null, Hn);
-  function b(w, W) {
-    let G, Y;
-    return qa(w) ? (G = t.getRecordMatcher(w), process.env.NODE_ENV !== "production" && !G && le(`Parent route "${String(w)}" not found when adding child route`, W), Y = W) : Y = w, t.addRoute(Y, G);
+  const r = Zn(), a = Zn(), c = Zn(), u = /* @__PURE__ */ Zc(tn);
+  let p = tn;
+  zt && e.scrollBehavior && "scrollRestoration" in history && (history.scrollRestoration = "manual");
+  const h = Vo.bind(null, (C) => "" + C), f = Vo.bind(null, Ip), _ = Vo.bind(null, Bn);
+  function g(C, z) {
+    let J, oe;
+    return nc(C) ? (J = t.getRecordMatcher(C), process.env.NODE_ENV !== "production" && !J && _e(`Parent route "${String(C)}" not found when adding child route`, z), oe = z) : oe = C, t.addRoute(oe, J);
   }
-  function T(w) {
-    const W = t.getRecordMatcher(w);
-    W ? t.removeRoute(W) : process.env.NODE_ENV !== "production" && le(`Cannot remove non-existent route "${String(w)}"`);
+  function k(C) {
+    const z = t.getRecordMatcher(C);
+    z ? t.removeRoute(z) : process.env.NODE_ENV !== "production" && _e(`Cannot remove non-existent route "${String(C)}"`);
   }
-  function $() {
-    return t.getRoutes().map((w) => w.record);
+  function O() {
+    return t.getRoutes().map((C) => C.record);
   }
-  function K(w) {
-    return !!t.getRecordMatcher(w);
+  function W(C) {
+    return !!t.getRecordMatcher(C);
   }
-  function F(w, W) {
-    if (W = ge({}, W || a.value), typeof w == "string") {
-      const _ = Vo(n, w, W.path), y = t.resolve({ path: _.path }, W), x = o.createHref(_.fullPath);
-      return process.env.NODE_ENV !== "production" && (x.startsWith("//") ? le(`Location "${w}" resolved to "${x}". A resolved location cannot start with multiple slashes.`) : y.matched.length || le(`No match found for location with path "${w}"`)), ge(_, y, {
-        params: m(y.params),
-        hash: Hn(_.hash),
+  function V(C, z) {
+    if (z = we({}, z || u.value), typeof C == "string") {
+      const v = Io(n, C, z.path), $ = t.resolve({ path: v.path }, z), F = o.createHref(v.fullPath);
+      return process.env.NODE_ENV !== "production" && (F.startsWith("//") ? _e(`Location "${C}" resolved to "${F}". A resolved location cannot start with multiple slashes.`) : $.matched.length || _e(`No match found for location with path "${C}"`)), we(v, $, {
+        params: _($.params),
+        hash: Bn(v.hash),
         redirectedFrom: void 0,
-        href: x
+        href: F
       });
     }
-    if (process.env.NODE_ENV !== "production" && !io(w))
-      return le(`router.resolve() was passed an invalid location. This will fail in production.
-- Location:`, w), F({});
-    let G;
-    if (w.path != null)
-      process.env.NODE_ENV !== "production" && "params" in w && !("name" in w) && Object.keys(w.params).length && le(`Path "${w.path}" was passed with params but they will be ignored. Use a named route alongside params instead.`), G = ge({}, w, { path: Vo(n, w.path, W.path).path });
+    if (process.env.NODE_ENV !== "production" && !ao(C))
+      return _e(`router.resolve() was passed an invalid location. This will fail in production.
+- Location:`, C), V({});
+    let J;
+    if (C.path != null)
+      process.env.NODE_ENV !== "production" && "params" in C && !("name" in C) && Object.keys(C.params).length && _e(`Path "${C.path}" was passed with params but they will be ignored. Use a named route alongside params instead.`), J = we({}, C, { path: Io(n, C.path, z.path).path });
     else {
-      const _ = ge({}, w.params);
-      for (const y in _) _[y] == null && delete _[y];
-      G = ge({}, w, { params: u(_) }), W.params = u(W.params);
+      const v = we({}, C.params);
+      for (const $ in v) v[$] == null && delete v[$];
+      J = we({}, C, { params: f(v) }), z.params = f(z.params);
     }
-    const Y = t.resolve(G, W), se = w.hash || "";
-    process.env.NODE_ENV !== "production" && se && !se.startsWith("#") && le(`A \`hash\` should always start with the character "#". Replace "${se}" with "#${se}".`), Y.params = p(m(Y.params));
-    const Ce = xp(s, ge({}, w, {
-      hash: Op(se),
-      path: Y.path
-    })), h = o.createHref(Ce);
-    return process.env.NODE_ENV !== "production" && (h.startsWith("//") ? le(`Location "${w}" resolved to "${h}". A resolved location cannot start with multiple slashes.`) : Y.matched.length || le(`No match found for location with path "${w.path != null ? w.path : w}"`)), ge({
-      fullPath: Ce,
-      hash: se,
-      query: s === Hi ? Gp(w.query) : w.query || {}
-    }, Y, {
+    const oe = t.resolve(J, z), le = C.hash || "";
+    process.env.NODE_ENV !== "production" && le && !le.startsWith("#") && _e(`A \`hash\` should always start with the character "#". Replace "${le}" with "#${le}".`), oe.params = h(_(oe.params));
+    const De = Lp(s, we({}, C, {
+      hash: Rp(le),
+      path: oe.path
+    })), m = o.createHref(De);
+    return process.env.NODE_ENV !== "production" && (m.startsWith("//") ? _e(`Location "${C}" resolved to "${m}". A resolved location cannot start with multiple slashes.`) : oe.matched.length || _e(`No match found for location with path "${C.path != null ? C.path : C}"`)), we({
+      fullPath: De,
+      hash: le,
+      query: s === Ji ? Zp(C.query) : C.query || {}
+    }, oe, {
       redirectedFrom: void 0,
-      href: h
+      href: m
     });
   }
-  function A(w) {
-    return typeof w == "string" ? Vo(n, w, a.value.path) : ge({}, w);
+  function I(C) {
+    return typeof C == "string" ? Io(n, C, u.value.path) : we({}, C);
   }
-  function I(w, W) {
-    if (f !== w) return Bn(Se.NAVIGATION_CANCELLED, {
-      from: W,
-      to: w
+  function L(C, z) {
+    if (p !== C) return Kn(Pe.NAVIGATION_CANCELLED, {
+      from: z,
+      to: C
     });
   }
-  function te(w) {
-    return v(w);
+  function te(C) {
+    return b(C);
   }
-  function O(w) {
-    return te(ge(A(w), { replace: !0 }));
+  function D(C) {
+    return te(we(I(C), { replace: !0 }));
   }
-  function S(w, W) {
-    const G = w.matched[w.matched.length - 1];
-    if (G && G.redirect) {
-      const { redirect: Y } = G;
-      let se = typeof Y == "function" ? Y(w, W) : Y;
-      if (typeof se == "string" && (se = se.includes("?") || se.includes("#") ? se = A(se) : { path: se }, se.params = {}), process.env.NODE_ENV !== "production" && se.path == null && !("name" in se))
-        throw le(`Invalid redirect found:
-${JSON.stringify(se, null, 2)}
- when navigating to "${w.fullPath}". A redirect must contain a name or path. This will break in production.`), new Error("Invalid redirect");
-      return ge({
-        query: w.query,
-        hash: w.hash,
-        params: se.path != null ? {} : w.params
-      }, se);
+  function T(C, z) {
+    const J = C.matched[C.matched.length - 1];
+    if (J && J.redirect) {
+      const { redirect: oe } = J;
+      let le = typeof oe == "function" ? oe(C, z) : oe;
+      if (typeof le == "string" && (le = le.includes("?") || le.includes("#") ? le = I(le) : { path: le }, le.params = {}), process.env.NODE_ENV !== "production" && le.path == null && !("name" in le))
+        throw _e(`Invalid redirect found:
+${JSON.stringify(le, null, 2)}
+ when navigating to "${C.fullPath}". A redirect must contain a name or path. This will break in production.`), new Error("Invalid redirect");
+      return we({
+        query: C.query,
+        hash: C.hash,
+        params: le.path != null ? {} : C.params
+      }, le);
     }
   }
-  function v(w, W) {
-    const G = f = F(w), Y = a.value, se = w.state, Ce = w.force, h = w.replace === !0, _ = S(G, Y);
-    if (_) return v(ge(A(_), {
-      state: typeof _ == "object" ? ge({}, se, _.state) : se,
-      force: Ce,
-      replace: h
-    }), W || G);
-    const y = G;
-    y.redirectedFrom = W;
-    let x;
-    return !Ce && ji(s, Y, G) && (x = Bn(Se.NAVIGATION_DUPLICATED, {
-      to: y,
-      from: Y
-    }), Kt(Y, Y, !0, !1)), (x ? Promise.resolve(x) : M(y, Y)).catch((k) => Rt(k) ? Rt(k, Se.NAVIGATION_GUARD_REDIRECT) ? k : cn(k) : oe(k, y, Y)).then((k) => {
-      if (k) {
-        if (Rt(k, Se.NAVIGATION_GUARD_REDIRECT))
-          return process.env.NODE_ENV !== "production" && ji(s, F(k.to), y) && W && (W._count = W._count ? W._count + 1 : 1) > 30 ? (le(`Detected a possibly infinite redirection in a navigation guard when going from "${Y.fullPath}" to "${y.fullPath}". Aborting to avoid a Stack Overflow.
- Are you always returning a new location within a navigation guard? That would lead to this error. Only return when redirecting or aborting, that should fix this. This might break in production if not fixed.`), Promise.reject(/* @__PURE__ */ new Error("Infinite redirect in navigation guard"))) : v(ge({ replace: h }, A(k.to), {
-            state: typeof k.to == "object" ? ge({}, se, k.to.state) : se,
-            force: Ce
-          }), W || y);
-      } else k = z(y, Y, !0, h, se);
-      return C(y, Y, k), k;
+  function b(C, z) {
+    const J = p = V(C), oe = u.value, le = C.state, De = C.force, m = C.replace === !0, v = T(J, oe);
+    if (v) return b(we(I(v), {
+      state: typeof v == "object" ? we({}, le, v.state) : le,
+      force: De,
+      replace: m
+    }), z || J);
+    const $ = J;
+    $.redirectedFrom = z;
+    let F;
+    return !De && Wi(s, oe, J) && (F = Kn(Pe.NAVIGATION_DUPLICATED, {
+      to: $,
+      from: oe
+    }), Ct(oe, oe, !0, !1)), (F ? Promise.resolve(F) : M($, oe)).catch((R) => Bt(R) ? Bt(R, Pe.NAVIGATION_GUARD_REDIRECT) ? R : lt(R) : se(R, $, oe)).then((R) => {
+      if (R) {
+        if (Bt(R, Pe.NAVIGATION_GUARD_REDIRECT))
+          return process.env.NODE_ENV !== "production" && Wi(s, V(R.to), $) && z && (z._count = z._count ? z._count + 1 : 1) > 30 ? (_e(`Detected a possibly infinite redirection in a navigation guard when going from "${oe.fullPath}" to "${$.fullPath}". Aborting to avoid a Stack Overflow.
+ Are you always returning a new location within a navigation guard? That would lead to this error. Only return when redirecting or aborting, that should fix this. This might break in production if not fixed.`), Promise.reject(/* @__PURE__ */ new Error("Infinite redirect in navigation guard"))) : b(we({ replace: m }, I(R.to), {
+            state: typeof R.to == "object" ? we({}, le, R.to.state) : le,
+            force: De
+          }), z || $);
+      } else R = Q($, oe, !0, m, le);
+      return A($, oe, R), R;
     });
   }
-  function E(w, W) {
-    const G = I(w, W);
-    return G ? Promise.reject(G) : Promise.resolve();
+  function S(C, z) {
+    const J = L(C, z);
+    return J ? Promise.reject(J) : Promise.resolve();
   }
-  function N(w) {
-    const W = zt.values().next().value;
-    return W && typeof W.runWithContext == "function" ? W.runWithContext(w) : w();
+  function x(C) {
+    const z = Ge.values().next().value;
+    return z && typeof z.runWithContext == "function" ? z.runWithContext(C) : C();
   }
-  function M(w, W) {
-    let G;
-    const [Y, se, Ce] = zp(w, W);
-    G = Ro(Y.reverse(), "beforeRouteLeave", w, W);
-    for (const _ of Y) _.leaveGuards.forEach((y) => {
-      G.push(Xt(y, w, W));
+  function M(C, z) {
+    let J;
+    const [oe, le, De] = nh(C, z);
+    J = Fo(oe.reverse(), "beforeRouteLeave", C, z);
+    for (const v of oe) v.leaveGuards.forEach(($) => {
+      J.push(sn($, C, z));
     });
-    const h = E.bind(null, w, W);
-    return G.push(h), Jt(G).then(() => {
-      G = [];
-      for (const _ of r.list()) G.push(Xt(_, w, W));
-      return G.push(h), Jt(G);
+    const m = S.bind(null, C, z);
+    return J.push(m), at(J).then(() => {
+      J = [];
+      for (const v of r.list()) J.push(sn(v, C, z));
+      return J.push(m), at(J);
     }).then(() => {
-      G = Ro(se, "beforeRouteUpdate", w, W);
-      for (const _ of se) _.updateGuards.forEach((y) => {
-        G.push(Xt(y, w, W));
+      J = Fo(le, "beforeRouteUpdate", C, z);
+      for (const v of le) v.updateGuards.forEach(($) => {
+        J.push(sn($, C, z));
       });
-      return G.push(h), Jt(G);
+      return J.push(m), at(J);
     }).then(() => {
-      G = [];
-      for (const _ of Ce) if (_.beforeEnter) if (nt(_.beforeEnter)) for (const y of _.beforeEnter) G.push(Xt(y, w, W));
-      else G.push(Xt(_.beforeEnter, w, W));
-      return G.push(h), Jt(G);
-    }).then(() => (w.matched.forEach((_) => _.enterCallbacks = {}), G = Ro(Ce, "beforeRouteEnter", w, W, N), G.push(h), Jt(G))).then(() => {
-      G = [];
-      for (const _ of i.list()) G.push(Xt(_, w, W));
-      return G.push(h), Jt(G);
-    }).catch((_) => Rt(_, Se.NAVIGATION_CANCELLED) ? _ : Promise.reject(_));
+      J = [];
+      for (const v of De) if (v.beforeEnter) if (dt(v.beforeEnter)) for (const $ of v.beforeEnter) J.push(sn($, C, z));
+      else J.push(sn(v.beforeEnter, C, z));
+      return J.push(m), at(J);
+    }).then(() => (C.matched.forEach((v) => v.enterCallbacks = {}), J = Fo(De, "beforeRouteEnter", C, z, x), J.push(m), at(J))).then(() => {
+      J = [];
+      for (const v of a.list()) J.push(sn(v, C, z));
+      return J.push(m), at(J);
+    }).catch((v) => Bt(v, Pe.NAVIGATION_CANCELLED) ? v : Promise.reject(v));
   }
-  function C(w, W, G) {
-    l.list().forEach((Y) => N(() => Y(w, W, G)));
+  function A(C, z, J) {
+    c.list().forEach((oe) => x(() => oe(C, z, J)));
   }
-  function z(w, W, G, Y, se) {
-    const Ce = I(w, W);
-    if (Ce) return Ce;
-    const h = W === Yt, _ = jt ? history.state : {};
-    G && (Y || h ? o.replace(w.fullPath, ge({ scroll: h && _ && _.scroll }, se)) : o.push(w.fullPath, se)), a.value = w, Kt(w, W, G, h), cn();
+  function Q(C, z, J, oe, le) {
+    const De = L(C, z);
+    if (De) return De;
+    const m = z === tn, v = zt ? history.state : {};
+    J && (oe || m ? o.replace(C.fullPath, we({ scroll: m && v && v.scroll }, le)) : o.push(C.fullPath, le)), u.value = C, Ct(C, z, J, m), lt();
   }
-  let ae;
-  function je() {
-    ae || (ae = o.listen((w, W, G) => {
-      if (!qt.listening) return;
-      const Y = F(w), se = S(Y, qt.currentRoute.value);
-      if (se) {
-        v(ge(se, {
+  let he;
+  function Re() {
+    he || (he = o.listen((C, z, J) => {
+      if (!Ue.listening) return;
+      const oe = V(C), le = T(oe, Ue.currentRoute.value);
+      if (le) {
+        b(we(le, {
           replace: !0,
           force: !0
-        }), Y).catch(as);
+        }), oe).catch(cs);
         return;
       }
-      f = Y;
-      const Ce = a.value;
-      jt && Lp(Ui(Ce.fullPath, G.delta), bo()), M(Y, Ce).catch((h) => Rt(h, Se.NAVIGATION_ABORTED | Se.NAVIGATION_CANCELLED) ? h : Rt(h, Se.NAVIGATION_GUARD_REDIRECT) ? (v(ge(A(h.to), { force: !0 }), Y).then((_) => {
-        Rt(_, Se.NAVIGATION_ABORTED | Se.NAVIGATION_DUPLICATED) && !G.delta && G.type === tr.pop && o.go(-1, !1);
-      }).catch(as), Promise.reject()) : (G.delta && o.go(-G.delta, !1), oe(h, Y, Ce))).then((h) => {
-        h = h || z(Y, Ce, !1), h && (G.delta && !Rt(h, Se.NAVIGATION_CANCELLED) ? o.go(-G.delta, !1) : G.type === tr.pop && Rt(h, Se.NAVIGATION_ABORTED | Se.NAVIGATION_DUPLICATED) && o.go(-1, !1)), C(Y, Ce, h);
-      }).catch(as);
+      p = oe;
+      const De = u.value;
+      zt && qp(zi(De.fullPath, J.delta), Eo()), M(oe, De).catch((m) => Bt(m, Pe.NAVIGATION_ABORTED | Pe.NAVIGATION_CANCELLED) ? m : Bt(m, Pe.NAVIGATION_GUARD_REDIRECT) ? (b(we(I(m.to), { force: !0 }), oe).then((v) => {
+        Bt(v, Pe.NAVIGATION_ABORTED | Pe.NAVIGATION_DUPLICATED) && !J.delta && J.type === rr.pop && o.go(-1, !1);
+      }).catch(cs), Promise.reject()) : (J.delta && o.go(-J.delta, !1), se(m, oe, De))).then((m) => {
+        m = m || Q(oe, De, !1), m && (J.delta && !Bt(m, Pe.NAVIGATION_CANCELLED) ? o.go(-J.delta, !1) : J.type === rr.pop && Bt(m, Pe.NAVIGATION_ABORTED | Pe.NAVIGATION_DUPLICATED) && o.go(-1, !1)), A(oe, De, m);
+      }).catch(cs);
     }));
   }
-  let Pe = Xn(), ce = Xn(), ie;
-  function oe(w, W, G) {
-    cn(w);
-    const Y = ce.list();
-    return Y.length ? Y.forEach((se) => se(w, W, G)) : (process.env.NODE_ENV !== "production" && le("uncaught error during route navigation:"), console.error(w)), Promise.reject(w);
+  let Se = Zn(), fe = Zn(), ue;
+  function se(C, z, J) {
+    lt(C);
+    const oe = fe.list();
+    return oe.length ? oe.forEach((le) => le(C, z, J)) : (process.env.NODE_ENV !== "production" && _e("uncaught error during route navigation:"), console.error(C)), Promise.reject(C);
   }
-  function Ne() {
-    return ie && a.value !== Yt ? Promise.resolve() : new Promise((w, W) => {
-      Pe.add([w, W]);
+  function Ee() {
+    return ue && u.value !== tn ? Promise.resolve() : new Promise((C, z) => {
+      Se.add([C, z]);
     });
   }
-  function cn(w) {
-    return ie || (ie = !w, je(), Pe.list().forEach(([W, G]) => w ? G(w) : W()), Pe.reset()), w;
+  function lt(C) {
+    return ue || (ue = !C, Re(), Se.list().forEach(([z, J]) => C ? J(C) : z()), Se.reset()), C;
   }
-  function Kt(w, W, G, Y) {
-    const { scrollBehavior: se } = e;
-    if (!jt || !se) return Promise.resolve();
-    const Ce = !G && jp(Ui(w.fullPath, 0)) || (Y || !G) && history.state && history.state.scroll || null;
-    return ds().then(() => se(w, W, Ce)).then((h) => h && Mp(h)).catch((h) => oe(h, w, W));
+  function Ct(C, z, J, oe) {
+    const { scrollBehavior: le } = e;
+    if (!zt || !le) return Promise.resolve();
+    const De = !J && zp(zi(C.fullPath, 0)) || (oe || !J) && history.state && history.state.scroll || null;
+    return ps().then(() => le(C, z, De)).then((m) => m && Wp(m)).catch((m) => se(m, C, z));
   }
-  const vt = (w) => o.go(w);
-  let ot;
-  const zt = /* @__PURE__ */ new Set(), qt = {
-    currentRoute: a,
+  const et = (C) => o.go(C);
+  let tt;
+  const Ge = /* @__PURE__ */ new Set(), Ue = {
+    currentRoute: u,
     listening: !0,
-    addRoute: b,
-    removeRoute: T,
+    addRoute: g,
+    removeRoute: k,
     clearRoutes: t.clearRoutes,
-    hasRoute: K,
-    getRoutes: $,
-    resolve: F,
+    hasRoute: W,
+    getRoutes: O,
+    resolve: V,
     options: e,
     push: te,
-    replace: O,
-    go: vt,
-    back: () => vt(-1),
-    forward: () => vt(1),
+    replace: D,
+    go: et,
+    back: () => et(-1),
+    forward: () => et(1),
     beforeEach: r.add,
-    beforeResolve: i.add,
-    afterEach: l.add,
-    onError: ce.add,
-    isReady: Ne,
-    install(w) {
-      w.component("RouterLink", Ir), w.component("RouterView", rc), w.config.globalProperties.$router = qt, Object.defineProperty(w.config.globalProperties, "$route", {
+    beforeResolve: a.add,
+    afterEach: c.add,
+    onError: fe.add,
+    isReady: Ee,
+    install(C) {
+      C.component("RouterLink", Ur), C.component("RouterView", pc), C.config.globalProperties.$router = Ue, Object.defineProperty(C.config.globalProperties, "$route", {
         enumerable: !0,
-        get: () => d(a)
-      }), jt && !ot && a.value === Yt && (ot = !0, te(o.location).catch((Y) => {
-        process.env.NODE_ENV !== "production" && le("Unexpected error when starting the router:", Y);
+        get: () => l(u)
+      }), zt && !tt && u.value === tn && (tt = !0, te(o.location).catch((oe) => {
+        process.env.NODE_ENV !== "production" && _e("Unexpected error when starting the router:", oe);
       }));
-      const W = {};
-      for (const Y in Yt) Object.defineProperty(W, Y, {
-        get: () => a.value[Y],
+      const z = {};
+      for (const oe in tn) Object.defineProperty(z, oe, {
+        get: () => u.value[oe],
         enumerable: !0
       });
-      w.provide(Ar, qt), w.provide(Rr, /* @__PURE__ */ Dl(W)), w.provide(or, a);
-      const G = w.unmount;
-      zt.add(w), w.unmount = function() {
-        zt.delete(w), zt.size < 1 && (f = Yt, ae && ae(), ae = null, a.value = Yt, ot = !1, ie = !1), G();
-      }, process.env.NODE_ENV !== "production" && jt && Jp(w, qt, t);
+      C.provide(wo, Ue), C.provide(jr, /* @__PURE__ */ Fl(z)), C.provide(ar, u);
+      const J = C.unmount;
+      Ge.add(C), C.unmount = function() {
+        Ge.delete(C), Ge.size < 1 && (p = tn, he && he(), he = null, u.value = tn, tt = !1, ue = !1), J();
+      }, process.env.NODE_ENV !== "production" && zt && oh(C, Ue, t);
     }
   };
-  function Jt(w) {
-    return w.reduce((W, G) => W.then(() => N(G)), Promise.resolve());
+  function at(C) {
+    return C.reduce((z, J) => z.then(() => x(J)), Promise.resolve());
   }
-  return qt;
+  return Ue;
 }
-function Rh(e) {
-  return ft(Rr);
+function hc() {
+  return _t(wo);
 }
-const el = "openclaw-guard.theme", tl = "openclaw-guard.lang";
-function Ih() {
+function Bh(e) {
+  return _t(jr);
+}
+const ll = "openclaw-guard.theme", al = "openclaw-guard.lang";
+function Kh() {
   return typeof window > "u" ? "dark" : window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
 }
-const Wt = /* @__PURE__ */ La("ui", () => {
-  const e = /* @__PURE__ */ me("auto"), t = /* @__PURE__ */ me("zh"), n = /* @__PURE__ */ me(!1), s = ue(() => e.value === "auto" ? Ih() : e.value);
+const ft = /* @__PURE__ */ Fr("ui", () => {
+  const e = /* @__PURE__ */ Z("auto"), t = /* @__PURE__ */ Z("zh"), n = /* @__PURE__ */ Z(!1), s = ne(() => e.value === "auto" ? Kh() : e.value);
   function o() {
     typeof document > "u" || (document.documentElement.dataset.theme = s.value, document.documentElement.lang = t.value === "zh" ? "zh-CN" : "en");
   }
@@ -8029,37 +8051,37 @@ const Wt = /* @__PURE__ */ La("ui", () => {
       o();
       return;
     }
-    const f = window.localStorage.getItem(el), p = window.localStorage.getItem(tl);
-    (f === "auto" || f === "light" || f === "dark") && (e.value = f), (p === "zh" || p === "en") && (t.value = p), n.value = !0, o();
+    const p = window.localStorage.getItem(ll), h = window.localStorage.getItem(al);
+    (p === "auto" || p === "light" || p === "dark") && (e.value = p), (h === "zh" || h === "en") && (t.value = h), n.value = !0, o();
   }
-  function i(f) {
-    e.value = f, typeof window < "u" && window.localStorage.setItem(el, f), o();
+  function a(p) {
+    e.value = p, typeof window < "u" && window.localStorage.setItem(ll, p), o();
   }
-  function l(f) {
-    t.value = f, typeof window < "u" && window.localStorage.setItem(tl, f), o();
+  function c(p) {
+    t.value = p, typeof window < "u" && window.localStorage.setItem(al, p), o();
   }
-  function a(f, p) {
-    return t.value === "zh" ? f : p;
+  function u(p, h) {
+    return t.value === "zh" ? p : h;
   }
   return {
     themePreference: e,
     language: t,
     resolvedTheme: s,
     hydrate: r,
-    setThemePreference: i,
-    setLanguage: l,
+    setThemePreference: a,
+    setLanguage: c,
     applyDocumentState: o,
-    label: a
+    label: u
   };
-}), Mh = { class: "guard-shell" }, Lh = { class: "guard-shell__topbar" }, jh = { class: "topbar-actions" }, Fh = { class: "toolbar-menu" }, Uh = ["title"], Hh = { class: "toolbar-popover" }, Bh = ["onClick"], Gh = { class: "toolbar-menu" }, Wh = ["title"], Kh = { class: "toolbar-popover" }, zh = {
+}), Wh = { class: "guard-shell" }, qh = { class: "guard-shell__topbar" }, zh = { class: "topbar-actions" }, Jh = { class: "toolbar-menu" }, Qh = ["title"], Yh = { class: "toolbar-popover" }, Xh = ["onClick"], Zh = { class: "toolbar-menu" }, e_ = ["title"], t_ = { class: "toolbar-popover" }, n_ = {
   class: "toolbar-link",
   href: "/",
   target: "_blank",
   rel: "noreferrer"
-}, qh = { class: "guard-shell__body" }, Jh = { class: "guard-shell__sidebar" }, Yh = { class: "sidebar-current" }, Qh = { class: "sidebar-current__label" }, Xh = { class: "sidebar-current__title" }, Zh = { class: "sidebar-current__meta" }, eg = { class: "sidebar-nav" }, tg = { class: "sidebar-group__title" }, ng = { class: "guard-shell__content" }, sg = "/ui/logo.png", og = /* @__PURE__ */ Be({
+}, s_ = { class: "guard-shell__body" }, o_ = { class: "guard-shell__sidebar" }, r_ = { class: "sidebar-current" }, i_ = { class: "sidebar-current__label" }, l_ = { class: "sidebar-current__title" }, a_ = { class: "sidebar-current__meta" }, c_ = { class: "sidebar-nav" }, u_ = { class: "sidebar-group__title" }, d_ = { class: "guard-shell__content" }, f_ = "/ui/logo.png", p_ = /* @__PURE__ */ Ve({
   __name: "GuardShell",
   setup(e) {
-    const t = Wt(), n = Rh(), s = [
+    const t = ft(), n = Bh(), s = [
       {
         id: "core",
         zh: "核心控制台",
@@ -8106,342 +8128,137 @@ const Wt = /* @__PURE__ */ La("ui", () => {
       { value: "auto", icon: "⌘", zh: "跟随系统", en: "Auto" },
       { value: "light", icon: "☀", zh: "浅色", en: "Light" },
       { value: "dark", icon: "☾", zh: "深色", en: "Dark" }
-    ], r = ue(() => t.themePreference === "light" ? "☀" : t.themePreference === "dark" ? "☾" : "⌘"), i = ue(() => {
-      const l = s.flatMap((a) => a.items).find((a) => a.to === n.path);
-      return l ? t.label(l.zh, l.en) : t.label("首页", "Home");
+    ], r = ne(() => t.themePreference === "light" ? "☀" : t.themePreference === "dark" ? "☾" : "⌘"), a = ne(() => {
+      const c = s.flatMap((u) => u.items).find((u) => u.to === n.path);
+      return c ? t.label(c.zh, c.en) : t.label("首页", "Home");
     });
-    return Or(() => {
+    return $s(() => {
       t.hydrate();
-    }), qe(() => t.themePreference, () => t.applyDocumentState()), qe(() => t.language, () => t.applyDocumentState()), (l, a) => (D(), V("div", Mh, [
-      c("header", Lh, [
-        c("div", { class: "brand-lockup" }, [
-          c("img", {
+    }), qe(() => t.themePreference, () => t.applyDocumentState()), qe(() => t.language, () => t.applyDocumentState()), (c, u) => (E(), w("div", Wh, [
+      i("header", qh, [
+        i("div", { class: "brand-lockup" }, [
+          i("img", {
             class: "brand-lockup__logo",
-            src: sg,
+            src: f_,
             alt: "OpenClaw Guard"
           }),
-          a[2] || (a[2] = c("div", null, [
-            c("p", { class: "brand-lockup__eyebrow" }, "OpenClaw Guard Next"),
-            c("h1", { class: "brand-lockup__title" }, "OpenClaw Guard")
+          u[2] || (u[2] = i("div", null, [
+            i("p", { class: "brand-lockup__eyebrow" }, "OpenClaw Guard Next"),
+            i("h1", { class: "brand-lockup__title" }, "OpenClaw Guard")
           ], -1))
         ]),
-        c("div", jh, [
-          c("div", Fh, [
-            c("button", {
+        i("div", zh, [
+          i("div", Jh, [
+            i("button", {
               class: "toolbar-icon",
               type: "button",
-              title: d(t).label("主题", "Theme")
-            }, g(r.value), 9, Uh),
-            c("div", Hh, [
-              (D(), V(X, null, ke(o, (f) => c("button", {
-                key: f.value,
+              title: l(t).label("主题", "Theme")
+            }, d(r.value), 9, Qh),
+            i("div", Yh, [
+              (E(), w(Y, null, ye(o, (p) => i("button", {
+                key: p.value,
                 class: "toolbar-popover__item",
                 type: "button",
-                onClick: (p) => d(t).setThemePreference(f.value)
+                onClick: (h) => l(t).setThemePreference(p.value)
               }, [
-                c("span", null, g(f.icon), 1),
-                c("span", null, g(d(t).label(f.zh, f.en)), 1)
-              ], 8, Bh)), 64))
+                i("span", null, d(p.icon), 1),
+                i("span", null, d(l(t).label(p.zh, p.en)), 1)
+              ], 8, Xh)), 64))
             ])
           ]),
-          c("div", Gh, [
-            c("button", {
+          i("div", Zh, [
+            i("button", {
               class: "toolbar-icon",
               type: "button",
-              title: d(t).label("语言", "Language")
-            }, " 🌐 ", 8, Wh),
-            c("div", Kh, [
-              c("button", {
+              title: l(t).label("语言", "Language")
+            }, " 🌐 ", 8, e_),
+            i("div", t_, [
+              i("button", {
                 class: "toolbar-popover__item",
                 type: "button",
-                onClick: a[0] || (a[0] = (f) => d(t).setLanguage("zh"))
-              }, [...a[3] || (a[3] = [
-                c("span", null, "中", -1),
-                c("span", null, "中文", -1)
+                onClick: u[0] || (u[0] = (p) => l(t).setLanguage("zh"))
+              }, [...u[3] || (u[3] = [
+                i("span", null, "中", -1),
+                i("span", null, "中文", -1)
               ])]),
-              c("button", {
+              i("button", {
                 class: "toolbar-popover__item",
                 type: "button",
-                onClick: a[1] || (a[1] = (f) => d(t).setLanguage("en"))
-              }, [...a[4] || (a[4] = [
-                c("span", null, "EN", -1),
-                c("span", null, "English", -1)
+                onClick: u[1] || (u[1] = (p) => l(t).setLanguage("en"))
+              }, [...u[4] || (u[4] = [
+                i("span", null, "EN", -1),
+                i("span", null, "English", -1)
               ])])
             ])
           ]),
-          c("a", zh, g(d(t).label("打开当前正式控制台", "Open current production console")), 1)
+          i("a", n_, d(l(t).label("打开当前正式控制台", "Open current production console")), 1)
         ])
       ]),
-      c("div", qh, [
-        c("aside", Jh, [
-          c("div", Yh, [
-            c("p", Qh, g(d(t).label("当前页面", "Current page")), 1),
-            c("p", Xh, g(i.value), 1),
-            c("p", Zh, g(d(t).label("这里是 dev-rust 分支上的模块化预览壳层。当前继续迁移真实业务页面，但不会替换正式运行时。", "This is the modular preview shell on the dev-rust line. We keep migrating real product pages here without replacing the production runtime yet.")), 1)
+      i("div", s_, [
+        i("aside", o_, [
+          i("div", r_, [
+            i("p", i_, d(l(t).label("当前页面", "Current page")), 1),
+            i("p", l_, d(a.value), 1),
+            i("p", a_, d(l(t).label("这里是 dev-rust 分支上的模块化预览壳层。当前继续迁移真实业务页面，但不会替换正式运行时。", "This is the modular preview shell on the dev-rust line. We keep migrating real product pages here without replacing the production runtime yet.")), 1)
           ]),
-          c("nav", eg, [
-            (D(), V(X, null, ke(s, (f) => c("section", {
-              key: f.id,
+          i("nav", c_, [
+            (E(), w(Y, null, ye(s, (p) => i("section", {
+              key: p.id,
               class: "sidebar-group"
             }, [
-              c("p", tg, g(d(t).label(f.zh, f.en)), 1),
-              (D(!0), V(X, null, ke(f.items, (p) => (D(), Fn(d(Ir), {
-                key: p.to,
-                to: p.to,
-                class: $e(["sidebar-link", { "sidebar-link--active": d(n).path === p.to }])
+              i("p", u_, d(l(t).label(p.zh, p.en)), 1),
+              (E(!0), w(Y, null, ye(p.items, (h) => (E(), un(l(Ur), {
+                key: h.to,
+                to: h.to,
+                class: ge(["sidebar-link", { "sidebar-link--active": l(n).path === h.to }])
               }, {
-                default: he(() => [
-                  Dr(g(d(t).label(p.zh, p.en)), 1)
+                default: ie(() => [
+                  Rr(d(l(t).label(h.zh, h.en)), 1)
                 ]),
                 _: 2
               }, 1032, ["to", "class"]))), 128))
             ])), 64))
           ])
         ]),
-        c("main", ng, [
-          Z(d(rc))
+        i("main", d_, [
+          X(l(pc))
         ])
       ])
     ]));
   }
-}), rg = /* @__PURE__ */ Be({
+}), h_ = /* @__PURE__ */ Ve({
   __name: "App",
   setup(e) {
-    return (t, n) => (D(), V(X, null, [
-      Z(og),
-      Z(rp),
-      Z(ep)
+    return (t, n) => (E(), w(Y, null, [
+      X(p_),
+      X(hp),
+      X(cp)
     ], 64));
   }
 });
-function Ht(e, t = null, n = {}) {
-  const s = /* @__PURE__ */ me(t), o = n.immediate !== !1, r = /* @__PURE__ */ me(o && t === null), i = /* @__PURE__ */ me(!1), l = /* @__PURE__ */ me(null);
-  async function a(f = {}) {
-    f.silent === !0 ? i.value = !0 : r.value = !0, l.value = null;
+function wt(e, t = null, n = {}) {
+  const s = /* @__PURE__ */ Z(t), o = n.immediate !== !1, r = /* @__PURE__ */ Z(o && t === null), a = /* @__PURE__ */ Z(!1), c = /* @__PURE__ */ Z(null);
+  async function u(p = {}) {
+    p.silent === !0 ? a.value = !0 : r.value = !0, c.value = null;
     try {
       s.value = await e();
-    } catch (u) {
-      l.value = u instanceof Error ? u.message : String(u);
+    } catch (f) {
+      c.value = f instanceof Error ? f.message : String(f);
     } finally {
-      r.value = !1, i.value = !1;
+      r.value = !1, a.value = !1;
     }
   }
-  return Or(() => {
-    o && a();
+  return $s(() => {
+    o && u();
   }), {
     data: s,
     loading: r,
-    refreshing: i,
-    error: l,
-    execute: a
+    refreshing: a,
+    error: c,
+    execute: u
   };
 }
-const ig = { class: "page-card" }, lg = { class: "page-card__header" }, ag = {
-  key: 0,
-  class: "page-card__eyebrow"
-}, cg = { class: "page-card__title" }, ug = { class: "page-card__body" }, _e = /* @__PURE__ */ Be({
-  __name: "PageCard",
-  props: {
-    title: {},
-    eyebrow: {}
-  },
-  setup(e) {
-    return (t, n) => (D(), V("section", ig, [
-      c("header", lg, [
-        c("div", null, [
-          e.eyebrow ? (D(), V("p", ag, g(e.eyebrow), 1)) : xe("", !0),
-          c("h2", cg, g(e.title), 1)
-        ]),
-        Xr(t.$slots, "actions")
-      ]),
-      c("div", ug, [
-        Xr(t.$slots, "default")
-      ])
-    ]));
-  }
-});
-async function dg(e) {
-  if ((e.headers.get("content-type") || "").includes("application/json"))
-    try {
-      const s = await e.json();
-      return s.message || s.error || `Request failed with ${e.status}`;
-    } catch {
-      return `Request failed with ${e.status}`;
-    }
-  return await e.text() || `Request failed with ${e.status}`;
-}
-async function Mr(e, t = {}) {
-  const n = new Headers(t.headers);
-  n.set("Accept", "application/json");
-  let s = t.body;
-  s && typeof s == "object" && !(s instanceof FormData) && !(s instanceof URLSearchParams) && !(s instanceof Blob) && (n.set("Content-Type", "application/json"), s = JSON.stringify(s));
-  const o = await fetch(e, {
-    ...t,
-    headers: n,
-    body: s
-  });
-  if (!o.ok)
-    throw new Error(await dg(o));
-  return o.json();
-}
-function Te(e) {
-  return Mr(e);
-}
-function st(e, t) {
-  return Mr(e, {
-    method: "POST",
-    body: t
-  });
-}
-function ic(e) {
-  return Mr(e, {
-    method: "DELETE"
-  });
-}
-async function fg() {
-  const [e, t, n, s] = await Promise.all([
-    Te("/api/info"),
-    Te("/api/dashboard/overview"),
-    Te("/api/service/status"),
-    Te("/api/openclaw/status")
-  ]);
-  return { info: e, overview: t, services: n, openclaw: s };
-}
-async function pg() {
-  const [e, t] = await Promise.all([
-    Te("/api/service/status"),
-    Te("/api/web-background/report")
-  ]);
-  return { services: e, webReport: t };
-}
-async function hg() {
-  const [e, t] = await Promise.all([
-    Te("/api/openclaw/status"),
-    Te("/api/openclaw/targets")
-  ]);
-  return { status: e, targets: t };
-}
-const gg = { class: "page-stack" }, mg = { class: "page-header" }, _g = { class: "page-header__eyebrow" }, vg = { class: "page-header__title" }, bg = { class: "page-header__description" }, yg = {
-  key: 0,
-  class: "page-empty"
-}, Eg = {
-  key: 1,
-  class: "page-empty page-empty--error"
-}, wg = { class: "stat-grid" }, Ng = { class: "stat-card" }, Og = { class: "stat-card" }, Sg = { class: "stat-card" }, kg = { class: "stat-card__label" }, $g = { class: "list-stack" }, Cg = { class: "action-row" }, Dg = { class: "action-row" }, xg = {
-  class: "inline-link",
-  href: "/",
-  target: "_blank",
-  rel: "noreferrer"
-}, Tg = {
-  key: 0,
-  class: "list-stack"
-}, Pg = {
-  key: 1,
-  class: "muted-copy"
-}, Vg = /* @__PURE__ */ Be({
-  __name: "DashboardPage",
-  setup(e) {
-    const t = Wt(), n = Ht(() => fg()), s = ue(() => {
-      var r, i;
-      const o = (i = (r = n.data) == null ? void 0 : r.overview) == null ? void 0 : i.risks;
-      return Array.isArray(o) ? o : [];
-    });
-    return (o, r) => (D(), V("div", gg, [
-      c("header", mg, [
-        c("div", null, [
-          c("p", _g, g(d(t).label("首页 / First slice", "Home / First slice")), 1),
-          c("h2", vg, g(d(t).label("带路首页", "Guided Home")), 1),
-          c("p", bg, g(d(t).label("先回答现在能不能用、下一步该做什么，以及哪里可能有风险。", "Answer what works now, what to do next, and where risk still exists.")), 1)
-        ]),
-        c("button", {
-          class: "page-header__action",
-          type: "button",
-          onClick: r[0] || (r[0] = (i) => d(n).execute({ silent: !0 }))
-        }, g(d(n).refreshing ? d(t).label("刷新中…", "Refreshing…") : d(t).label("刷新", "Refresh")), 1)
-      ]),
-      d(n).loading ? (D(), V("div", yg, g(d(t).label("正在加载首页快照…", "Loading the home snapshot…")), 1)) : d(n).error ? (D(), V("div", Eg, g(d(n).error), 1)) : d(n).data ? (D(), V(X, { key: 2 }, [
-        Z(_e, {
-          title: d(t).label("当前可用性", "Current availability"),
-          eyebrow: "Status"
-        }, {
-          default: he(() => {
-            var i, l, a, f, p, u, m, b, T, $;
-            return [
-              c("div", wg, [
-                c("article", Ng, [
-                  r[1] || (r[1] = c("p", { class: "stat-card__label" }, "Guard", -1)),
-                  c("strong", null, g(((i = d(n).data.info) == null ? void 0 : i.guardVersion) || "unknown"), 1),
-                  c("span", null, g(((l = d(n).data.info) == null ? void 0 : l.platform) || "unknown platform"), 1)
-                ]),
-                c("article", Og, [
-                  r[2] || (r[2] = c("p", { class: "stat-card__label" }, "OpenClaw", -1)),
-                  c("strong", null, g((f = (a = d(n).data.info) == null ? void 0 : a.openclaw) != null && f.installed ? ((u = (p = d(n).data.info) == null ? void 0 : p.openclaw) == null ? void 0 : u.version) || "installed" : d(t).label("未安装", "Not installed")), 1),
-                  c("span", null, g(((b = (m = d(n).data.info) == null ? void 0 : m.openclaw) == null ? void 0 : b.detectedSource) || d(t).label("待检测", "Pending detection")), 1)
-                ]),
-                c("article", Sg, [
-                  c("p", kg, g(d(t).label("Node 运行时", "Node runtime")), 1),
-                  c("strong", null, g(((T = d(n).data.info) == null ? void 0 : T.nodeVersion) || "unknown"), 1),
-                  c("span", null, g((($ = d(n).data.info) == null ? void 0 : $.user) || d(t).label("用户未知", "Unknown user")), 1)
-                ])
-              ])
-            ];
-          }),
-          _: 1
-        }, 8, ["title"]),
-        Z(_e, {
-          title: d(t).label("建议动作", "Suggested actions"),
-          eyebrow: "Next"
-        }, {
-          default: he(() => [
-            c("div", $g, [
-              c("article", Cg, [
-                c("div", null, [
-                  c("h3", null, g(d(t).label("继续迁移首页 / 运维 / OpenClaw", "Keep migrating Home / Operations / OpenClaw")), 1),
-                  c("p", null, g(d(t).label("这一版 Vue 壳层已经接上真实 API，下一批继续迁移渠道、模型、安全、备份与恢复。", "This Vue shell already talks to real APIs; next we migrate Channels, Models, Security, and Recovery.")), 1)
-                ]),
-                Z(d(Ir), {
-                  class: "inline-link",
-                  to: "/operations"
-                }, {
-                  default: he(() => [
-                    Dr(g(d(t).label("查看运维页", "Open operations")), 1)
-                  ]),
-                  _: 1
-                })
-              ]),
-              c("article", Dg, [
-                c("div", null, [
-                  c("h3", null, g(d(t).label("保持旧控制台可用", "Keep the legacy console available")), 1),
-                  c("p", null, g(d(t).label("新壳层目前是开发线入口，不替换正式运行时。需要完整能力时仍可打开当前正式控制台。", "The new shell is a dev-line entry for now and does not replace the production runtime yet.")), 1)
-                ]),
-                c("a", xg, g(d(t).label("打开正式控制台", "Open production console")), 1)
-              ])
-            ])
-          ]),
-          _: 1
-        }, 8, ["title"]),
-        Z(_e, {
-          title: d(t).label("风险提示", "Risk summary"),
-          eyebrow: "Risk"
-        }, {
-          default: he(() => [
-            s.value.length ? (D(), V("div", Tg, [
-              (D(!0), V(X, null, ke(s.value, (i, l) => (D(), V("article", {
-                key: `${i.title}-${l}`,
-                class: "risk-row"
-              }, [
-                c("strong", null, g(i.title || d(t).label("未命名风险", "Unnamed risk")), 1),
-                c("span", null, g(i.detail || d(t).label("暂无详细描述。", "No detail provided.")), 1)
-              ]))), 128))
-            ])) : (D(), V("p", Pg, g(d(t).label("当前 API 未返回结构化风险列表，因此这里先显示为安全占位。后续页面迁移时会继续精炼。", "The current API did not return structured risks, so this section stays intentionally lightweight for the first scaffold.")), 1))
-          ]),
-          _: 1
-        }, 8, ["title"])
-      ], 64)) : xe("", !0)
-    ]));
-  }
-});
-function xs(e) {
+function Yt(e) {
   if (!e) return "-";
   const t = Date.parse(e);
   return Number.isFinite(t) ? new Intl.DateTimeFormat(void 0, {
@@ -8452,10 +8269,39 @@ function xs(e) {
     minute: "2-digit"
   }).format(new Date(t)) : e;
 }
-function nl(e) {
+function me(e) {
+  return e == null || !Number.isFinite(e) ? "-" : new Intl.NumberFormat(void 0).format(e);
+}
+function __(e) {
+  return e == null || !Number.isFinite(e) ? "-" : `${e.toFixed(e >= 10 ? 0 : 1)}%`;
+}
+function m_(e) {
+  if (e == null || !Number.isFinite(e) || e < 0) return "-";
+  if (e < 1024) return `${me(e)} B`;
+  const t = ["KB", "MB", "GB", "TB"];
+  let n = e / 1024, s = 0;
+  for (; n >= 1024 && s < t.length - 1; )
+    n /= 1024, s += 1;
+  return `${n.toFixed(n >= 10 ? 1 : 2)} ${t[s]}`;
+}
+function cl(e, t = "USD") {
+  if (e == null || !Number.isFinite(e)) return "-";
+  if (/^[A-Z]{3}$/.test(t)) {
+    const s = e >= 1 ? 2 : 4;
+    return new Intl.NumberFormat(void 0, {
+      style: "currency",
+      currency: t,
+      minimumFractionDigits: s,
+      maximumFractionDigits: s
+    }).format(e);
+  }
+  const n = e >= 1 ? 2 : 4;
+  return `${e.toFixed(n)} ${t}`.trim();
+}
+function ul(e) {
   return e ? e.slice(0, 7) : "-";
 }
-function Ts(e) {
+function As(e) {
   const t = {
     appId: "App ID",
     appSecret: "App Secret",
@@ -8481,23 +8327,85 @@ function Ts(e) {
   };
   return t[e] ? t[e] : e.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").replace(/\b\w/g, (n) => n.toUpperCase());
 }
-function Ag(e) {
+function g_(e) {
   return typeof e == "boolean" ? e : typeof e == "string" ? ["true", "1", "yes", "on"].includes(e.trim().toLowerCase()) : !1;
 }
-function lr(e) {
+function dr(e) {
   const t = e.trim();
   if (!t) return;
   const n = Number(t);
   return Number.isFinite(n) ? n : void 0;
 }
-function sl(e) {
+function dl(e) {
   return /token|secret|key|password/i.test(e);
 }
-async function Rg() {
+const v_ = { class: "page-card" }, b_ = { class: "page-card__header" }, y_ = {
+  key: 0,
+  class: "page-card__eyebrow"
+}, E_ = { class: "page-card__title" }, w_ = { class: "page-card__body" }, ce = /* @__PURE__ */ Ve({
+  __name: "PageCard",
+  props: {
+    title: {},
+    eyebrow: {}
+  },
+  setup(e) {
+    return (t, n) => (E(), w("section", v_, [
+      i("header", b_, [
+        i("div", null, [
+          e.eyebrow ? (E(), w("p", y_, d(e.eyebrow), 1)) : Ce("", !0),
+          i("h2", E_, d(e.title), 1)
+        ]),
+        ri(t.$slots, "actions")
+      ]),
+      i("div", w_, [
+        ri(t.$slots, "default")
+      ])
+    ]));
+  }
+});
+async function N_(e) {
+  if ((e.headers.get("content-type") || "").includes("application/json"))
+    try {
+      const s = await e.json();
+      return s.message || s.error || `Request failed with ${e.status}`;
+    } catch {
+      return `Request failed with ${e.status}`;
+    }
+  return await e.text() || `Request failed with ${e.status}`;
+}
+async function Hr(e, t = {}) {
+  const n = new Headers(t.headers);
+  n.set("Accept", "application/json");
+  let s = t.body;
+  s && typeof s == "object" && !(s instanceof FormData) && !(s instanceof URLSearchParams) && !(s instanceof Blob) && (n.set("Content-Type", "application/json"), s = JSON.stringify(s));
+  const o = await fetch(e, {
+    ...t,
+    headers: n,
+    body: s
+  });
+  if (!o.ok)
+    throw new Error(await N_(o));
+  return o.json();
+}
+function xe(e) {
+  return Hr(e);
+}
+function Ze(e, t) {
+  return Hr(e, {
+    method: "POST",
+    body: t
+  });
+}
+function _c(e) {
+  return Hr(e, {
+    method: "DELETE"
+  });
+}
+async function $_() {
   const [e, t, n] = await Promise.all([
-    Te("/api/channels"),
-    Te("/api/channels/meta"),
-    Te("/api/feishu/plugin").catch(() => ({ installed: !1 }))
+    xe("/api/channels"),
+    xe("/api/channels/meta"),
+    xe("/api/feishu/plugin").catch(() => ({ installed: !1 }))
   ]);
   return {
     channels: e,
@@ -8505,22 +8413,22 @@ async function Rg() {
     feishuPlugin: n
   };
 }
-function Ig(e, t) {
-  return st(`/api/channels/${encodeURIComponent(e)}`, t);
+function O_(e, t) {
+  return Ze(`/api/channels/${encodeURIComponent(e)}`, t);
 }
-function Mg(e) {
-  return ic(`/api/channels/${encodeURIComponent(e)}`);
+function S_(e) {
+  return _c(`/api/channels/${encodeURIComponent(e)}`);
 }
-const Lg = { class: "page-stack" }, jg = { class: "page-header" }, Fg = { class: "page-header__eyebrow" }, Ug = { class: "page-header__title" }, Hg = { class: "page-header__description" }, Bg = {
+const k_ = { class: "page-stack" }, C_ = { class: "page-header" }, x_ = { class: "page-header__eyebrow" }, D_ = { class: "page-header__title" }, T_ = { class: "page-header__description" }, P_ = {
   key: 0,
   class: "page-empty"
-}, Gg = {
+}, R_ = {
   key: 1,
   class: "page-empty page-empty--error"
-}, Wg = { class: "stat-grid" }, Kg = { class: "stat-card" }, zg = { class: "stat-card__label" }, qg = { class: "stat-card" }, Jg = { class: "stat-card__label" }, Yg = { class: "stat-card" }, Qg = { class: "stat-card__label" }, Xg = { class: "stat-card" }, Zg = { class: "stat-card__label" }, em = { class: "page-two-column" }, tm = { class: "catalog-list" }, nm = ["onClick"], sm = { class: "catalog-list__title" }, om = { class: "pill-row" }, rm = { class: "page-stack" }, im = { class: "page-inline-status" }, lm = { class: "muted-copy" }, am = { class: "settings-grid" }, cm = { key: 0 }, um = ["onUpdate:modelValue", "type"], dm = ["onUpdate:modelValue"], fm = ["value"], pm = {
+}, A_ = { class: "stat-grid" }, V_ = { class: "stat-card" }, I_ = { class: "stat-card__label" }, M_ = { class: "stat-card" }, F_ = { class: "stat-card__label" }, L_ = { class: "stat-card" }, j_ = { class: "stat-card__label" }, U_ = { class: "stat-card" }, H_ = { class: "stat-card__label" }, G_ = { class: "page-two-column" }, B_ = { class: "catalog-list" }, K_ = ["onClick"], W_ = { class: "catalog-list__title" }, q_ = { class: "pill-row" }, z_ = { class: "page-stack" }, J_ = { class: "page-inline-status" }, Q_ = { class: "muted-copy" }, Y_ = { class: "settings-grid" }, X_ = { key: 0 }, Z_ = ["onUpdate:modelValue", "type"], em = ["onUpdate:modelValue"], tm = ["value"], nm = {
   key: 3,
   class: "checkbox-row"
-}, hm = ["onUpdate:modelValue"], gm = { class: "page-actions" }, mm = ["disabled"], _m = ["disabled"], vm = { class: "list-stack" }, bm = { class: "action-row" }, ym = { class: "action-row" }, Em = { class: "action-row" }, wm = { class: "code-panel" }, Nm = /* @__PURE__ */ Be({
+}, sm = ["onUpdate:modelValue"], om = { class: "page-actions" }, rm = ["disabled"], im = ["disabled"], lm = { class: "list-stack" }, am = { class: "action-row" }, cm = { class: "action-row" }, um = { class: "action-row" }, dm = { class: "code-panel" }, fm = /* @__PURE__ */ Ve({
   __name: "ChannelsPage",
   setup(e) {
     const t = {
@@ -8528,33 +8436,33 @@ const Lg = { class: "page-stack" }, jg = { class: "page-header" }, Fg = { class:
       dmPolicy: ["open", "allowlist", "closed"],
       groupPolicy: ["open", "allowlist", "closed"],
       renderMode: ["auto", "rich", "compact"]
-    }, n = Wt(), s = zn(), o = Ht(() => Rg()), r = /* @__PURE__ */ me(""), i = /* @__PURE__ */ me(!1), l = /* @__PURE__ */ me(!1), a = /* @__PURE__ */ on({}), f = /* @__PURE__ */ on({}), p = ue(() => {
-      var v;
-      return new Map((((v = o.data) == null ? void 0 : v.channels) || []).map((E) => [E.id, E]));
-    }), u = ue(() => {
-      var v;
-      return new Map((((v = o.data) == null ? void 0 : v.definitions) || []).map((E) => [E.id, E]));
-    }), m = ue(() => {
-      var v, E;
-      return u.value.get(r.value) || ((E = (v = o.data) == null ? void 0 : v.definitions) == null ? void 0 : E[0]) || null;
-    }), b = ue(() => {
-      const v = m.value;
-      return v ? p.value.get(v.id) || {
-        id: v.id,
-        name: v.name,
-        icon: v.icon,
+    }, n = ft(), s = hn(), o = wt(() => $_()), r = /* @__PURE__ */ Z(""), a = /* @__PURE__ */ Z(!1), c = /* @__PURE__ */ Z(!1), u = /* @__PURE__ */ cn({}), p = /* @__PURE__ */ cn({}), h = ne(() => {
+      var b;
+      return new Map((((b = o.data) == null ? void 0 : b.channels) || []).map((S) => [S.id, S]));
+    }), f = ne(() => {
+      var b;
+      return new Map((((b = o.data) == null ? void 0 : b.definitions) || []).map((S) => [S.id, S]));
+    }), _ = ne(() => {
+      var b, S;
+      return f.value.get(r.value) || ((S = (b = o.data) == null ? void 0 : b.definitions) == null ? void 0 : S[0]) || null;
+    }), g = ne(() => {
+      const b = _.value;
+      return b ? h.value.get(b.id) || {
+        id: b.id,
+        name: b.name,
+        icon: b.icon,
         enabled: !1,
         configured: !1,
         config: {}
       } : null;
-    }), T = ue(() => {
-      var v;
-      return (((v = o.data) == null ? void 0 : v.channels) || []).filter((E) => E.enabled).length;
-    }), $ = ue(() => {
-      var v;
-      return (((v = o.data) == null ? void 0 : v.channels) || []).filter((E) => E.configured).length;
-    }), K = ue(() => {
-      const v = m.value, E = [
+    }), k = ne(() => {
+      var b;
+      return (((b = o.data) == null ? void 0 : b.channels) || []).filter((S) => S.enabled).length;
+    }), O = ne(() => {
+      var b;
+      return (((b = o.data) == null ? void 0 : b.channels) || []).filter((S) => S.configured).length;
+    }), W = ne(() => {
+      const b = _.value, S = [
         {
           key: "enabled",
           label: n.label("启用这个渠道", "Enable this channel"),
@@ -8562,338 +8470,338 @@ const Lg = { class: "page-stack" }, jg = { class: "page-header" }, Fg = { class:
           help: n.label("关闭后保留配置，但运行态不会接收这个入口的消息。", "Keep the config but stop receiving traffic from this channel.")
         }
       ];
-      for (const N of (v == null ? void 0 : v.fields) || []) {
-        if (N === "requireMention" || N === "streaming") {
-          E.push({
-            key: N,
-            label: Ts(N),
+      for (const x of (b == null ? void 0 : b.fields) || []) {
+        if (x === "requireMention" || x === "streaming") {
+          S.push({
+            key: x,
+            label: As(x),
             kind: "boolean",
             help: n.label("勾选即启用。", "Checked means enabled.")
           });
           continue;
         }
-        if (t[N]) {
-          E.push({
-            key: N,
-            label: Ts(N),
+        if (t[x]) {
+          S.push({
+            key: x,
+            label: As(x),
             kind: "text",
             inputType: "select",
-            options: t[N].map((M) => ({ value: M, label: M }))
+            options: t[x].map((M) => ({ value: M, label: M }))
           });
           continue;
         }
-        E.push({
-          key: N,
-          label: Ts(N),
+        S.push({
+          key: x,
+          label: As(x),
           kind: "text",
-          inputType: /port/i.test(N) ? "number" : sl(N) ? "password" : "text"
+          inputType: /port/i.test(x) ? "number" : dl(x) ? "password" : "text"
         });
       }
-      for (const N of (v == null ? void 0 : v.envFields) || [])
-        E.push({
-          key: `env:${N}`,
-          label: `${Ts(N)} (${N})`,
+      for (const x of (b == null ? void 0 : b.envFields) || [])
+        S.push({
+          key: `env:${x}`,
+          label: `${As(x)} (${x})`,
           kind: "text",
           inputType: "password",
           env: !0,
           help: n.label("留空会清除这个本机环境变量。", "Leave blank to clear this local environment variable.")
         });
-      return E;
+      return S;
     });
-    function F() {
-      for (const v of Object.keys(a)) delete a[v];
-      for (const v of Object.keys(f)) delete f[v];
+    function V() {
+      for (const b of Object.keys(u)) delete u[b];
+      for (const b of Object.keys(p)) delete p[b];
     }
-    function A() {
-      var N, M;
-      F();
-      const v = b.value, E = m.value;
-      if (!(!v || !E)) {
-        f.enabled = v.enabled === !0;
-        for (const C of E.fields) {
-          const z = (N = v.config) == null ? void 0 : N[C];
-          C === "requireMention" || C === "streaming" ? f[C] = Ag(z) : a[C] = z == null ? "" : String(z);
+    function I() {
+      var x, M;
+      V();
+      const b = g.value, S = _.value;
+      if (!(!b || !S)) {
+        p.enabled = b.enabled === !0;
+        for (const A of S.fields) {
+          const Q = (x = b.config) == null ? void 0 : x[A];
+          A === "requireMention" || A === "streaming" ? p[A] = g_(Q) : u[A] = Q == null ? "" : String(Q);
         }
-        for (const C of E.envFields) {
-          const z = `env:${C}`;
-          a[z] = ((M = v.config) == null ? void 0 : M[z]) == null ? "" : String(v.config[z]);
+        for (const A of S.envFields) {
+          const Q = `env:${A}`;
+          u[Q] = ((M = b.config) == null ? void 0 : M[Q]) == null ? "" : String(b.config[Q]);
         }
       }
     }
     qe(
       () => o.data,
-      (v) => {
-        const E = (v == null ? void 0 : v.definitions) || [];
-        if (E.length) {
-          if (!r.value || !u.value.has(r.value)) {
-            r.value = E[0].id;
+      (b) => {
+        const S = (b == null ? void 0 : b.definitions) || [];
+        if (S.length) {
+          if (!r.value || !f.value.has(r.value)) {
+            r.value = S[0].id;
             return;
           }
-          A();
+          I();
         }
       },
       { immediate: !0 }
     ), qe(r, () => {
-      A();
+      I();
     });
-    function I() {
-      const v = b.value;
-      return v ? v.id === "feishu" ? v.enabled ? n.label(
+    function L() {
+      const b = g.value;
+      return b ? b.id === "feishu" ? b.enabled ? n.label(
         "飞书在开源版里作为官方渠道维护。保存后会直接更新当前机器上的接入配置和回复策略。",
         "Feishu is maintained here as an official channel. Saving updates the live connection settings on this machine."
       ) : n.label(
         "飞书当前处于停用状态。先补齐机器人凭据和接入方式，再决定是否启用会更稳妥。",
         "Feishu is currently disabled. Complete the bot credentials and connection mode first, then decide whether to enable it."
-      ) : v.enabled ? n.label("保存后会直接更新当前消息入口配置。", "Saving here updates the live channel configuration immediately.") : n.label("这个消息入口当前停用中。可以先补齐配置，再决定是否启用。", "This channel is currently disabled. Finish the settings first, then decide whether to enable it.") : "";
+      ) : b.enabled ? n.label("保存后会直接更新当前消息入口配置。", "Saving here updates the live channel configuration immediately.") : n.label("这个消息入口当前停用中。可以先补齐配置，再决定是否启用。", "This channel is currently disabled. Finish the settings first, then decide whether to enable it.") : "";
     }
     async function te() {
-      const v = b.value, E = m.value;
-      if (!(!v || !E)) {
-        i.value = !0;
+      const b = g.value, S = _.value;
+      if (!(!b || !S)) {
+        a.value = !0;
         try {
-          const N = {
-            enabled: f.enabled === !0
+          const x = {
+            enabled: p.enabled === !0
           };
-          for (const C of E.fields) {
-            if (C === "requireMention" || C === "streaming") {
-              N[C] = f[C] === !0;
+          for (const A of S.fields) {
+            if (A === "requireMention" || A === "streaming") {
+              x[A] = p[A] === !0;
               continue;
             }
-            const z = a[C] ?? "";
-            /port/i.test(C) ? N[C] = lr(z) ?? "" : N[C] = z;
+            const Q = u[A] ?? "";
+            /port/i.test(A) ? x[A] = dr(Q) ?? "" : x[A] = Q;
           }
-          for (const C of E.envFields)
-            N[`env:${C}`] = a[`env:${C}`] ?? "";
-          const M = await Ig(v.id, N);
+          for (const A of S.envFields)
+            x[`env:${A}`] = u[`env:${A}`] ?? "";
+          const M = await O_(b.id, x);
           s.pushToast({
             tone: M.success ? "success" : "error",
             message: M.message
           }), await o.execute({ silent: !0 });
-        } catch (N) {
+        } catch (x) {
           s.pushToast({
             tone: "error",
-            message: N instanceof Error ? N.message : String(N)
+            message: x instanceof Error ? x.message : String(x)
           });
         } finally {
-          i.value = !1;
+          a.value = !1;
         }
       }
     }
-    async function O() {
-      const v = b.value;
-      if (!(!v || !await s.confirm({
+    async function D() {
+      const b = g.value;
+      if (!(!b || !await s.confirm({
         title: n.label("清空渠道配置", "Clear channel configuration"),
         message: n.label(
-          `确认清空 ${v.name || v.id} 的配置吗？这会移除本机保存的字段和值。`,
-          `Clear the configuration for ${v.name || v.id}? This removes the saved local values for this channel.`
+          `确认清空 ${b.name || b.id} 的配置吗？这会移除本机保存的字段和值。`,
+          `Clear the configuration for ${b.name || b.id}? This removes the saved local values for this channel.`
         ),
         confirmLabel: n.label("确认清空", "Clear configuration"),
         cancelLabel: n.label("取消", "Cancel"),
         tone: "danger"
       }))) {
-        l.value = !0;
+        c.value = !0;
         try {
-          const N = await Mg(v.id);
+          const x = await S_(b.id);
           s.pushToast({
-            tone: N.success ? "success" : "error",
-            message: N.message
+            tone: x.success ? "success" : "error",
+            message: x.message
           }), await o.execute({ silent: !0 });
-        } catch (N) {
+        } catch (x) {
           s.pushToast({
             tone: "error",
-            message: N instanceof Error ? N.message : String(N)
+            message: x instanceof Error ? x.message : String(x)
           });
         } finally {
-          l.value = !1;
+          c.value = !1;
         }
       }
     }
-    function S(v) {
-      return a[v] ?? "";
+    function T(b) {
+      return u[b] ?? "";
     }
-    return (v, E) => (D(), V("div", Lg, [
-      c("header", jg, [
-        c("div", null, [
-          c("p", Fg, g(d(n).label("渠道 / Second slice", "Channels / Second slice")), 1),
-          c("h2", Ug, g(d(n).label("渠道管理", "Channel management")), 1),
-          c("p", Hg, g(d(n).label("先把官方渠道和内置入口迁入模块化外壳，保持真实配置读写，后续再承接插件扩展。", "Move official channels and built-in entry points into the modular shell with real read-write behavior, then extend from here later.")), 1)
+    return (b, S) => (E(), w("div", k_, [
+      i("header", C_, [
+        i("div", null, [
+          i("p", x_, d(l(n).label("渠道 / Second slice", "Channels / Second slice")), 1),
+          i("h2", D_, d(l(n).label("渠道管理", "Channel management")), 1),
+          i("p", T_, d(l(n).label("先把官方渠道和内置入口迁入模块化外壳，保持真实配置读写，后续再承接插件扩展。", "Move official channels and built-in entry points into the modular shell with real read-write behavior, then extend from here later.")), 1)
         ]),
-        c("button", {
+        i("button", {
           class: "page-header__action",
           type: "button",
-          onClick: E[0] || (E[0] = (N) => d(o).execute({ silent: !0 }))
-        }, g(d(o).refreshing ? d(n).label("刷新中…", "Refreshing…") : d(n).label("刷新", "Refresh")), 1)
+          onClick: S[0] || (S[0] = (x) => l(o).execute({ silent: !0 }))
+        }, d(l(o).refreshing ? l(n).label("刷新中…", "Refreshing…") : l(n).label("刷新", "Refresh")), 1)
       ]),
-      d(o).loading ? (D(), V("div", Bg, g(d(n).label("正在读取渠道配置…", "Loading channel configuration…")), 1)) : d(o).error ? (D(), V("div", Gg, g(d(o).error), 1)) : d(o).data && b.value ? (D(), V(X, { key: 2 }, [
-        Z(_e, {
-          title: d(n).label("当前概览", "Current overview"),
+      l(o).loading ? (E(), w("div", P_, d(l(n).label("正在读取渠道配置…", "Loading channel configuration…")), 1)) : l(o).error ? (E(), w("div", R_, d(l(o).error), 1)) : l(o).data && g.value ? (E(), w(Y, { key: 2 }, [
+        X(ce, {
+          title: l(n).label("当前概览", "Current overview"),
           eyebrow: "Summary"
         }, {
-          default: he(() => [
-            c("div", Wg, [
-              c("article", Kg, [
-                c("p", zg, g(d(n).label("可管理渠道", "Channels")), 1),
-                c("strong", null, g(d(o).data.definitions.length), 1),
-                c("span", null, g(d(n).label("当前内置和官方入口总数", "Built-in and official entry points available now")), 1)
+          default: ie(() => [
+            i("div", A_, [
+              i("article", V_, [
+                i("p", I_, d(l(n).label("可管理渠道", "Channels")), 1),
+                i("strong", null, d(l(o).data.definitions.length), 1),
+                i("span", null, d(l(n).label("当前内置和官方入口总数", "Built-in and official entry points available now")), 1)
               ]),
-              c("article", qg, [
-                c("p", Jg, g(d(n).label("已启用", "Enabled")), 1),
-                c("strong", null, g(T.value), 1),
-                c("span", null, g(d(n).label("运行态会接收消息", "Receives traffic at runtime")), 1)
+              i("article", M_, [
+                i("p", F_, d(l(n).label("已启用", "Enabled")), 1),
+                i("strong", null, d(k.value), 1),
+                i("span", null, d(l(n).label("运行态会接收消息", "Receives traffic at runtime")), 1)
               ]),
-              c("article", Yg, [
-                c("p", Qg, g(d(n).label("已配置", "Configured")), 1),
-                c("strong", null, g($.value), 1),
-                c("span", null, g(d(n).label("已经填写了字段或本机变量", "Fields or local values already exist")), 1)
+              i("article", L_, [
+                i("p", j_, d(l(n).label("已配置", "Configured")), 1),
+                i("strong", null, d(O.value), 1),
+                i("span", null, d(l(n).label("已经填写了字段或本机变量", "Fields or local values already exist")), 1)
               ]),
-              c("article", Xg, [
-                c("p", Zg, g(d(n).label("飞书插件", "Feishu plugin")), 1),
-                c("strong", null, g(d(o).data.feishuPlugin.installed ? d(n).label("已识别", "Detected") : d(n).label("未识别", "Not detected")), 1),
-                c("span", null, g(d(o).data.feishuPlugin.version || d(n).label("官方渠道仍可直接维护", "Official channel still remains manageable")), 1)
+              i("article", U_, [
+                i("p", H_, d(l(n).label("飞书插件", "Feishu plugin")), 1),
+                i("strong", null, d(l(o).data.feishuPlugin.installed ? l(n).label("已识别", "Detected") : l(n).label("未识别", "Not detected")), 1),
+                i("span", null, d(l(o).data.feishuPlugin.version || l(n).label("官方渠道仍可直接维护", "Official channel still remains manageable")), 1)
               ])
             ])
           ]),
           _: 1
         }, 8, ["title"]),
-        c("div", em, [
-          Z(_e, {
-            title: d(n).label("渠道目录", "Channel catalog"),
+        i("div", G_, [
+          X(ce, {
+            title: l(n).label("渠道目录", "Channel catalog"),
             eyebrow: "Catalog"
           }, {
-            default: he(() => [
-              c("div", tm, [
-                (D(!0), V(X, null, ke(d(o).data.definitions, (N) => {
-                  var M, C, z, ae;
-                  return D(), V("button", {
-                    key: N.id,
-                    class: $e(["catalog-list__item", { "catalog-list__item--active": r.value === N.id }]),
+            default: ie(() => [
+              i("div", B_, [
+                (E(!0), w(Y, null, ye(l(o).data.definitions, (x) => {
+                  var M, A, Q, he;
+                  return E(), w("button", {
+                    key: x.id,
+                    class: ge(["catalog-list__item", { "catalog-list__item--active": r.value === x.id }]),
                     type: "button",
-                    onClick: (je) => r.value = N.id
+                    onClick: (Re) => r.value = x.id
                   }, [
-                    c("div", sm, [
-                      c("strong", null, g(`${N.icon} ${N.name}`), 1)
+                    i("div", W_, [
+                      i("strong", null, d(`${x.icon} ${x.name}`), 1)
                     ]),
-                    c("div", om, [
-                      c("span", {
-                        class: $e(["pill", (M = p.value.get(N.id)) != null && M.enabled ? "pill--success" : "pill--warning"])
-                      }, g((C = p.value.get(N.id)) != null && C.enabled ? d(n).label("已启用", "Enabled") : d(n).label("停用", "Disabled")), 3),
-                      c("span", {
-                        class: $e(["pill", (z = p.value.get(N.id)) != null && z.configured ? "pill--success" : "pill--muted"])
-                      }, g((ae = p.value.get(N.id)) != null && ae.configured ? d(n).label("已配置", "Configured") : d(n).label("未配置", "Empty")), 3)
+                    i("div", q_, [
+                      i("span", {
+                        class: ge(["pill", (M = h.value.get(x.id)) != null && M.enabled ? "pill--success" : "pill--warning"])
+                      }, d((A = h.value.get(x.id)) != null && A.enabled ? l(n).label("已启用", "Enabled") : l(n).label("停用", "Disabled")), 3),
+                      i("span", {
+                        class: ge(["pill", (Q = h.value.get(x.id)) != null && Q.configured ? "pill--success" : "pill--muted"])
+                      }, d((he = h.value.get(x.id)) != null && he.configured ? l(n).label("已配置", "Configured") : l(n).label("未配置", "Empty")), 3)
                     ])
-                  ], 10, nm);
+                  ], 10, K_);
                 }), 128))
               ])
             ]),
             _: 1
           }, 8, ["title"]),
-          c("div", rm, [
-            Z(_e, {
-              title: b.value.name,
+          i("div", z_, [
+            X(ce, {
+              title: g.value.name,
               eyebrow: "Editor"
             }, {
-              default: he(() => [
-                c("div", im, [
-                  c("span", {
-                    class: $e(["pill", b.value.enabled ? "pill--success" : "pill--warning"])
-                  }, g(b.value.enabled ? d(n).label("正在接收消息", "Receiving traffic") : d(n).label("当前停用", "Currently disabled")), 3),
-                  c("span", {
-                    class: $e(["pill", b.value.configured ? "pill--success" : "pill--muted"])
-                  }, g(b.value.configured ? d(n).label("配置已完成", "Configured") : d(n).label("还未配置", "Not configured")), 3)
+              default: ie(() => [
+                i("div", J_, [
+                  i("span", {
+                    class: ge(["pill", g.value.enabled ? "pill--success" : "pill--warning"])
+                  }, d(g.value.enabled ? l(n).label("正在接收消息", "Receiving traffic") : l(n).label("当前停用", "Currently disabled")), 3),
+                  i("span", {
+                    class: ge(["pill", g.value.configured ? "pill--success" : "pill--muted"])
+                  }, d(g.value.configured ? l(n).label("配置已完成", "Configured") : l(n).label("还未配置", "Not configured")), 3)
                 ]),
-                c("p", lm, g(I()), 1),
-                c("div", am, [
-                  (D(!0), V(X, null, ke(K.value, (N) => (D(), V("label", {
-                    key: N.key,
+                i("p", Q_, d(L()), 1),
+                i("div", Y_, [
+                  (E(!0), w(Y, null, ye(W.value, (x) => (E(), w("label", {
+                    key: x.key,
                     class: "settings-field"
                   }, [
-                    c("span", null, g(N.label), 1),
-                    N.help ? (D(), V("small", cm, g(N.help), 1)) : xe("", !0),
-                    N.kind === "text" && N.inputType !== "select" ? St((D(), V("input", {
+                    i("span", null, d(x.label), 1),
+                    x.help ? (E(), w("small", X_, d(x.help), 1)) : Ce("", !0),
+                    x.kind === "text" && x.inputType !== "select" ? Xe((E(), w("input", {
                       key: 1,
-                      "onUpdate:modelValue": (M) => a[N.key] = M,
+                      "onUpdate:modelValue": (M) => u[x.key] = M,
                       class: "settings-input",
-                      type: N.inputType || "text"
-                    }, null, 8, um)), [
-                      [af, a[N.key]]
-                    ]) : N.kind === "text" && N.inputType === "select" ? St((D(), V("select", {
+                      type: x.inputType || "text"
+                    }, null, 8, Z_)), [
+                      [mf, u[x.key]]
+                    ]) : x.kind === "text" && x.inputType === "select" ? Xe((E(), w("select", {
                       key: 2,
-                      "onUpdate:modelValue": (M) => a[N.key] = M,
+                      "onUpdate:modelValue": (M) => u[x.key] = M,
                       class: "settings-input"
                     }, [
-                      (D(!0), V(X, null, ke(N.options, (M) => (D(), V("option", {
+                      (E(!0), w(Y, null, ye(x.options, (M) => (E(), w("option", {
                         key: M.value,
                         value: M.value
-                      }, g(M.label), 9, fm))), 128))
-                    ], 8, dm)), [
-                      [oo, a[N.key]]
-                    ]) : (D(), V("label", pm, [
-                      St(c("input", {
-                        "onUpdate:modelValue": (M) => f[N.key] = M,
+                      }, d(M.label), 9, tm))), 128))
+                    ], 8, em)), [
+                      [gs, u[x.key]]
+                    ]) : (E(), w("label", nm, [
+                      Xe(i("input", {
+                        "onUpdate:modelValue": (M) => p[x.key] = M,
                         type: "checkbox"
-                      }, null, 8, hm), [
-                        [Na, f[N.key]]
+                      }, null, 8, sm), [
+                        [Pa, p[x.key]]
                       ]),
-                      c("span", null, g(N.help || d(n).label("勾选即启用。", "Checked means enabled.")), 1)
+                      i("span", null, d(x.help || l(n).label("勾选即启用。", "Checked means enabled.")), 1)
                     ]))
                   ]))), 128))
                 ]),
-                c("div", gm, [
-                  c("button", {
+                i("div", om, [
+                  i("button", {
                     class: "inline-link inline-link--primary",
                     type: "button",
-                    disabled: i.value,
+                    disabled: a.value,
                     onClick: te
-                  }, g(i.value ? d(n).label("保存中…", "Saving…") : d(n).label("保存渠道配置", "Save channel configuration")), 9, mm),
-                  c("button", {
+                  }, d(a.value ? l(n).label("保存中…", "Saving…") : l(n).label("保存渠道配置", "Save channel configuration")), 9, rm),
+                  i("button", {
                     class: "inline-link",
                     type: "button",
-                    onClick: A
-                  }, g(d(n).label("恢复当前值", "Reset draft")), 1),
-                  c("button", {
+                    onClick: I
+                  }, d(l(n).label("恢复当前值", "Reset draft")), 1),
+                  i("button", {
                     class: "inline-link inline-link--danger",
                     type: "button",
-                    disabled: l.value,
-                    onClick: O
-                  }, g(l.value ? d(n).label("清空中…", "Clearing…") : d(n).label("清空配置", "Clear configuration")), 9, _m)
+                    disabled: c.value,
+                    onClick: D
+                  }, d(c.value ? l(n).label("清空中…", "Clearing…") : l(n).label("清空配置", "Clear configuration")), 9, im)
                 ])
               ]),
               _: 1
             }, 8, ["title"]),
-            Z(_e, {
-              title: d(n).label("配置摘要", "Configuration summary"),
+            X(ce, {
+              title: l(n).label("配置摘要", "Configuration summary"),
               eyebrow: "Summary"
             }, {
-              default: he(() => {
-                var N, M;
+              default: ie(() => {
+                var x, M;
                 return [
-                  c("div", vm, [
-                    c("article", bm, [
-                      c("div", null, [
-                        c("h3", null, g(d(n).label("普通字段", "Regular fields")), 1),
-                        c("p", null, g(d(n).label("优先看这里就能知道这个渠道是否已经具备基本接入条件。", "Start here to see whether the channel has the basic information required to connect.")), 1)
+                  i("div", lm, [
+                    i("article", am, [
+                      i("div", null, [
+                        i("h3", null, d(l(n).label("普通字段", "Regular fields")), 1),
+                        i("p", null, d(l(n).label("优先看这里就能知道这个渠道是否已经具备基本接入条件。", "Start here to see whether the channel has the basic information required to connect.")), 1)
                       ]),
-                      c("strong", null, g(((N = m.value) == null ? void 0 : N.fields.length) || 0), 1)
+                      i("strong", null, d(((x = _.value) == null ? void 0 : x.fields.length) || 0), 1)
                     ]),
-                    c("article", ym, [
-                      c("div", null, [
-                        c("h3", null, g(d(n).label("本机变量", "Local secrets")), 1),
-                        c("p", null, g(d(n).label("敏感值优先以本机变量方式保存，便于后续替换或清空。", "Sensitive values are best stored as local variables so they can be rotated or cleared later.")), 1)
+                    i("article", cm, [
+                      i("div", null, [
+                        i("h3", null, d(l(n).label("本机变量", "Local secrets")), 1),
+                        i("p", null, d(l(n).label("敏感值优先以本机变量方式保存，便于后续替换或清空。", "Sensitive values are best stored as local variables so they can be rotated or cleared later.")), 1)
                       ]),
-                      c("strong", null, g(((M = m.value) == null ? void 0 : M.envFields.length) || 0), 1)
+                      i("strong", null, d(((M = _.value) == null ? void 0 : M.envFields.length) || 0), 1)
                     ]),
-                    c("article", Em, [
-                      c("div", null, [
-                        c("h3", null, g(d(n).label("当前草稿", "Current draft")), 1),
-                        c("p", null, g(d(n).label("这里只显示你现在编辑中的内容，不会自动写入运行态。", "This only shows the values you are editing now. Nothing reaches runtime until you save.")), 1)
+                    i("article", um, [
+                      i("div", null, [
+                        i("h3", null, d(l(n).label("当前草稿", "Current draft")), 1),
+                        i("p", null, d(l(n).label("这里只显示你现在编辑中的内容，不会自动写入运行态。", "This only shows the values you are editing now. Nothing reaches runtime until you save.")), 1)
                       ]),
-                      c("strong", null, g(b.value.id), 1)
+                      i("strong", null, d(g.value.id), 1)
                     ])
                   ]),
-                  c("pre", wm, g(JSON.stringify({
-                    enabled: f.enabled,
-                    fields: Object.fromEntries(Object.keys(a).filter((C) => !C.startsWith("env:")).map((C) => [C, d(sl)(C) && S(C) ? "******" : S(C)])),
-                    envFields: Object.fromEntries(Object.keys(a).filter((C) => C.startsWith("env:")).map((C) => [C, S(C) ? "******" : ""]))
+                  i("pre", dm, d(JSON.stringify({
+                    enabled: p.enabled,
+                    fields: Object.fromEntries(Object.keys(u).filter((A) => !A.startsWith("env:")).map((A) => [A, l(dl)(A) && T(A) ? "******" : T(A)])),
+                    envFields: Object.fromEntries(Object.keys(u).filter((A) => A.startsWith("env:")).map((A) => [A, T(A) ? "******" : ""]))
                   }, null, 2)), 1)
                 ];
               }),
@@ -8901,51 +8809,935 @@ const Lg = { class: "page-stack" }, jg = { class: "page-header" }, Fg = { class:
             }, 8, ["title"])
           ])
         ])
-      ], 64)) : xe("", !0)
+      ], 64)) : Ce("", !0)
     ]));
   }
 });
-async function Om() {
+async function pm() {
+  const [e, t, n, s] = await Promise.all([
+    xe("/api/info"),
+    xe("/api/dashboard/overview"),
+    xe("/api/service/status"),
+    xe("/api/openclaw/status")
+  ]);
+  return { info: e, overview: t, services: n, openclaw: s };
+}
+async function hm() {
   const [e, t] = await Promise.all([
-    Te("/api/ai/config"),
-    Te("/api/ai/providers")
+    xe("/api/service/status"),
+    xe("/api/web-background/report")
+  ]);
+  return { services: e, webReport: t };
+}
+async function _m() {
+  const [e, t] = await Promise.all([
+    xe("/api/openclaw/status"),
+    xe("/api/openclaw/targets")
+  ]);
+  return { status: e, targets: t };
+}
+const mm = { class: "page-stack" }, gm = { class: "page-header" }, vm = { class: "page-header__eyebrow" }, bm = { class: "page-header__title" }, ym = { class: "page-header__description" }, Em = {
+  key: 0,
+  class: "page-empty"
+}, wm = {
+  key: 1,
+  class: "page-empty page-empty--error"
+}, Nm = { class: "stat-grid" }, $m = { class: "stat-card" }, Om = { class: "stat-card" }, Sm = { class: "stat-card" }, km = { class: "stat-card__label" }, Cm = { class: "list-stack" }, xm = { class: "action-row" }, Dm = { class: "action-row" }, Tm = {
+  class: "inline-link",
+  href: "/",
+  target: "_blank",
+  rel: "noreferrer"
+}, Pm = {
+  key: 0,
+  class: "list-stack"
+}, Rm = {
+  key: 1,
+  class: "muted-copy"
+}, Am = /* @__PURE__ */ Ve({
+  __name: "DashboardPage",
+  setup(e) {
+    const t = ft(), n = wt(() => pm()), s = ne(() => {
+      var r, a;
+      const o = (a = (r = n.data) == null ? void 0 : r.overview) == null ? void 0 : a.risks;
+      return Array.isArray(o) ? o : [];
+    });
+    return (o, r) => (E(), w("div", mm, [
+      i("header", gm, [
+        i("div", null, [
+          i("p", vm, d(l(t).label("首页 / First slice", "Home / First slice")), 1),
+          i("h2", bm, d(l(t).label("带路首页", "Guided Home")), 1),
+          i("p", ym, d(l(t).label("先回答现在能不能用、下一步该做什么，以及哪里可能有风险。", "Answer what works now, what to do next, and where risk still exists.")), 1)
+        ]),
+        i("button", {
+          class: "page-header__action",
+          type: "button",
+          onClick: r[0] || (r[0] = (a) => l(n).execute({ silent: !0 }))
+        }, d(l(n).refreshing ? l(t).label("刷新中…", "Refreshing…") : l(t).label("刷新", "Refresh")), 1)
+      ]),
+      l(n).loading ? (E(), w("div", Em, d(l(t).label("正在加载首页快照…", "Loading the home snapshot…")), 1)) : l(n).error ? (E(), w("div", wm, d(l(n).error), 1)) : l(n).data ? (E(), w(Y, { key: 2 }, [
+        X(ce, {
+          title: l(t).label("当前可用性", "Current availability"),
+          eyebrow: "Status"
+        }, {
+          default: ie(() => {
+            var a, c, u, p, h, f, _, g, k, O;
+            return [
+              i("div", Nm, [
+                i("article", $m, [
+                  r[1] || (r[1] = i("p", { class: "stat-card__label" }, "Guard", -1)),
+                  i("strong", null, d(((a = l(n).data.info) == null ? void 0 : a.guardVersion) || "unknown"), 1),
+                  i("span", null, d(((c = l(n).data.info) == null ? void 0 : c.platform) || "unknown platform"), 1)
+                ]),
+                i("article", Om, [
+                  r[2] || (r[2] = i("p", { class: "stat-card__label" }, "OpenClaw", -1)),
+                  i("strong", null, d((p = (u = l(n).data.info) == null ? void 0 : u.openclaw) != null && p.installed ? ((f = (h = l(n).data.info) == null ? void 0 : h.openclaw) == null ? void 0 : f.version) || "installed" : l(t).label("未安装", "Not installed")), 1),
+                  i("span", null, d(((g = (_ = l(n).data.info) == null ? void 0 : _.openclaw) == null ? void 0 : g.detectedSource) || l(t).label("待检测", "Pending detection")), 1)
+                ]),
+                i("article", Sm, [
+                  i("p", km, d(l(t).label("Node 运行时", "Node runtime")), 1),
+                  i("strong", null, d(((k = l(n).data.info) == null ? void 0 : k.nodeVersion) || "unknown"), 1),
+                  i("span", null, d(((O = l(n).data.info) == null ? void 0 : O.user) || l(t).label("用户未知", "Unknown user")), 1)
+                ])
+              ])
+            ];
+          }),
+          _: 1
+        }, 8, ["title"]),
+        X(ce, {
+          title: l(t).label("建议动作", "Suggested actions"),
+          eyebrow: "Next"
+        }, {
+          default: ie(() => [
+            i("div", Cm, [
+              i("article", xm, [
+                i("div", null, [
+                  i("h3", null, d(l(t).label("继续迁移首页 / 运维 / OpenClaw", "Keep migrating Home / Operations / OpenClaw")), 1),
+                  i("p", null, d(l(t).label("这一版 Vue 壳层已经接上真实 API，下一批继续迁移渠道、模型、安全、备份与恢复。", "This Vue shell already talks to real APIs; next we migrate Channels, Models, Security, and Recovery.")), 1)
+                ]),
+                X(l(Ur), {
+                  class: "inline-link",
+                  to: "/operations"
+                }, {
+                  default: ie(() => [
+                    Rr(d(l(t).label("查看运维页", "Open operations")), 1)
+                  ]),
+                  _: 1
+                })
+              ]),
+              i("article", Dm, [
+                i("div", null, [
+                  i("h3", null, d(l(t).label("保持旧控制台可用", "Keep the legacy console available")), 1),
+                  i("p", null, d(l(t).label("新壳层目前是开发线入口，不替换正式运行时。需要完整能力时仍可打开当前正式控制台。", "The new shell is a dev-line entry for now and does not replace the production runtime yet.")), 1)
+                ]),
+                i("a", Tm, d(l(t).label("打开正式控制台", "Open production console")), 1)
+              ])
+            ])
+          ]),
+          _: 1
+        }, 8, ["title"]),
+        X(ce, {
+          title: l(t).label("风险提示", "Risk summary"),
+          eyebrow: "Risk"
+        }, {
+          default: ie(() => [
+            s.value.length ? (E(), w("div", Pm, [
+              (E(!0), w(Y, null, ye(s.value, (a, c) => (E(), w("article", {
+                key: `${a.title}-${c}`,
+                class: "risk-row"
+              }, [
+                i("strong", null, d(a.title || l(t).label("未命名风险", "Unnamed risk")), 1),
+                i("span", null, d(a.detail || l(t).label("暂无详细描述。", "No detail provided.")), 1)
+              ]))), 128))
+            ])) : (E(), w("p", Rm, d(l(t).label("当前 API 未返回结构化风险列表，因此这里先显示为安全占位。后续页面迁移时会继续精炼。", "The current API did not return structured risks, so this section stays intentionally lightweight for the first scaffold.")), 1))
+          ]),
+          _: 1
+        }, 8, ["title"])
+      ], 64)) : Ce("", !0)
+    ]));
+  }
+}), Vm = {
+  class: "page-tabs",
+  role: "tablist"
+}, Im = ["aria-selected", "onClick"], Mm = { key: 0 }, Gr = /* @__PURE__ */ Ve({
+  __name: "PageTabs",
+  props: {
+    items: {},
+    activeId: {}
+  },
+  emits: ["change"],
+  setup(e, { emit: t }) {
+    const n = t;
+    return (s, o) => (E(), w("div", Vm, [
+      (E(!0), w(Y, null, ye(e.items, (r) => (E(), w("button", {
+        key: r.id,
+        class: ge(["page-tabs__button", { "page-tabs__button--active": r.id === e.activeId }]),
+        type: "button",
+        role: "tab",
+        "aria-selected": r.id === e.activeId,
+        onClick: (a) => n("change", r.id)
+      }, [
+        i("span", null, d(r.label), 1),
+        r.hint ? (E(), w("small", Mm, d(r.hint), 1)) : Ce("", !0)
+      ], 10, Im))), 128))
+    ]));
+  }
+});
+function Fm(e) {
+  const t = new URLSearchParams();
+  e && t.set("path", e);
+  const n = t.size ? `?${t.toString()}` : "";
+  return xe(`/api/files${n}`);
+}
+function fl(e) {
+  const t = new URLSearchParams({ path: e });
+  return xe(`/api/files/content?${t.toString()}`);
+}
+function Lm(e, t) {
+  return Ze("/api/files/content", {
+    path: e,
+    content: t
+  });
+}
+function jm(e, t, n) {
+  return Ze("/api/files/create", {
+    parentPath: e,
+    name: t,
+    kind: n
+  });
+}
+function Um() {
+  return xe("/api/memory");
+}
+function fr(e) {
+  const t = String(e || "").replace(/\\/g, "/"), n = t.split("/").pop() || "";
+  return ["SOUL.md", "USER.md", "AGENTS.md", "MEMORY.md"].includes(n) ? !0 : /\/memory\/.+\.md$/i.test(t);
+}
+function us(e) {
+  const t = String(e || "").replace(/[\\/]+$/, "");
+  if (!t) return "";
+  const n = Math.max(t.lastIndexOf("/"), t.lastIndexOf("\\"));
+  return n >= 0 ? t.slice(0, n) : "";
+}
+const Br = /* @__PURE__ */ Fr("workspace", () => {
+  const e = /* @__PURE__ */ Z("all"), t = /* @__PURE__ */ Z(""), n = /* @__PURE__ */ Z(""), s = /* @__PURE__ */ Z(""), o = /* @__PURE__ */ Z("all"), r = /* @__PURE__ */ Z(""), a = /* @__PURE__ */ Z(""), c = /* @__PURE__ */ Z(null);
+  function u(V) {
+    e.value = V;
+  }
+  function p(V) {
+    t.value = V;
+  }
+  function h(V) {
+    n.value = V, V && (t.value = us(V) || t.value);
+  }
+  function f(V) {
+    s.value = V;
+  }
+  function _(V) {
+    o.value = V;
+  }
+  function g(V) {
+    r.value = V;
+  }
+  function k(V) {
+    a.value = V;
+  }
+  function O(V) {
+    const I = fr(V) ? "memory" : "all";
+    c.value = {
+      path: V,
+      mode: I,
+      parentPath: us(V)
+    }, e.value = I, I === "memory" ? s.value = V : (n.value = V, t.value = us(V) || t.value);
+  }
+  function W() {
+    const V = c.value;
+    return c.value = null, V;
+  }
+  return {
+    mode: e,
+    currentPath: t,
+    selectedFilePath: n,
+    selectedMemoryFilePath: s,
+    memoryKindFilter: o,
+    memoryFilterQuery: r,
+    searchQuery: a,
+    pendingReveal: c,
+    setMode: u,
+    setCurrentPath: p,
+    setSelectedFilePath: h,
+    setSelectedMemoryFilePath: f,
+    setMemoryKindFilter: _,
+    setMemoryFilterQuery: g,
+    setSearchQuery: k,
+    requestReveal: O,
+    consumeReveal: W
+  };
+}), Hm = { class: "page-stack" }, Gm = { class: "page-header" }, Bm = { class: "page-header__eyebrow" }, Km = { class: "page-header__title" }, Wm = { class: "page-header__description" }, qm = {
+  key: 0,
+  class: "page-empty"
+}, zm = {
+  key: 1,
+  class: "page-empty page-empty--error"
+}, Jm = { class: "stat-grid" }, Qm = { class: "stat-card" }, Ym = { class: "stat-card__label" }, Xm = { class: "stat-card" }, Zm = { class: "stat-card__label" }, eg = { class: "stat-card" }, tg = { class: "stat-card__label" }, ng = { class: "stat-card" }, sg = { class: "stat-card__label" }, og = { class: "page-two-column" }, rg = { class: "list-stack" }, ig = { class: "catalog-list" }, lg = ["onClick"], ag = { class: "catalog-list__title" }, cg = { class: "pill-row" }, ug = { class: "pill pill--info" }, dg = { class: "mini-list" }, fg = { class: "mini-list__item mini-list__item--stack" }, pg = { class: "page-actions" }, hg = ["disabled"], _g = { class: "create-row" }, mg = { value: "file" }, gg = { value: "directory" }, vg = ["placeholder", "onKeydown"], bg = ["disabled"], yg = {
+  key: 0,
+  class: "directory-list"
+}, Eg = ["onClick"], wg = { class: "entry-button__title" }, Ng = { class: "pill-row" }, $g = { class: "pill pill--muted" }, Og = {
+  key: 1,
+  class: "page-empty"
+}, Sg = {
+  key: 0,
+  class: "page-empty"
+}, kg = { class: "mini-list" }, Cg = { class: "mini-list__item mini-list__item--stack" }, xg = { key: 0 }, Dg = { class: "page-actions" }, Tg = ["disabled"], Pg = {
+  key: 2,
+  class: "page-empty"
+}, Rg = { class: "stat-grid" }, Ag = { class: "stat-card" }, Vg = { class: "stat-card__label" }, Ig = { class: "stat-card" }, Mg = { class: "stat-card__label" }, Fg = { class: "stat-card" }, Lg = { class: "stat-card__label" }, jg = { class: "stat-card" }, Ug = { class: "stat-card__label" }, Hg = { class: "page-two-column" }, Gg = { class: "settings-field" }, Bg = ["value", "placeholder"], Kg = { class: "pill-row" }, Wg = ["onClick"], qg = { class: "muted-copy" }, zg = {
+  key: 0,
+  class: "page-empty"
+}, Jg = {
+  key: 1,
+  class: "provider-stack"
+}, Qg = { class: "provider-card__header" }, Yg = { key: 0 }, Xg = { class: "pill-row" }, Zg = { class: "pill pill--info" }, ev = { class: "pill pill--muted" }, tv = { class: "pill pill--muted" }, nv = { class: "directory-list" }, sv = ["onClick"], ov = { class: "entry-button__title" }, rv = { class: "pill-row" }, iv = { class: "pill pill--muted" }, lv = {
+  key: 2,
+  class: "page-empty"
+}, av = {
+  key: 0,
+  class: "page-empty"
+}, cv = { class: "mini-list" }, uv = { class: "mini-list__item mini-list__item--stack" }, dv = { class: "page-actions" }, fv = ["disabled"], pv = {
+  key: 2,
+  class: "page-empty"
+}, hv = /* @__PURE__ */ Ve({
+  __name: "FilesPage",
+  setup(e) {
+    const t = ft(), n = hn(), s = Br(), o = /* @__PURE__ */ Z(!0), r = /* @__PURE__ */ Z(!1), a = /* @__PURE__ */ Z(!1), c = /* @__PURE__ */ Z(!1), u = /* @__PURE__ */ Z(null), p = /* @__PURE__ */ Z(null), h = /* @__PURE__ */ Z(null), f = /* @__PURE__ */ Z([]), _ = /* @__PURE__ */ Z(null), g = /* @__PURE__ */ Z(""), k = /* @__PURE__ */ Z(""), O = /* @__PURE__ */ Z(null), W = /* @__PURE__ */ Z(""), V = /* @__PURE__ */ Z(""), I = /* @__PURE__ */ Z(!1), L = /* @__PURE__ */ Z(!1), te = /* @__PURE__ */ Z("file"), D = /* @__PURE__ */ Z(""), T = ne(() => [
+      {
+        id: "all",
+        label: t.label("全部文件", "All files"),
+        hint: t.label("浏览受 Guard 管理的工作区目录", "Browse Guard-managed workspace directories")
+      },
+      {
+        id: "memory",
+        label: t.label("核心记忆", "Core memory"),
+        hint: t.label("集中查看 SOUL / USER / AGENTS / MEMORY 与 memory/", "Focus on SOUL / USER / AGENTS / MEMORY and memory/")
+      }
+    ]), b = ne(() => s.mode === "memory" ? p.value : u.value), S = ne(() => {
+      var y;
+      return ((y = h.value) == null ? void 0 : y.roots) || [];
+    }), x = ne(() => {
+      var y;
+      return ((y = h.value) == null ? void 0 : y.entries) || [];
+    }), M = ne(() => {
+      var y;
+      return ((y = h.value) == null ? void 0 : y.currentPath) || s.currentPath;
+    }), A = ne(() => {
+      var y;
+      return ((y = h.value) == null ? void 0 : y.parentPath) || null;
+    }), Q = ne(() => S.value.filter((y) => M.value === y.path || M.value.startsWith(`${y.path}\\`) || M.value.startsWith(`${y.path}/`)).sort((y, P) => P.path.length - y.path.length)[0] || null), he = ne(() => x.value.filter((y) => y.isDirectory).length), Re = ne(() => x.value.length - he.value), Se = ne(() => f.value), fe = ne(() => {
+      const y = s.memoryFilterQuery.trim().toLowerCase();
+      return Se.value.filter((P) => s.memoryKindFilter !== "all" && Ee(P) !== s.memoryKindFilter ? !1 : y ? [
+        P.agentId,
+        P.type,
+        P.relativePath,
+        P.path
+      ].join(" ").toLowerCase().includes(y) : !0).sort((P, N) => {
+        const q = String(P.agentId || "").localeCompare(String(N.agentId || ""));
+        if (q !== 0) return q;
+        const pe = Ee(P).localeCompare(Ee(N));
+        return pe !== 0 ? pe : et(P).localeCompare(et(N));
+      });
+    }), ue = ne(() => {
+      var P;
+      const y = /* @__PURE__ */ new Map();
+      for (const N of fe.value) {
+        const q = String(N.agentId || "");
+        y.has(q) || y.set(q, []), (P = y.get(q)) == null || P.push(N);
+      }
+      return Array.from(y.entries()).map(([N, q]) => ({
+        agentId: N,
+        label: Ct(N),
+        files: q,
+        docsCount: q.filter((pe) => Ee(pe) === "docs").length,
+        notesCount: q.filter((pe) => Ee(pe) === "notes").length
+      })).sort((N, q) => N.label.localeCompare(q.label));
+    });
+    function se(y) {
+      return y.replace(/\r\n/g, `
+`);
+    }
+    function Ee(y) {
+      return y.type === "memory" ? "notes" : "docs";
+    }
+    function lt(y) {
+      return y === "docs" ? t.label("核心文档", "Core docs") : y === "notes" ? t.label("记忆片段", "Memory notes") : t.label("全部", "All");
+    }
+    function Ct(y) {
+      if (!y) return t.label("未分组", "Ungrouped");
+      if (!y.startsWith("detected:")) return y;
+      const P = y.slice(9) || "workspace";
+      return t.label(`自动发现：${P}`, `Auto-detected: ${P}`);
+    }
+    function et(y) {
+      if (y.type === "memory") {
+        const P = y.relativePath.split(/[\\/]/);
+        return P[P.length - 1] || y.relativePath;
+      }
+      return y.type;
+    }
+    function tt(y) {
+      return y === "file" ? _.value !== null && se(g.value) !== k.value : O.value !== null && se(W.value) !== V.value;
+    }
+    async function Ge(y) {
+      if (!tt(y)) return !0;
+      const P = y === "memory";
+      return n.confirm({
+        title: t.label(P ? "切换记忆文件" : "切换文件", P ? "Switch memory file" : "Switch file"),
+        message: t.label(
+          P ? "当前记忆编辑器里有未保存修改，继续切换会丢失这些内容。" : "当前文件编辑器里有未保存修改，继续切换会丢失这些内容。",
+          P ? "There are unsaved changes in the memory editor. Switching now discards them." : "There are unsaved changes in the file editor. Switching now discards them."
+        ),
+        confirmLabel: t.label("放弃并继续", "Discard and continue"),
+        cancelLabel: t.label("取消", "Cancel"),
+        tone: "danger"
+      });
+    }
+    async function Ue(y, P = !1) {
+      P || (r.value = !0), u.value = null;
+      try {
+        const N = await Fm(y);
+        h.value = N, s.setCurrentPath(N.currentPath);
+      } catch (N) {
+        u.value = N instanceof Error ? N.message : String(N);
+      } finally {
+        r.value = !1;
+      }
+    }
+    async function at(y = !1) {
+      y || (a.value = !0), p.value = null;
+      try {
+        const P = await Um();
+        f.value = P.files || [];
+      } catch (P) {
+        p.value = P instanceof Error ? P.message : String(P);
+      } finally {
+        a.value = !1;
+      }
+    }
+    async function C(y, P = !0) {
+      if (P && !await Ge("file")) return !1;
+      c.value = !0;
+      try {
+        const N = await fl(y);
+        return _.value = N, g.value = N.content || "", k.value = se(N.content || ""), s.setSelectedFilePath(y), !0;
+      } catch (N) {
+        return n.pushToast({
+          tone: "error",
+          message: N instanceof Error ? N.message : String(N)
+        }), !1;
+      } finally {
+        c.value = !1;
+      }
+    }
+    async function z(y, P = !0) {
+      if (P && !await Ge("memory")) return !1;
+      c.value = !0;
+      try {
+        const N = await fl(y);
+        return O.value = N, W.value = N.content || "", V.value = se(N.content || ""), s.setSelectedMemoryFilePath(y), !0;
+      } catch (N) {
+        return n.pushToast({
+          tone: "error",
+          message: N instanceof Error ? N.message : String(N)
+        }), !1;
+      } finally {
+        c.value = !1;
+      }
+    }
+    async function J() {
+      const y = s.currentPath || us(s.selectedFilePath) || void 0;
+      await Ue(y, !0), s.selectedFilePath && await C(s.selectedFilePath, !1);
+    }
+    async function oe() {
+      await at(!0), s.selectedMemoryFilePath && await z(s.selectedMemoryFilePath, !1);
+    }
+    async function le(y, P, N = !0) {
+      if (P === "memory") {
+        if (s.mode === "all" && N && !await Ge("file")) return;
+        s.setMode("memory"), await at(!0), y && await z(y, !1);
+        return;
+      }
+      s.mode === "memory" && N && !await Ge("memory") || (s.setMode("all"), await Ue(us(y) || s.currentPath || void 0, !0), y && await C(y, !1));
+    }
+    async function De(y) {
+      var q, pe;
+      const P = y === "memory" ? "memory" : "all";
+      if (P === s.mode) return;
+      const N = P === "memory" ? s.selectedMemoryFilePath || ((q = O.value) == null ? void 0 : q.path) || "" : s.selectedFilePath || ((pe = _.value) == null ? void 0 : pe.path) || "";
+      await le(N, P, !0), P === "all" && !N && (s.setMode("all"), await Ue(s.currentPath || void 0, !0)), P === "memory" && !N && (s.setMode("memory"), await at(!0));
+    }
+    async function m(y) {
+      if (y.isDirectory) {
+        if (!await Ge("file")) return;
+        _.value = null, g.value = "", k.value = "", s.setSelectedFilePath(""), await Ue(y.path);
+        return;
+      }
+      await C(y.path, !0);
+    }
+    async function v(y) {
+      await Ge("file") && (_.value = null, g.value = "", k.value = "", s.setSelectedFilePath(""), await Ue(y));
+    }
+    async function $() {
+      A.value && await Ge("file") && (_.value = null, g.value = "", k.value = "", s.setSelectedFilePath(""), await Ue(A.value));
+    }
+    async function F() {
+      await Ue(M.value || void 0, !0);
+    }
+    async function R() {
+      var y;
+      (y = _.value) != null && y.path && await C(_.value.path, !0);
+    }
+    async function j() {
+      var y;
+      (y = O.value) != null && y.path && await z(O.value.path, !0);
+    }
+    async function K(y) {
+      const P = y === "file" ? _.value : O.value, N = y === "file" ? g.value : W.value;
+      if (P != null && P.path) {
+        I.value = !0;
+        try {
+          const q = await Lm(P.path, N);
+          n.pushToast({
+            tone: q.success ? "success" : "error",
+            message: q.message
+          }), q.success && (y === "file" ? (k.value = se(N), _.value && (_.value.content = N), await Ue(M.value || void 0, !0)) : (V.value = se(N), O.value && (O.value.content = N), await at(!0)));
+        } catch (q) {
+          n.pushToast({
+            tone: "error",
+            message: q instanceof Error ? q.message : String(q)
+          });
+        } finally {
+          I.value = !1;
+        }
+      }
+    }
+    async function G() {
+      const y = M.value;
+      if (!y) return;
+      const P = D.value.trim();
+      if (!P) {
+        n.pushToast({
+          tone: "warning",
+          message: t.label("请输入要创建的文件名或目录名。", "Enter the file or directory name first.")
+        });
+        return;
+      }
+      L.value = !0;
+      try {
+        const N = await jm(y, P, te.value);
+        n.pushToast({
+          tone: N.success ? "success" : "error",
+          message: N.message
+        }), N.success && (D.value = "", await Ue(y, !0), te.value === "file" && N.path && await C(N.path, !1));
+      } catch (N) {
+        n.pushToast({
+          tone: "error",
+          message: N instanceof Error ? N.message : String(N)
+        });
+      } finally {
+        L.value = !1;
+      }
+    }
+    function H(y) {
+      s.setMemoryKindFilter(y === "docs" || y === "notes" ? y : "all");
+    }
+    async function U() {
+      var y;
+      (y = O.value) != null && y.path && await le(O.value.path, "all", !0);
+    }
+    async function re() {
+      o.value = !0;
+      const y = s.consumeReveal();
+      if (y != null && y.path) {
+        await le(y.path, y.mode, !1), o.value = !1;
+        return;
+      }
+      s.mode === "memory" ? await oe() : await J(), o.value = !1;
+    }
+    return $s(() => {
+      re();
+    }), (y, P) => (E(), w("div", Hm, [
+      i("header", Gm, [
+        i("div", null, [
+          i("p", Bm, d(l(t).label("文件 / Third slice", "Files / Third slice")), 1),
+          i("h2", Km, d(l(t).label("文件与记忆", "Files and memory")), 1),
+          i("p", Wm, d(l(t).label("保留“全部文件”和“核心记忆”双视图，让搜索、角色工作区和实际编辑动作都能在新壳层里接得上。", "Keep both the All Files and Core Memory views so search results, role workspaces, and real editing actions can all land cleanly in the new shell.")), 1)
+        ]),
+        i("button", {
+          class: "page-header__action",
+          type: "button",
+          onClick: re
+        }, d(o.value || r.value || a.value ? l(t).label("刷新中…", "Refreshing…") : l(t).label("Refresh", "Refresh")), 1)
+      ]),
+      X(Gr, {
+        items: T.value,
+        "active-id": l(s).mode,
+        onChange: De
+      }, null, 8, ["items", "active-id"]),
+      o.value ? (E(), w("div", qm, d(l(t).label("正在恢复文件视图…", "Restoring the workspace view…")), 1)) : b.value && (l(s).mode === "all" && !h.value || l(s).mode === "memory" && !f.value.length) ? (E(), w("div", zm, d(b.value), 1)) : l(s).mode === "all" ? (E(), w(Y, { key: 2 }, [
+        X(ce, {
+          title: l(t).label("当前目录概览", "Current directory overview"),
+          eyebrow: "Summary"
+        }, {
+          default: ie(() => {
+            var N, q, pe;
+            return [
+              i("div", Jm, [
+                i("article", Qm, [
+                  i("p", Ym, d(l(t).label("受控根目录", "Managed roots")), 1),
+                  i("strong", null, d(l(me)(S.value.length)), 1),
+                  i("span", null, d(((N = Q.value) == null ? void 0 : N.label) || l(t).label("当前正在受控范围内浏览", "Browsing inside the managed scope now")), 1)
+                ]),
+                i("article", Xm, [
+                  i("p", Zm, d(l(t).label("当前目录内容", "Current entries")), 1),
+                  i("strong", null, d(l(me)(x.value.length)), 1),
+                  i("span", null, d(`${l(me)(he.value)} ${l(t).label("个目录", "dirs")} / ${l(me)(Re.value)} ${l(t).label("个文件", "files")}`), 1)
+                ]),
+                i("article", eg, [
+                  i("p", tg, d(l(t).label("当前打开文件", "Open file")), 1),
+                  i("strong", null, d(_.value ? "1" : "0"), 1),
+                  i("span", null, d(((q = _.value) == null ? void 0 : q.relativePath) || l(t).label("还没有打开文件", "No file opened yet")), 1)
+                ]),
+                i("article", ng, [
+                  i("p", sg, d(l(t).label("当前路径", "Current path")), 1),
+                  i("strong", null, d(((pe = Q.value) == null ? void 0 : pe.type) === "detected-workspace" ? l(t).label("自动发现", "Auto-detected") : l(t).label("受控目录", "Managed")), 1),
+                  i("span", null, d(M.value || l(t).label("等待路径返回", "Waiting for a resolved path")), 1)
+                ])
+              ])
+            ];
+          }),
+          _: 1
+        }, 8, ["title"]),
+        i("div", og, [
+          X(ce, {
+            title: l(t).label("工作区浏览器", "Workspace browser"),
+            eyebrow: "Browser"
+          }, {
+            default: ie(() => [
+              i("div", rg, [
+                i("div", ig, [
+                  (E(!0), w(Y, null, ye(S.value, (N) => (E(), w("button", {
+                    key: N.id,
+                    class: ge(["catalog-list__item", { "catalog-list__item--active": M.value === N.path || M.value.startsWith(`${N.path}\\`) || M.value.startsWith(`${N.path}/`) }]),
+                    type: "button",
+                    onClick: (q) => v(N.path)
+                  }, [
+                    i("div", ag, [
+                      i("strong", null, d(N.label), 1)
+                    ]),
+                    i("div", cg, [
+                      i("span", ug, d(N.type), 1)
+                    ])
+                  ], 10, lg))), 128))
+                ]),
+                i("div", dg, [
+                  i("div", fg, [
+                    i("strong", null, d(l(t).label("当前路径", "Current path")), 1),
+                    i("p", null, d(M.value || "-"), 1)
+                  ])
+                ]),
+                i("div", pg, [
+                  i("button", {
+                    class: "inline-link",
+                    type: "button",
+                    disabled: !A.value,
+                    onClick: $
+                  }, d(l(t).label("返回上一级", "Go up")), 9, hg),
+                  i("button", {
+                    class: "inline-link",
+                    type: "button",
+                    onClick: F
+                  }, d(r.value ? l(t).label("刷新中…", "Refreshing…") : l(t).label("刷新目录", "Reload list")), 1)
+                ]),
+                i("div", _g, [
+                  Xe(i("select", {
+                    "onUpdate:modelValue": P[0] || (P[0] = (N) => te.value = N),
+                    class: "settings-input create-row__kind"
+                  }, [
+                    i("option", mg, d(l(t).label("文件", "File")), 1),
+                    i("option", gg, d(l(t).label("目录", "Directory")), 1)
+                  ], 512), [
+                    [gs, te.value]
+                  ]),
+                  Xe(i("input", {
+                    "onUpdate:modelValue": P[1] || (P[1] = (N) => D.value = N),
+                    class: "settings-input",
+                    type: "text",
+                    placeholder: l(t).label("例如：README-local.md 或 drafts", "Example: README-local.md or drafts"),
+                    onKeydown: Ef(Vr(G, ["prevent"]), ["enter"])
+                  }, null, 40, vg), [
+                    [yt, D.value]
+                  ]),
+                  i("button", {
+                    class: "inline-link inline-link--primary",
+                    type: "button",
+                    disabled: L.value,
+                    onClick: G
+                  }, d(L.value ? l(t).label("创建中…", "Creating…") : l(t).label("创建", "Create")), 9, bg)
+                ]),
+                x.value.length ? (E(), w("div", yg, [
+                  (E(!0), w(Y, null, ye(x.value, (N) => {
+                    var q;
+                    return E(), w("button", {
+                      key: N.path,
+                      class: ge(["entry-button", { "entry-button--active": ((q = _.value) == null ? void 0 : q.path) === N.path }]),
+                      type: "button",
+                      onClick: (pe) => m(N)
+                    }, [
+                      i("div", wg, [
+                        i("strong", null, d(N.isDirectory ? `${l(t).label("[目录]", "[DIR]")} ${N.name}` : N.name), 1)
+                      ]),
+                      i("p", null, d(N.relativePath || N.path), 1),
+                      i("div", Ng, [
+                        i("span", {
+                          class: ge(["pill", N.isDirectory ? "pill--info" : "pill--muted"])
+                        }, d(N.isDirectory ? l(t).label("目录", "Directory") : l(m_)(N.size)), 3),
+                        i("span", $g, d(l(Yt)(N.modifiedAt)), 1)
+                      ])
+                    ], 10, Eg);
+                  }), 128))
+                ])) : (E(), w("div", Og, d(l(t).label("当前目录下还没有可展示内容。", "The current directory does not contain any visible entries yet.")), 1))
+              ])
+            ]),
+            _: 1
+          }, 8, ["title"]),
+          X(ce, {
+            title: l(t).label("文件编辑器", "File editor"),
+            eyebrow: "Editor"
+          }, {
+            default: ie(() => [
+              c.value ? (E(), w("div", Sg, d(l(t).label("正在读取文件内容…", "Loading file content…")), 1)) : _.value ? (E(), w(Y, { key: 1 }, [
+                i("div", kg, [
+                  i("div", Cg, [
+                    i("strong", null, d(_.value.relativePath || _.value.path), 1),
+                    i("p", null, d(_.value.path), 1),
+                    _.value.truncated ? (E(), w("p", xg, d(l(t).label("文件内容过长，当前只预览了前一部分。", "This file is large, so only the first portion is loaded for preview and editing.")), 1)) : Ce("", !0)
+                  ])
+                ]),
+                i("div", Dg, [
+                  i("button", {
+                    class: "inline-link",
+                    type: "button",
+                    onClick: R
+                  }, d(l(t).label("重新读取", "Reload")), 1),
+                  i("button", {
+                    class: "inline-link inline-link--primary",
+                    type: "button",
+                    disabled: I.value,
+                    onClick: P[2] || (P[2] = (N) => K("file"))
+                  }, d(I.value ? l(t).label("保存中…", "Saving…") : l(t).label("保存文件", "Save file")), 9, Tg)
+                ]),
+                Xe(i("textarea", {
+                  "onUpdate:modelValue": P[3] || (P[3] = (N) => g.value = N),
+                  class: "settings-textarea settings-textarea--editor",
+                  rows: "22"
+                }, null, 512), [
+                  [yt, g.value]
+                ])
+              ], 64)) : (E(), w("div", Pg, d(l(t).label("先从左侧选择一个文件，再在这里查看或编辑。", "Select a file from the left side first, then view or edit it here.")), 1))
+            ]),
+            _: 1
+          }, 8, ["title"])
+        ])
+      ], 64)) : (E(), w(Y, { key: 3 }, [
+        X(ce, {
+          title: l(t).label("核心记忆概览", "Core memory overview"),
+          eyebrow: "Summary"
+        }, {
+          default: ie(() => {
+            var N;
+            return [
+              i("div", Rg, [
+                i("article", Ag, [
+                  i("p", Vg, d(l(t).label("记忆文件数", "Memory files")), 1),
+                  i("strong", null, d(l(me)(Se.value.length)), 1),
+                  i("span", null, d(`${l(me)(Se.value.filter((q) => q.type !== "memory").length)} ${l(t).label("个核心文档", "core docs")} / ${l(me)(Se.value.filter((q) => q.type === "memory").length)} ${l(t).label("个记忆片段", "memory notes")}`), 1)
+                ]),
+                i("article", Ig, [
+                  i("p", Mg, d(l(t).label("覆盖角色", "Covered roles")), 1),
+                  i("strong", null, d(l(me)(ue.value.length)), 1),
+                  i("span", null, d(l(t).label("包含可管理记忆文件的角色或工作区", "Roles or workspaces that already have managed memory files")), 1)
+                ]),
+                i("article", Fg, [
+                  i("p", Lg, d(l(t).label("当前显示", "Visible now")), 1),
+                  i("strong", null, d(l(me)(fe.value.length)), 1),
+                  i("span", null, d(`${lt(l(s).memoryKindFilter)} / ${l(s).memoryFilterQuery || l(t).label("未设置搜索词", "No search query")}`), 1)
+                ]),
+                i("article", jg, [
+                  i("p", Ug, d(l(t).label("当前打开", "Current file")), 1),
+                  i("strong", null, d(O.value ? "1" : "0"), 1),
+                  i("span", null, d(((N = O.value) == null ? void 0 : N.relativePath) || l(t).label("还没有打开记忆文件", "No memory file opened yet")), 1)
+                ])
+              ])
+            ];
+          }),
+          _: 1
+        }, 8, ["title"]),
+        i("div", Hg, [
+          X(ce, {
+            title: l(t).label("记忆目录", "Memory catalog"),
+            eyebrow: "Catalog"
+          }, {
+            default: ie(() => [
+              i("div", Gg, [
+                i("span", null, d(l(t).label("筛选", "Filter")), 1),
+                i("input", {
+                  value: l(s).memoryFilterQuery,
+                  class: "settings-input",
+                  type: "text",
+                  placeholder: l(t).label("搜索 Agent / 文件名 / 路径", "Filter by agent / file / path"),
+                  onInput: P[4] || (P[4] = (N) => l(s).setMemoryFilterQuery(N.target.value))
+                }, null, 40, Bg)
+              ]),
+              i("div", Kg, [
+                (E(), w(Y, null, ye(["all", "docs", "notes"], (N) => i("button", {
+                  key: N,
+                  class: ge(["pill-button", { "pill-button--active": l(s).memoryKindFilter === N }]),
+                  type: "button",
+                  onClick: (q) => H(N)
+                }, [
+                  i("span", null, d(lt(N)), 1)
+                ], 10, Wg)), 64))
+              ]),
+              i("p", qg, d(l(t).label(`当前显示 ${l(me)(fe.value.length)} / ${l(me)(Se.value.length)} 个记忆文件。`, `Showing ${l(me)(fe.value.length)} of ${l(me)(Se.value.length)} memory files.`)), 1),
+              a.value ? (E(), w("div", zg, d(l(t).label("正在读取记忆目录…", "Loading the memory catalog…")), 1)) : ue.value.length ? (E(), w("div", Jg, [
+                (E(!0), w(Y, null, ye(ue.value, (N) => (E(), w("article", {
+                  key: N.agentId,
+                  class: "provider-card"
+                }, [
+                  i("header", Qg, [
+                    i("div", null, [
+                      i("strong", null, d(N.label), 1),
+                      N.label !== N.agentId ? (E(), w("p", Yg, d(N.agentId), 1)) : Ce("", !0)
+                    ]),
+                    i("div", Xg, [
+                      i("span", Zg, d(l(me)(N.files.length)), 1),
+                      i("span", ev, d(`${lt("docs")} ${l(me)(N.docsCount)}`), 1),
+                      i("span", tv, d(`${lt("notes")} ${l(me)(N.notesCount)}`), 1)
+                    ])
+                  ]),
+                  i("div", nv, [
+                    (E(!0), w(Y, null, ye(N.files, (q) => {
+                      var pe;
+                      return E(), w("button", {
+                        key: q.path,
+                        class: ge(["entry-button", { "entry-button--active": ((pe = O.value) == null ? void 0 : pe.path) === q.path }]),
+                        type: "button",
+                        onClick: (Ne) => z(q.path)
+                      }, [
+                        i("div", ov, [
+                          i("strong", null, d(et(q)), 1)
+                        ]),
+                        i("p", null, d(q.relativePath || q.path), 1),
+                        i("div", rv, [
+                          i("span", {
+                            class: ge(["pill", Ee(q) === "docs" ? "pill--info" : "pill--success"])
+                          }, d(lt(Ee(q))), 3),
+                          i("span", iv, d(l(Yt)(q.modifiedAt)), 1)
+                        ])
+                      ], 10, sv);
+                    }), 128))
+                  ])
+                ]))), 128))
+              ])) : (E(), w("div", lv, d(l(t).label("当前筛选条件下没有匹配的核心记忆文件。", "No core memory files match the current filter.")), 1))
+            ]),
+            _: 1
+          }, 8, ["title"]),
+          X(ce, {
+            title: l(t).label("记忆编辑器", "Memory editor"),
+            eyebrow: "Editor"
+          }, {
+            default: ie(() => [
+              c.value ? (E(), w("div", av, d(l(t).label("正在读取记忆文件…", "Loading the memory file…")), 1)) : O.value ? (E(), w(Y, { key: 1 }, [
+                i("div", cv, [
+                  i("div", uv, [
+                    i("strong", null, d(O.value.relativePath || O.value.path), 1),
+                    i("p", null, d(O.value.path), 1),
+                    i("p", null, d(l(t).label("修改后记得保存，这些内容会直接影响对应角色的行为、人格和长期记忆。", "Save after editing. These files directly affect role behavior, persona, and long-term memory.")), 1)
+                  ])
+                ]),
+                i("div", dv, [
+                  i("button", {
+                    class: "inline-link",
+                    type: "button",
+                    onClick: j
+                  }, d(l(t).label("重新读取", "Reload")), 1),
+                  i("button", {
+                    class: "inline-link",
+                    type: "button",
+                    onClick: U
+                  }, d(l(t).label("在全部文件中定位", "Reveal in all files")), 1),
+                  i("button", {
+                    class: "inline-link inline-link--primary",
+                    type: "button",
+                    disabled: I.value,
+                    onClick: P[5] || (P[5] = (N) => K("memory"))
+                  }, d(I.value ? l(t).label("保存中…", "Saving…") : l(t).label("保存记忆文件", "Save memory file")), 9, fv)
+                ]),
+                Xe(i("textarea", {
+                  "onUpdate:modelValue": P[6] || (P[6] = (N) => W.value = N),
+                  class: "settings-textarea settings-textarea--editor",
+                  rows: "22"
+                }, null, 512), [
+                  [yt, W.value]
+                ])
+              ], 64)) : (E(), w("div", pv, d(l(t).label("先从左侧选择一个记忆文件，再在这里查看或编辑。", "Select a memory file from the left side first, then view or edit it here.")), 1))
+            ]),
+            _: 1
+          }, 8, ["title"])
+        ])
+      ], 64))
+    ]));
+  }
+});
+async function _v() {
+  const [e, t] = await Promise.all([
+    xe("/api/ai/config"),
+    xe("/api/ai/providers")
   ]);
   return { config: e, catalog: t };
 }
-function Sm(e) {
-  return st("/api/ai/provider", e);
+function mv(e) {
+  return Ze("/api/ai/provider", e);
 }
-function km(e) {
-  return ic(`/api/ai/provider/${encodeURIComponent(e)}`);
+function gv(e) {
+  return _c(`/api/ai/provider/${encodeURIComponent(e)}`);
 }
-function $m(e) {
-  return st("/api/ai/primary", { modelId: e });
+function vv(e) {
+  return Ze("/api/ai/primary", { modelId: e });
 }
-function Cm(e) {
-  return st("/api/ai/fallbacks", { modelIds: e });
+function bv(e) {
+  return Ze("/api/ai/fallbacks", { modelIds: e });
 }
-const Dm = { class: "page-stack" }, xm = { class: "page-header" }, Tm = { class: "page-header__eyebrow" }, Pm = { class: "page-header__title" }, Vm = { class: "page-header__description" }, Am = {
+const yv = { class: "page-stack" }, Ev = { class: "page-header" }, wv = { class: "page-header__eyebrow" }, Nv = { class: "page-header__title" }, $v = { class: "page-header__description" }, Ov = {
   key: 0,
   class: "page-empty"
-}, Rm = {
+}, Sv = {
   key: 1,
   class: "page-empty page-empty--error"
-}, Im = { class: "stat-grid" }, Mm = { class: "stat-card" }, Lm = { class: "stat-card__label" }, jm = { class: "stat-card" }, Fm = { class: "stat-card__label" }, Um = { class: "stat-card" }, Hm = { class: "stat-card__label" }, Bm = { class: "stat-card" }, Gm = { class: "stat-card__label" }, Wm = { class: "settings-grid settings-grid--wide" }, Km = { class: "settings-field" }, zm = { value: "" }, qm = ["value"], Jm = { class: "checkbox-grid" }, Ym = ["checked", "onChange"], Qm = { class: "page-actions" }, Xm = ["disabled"], Zm = { class: "page-two-column" }, e_ = { class: "catalog-list" }, t_ = ["onClick"], n_ = { class: "catalog-list__title" }, s_ = { class: "pill-row" }, o_ = { class: "page-stack" }, r_ = { class: "muted-copy" }, i_ = { class: "settings-grid settings-grid--wide" }, l_ = { class: "settings-field" }, a_ = { class: "settings-field" }, c_ = { class: "settings-field" }, u_ = ["value"], d_ = { class: "settings-field" }, f_ = { class: "settings-field settings-field--full" }, p_ = { class: "page-actions" }, h_ = ["disabled"], g_ = ["disabled"], m_ = { class: "provider-stack" }, __ = { class: "provider-card__header" }, v_ = { class: "pill-row" }, b_ = {
+}, kv = { class: "stat-grid" }, Cv = { class: "stat-card" }, xv = { class: "stat-card__label" }, Dv = { class: "stat-card" }, Tv = { class: "stat-card__label" }, Pv = { class: "stat-card" }, Rv = { class: "stat-card__label" }, Av = { class: "stat-card" }, Vv = { class: "stat-card__label" }, Iv = { class: "settings-grid settings-grid--wide" }, Mv = { class: "settings-field" }, Fv = { value: "" }, Lv = ["value"], jv = { class: "checkbox-grid" }, Uv = ["checked", "onChange"], Hv = { class: "page-actions" }, Gv = ["disabled"], Bv = { class: "page-two-column" }, Kv = { class: "catalog-list" }, Wv = ["onClick"], qv = { class: "catalog-list__title" }, zv = { class: "pill-row" }, Jv = { class: "page-stack" }, Qv = { class: "muted-copy" }, Yv = { class: "settings-grid settings-grid--wide" }, Xv = { class: "settings-field" }, Zv = { class: "settings-field" }, eb = { class: "settings-field" }, tb = ["value"], nb = { class: "settings-field" }, sb = { class: "settings-field settings-field--full" }, ob = { class: "page-actions" }, rb = ["disabled"], ib = ["disabled"], lb = { class: "provider-stack" }, ab = { class: "provider-card__header" }, cb = { class: "pill-row" }, ub = {
   key: 0,
   class: "pill pill--success"
-}, y_ = {
+}, db = {
   key: 1,
   class: "pill pill--muted"
-}, E_ = { class: "mini-list" }, w_ = { class: "pill-row" }, N_ = {
+}, fb = { class: "mini-list" }, pb = { class: "pill-row" }, hb = {
   key: 0,
   class: "pill pill--success"
-}, O_ = {
+}, _b = {
   key: 1,
   class: "pill pill--info"
-}, S_ = /* @__PURE__ */ Be({
+}, mb = /* @__PURE__ */ Ve({
   __name: "ModelsPage",
   setup(e) {
-    const t = ["openai-completions", "anthropic-messages", "openai-responses"], n = Wt(), s = zn(), o = Ht(() => Om()), r = /* @__PURE__ */ me("__new__"), i = /* @__PURE__ */ me(!1), l = /* @__PURE__ */ me(!1), a = /* @__PURE__ */ me(!1), f = /* @__PURE__ */ me(""), p = /* @__PURE__ */ me([]), u = /* @__PURE__ */ on({
+    const t = ["openai-completions", "anthropic-messages", "openai-responses"], n = ft(), s = hn(), o = wt(() => _v()), r = /* @__PURE__ */ Z("__new__"), a = /* @__PURE__ */ Z(!1), c = /* @__PURE__ */ Z(!1), u = /* @__PURE__ */ Z(!1), p = /* @__PURE__ */ Z(""), h = /* @__PURE__ */ Z([]), f = /* @__PURE__ */ cn({
       mode: "new",
       title: "",
       canDelete: !1,
@@ -8955,76 +9747,76 @@ const Dm = { class: "page-stack" }, xm = { class: "page-header" }, Tm = { class:
       apiKey: "",
       apiKeyHelp: "",
       modelsText: ""
-    }), m = ue(() => {
-      const S = o.data, v = (S == null ? void 0 : S.config.providers) || [], E = (S == null ? void 0 : S.catalog.presets) || [];
+    }), _ = ne(() => {
+      const T = o.data, b = (T == null ? void 0 : T.config.providers) || [], S = (T == null ? void 0 : T.catalog.presets) || [];
       return [
         { value: "__new__", label: n.label("新建空白 Provider", "Create blank provider"), kind: "new" },
-        ...v.map((N) => ({
-          value: N.name,
-          label: `${N.name} · ${n.label("已配置", "configured")}`,
+        ...b.map((x) => ({
+          value: x.name,
+          label: `${x.name} · ${n.label("已配置", "configured")}`,
           kind: "custom"
         })),
-        ...E.filter((N) => !v.some((M) => M.name === N.id)).map((N) => ({
-          value: N.id,
-          label: `${N.id} · ${n.label("预设", "preset")}`,
+        ...S.filter((x) => !b.some((M) => M.name === x.id)).map((x) => ({
+          value: x.id,
+          label: `${x.id} · ${n.label("预设", "preset")}`,
           kind: "preset"
         }))
       ];
-    }), b = ue(() => {
-      var v;
-      return (((v = o.data) == null ? void 0 : v.config.providers) || []).flatMap((E) => E.models.map((N) => ({
-        providerName: E.name,
-        fullId: N.fullId,
-        name: N.name,
-        api: N.api
+    }), g = ne(() => {
+      var b;
+      return (((b = o.data) == null ? void 0 : b.config.providers) || []).flatMap((S) => S.models.map((x) => ({
+        providerName: S.name,
+        fullId: x.fullId,
+        name: x.name,
+        api: x.api
       })));
     });
-    function T(S, v) {
-      return S.map((E) => [
-        E.id || "",
-        E.name || E.id || "",
-        E.contextWindow || "",
-        E.maxTokens || "",
-        E.api || v || ""
+    function k(T, b) {
+      return T.map((S) => [
+        S.id || "",
+        S.name || S.id || "",
+        S.contextWindow || "",
+        S.maxTokens || "",
+        S.api || b || ""
       ].join("|")).join(`
 `);
     }
-    function $(S, v) {
-      return S.split(/\r?\n/).map((E) => E.trim()).filter(Boolean).map((E) => {
-        const [N, M, C, z, ae] = E.split("|").map((je) => je.trim());
+    function O(T, b) {
+      return T.split(/\r?\n/).map((S) => S.trim()).filter(Boolean).map((S) => {
+        const [x, M, A, Q, he] = S.split("|").map((Re) => Re.trim());
         return {
-          id: N,
-          name: M || N,
-          contextWindow: lr(C),
-          maxTokens: lr(z),
-          api: ae || v || void 0
+          id: x,
+          name: M || x,
+          contextWindow: dr(A),
+          maxTokens: dr(Q),
+          api: he || b || void 0
         };
-      }).filter((E) => E.id);
+      }).filter((S) => S.id);
     }
-    function K(S) {
-      var je, Pe;
-      const v = o.data;
-      if (!v) return;
-      const E = v.config.providers, N = new Map(E.map((ce) => [ce.name, ce])), M = new Map((v.catalog.custom || []).map((ce) => [ce.name, ce])), C = new Map((v.catalog.presets || []).map((ce) => [ce.id, ce]));
-      if (!S || S === "__new__") {
-        u.mode = "new", u.title = n.label("新建 Provider", "Create provider"), u.canDelete = !1, u.name = "", u.baseUrl = "", u.apiType = "openai-completions", u.apiKey = "", u.apiKeyHelp = n.label("保存后写入 openclaw.json。", "Saved into openclaw.json after you confirm."), u.modelsText = "";
+    function W(T) {
+      var Re, Se;
+      const b = o.data;
+      if (!b) return;
+      const S = b.config.providers, x = new Map(S.map((fe) => [fe.name, fe])), M = new Map((b.catalog.custom || []).map((fe) => [fe.name, fe])), A = new Map((b.catalog.presets || []).map((fe) => [fe.id, fe]));
+      if (!T || T === "__new__") {
+        f.mode = "new", f.title = n.label("新建 Provider", "Create provider"), f.canDelete = !1, f.name = "", f.baseUrl = "", f.apiType = "openai-completions", f.apiKey = "", f.apiKeyHelp = n.label("保存后写入 openclaw.json。", "Saved into openclaw.json after you confirm."), f.modelsText = "";
         return;
       }
-      const z = M.get(S);
-      if (z) {
-        const ce = N.get(S);
-        u.mode = "custom", u.title = n.label("编辑已配置 Provider", "Edit configured provider"), u.canDelete = !0, u.name = S, u.baseUrl = z.baseUrl || "", u.apiType = z.apiType || z.api || ((Pe = (je = z.models) == null ? void 0 : je[0]) == null ? void 0 : Pe.api) || "openai-completions", u.apiKey = "", u.apiKeyHelp = ce != null && ce.apiKeyMasked ? n.label(`留空会保留现有密钥：${ce.apiKeyMasked}`, `Leave blank to keep the current key: ${ce.apiKeyMasked}`) : n.label("填写后会覆盖当前密钥。", "A filled value replaces the current key."), u.modelsText = T(z.models || [], u.apiType);
+      const Q = M.get(T);
+      if (Q) {
+        const fe = x.get(T);
+        f.mode = "custom", f.title = n.label("编辑已配置 Provider", "Edit configured provider"), f.canDelete = !0, f.name = T, f.baseUrl = Q.baseUrl || "", f.apiType = Q.apiType || Q.api || ((Se = (Re = Q.models) == null ? void 0 : Re[0]) == null ? void 0 : Se.api) || "openai-completions", f.apiKey = "", f.apiKeyHelp = fe != null && fe.apiKeyMasked ? n.label(`留空会保留现有密钥：${fe.apiKeyMasked}`, `Leave blank to keep the current key: ${fe.apiKeyMasked}`) : n.label("填写后会覆盖当前密钥。", "A filled value replaces the current key."), f.modelsText = k(Q.models || [], f.apiType);
         return;
       }
-      const ae = C.get(S);
-      if (ae) {
-        u.mode = "preset", u.title = n.label("从预设带入 Provider", "Bootstrap provider from preset"), u.canDelete = !1, u.name = ae.id, u.baseUrl = ae.defaultBaseUrl || "", u.apiType = ae.apiType || "openai-completions", u.apiKey = "", u.apiKeyHelp = ae.requiresApiKey ? n.label("保存前请填写 API Key。", "Fill in the API key before saving.") : n.label("这个 Provider 通常不需要 API Key。", "This provider usually does not require an API key."), u.modelsText = T(
-          (ae.suggestedModels || []).map((ce) => ({
-            id: ce.id,
-            name: ce.name,
-            api: ae.apiType
+      const he = A.get(T);
+      if (he) {
+        f.mode = "preset", f.title = n.label("从预设带入 Provider", "Bootstrap provider from preset"), f.canDelete = !1, f.name = he.id, f.baseUrl = he.defaultBaseUrl || "", f.apiType = he.apiType || "openai-completions", f.apiKey = "", f.apiKeyHelp = he.requiresApiKey ? n.label("保存前请填写 API Key。", "Fill in the API key before saving.") : n.label("这个 Provider 通常不需要 API Key。", "This provider usually does not require an API key."), f.modelsText = k(
+          (he.suggestedModels || []).map((fe) => ({
+            id: fe.id,
+            name: fe.name,
+            api: he.apiType
           })),
-          ae.apiType
+          he.apiType
         );
         return;
       }
@@ -9032,344 +9824,344 @@ const Dm = { class: "page-stack" }, xm = { class: "page-header" }, Tm = { class:
     }
     qe(
       () => o.data,
-      (S) => {
-        var E;
-        if (!S) return;
-        f.value = S.config.primaryModel || "", p.value = [...S.config.fallbackModels || []];
-        const v = m.value;
-        if (!v.some((N) => N.value === r.value)) {
-          r.value = ((E = v[1]) == null ? void 0 : E.value) || "__new__";
+      (T) => {
+        var S;
+        if (!T) return;
+        p.value = T.config.primaryModel || "", h.value = [...T.config.fallbackModels || []];
+        const b = _.value;
+        if (!b.some((x) => x.value === r.value)) {
+          r.value = ((S = b[1]) == null ? void 0 : S.value) || "__new__";
           return;
         }
-        K(r.value);
+        W(r.value);
       },
       { immediate: !0 }
-    ), qe(r, (S) => {
-      K(S);
+    ), qe(r, (T) => {
+      W(T);
     });
-    async function F() {
-      i.value = !0;
+    async function V() {
+      a.value = !0;
       try {
-        const S = await $m(f.value);
-        if (!S.success)
-          throw new Error(S.message);
-        const v = await Cm(p.value.filter((E) => E !== f.value));
-        if (!v.success)
-          throw new Error(v.message);
+        const T = await vv(p.value);
+        if (!T.success)
+          throw new Error(T.message);
+        const b = await bv(h.value.filter((S) => S !== p.value));
+        if (!b.success)
+          throw new Error(b.message);
         s.pushToast({
           tone: "success",
           message: n.label("模型路由已更新。", "Model routing was updated.")
         }), await o.execute({ silent: !0 });
-      } catch (S) {
+      } catch (T) {
         s.pushToast({
           tone: "error",
-          message: S instanceof Error ? S.message : String(S)
+          message: T instanceof Error ? T.message : String(T)
         });
       } finally {
-        i.value = !1;
-      }
-    }
-    async function A() {
-      l.value = !0;
-      try {
-        const S = await Sm({
-          name: u.name.trim(),
-          baseUrl: u.baseUrl.trim(),
-          apiKey: u.apiKey.trim() || void 0,
-          apiType: u.apiType,
-          models: $(u.modelsText, u.apiType)
-        });
-        s.pushToast({
-          tone: S.success ? "success" : "error",
-          message: S.message
-        }), S.success && (r.value = u.name.trim() || "__new__", await o.execute({ silent: !0 }));
-      } catch (S) {
-        s.pushToast({
-          tone: "error",
-          message: S instanceof Error ? S.message : String(S)
-        });
-      } finally {
-        l.value = !1;
+        a.value = !1;
       }
     }
     async function I() {
-      if (!(!u.canDelete || !u.name || !await s.confirm({
+      c.value = !0;
+      try {
+        const T = await mv({
+          name: f.name.trim(),
+          baseUrl: f.baseUrl.trim(),
+          apiKey: f.apiKey.trim() || void 0,
+          apiType: f.apiType,
+          models: O(f.modelsText, f.apiType)
+        });
+        s.pushToast({
+          tone: T.success ? "success" : "error",
+          message: T.message
+        }), T.success && (r.value = f.name.trim() || "__new__", await o.execute({ silent: !0 }));
+      } catch (T) {
+        s.pushToast({
+          tone: "error",
+          message: T instanceof Error ? T.message : String(T)
+        });
+      } finally {
+        c.value = !1;
+      }
+    }
+    async function L() {
+      if (!(!f.canDelete || !f.name || !await s.confirm({
         title: n.label("删除 Provider", "Delete provider"),
         message: n.label(
-          `确认删除 ${u.name} 吗？这会同时移除它的模型定义、主模型引用和备用链路。`,
-          `Delete ${u.name}? This also removes its model definitions, primary selection, and fallback references.`
+          `确认删除 ${f.name} 吗？这会同时移除它的模型定义、主模型引用和备用链路。`,
+          `Delete ${f.name}? This also removes its model definitions, primary selection, and fallback references.`
         ),
         confirmLabel: n.label("确认删除", "Delete provider"),
         cancelLabel: n.label("取消", "Cancel"),
         tone: "danger"
       }))) {
-        a.value = !0;
+        u.value = !0;
         try {
-          const v = await km(u.name);
+          const b = await gv(f.name);
           s.pushToast({
-            tone: v.success ? "success" : "error",
-            message: v.message
-          }), v.success && (r.value = "__new__", await o.execute({ silent: !0 }));
-        } catch (v) {
+            tone: b.success ? "success" : "error",
+            message: b.message
+          }), b.success && (r.value = "__new__", await o.execute({ silent: !0 }));
+        } catch (b) {
           s.pushToast({
             tone: "error",
-            message: v instanceof Error ? v.message : String(v)
+            message: b instanceof Error ? b.message : String(b)
           });
         } finally {
-          a.value = !1;
+          u.value = !1;
         }
       }
     }
-    function te(S) {
-      if (p.value.includes(S)) {
-        p.value = p.value.filter((v) => v !== S);
+    function te(T) {
+      if (h.value.includes(T)) {
+        h.value = h.value.filter((b) => b !== T);
         return;
       }
-      p.value = [...p.value, S];
+      h.value = [...h.value, T];
     }
-    function O(S, v) {
-      var E;
-      return S ? n.label(`预设入口：${S.name}`, `Preset source: ${S.name}`) : (E = v == null ? void 0 : v.models) != null && E.length ? n.label(`当前已录入 ${v.models.length} 个模型`, `${v.models.length} model entries are recorded now`) : n.label("保存后就会写入当前 openclaw.json。", "Saving writes the provider into the active openclaw.json.");
+    function D(T, b) {
+      var S;
+      return T ? n.label(`预设入口：${T.name}`, `Preset source: ${T.name}`) : (S = b == null ? void 0 : b.models) != null && S.length ? n.label(`当前已录入 ${b.models.length} 个模型`, `${b.models.length} model entries are recorded now`) : n.label("保存后就会写入当前 openclaw.json。", "Saving writes the provider into the active openclaw.json.");
     }
-    return (S, v) => (D(), V("div", Dm, [
-      c("header", xm, [
-        c("div", null, [
-          c("p", Tm, g(d(n).label("模型 / Second slice", "Models / Second slice")), 1),
-          c("h2", Pm, g(d(n).label("模型策略", "Model strategy")), 1),
-          c("p", Vm, g(d(n).label("把 Provider、主模型和 fallback 链迁到模块化页面里，同时保持当前 openclaw.json 的真实读写。", "Move providers, the primary model, and the fallback chain into the modular page while keeping real read-write access to the current openclaw.json.")), 1)
+    return (T, b) => (E(), w("div", yv, [
+      i("header", Ev, [
+        i("div", null, [
+          i("p", wv, d(l(n).label("模型 / Second slice", "Models / Second slice")), 1),
+          i("h2", Nv, d(l(n).label("模型策略", "Model strategy")), 1),
+          i("p", $v, d(l(n).label("把 Provider、主模型和 fallback 链迁到模块化页面里，同时保持当前 openclaw.json 的真实读写。", "Move providers, the primary model, and the fallback chain into the modular page while keeping real read-write access to the current openclaw.json.")), 1)
         ]),
-        c("button", {
+        i("button", {
           class: "page-header__action",
           type: "button",
-          onClick: v[0] || (v[0] = (E) => d(o).execute({ silent: !0 }))
-        }, g(d(o).refreshing ? d(n).label("刷新中…", "Refreshing…") : d(n).label("刷新", "Refresh")), 1)
+          onClick: b[0] || (b[0] = (S) => l(o).execute({ silent: !0 }))
+        }, d(l(o).refreshing ? l(n).label("刷新中…", "Refreshing…") : l(n).label("刷新", "Refresh")), 1)
       ]),
-      d(o).loading ? (D(), V("div", Am, g(d(n).label("正在读取模型配置…", "Loading model configuration…")), 1)) : d(o).error ? (D(), V("div", Rm, g(d(o).error), 1)) : d(o).data ? (D(), V(X, { key: 2 }, [
-        Z(_e, {
-          title: d(n).label("当前路由概览", "Current routing overview"),
+      l(o).loading ? (E(), w("div", Ov, d(l(n).label("正在读取模型配置…", "Loading model configuration…")), 1)) : l(o).error ? (E(), w("div", Sv, d(l(o).error), 1)) : l(o).data ? (E(), w(Y, { key: 2 }, [
+        X(ce, {
+          title: l(n).label("当前路由概览", "Current routing overview"),
           eyebrow: "Routing"
         }, {
-          default: he(() => [
-            c("div", Im, [
-              c("article", Mm, [
-                c("p", Lm, g(d(n).label("主模型", "Primary model")), 1),
-                c("strong", null, g(d(o).data.config.primaryModel || d(n).label("待设置", "Not configured")), 1),
-                c("span", null, g(d(n).label("默认执行路径", "Default execution route")), 1)
+          default: ie(() => [
+            i("div", kv, [
+              i("article", Cv, [
+                i("p", xv, d(l(n).label("主模型", "Primary model")), 1),
+                i("strong", null, d(l(o).data.config.primaryModel || l(n).label("待设置", "Not configured")), 1),
+                i("span", null, d(l(n).label("默认执行路径", "Default execution route")), 1)
               ]),
-              c("article", jm, [
-                c("p", Fm, g(d(n).label("Provider 数量", "Providers")), 1),
-                c("strong", null, g(d(o).data.config.providers.length), 1),
-                c("span", null, g(d(n).label("已经进入运行配置", "Already present in runtime config")), 1)
+              i("article", Dv, [
+                i("p", Tv, d(l(n).label("Provider 数量", "Providers")), 1),
+                i("strong", null, d(l(o).data.config.providers.length), 1),
+                i("span", null, d(l(n).label("已经进入运行配置", "Already present in runtime config")), 1)
               ]),
-              c("article", Um, [
-                c("p", Hm, g(d(n).label("备用模型", "Fallbacks")), 1),
-                c("strong", null, g(d(o).data.config.fallbackModels.length), 1),
-                c("span", null, g(d(n).label("主模型失败时按顺序尝试", "Tried in sequence when the primary route fails")), 1)
+              i("article", Pv, [
+                i("p", Rv, d(l(n).label("备用模型", "Fallbacks")), 1),
+                i("strong", null, d(l(o).data.config.fallbackModels.length), 1),
+                i("span", null, d(l(n).label("主模型失败时按顺序尝试", "Tried in sequence when the primary route fails")), 1)
               ]),
-              c("article", Bm, [
-                c("p", Gm, g(d(n).label("可选模型", "Available models")), 1),
-                c("strong", null, g(b.value.length), 1),
-                c("span", null, g(d(n).label("来自当前已配置 Provider", "Collected from configured providers")), 1)
+              i("article", Av, [
+                i("p", Vv, d(l(n).label("可选模型", "Available models")), 1),
+                i("strong", null, d(g.value.length), 1),
+                i("span", null, d(l(n).label("来自当前已配置 Provider", "Collected from configured providers")), 1)
               ])
             ])
           ]),
           _: 1
         }, 8, ["title"]),
-        Z(_e, {
-          title: d(n).label("主模型与备用链路", "Primary and fallback chain"),
+        X(ce, {
+          title: l(n).label("主模型与备用链路", "Primary and fallback chain"),
           eyebrow: "Routing editor"
         }, {
-          default: he(() => [
-            c("div", Wm, [
-              c("label", Km, [
-                c("span", null, g(d(n).label("主模型", "Primary model")), 1),
-                c("small", null, g(d(n).label("Guard 默认先走这一条模型路径。", "Guard routes here first by default.")), 1),
-                St(c("select", {
-                  "onUpdate:modelValue": v[1] || (v[1] = (E) => f.value = E),
+          default: ie(() => [
+            i("div", Iv, [
+              i("label", Mv, [
+                i("span", null, d(l(n).label("主模型", "Primary model")), 1),
+                i("small", null, d(l(n).label("Guard 默认先走这一条模型路径。", "Guard routes here first by default.")), 1),
+                Xe(i("select", {
+                  "onUpdate:modelValue": b[1] || (b[1] = (S) => p.value = S),
                   class: "settings-input"
                 }, [
-                  c("option", zm, g(d(n).label("暂不设置", "Leave unset")), 1),
-                  (D(!0), V(X, null, ke(b.value, (E) => (D(), V("option", {
-                    key: E.fullId,
-                    value: E.fullId
-                  }, g(`${E.providerName} / ${E.name}`), 9, qm))), 128))
+                  i("option", Fv, d(l(n).label("暂不设置", "Leave unset")), 1),
+                  (E(!0), w(Y, null, ye(g.value, (S) => (E(), w("option", {
+                    key: S.fullId,
+                    value: S.fullId
+                  }, d(`${S.providerName} / ${S.name}`), 9, Lv))), 128))
                 ], 512), [
-                  [oo, f.value]
+                  [gs, p.value]
                 ])
               ])
             ]),
-            c("div", Jm, [
-              (D(!0), V(X, null, ke(b.value, (E) => (D(), V("label", {
-                key: E.fullId,
+            i("div", jv, [
+              (E(!0), w(Y, null, ye(g.value, (S) => (E(), w("label", {
+                key: S.fullId,
                 class: "checkbox-card"
               }, [
-                c("input", {
-                  checked: p.value.includes(E.fullId),
+                i("input", {
+                  checked: h.value.includes(S.fullId),
                   type: "checkbox",
-                  onChange: (N) => te(E.fullId)
-                }, null, 40, Ym),
-                c("div", null, [
-                  c("strong", null, g(`${E.providerName} / ${E.name}`), 1),
-                  c("p", null, g(E.api || d(n).label("未声明 API 类型", "API type is not declared")), 1)
+                  onChange: (x) => te(S.fullId)
+                }, null, 40, Uv),
+                i("div", null, [
+                  i("strong", null, d(`${S.providerName} / ${S.name}`), 1),
+                  i("p", null, d(S.api || l(n).label("未声明 API 类型", "API type is not declared")), 1)
                 ])
               ]))), 128))
             ]),
-            c("div", Qm, [
-              c("button", {
+            i("div", Hv, [
+              i("button", {
                 class: "inline-link inline-link--primary",
                 type: "button",
-                disabled: i.value,
-                onClick: F
-              }, g(i.value ? d(n).label("保存中…", "Saving…") : d(n).label("保存路由策略", "Save routing strategy")), 9, Xm)
+                disabled: a.value,
+                onClick: V
+              }, d(a.value ? l(n).label("保存中…", "Saving…") : l(n).label("保存路由策略", "Save routing strategy")), 9, Gv)
             ])
           ]),
           _: 1
         }, 8, ["title"]),
-        c("div", Zm, [
-          Z(_e, {
-            title: d(n).label("Provider 选择器", "Provider picker"),
+        i("div", Bv, [
+          X(ce, {
+            title: l(n).label("Provider 选择器", "Provider picker"),
             eyebrow: "Provider"
           }, {
-            default: he(() => [
-              c("div", e_, [
-                (D(!0), V(X, null, ke(m.value, (E) => (D(), V("button", {
-                  key: E.value,
-                  class: $e(["catalog-list__item", { "catalog-list__item--active": r.value === E.value }]),
+            default: ie(() => [
+              i("div", Kv, [
+                (E(!0), w(Y, null, ye(_.value, (S) => (E(), w("button", {
+                  key: S.value,
+                  class: ge(["catalog-list__item", { "catalog-list__item--active": r.value === S.value }]),
                   type: "button",
-                  onClick: (N) => r.value = E.value
+                  onClick: (x) => r.value = S.value
                 }, [
-                  c("div", n_, [
-                    c("strong", null, g(E.label), 1)
+                  i("div", qv, [
+                    i("strong", null, d(S.label), 1)
                   ]),
-                  c("div", s_, [
-                    c("span", {
-                      class: $e(["pill", E.kind === "custom" ? "pill--success" : E.kind === "preset" ? "pill--info" : "pill--muted"])
-                    }, g(E.kind === "custom" ? d(n).label("已配置", "Configured") : E.kind === "preset" ? d(n).label("预设", "Preset") : d(n).label("空白", "Blank")), 3)
+                  i("div", zv, [
+                    i("span", {
+                      class: ge(["pill", S.kind === "custom" ? "pill--success" : S.kind === "preset" ? "pill--info" : "pill--muted"])
+                    }, d(S.kind === "custom" ? l(n).label("已配置", "Configured") : S.kind === "preset" ? l(n).label("预设", "Preset") : l(n).label("空白", "Blank")), 3)
                   ])
-                ], 10, t_))), 128))
+                ], 10, Wv))), 128))
               ])
             ]),
             _: 1
           }, 8, ["title"]),
-          c("div", o_, [
-            Z(_e, {
-              title: u.title,
+          i("div", Jv, [
+            X(ce, {
+              title: f.title,
               eyebrow: "Editor"
             }, {
-              default: he(() => [
-                c("p", r_, g(O(d(o).data.catalog.presets.find((E) => E.id === r.value), d(o).data.catalog.custom.find((E) => E.name === r.value))), 1),
-                c("div", i_, [
-                  c("label", l_, [
-                    c("span", null, g(d(n).label("Provider 名称", "Provider name")), 1),
-                    St(c("input", {
-                      "onUpdate:modelValue": v[2] || (v[2] = (E) => u.name = E),
+              default: ie(() => [
+                i("p", Qv, d(D(l(o).data.catalog.presets.find((S) => S.id === r.value), l(o).data.catalog.custom.find((S) => S.name === r.value))), 1),
+                i("div", Yv, [
+                  i("label", Xv, [
+                    i("span", null, d(l(n).label("Provider 名称", "Provider name")), 1),
+                    Xe(i("input", {
+                      "onUpdate:modelValue": b[2] || (b[2] = (S) => f.name = S),
                       class: "settings-input",
                       type: "text"
                     }, null, 512), [
-                      [mn, u.name]
+                      [yt, f.name]
                     ])
                   ]),
-                  c("label", a_, [
-                    v[8] || (v[8] = c("span", null, "Base URL", -1)),
-                    St(c("input", {
-                      "onUpdate:modelValue": v[3] || (v[3] = (E) => u.baseUrl = E),
+                  i("label", Zv, [
+                    b[8] || (b[8] = i("span", null, "Base URL", -1)),
+                    Xe(i("input", {
+                      "onUpdate:modelValue": b[3] || (b[3] = (S) => f.baseUrl = S),
                       class: "settings-input",
                       type: "text"
                     }, null, 512), [
-                      [mn, u.baseUrl]
+                      [yt, f.baseUrl]
                     ])
                   ]),
-                  c("label", c_, [
-                    c("span", null, g(d(n).label("默认 API 类型", "Default API type")), 1),
-                    St(c("select", {
-                      "onUpdate:modelValue": v[4] || (v[4] = (E) => u.apiType = E),
+                  i("label", eb, [
+                    i("span", null, d(l(n).label("默认 API 类型", "Default API type")), 1),
+                    Xe(i("select", {
+                      "onUpdate:modelValue": b[4] || (b[4] = (S) => f.apiType = S),
                       class: "settings-input"
                     }, [
-                      (D(), V(X, null, ke(t, (E) => c("option", {
-                        key: E,
-                        value: E
-                      }, g(E), 9, u_)), 64))
+                      (E(), w(Y, null, ye(t, (S) => i("option", {
+                        key: S,
+                        value: S
+                      }, d(S), 9, tb)), 64))
                     ], 512), [
-                      [oo, u.apiType]
+                      [gs, f.apiType]
                     ])
                   ]),
-                  c("label", d_, [
-                    v[9] || (v[9] = c("span", null, "API Key", -1)),
-                    c("small", null, g(u.apiKeyHelp), 1),
-                    St(c("input", {
-                      "onUpdate:modelValue": v[5] || (v[5] = (E) => u.apiKey = E),
+                  i("label", nb, [
+                    b[9] || (b[9] = i("span", null, "API Key", -1)),
+                    i("small", null, d(f.apiKeyHelp), 1),
+                    Xe(i("input", {
+                      "onUpdate:modelValue": b[5] || (b[5] = (S) => f.apiKey = S),
                       class: "settings-input",
                       type: "password"
                     }, null, 512), [
-                      [mn, u.apiKey]
+                      [yt, f.apiKey]
                     ])
                   ]),
-                  c("label", f_, [
-                    c("span", null, g(d(n).label("模型列表", "Model list")), 1),
-                    c("small", null, g(d(n).label("每行格式：id | 名称 | contextWindow | maxTokens | api", "One line per model: id | name | contextWindow | maxTokens | api")), 1),
-                    St(c("textarea", {
-                      "onUpdate:modelValue": v[6] || (v[6] = (E) => u.modelsText = E),
+                  i("label", sb, [
+                    i("span", null, d(l(n).label("模型列表", "Model list")), 1),
+                    i("small", null, d(l(n).label("每行格式：id | 名称 | contextWindow | maxTokens | api", "One line per model: id | name | contextWindow | maxTokens | api")), 1),
+                    Xe(i("textarea", {
+                      "onUpdate:modelValue": b[6] || (b[6] = (S) => f.modelsText = S),
                       class: "settings-textarea",
                       rows: "8"
                     }, null, 512), [
-                      [mn, u.modelsText]
+                      [yt, f.modelsText]
                     ])
                   ])
                 ]),
-                c("div", p_, [
-                  c("button", {
+                i("div", ob, [
+                  i("button", {
                     class: "inline-link inline-link--primary",
                     type: "button",
-                    disabled: l.value,
-                    onClick: A
-                  }, g(l.value ? d(n).label("保存中…", "Saving…") : d(n).label("保存 Provider", "Save provider")), 9, h_),
-                  c("button", {
+                    disabled: c.value,
+                    onClick: I
+                  }, d(c.value ? l(n).label("保存中…", "Saving…") : l(n).label("保存 Provider", "Save provider")), 9, rb),
+                  i("button", {
                     class: "inline-link",
                     type: "button",
-                    onClick: v[7] || (v[7] = (E) => K(r.value))
-                  }, g(d(n).label("恢复当前内容", "Reset draft")), 1),
-                  u.canDelete ? (D(), V("button", {
+                    onClick: b[7] || (b[7] = (S) => W(r.value))
+                  }, d(l(n).label("恢复当前内容", "Reset draft")), 1),
+                  f.canDelete ? (E(), w("button", {
                     key: 0,
                     class: "inline-link inline-link--danger",
                     type: "button",
-                    disabled: a.value,
-                    onClick: I
-                  }, g(a.value ? d(n).label("删除中…", "Deleting…") : d(n).label("删除 Provider", "Delete provider")), 9, g_)) : xe("", !0)
+                    disabled: u.value,
+                    onClick: L
+                  }, d(u.value ? l(n).label("删除中…", "Deleting…") : l(n).label("删除 Provider", "Delete provider")), 9, ib)) : Ce("", !0)
                 ])
               ]),
               _: 1
             }, 8, ["title"]),
-            Z(_e, {
-              title: d(n).label("已配置 Provider", "Configured providers"),
+            X(ce, {
+              title: l(n).label("已配置 Provider", "Configured providers"),
               eyebrow: "Overview"
             }, {
-              default: he(() => [
-                c("div", m_, [
-                  (D(!0), V(X, null, ke(d(o).data.config.providers, (E) => (D(), V("article", {
-                    key: E.name,
+              default: ie(() => [
+                i("div", lb, [
+                  (E(!0), w(Y, null, ye(l(o).data.config.providers, (S) => (E(), w("article", {
+                    key: S.name,
                     class: "provider-card"
                   }, [
-                    c("header", __, [
-                      c("div", null, [
-                        c("strong", null, g(E.name), 1),
-                        c("p", null, g(E.baseUrl), 1)
+                    i("header", ab, [
+                      i("div", null, [
+                        i("strong", null, d(S.name), 1),
+                        i("p", null, d(S.baseUrl), 1)
                       ]),
-                      c("div", v_, [
-                        E.hasApiKey ? (D(), V("span", b_, g(d(n).label("有密钥", "Has key")), 1)) : (D(), V("span", y_, g(d(n).label("无密钥", "No key")), 1))
+                      i("div", cb, [
+                        S.hasApiKey ? (E(), w("span", ub, d(l(n).label("有密钥", "Has key")), 1)) : (E(), w("span", db, d(l(n).label("无密钥", "No key")), 1))
                       ])
                     ]),
-                    c("div", E_, [
-                      (D(!0), V(X, null, ke(E.models, (N) => (D(), V("div", {
-                        key: N.fullId,
+                    i("div", fb, [
+                      (E(!0), w(Y, null, ye(S.models, (x) => (E(), w("div", {
+                        key: x.fullId,
                         class: "mini-list__item"
                       }, [
-                        c("div", null, [
-                          c("strong", null, g(N.name), 1),
-                          c("p", null, g(N.fullId), 1)
+                        i("div", null, [
+                          i("strong", null, d(x.name), 1),
+                          i("p", null, d(x.fullId), 1)
                         ]),
-                        c("div", w_, [
-                          N.isPrimary ? (D(), V("span", N_, g(d(n).label("主模型", "Primary")), 1)) : xe("", !0),
-                          N.isFallback ? (D(), V("span", O_, g(d(n).label("备用", "Fallback")), 1)) : xe("", !0)
+                        i("div", pb, [
+                          x.isPrimary ? (E(), w("span", hb, d(l(n).label("主模型", "Primary")), 1)) : Ce("", !0),
+                          x.isFallback ? (E(), w("span", _b, d(l(n).label("备用", "Fallback")), 1)) : Ce("", !0)
                         ])
                       ]))), 128))
                     ])
@@ -9380,106 +10172,106 @@ const Dm = { class: "page-stack" }, xm = { class: "page-header" }, Tm = { class:
             }, 8, ["title"])
           ])
         ])
-      ], 64)) : xe("", !0)
+      ], 64)) : Ce("", !0)
     ]));
   }
-}), k_ = { class: "page-stack" }, $_ = { class: "page-header" }, C_ = { class: "page-header__eyebrow" }, D_ = { class: "page-header__title" }, x_ = { class: "page-header__description" }, T_ = {
+}), gb = { class: "page-stack" }, vb = { class: "page-header" }, bb = { class: "page-header__eyebrow" }, yb = { class: "page-header__title" }, Eb = { class: "page-header__description" }, wb = {
   key: 0,
   class: "page-empty"
-}, P_ = {
+}, Nb = {
   key: 1,
   class: "page-empty page-empty--error"
-}, V_ = { class: "code-panel" }, A_ = { class: "code-panel" }, R_ = /* @__PURE__ */ Be({
+}, $b = { class: "code-panel" }, Ob = { class: "code-panel" }, Sb = /* @__PURE__ */ Ve({
   __name: "OpenClawPage",
   setup(e) {
-    const t = Wt(), n = Ht(() => hg());
+    const t = ft(), n = wt(() => _m());
     function s(o) {
       return JSON.stringify(o, null, 2);
     }
-    return (o, r) => (D(), V("div", k_, [
-      c("header", $_, [
-        c("div", null, [
-          c("p", C_, g(d(t).label("OpenClaw / First slice", "OpenClaw / First slice")), 1),
-          c("h2", D_, g(d(t).label("OpenClaw 生命周期面板", "OpenClaw lifecycle panel")), 1),
-          c("p", x_, g(d(t).label("保留现有后端接口，只把读取、结构和高级区分层迁到 Vue 壳层。", "Keep the current backend API and move its reads, structure, and advanced layout into the Vue shell.")), 1)
+    return (o, r) => (E(), w("div", gb, [
+      i("header", vb, [
+        i("div", null, [
+          i("p", bb, d(l(t).label("OpenClaw / First slice", "OpenClaw / First slice")), 1),
+          i("h2", yb, d(l(t).label("OpenClaw 生命周期面板", "OpenClaw lifecycle panel")), 1),
+          i("p", Eb, d(l(t).label("保留现有后端接口，只把读取、结构和高级区分层迁到 Vue 壳层。", "Keep the current backend API and move its reads, structure, and advanced layout into the Vue shell.")), 1)
         ]),
-        c("button", {
+        i("button", {
           class: "page-header__action",
           type: "button",
-          onClick: r[0] || (r[0] = (i) => d(n).execute({ silent: !0 }))
-        }, g(d(n).refreshing ? d(t).label("刷新中…", "Refreshing…") : d(t).label("刷新", "Refresh")), 1)
+          onClick: r[0] || (r[0] = (a) => l(n).execute({ silent: !0 }))
+        }, d(l(n).refreshing ? l(t).label("刷新中…", "Refreshing…") : l(t).label("刷新", "Refresh")), 1)
       ]),
-      d(n).loading ? (D(), V("div", T_, g(d(t).label("正在加载 OpenClaw 状态…", "Loading the OpenClaw status…")), 1)) : d(n).error ? (D(), V("div", P_, g(d(n).error), 1)) : d(n).data ? (D(), V(X, { key: 2 }, [
-        Z(_e, {
-          title: d(t).label("状态快照", "Status snapshot"),
+      l(n).loading ? (E(), w("div", wb, d(l(t).label("正在加载 OpenClaw 状态…", "Loading the OpenClaw status…")), 1)) : l(n).error ? (E(), w("div", Nb, d(l(n).error), 1)) : l(n).data ? (E(), w(Y, { key: 2 }, [
+        X(ce, {
+          title: l(t).label("状态快照", "Status snapshot"),
           eyebrow: "Status"
         }, {
-          default: he(() => [
-            c("pre", V_, g(s(d(n).data.status)), 1)
+          default: ie(() => [
+            i("pre", $b, d(s(l(n).data.status)), 1)
           ]),
           _: 1
         }, 8, ["title"]),
-        Z(_e, {
-          title: d(t).label("可选目标与回退目录", "Targets and rollback catalog"),
+        X(ce, {
+          title: l(t).label("可选目标与回退目录", "Targets and rollback catalog"),
           eyebrow: "Targets"
         }, {
-          default: he(() => [
-            c("pre", A_, g(s(d(n).data.targets)), 1)
+          default: ie(() => [
+            i("pre", Ob, d(s(l(n).data.targets)), 1)
           ]),
           _: 1
         }, 8, ["title"])
-      ], 64)) : xe("", !0)
+      ], 64)) : Ce("", !0)
     ]));
   }
-}), I_ = { class: "page-stack" }, M_ = { class: "page-header" }, L_ = { class: "page-header__eyebrow" }, j_ = { class: "page-header__title" }, F_ = { class: "page-header__description" }, U_ = {
+}), kb = { class: "page-stack" }, Cb = { class: "page-header" }, xb = { class: "page-header__eyebrow" }, Db = { class: "page-header__title" }, Tb = { class: "page-header__description" }, Pb = {
   key: 0,
   class: "page-empty"
-}, H_ = {
+}, Rb = {
   key: 1,
   class: "page-empty page-empty--error"
-}, B_ = { class: "code-panel" }, G_ = { class: "code-panel" }, W_ = /* @__PURE__ */ Be({
+}, Ab = { class: "code-panel" }, Vb = { class: "code-panel" }, Ib = /* @__PURE__ */ Ve({
   __name: "OperationsPage",
   setup(e) {
-    const t = Wt(), n = Ht(() => pg());
+    const t = ft(), n = wt(() => hm());
     function s(o) {
       return JSON.stringify(o, null, 2);
     }
-    return (o, r) => (D(), V("div", I_, [
-      c("header", M_, [
-        c("div", null, [
-          c("p", L_, g(d(t).label("运维 / First slice", "Operations / First slice")), 1),
-          c("h2", j_, g(d(t).label("运行态与后台服务", "Runtime and background services")), 1),
-          c("p", F_, g(d(t).label("先把状态读取、最小刷新和结构化信息展示模块化。后续再逐步迁移交互按钮。", "Modularize status reads, light refresh, and structured rendering first. Button interactions can follow in later slices.")), 1)
+    return (o, r) => (E(), w("div", kb, [
+      i("header", Cb, [
+        i("div", null, [
+          i("p", xb, d(l(t).label("运维 / First slice", "Operations / First slice")), 1),
+          i("h2", Db, d(l(t).label("运行态与后台服务", "Runtime and background services")), 1),
+          i("p", Tb, d(l(t).label("先把状态读取、最小刷新和结构化信息展示模块化。后续再逐步迁移交互按钮。", "Modularize status reads, light refresh, and structured rendering first. Button interactions can follow in later slices.")), 1)
         ]),
-        c("button", {
+        i("button", {
           class: "page-header__action",
           type: "button",
-          onClick: r[0] || (r[0] = (i) => d(n).execute({ silent: !0 }))
-        }, g(d(n).refreshing ? d(t).label("刷新中…", "Refreshing…") : d(t).label("刷新", "Refresh")), 1)
+          onClick: r[0] || (r[0] = (a) => l(n).execute({ silent: !0 }))
+        }, d(l(n).refreshing ? l(t).label("刷新中…", "Refreshing…") : l(t).label("刷新", "Refresh")), 1)
       ]),
-      d(n).loading ? (D(), V("div", U_, g(d(t).label("正在加载运维状态…", "Loading operations status…")), 1)) : d(n).error ? (D(), V("div", H_, g(d(n).error), 1)) : d(n).data ? (D(), V(X, { key: 2 }, [
-        Z(_e, {
-          title: d(t).label("后台 Web 报告", "Background web report"),
+      l(n).loading ? (E(), w("div", Pb, d(l(t).label("正在加载运维状态…", "Loading operations status…")), 1)) : l(n).error ? (E(), w("div", Rb, d(l(n).error), 1)) : l(n).data ? (E(), w(Y, { key: 2 }, [
+        X(ce, {
+          title: l(t).label("后台 Web 报告", "Background web report"),
           eyebrow: "Web report"
         }, {
-          default: he(() => [
-            c("pre", B_, g(s(d(n).data.webReport)), 1)
+          default: ie(() => [
+            i("pre", Ab, d(s(l(n).data.webReport)), 1)
           ]),
           _: 1
         }, 8, ["title"]),
-        Z(_e, {
-          title: d(t).label("服务状态原始快照", "Service status snapshot"),
+        X(ce, {
+          title: l(t).label("服务状态原始快照", "Service status snapshot"),
           eyebrow: "Services"
         }, {
-          default: he(() => [
-            c("pre", G_, g(s(d(n).data.services)), 1)
+          default: ie(() => [
+            i("pre", Vb, d(s(l(n).data.services)), 1)
           ]),
           _: 1
         }, 8, ["title"])
-      ], 64)) : xe("", !0)
+      ], 64)) : Ce("", !0)
     ]));
   }
-}), K_ = { class: "page-stack" }, z_ = { class: "page-header" }, q_ = { class: "page-header__eyebrow" }, J_ = { class: "page-header__title" }, Y_ = { class: "page-header__description" }, Q_ = ["href"], X_ = { class: "muted-copy" }, Z_ = /* @__PURE__ */ Be({
+}), Mb = { class: "page-stack" }, Fb = { class: "page-header" }, Lb = { class: "page-header__eyebrow" }, jb = { class: "page-header__title" }, Ub = { class: "page-header__description" }, Hb = ["href"], Gb = { class: "muted-copy" }, Bb = /* @__PURE__ */ Ve({
   __name: "PlaceholderPage",
   props: {
     titleZh: {},
@@ -9489,64 +10281,38 @@ const Dm = { class: "page-stack" }, xm = { class: "page-header" }, Tm = { class:
     legacyHash: {}
   },
   setup(e) {
-    const t = e, n = Wt(), s = ue(() => n.label(t.titleZh, t.titleEn)), o = ue(() => n.label(t.descriptionZh, t.descriptionEn)), r = ue(() => n.label("打开当前正式控制台中的这一页", "Open this page in the current production console"));
-    return (i, l) => (D(), V("div", K_, [
-      c("header", z_, [
-        c("div", null, [
-          c("p", q_, g(d(n).label("迁移排队中", "Queued for migration")), 1),
-          c("h2", J_, g(s.value), 1),
-          c("p", Y_, g(o.value), 1)
+    const t = e, n = ft(), s = ne(() => n.label(t.titleZh, t.titleEn)), o = ne(() => n.label(t.descriptionZh, t.descriptionEn)), r = ne(() => n.label("打开当前正式控制台中的这一页", "Open this page in the current production console"));
+    return (a, c) => (E(), w("div", Mb, [
+      i("header", Fb, [
+        i("div", null, [
+          i("p", Lb, d(l(n).label("迁移排队中", "Queued for migration")), 1),
+          i("h2", jb, d(s.value), 1),
+          i("p", Ub, d(o.value), 1)
         ]),
-        c("a", {
+        i("a", {
           class: "page-header__action page-header__action--link",
           href: `/${e.legacyHash}`,
           target: "_blank",
           rel: "noreferrer"
-        }, g(r.value), 9, Q_)
+        }, d(r.value), 9, Hb)
       ]),
-      Z(_e, {
-        title: d(n).label("当前阶段说明", "Current phase")
+      X(ce, {
+        title: l(n).label("当前阶段说明", "Current phase")
       }, {
-        default: he(() => [
-          c("p", X_, g(d(n).label("这一页已经纳入新的 Vue + Pinia + Router 骨架，但业务区块还没从旧版原生脚本完全迁过来。保留直接跳转旧控制台，是为了让迁移期间的实际操作不中断。", "This page is already part of the new Vue + Pinia + Router skeleton, but its business modules have not fully moved over from the native script yet. The legacy shortcut keeps real operations uninterrupted during the migration window.")), 1)
+        default: ie(() => [
+          i("p", Gb, d(l(n).label("这一页已经纳入新的 Vue + Pinia + Router 骨架，但业务区块还没从旧版原生脚本完全迁过来。保留直接跳转旧控制台，是为了让迁移期间的实际操作不中断。", "This page is already part of the new Vue + Pinia + Router skeleton, but its business modules have not fully moved over from the native script yet. The legacy shortcut keeps real operations uninterrupted during the migration window.")), 1)
         ]),
         _: 1
       }, 8, ["title"])
     ]));
   }
-}), ev = {
-  class: "page-tabs",
-  role: "tablist"
-}, tv = ["aria-selected", "onClick"], nv = { key: 0 }, lc = /* @__PURE__ */ Be({
-  __name: "PageTabs",
-  props: {
-    items: {},
-    activeId: {}
-  },
-  emits: ["change"],
-  setup(e, { emit: t }) {
-    const n = t;
-    return (s, o) => (D(), V("div", ev, [
-      (D(!0), V(X, null, ke(e.items, (r) => (D(), V("button", {
-        key: r.id,
-        class: $e(["page-tabs__button", { "page-tabs__button--active": r.id === e.activeId }]),
-        type: "button",
-        role: "tab",
-        "aria-selected": r.id === e.activeId,
-        onClick: (i) => n("change", r.id)
-      }, [
-        c("span", null, g(r.label), 1),
-        r.hint ? (D(), V("small", nv, g(r.hint), 1)) : xe("", !0)
-      ], 10, tv))), 128))
-    ]));
-  }
 });
-async function sv() {
+async function Kb() {
   const [e, t, n, s] = await Promise.all([
-    Te("/api/recovery/overview"),
-    Te("/api/recovery/points?limit=20"),
-    Te("/api/git-sync/status"),
-    Te("/api/git-sync/gitignore-preview?mode=smart")
+    xe("/api/recovery/overview"),
+    xe("/api/recovery/points?limit=20"),
+    xe("/api/git-sync/status"),
+    xe("/api/git-sync/gitignore-preview?mode=smart")
   ]);
   return {
     overview: e,
@@ -9555,71 +10321,71 @@ async function sv() {
     gitIgnorePreview: s
   };
 }
-function ov(e) {
-  return st("/api/recovery/save", { label: e || "" });
+function Wb(e) {
+  return Ze("/api/recovery/save", { label: e || "" });
 }
-function rv(e) {
-  return st("/api/recovery/restore", { commitSha: e });
+function qb(e) {
+  return Ze("/api/recovery/restore", { commitSha: e });
 }
-function iv() {
-  return st("/api/git-sync/init", {});
+function zb() {
+  return Ze("/api/git-sync/init", {});
 }
-function lv() {
-  return st("/api/git-sync/check-private", {});
+function Jb() {
+  return Ze("/api/git-sync/check-private", {});
 }
-function av(e) {
-  return st("/api/git-sync/commit", { message: "" });
+function Qb(e) {
+  return Ze("/api/git-sync/commit", { message: "" });
 }
-function cv() {
-  return st("/api/git-sync/push", {});
+function Yb() {
+  return Ze("/api/git-sync/push", {});
 }
-function uv(e) {
-  return st("/api/git-sync/sync", { message: "" });
+function Xb(e) {
+  return Ze("/api/git-sync/sync", { message: "" });
 }
-function dv(e = "smart") {
-  return st("/api/git-sync/gitignore-apply", { mode: e });
+function Zb(e = "smart") {
+  return Ze("/api/git-sync/gitignore-apply", { mode: e });
 }
-const fv = { class: "page-stack" }, pv = { class: "page-header" }, hv = { class: "page-header__eyebrow" }, gv = { class: "page-header__title" }, mv = { class: "page-header__description" }, _v = {
+const ey = { class: "page-stack" }, ty = { class: "page-header" }, ny = { class: "page-header__eyebrow" }, sy = { class: "page-header__title" }, oy = { class: "page-header__description" }, ry = {
   key: 0,
   class: "page-empty"
-}, vv = {
+}, iy = {
   key: 1,
   class: "page-empty page-empty--error"
-}, bv = { class: "provider-card__header" }, yv = { class: "muted-copy" }, Ev = { class: "stat-grid" }, wv = { class: "stat-card" }, Nv = { class: "stat-card__label" }, Ov = { class: "stat-card" }, Sv = { class: "stat-card__label" }, kv = { class: "stat-card" }, $v = { class: "stat-card__label" }, Cv = { class: "stat-card" }, Dv = { class: "stat-card__label" }, xv = { class: "list-stack" }, Tv = { class: "action-row" }, Pv = { class: "pill pill--info" }, Vv = { class: "action-row" }, Av = { class: "pill pill--success" }, Rv = { class: "settings-grid settings-grid--wide" }, Iv = { class: "settings-field settings-field--full" }, Mv = { class: "page-actions" }, Lv = ["disabled"], jv = {
+}, ly = { class: "provider-card__header" }, ay = { class: "muted-copy" }, cy = { class: "stat-grid" }, uy = { class: "stat-card" }, dy = { class: "stat-card__label" }, fy = { class: "stat-card" }, py = { class: "stat-card__label" }, hy = { class: "stat-card" }, _y = { class: "stat-card__label" }, my = { class: "stat-card" }, gy = { class: "stat-card__label" }, vy = { class: "list-stack" }, by = { class: "action-row" }, yy = { class: "pill pill--info" }, Ey = { class: "action-row" }, wy = { class: "pill pill--success" }, Ny = { class: "settings-grid settings-grid--wide" }, $y = { class: "settings-field settings-field--full" }, Oy = { class: "page-actions" }, Sy = ["disabled"], ky = {
   key: 0,
   class: "provider-stack"
-}, Fv = { class: "provider-card__header" }, Uv = { class: "pill-row" }, Hv = { class: "pill pill--info" }, Bv = {
+}, Cy = { class: "provider-card__header" }, xy = { class: "pill-row" }, Dy = { class: "pill pill--info" }, Ty = {
   key: 0,
   class: "muted-copy"
-}, Gv = { class: "page-actions" }, Wv = ["onClick"], Kv = ["disabled", "onClick"], zv = {
+}, Py = { class: "page-actions" }, Ry = ["onClick"], Ay = ["disabled", "onClick"], Vy = {
   key: 1,
   class: "page-empty"
-}, qv = { class: "muted-copy" }, Jv = { class: "page-actions" }, Yv = {
+}, Iy = { class: "muted-copy" }, My = { class: "page-actions" }, Fy = {
   class: "inline-link",
   href: "/#recovery",
   target: "_blank",
   rel: "noreferrer"
-}, Qv = { class: "stat-grid" }, Xv = { class: "stat-card" }, Zv = { class: "stat-card__label" }, eb = { class: "stat-card" }, tb = { class: "stat-card__label" }, nb = { class: "stat-card" }, sb = { class: "stat-card__label" }, ob = { class: "stat-card" }, rb = { class: "stat-card__label" }, ib = { class: "page-actions" }, lb = ["disabled"], ab = ["disabled"], cb = ["disabled"], ub = ["disabled"], db = ["disabled"], fb = {
+}, Ly = { class: "stat-grid" }, jy = { class: "stat-card" }, Uy = { class: "stat-card__label" }, Hy = { class: "stat-card" }, Gy = { class: "stat-card__label" }, By = { class: "stat-card" }, Ky = { class: "stat-card__label" }, Wy = { class: "stat-card" }, qy = { class: "stat-card__label" }, zy = { class: "page-actions" }, Jy = ["disabled"], Qy = ["disabled"], Yy = ["disabled"], Xy = ["disabled"], Zy = ["disabled"], eE = {
   key: 0,
   class: "muted-copy"
-}, pb = { class: "list-stack" }, hb = { class: "action-row" }, gb = { class: "action-row" }, mb = { class: "action-row" }, _b = { class: "code-panel" }, vb = { class: "muted-copy" }, bb = { class: "stat-grid" }, yb = { class: "stat-card" }, Eb = { class: "stat-card__label" }, wb = { class: "stat-card" }, Nb = { class: "stat-card__label" }, Ob = { class: "code-panel" }, Sb = { class: "page-actions" }, kb = ["disabled"], $b = /* @__PURE__ */ Be({
+}, tE = { class: "list-stack" }, nE = { class: "action-row" }, sE = { class: "action-row" }, oE = { class: "action-row" }, rE = { class: "code-panel" }, iE = { class: "muted-copy" }, lE = { class: "stat-grid" }, aE = { class: "stat-card" }, cE = { class: "stat-card__label" }, uE = { class: "stat-card" }, dE = { class: "stat-card__label" }, fE = { class: "code-panel" }, pE = { class: "page-actions" }, hE = ["disabled"], _E = /* @__PURE__ */ Ve({
   __name: "RecoveryPage",
   setup(e) {
-    const t = Wt(), n = zn(), s = /* @__PURE__ */ me("center"), o = /* @__PURE__ */ me(""), r = /* @__PURE__ */ me(""), i = /* @__PURE__ */ me(!1), l = /* @__PURE__ */ me(""), a = /* @__PURE__ */ me(""), f = Ht(() => sv()), p = ue(() => [
+    const t = ft(), n = hn(), s = /* @__PURE__ */ Z("center"), o = /* @__PURE__ */ Z(""), r = /* @__PURE__ */ Z(""), a = /* @__PURE__ */ Z(!1), c = /* @__PURE__ */ Z(""), u = /* @__PURE__ */ Z(""), p = wt(() => Kb()), h = ne(() => [
       { id: "center", label: t.label("恢复中心", "Recovery center") },
       { id: "advanced", label: t.label("高级 Git", "Advanced Git") }
-    ]), u = ue(() => {
-      var S;
-      const O = (S = f.data) == null ? void 0 : S.overview;
-      return O ? !O.repoReady || O.warnings.length > 0 ? "pill--warning" : O.remoteReady ? "pill--success" : "pill--info" : "pill--muted";
+    ]), f = ne(() => {
+      var T;
+      const D = (T = p.data) == null ? void 0 : T.overview;
+      return D ? !D.repoReady || D.warnings.length > 0 ? "pill--warning" : D.remoteReady ? "pill--success" : "pill--info" : "pill--muted";
     });
-    function m() {
-      var S;
-      const O = (S = f.data) == null ? void 0 : S.overview;
-      return O ? O.protected ? O.remoteReady ? t.label("已上云保护", "Cloud protection ready") : t.label("当前仅本机可恢复", "Local recovery only") : t.label("尚未建立保护", "Protection not set up") : t.label("读取中", "Loading");
+    function _() {
+      var T;
+      const D = (T = p.data) == null ? void 0 : T.overview;
+      return D ? D.protected ? D.remoteReady ? t.label("已上云保护", "Cloud protection ready") : t.label("当前仅本机可恢复", "Local recovery only") : t.label("尚未建立保护", "Protection not set up") : t.label("读取中", "Loading");
     }
-    function b(O) {
-      const v = {
+    function g(D) {
+      const b = {
         "install-git": { zh: "先安装 Git", en: "Install Git first" },
         "setup-protection": { zh: "先完成保护设置", en: "Complete protection setup first" },
         "save-first-point": { zh: "创建首个恢复点", en: "Create the first recovery point" },
@@ -9628,567 +10394,863 @@ const fv = { class: "page-stack" }, pv = { class: "page-header" }, hv = { class:
         "connect-private-remote": { zh: "连接私有仓库", en: "Connect a private remote" },
         "sync-latest-point": { zh: "把最新保护点同步到云端", en: "Sync the latest point to the cloud" },
         protected: { zh: "当前已经受保护", en: "Protection is already in place" }
-      }[O || ""];
-      return v ? t.label(v.zh, v.en) : O || "-";
+      }[D || ""];
+      return b ? t.label(b.zh, b.en) : D || "-";
     }
-    function T(O) {
-      return O.kind === "auto" ? t.label("自动保护", "Auto protection") : O.kind === "restore" ? t.label("已恢复到此状态", "Restore point") : t.label("手动保存", "Manual save");
+    function k(D) {
+      return D.kind === "auto" ? t.label("自动保护", "Auto protection") : D.kind === "restore" ? t.label("已恢复到此状态", "Restore point") : t.label("手动保存", "Manual save");
     }
-    async function $() {
-      await f.execute({ silent: !!f.data });
+    async function O() {
+      await p.execute({ silent: !!p.data });
     }
-    async function K() {
-      i.value = !0;
+    async function W() {
+      a.value = !0;
       try {
-        const O = await ov(o.value.trim() || void 0);
+        const D = await Wb(o.value.trim() || void 0);
         n.pushToast({
-          tone: O.success ? "success" : "error",
-          message: O.message
-        }), O.success && (o.value = "", await $());
-      } catch (O) {
+          tone: D.success ? "success" : "error",
+          message: D.message
+        }), D.success && (o.value = "", await O());
+      } catch (D) {
         n.pushToast({
           tone: "error",
-          message: O instanceof Error ? O.message : String(O)
+          message: D instanceof Error ? D.message : String(D)
         });
       } finally {
-        i.value = !1;
+        a.value = !1;
       }
     }
-    async function F(O) {
+    async function V(D) {
       if (await n.confirm({
         title: t.label("恢复到这个状态", "Restore this state"),
         message: t.label(
-          `确认回到 ${O.title} 吗？Guard 会先保护当前未提交内容，再在同一主线上追加一个 restore commit，不会删除历史。`,
-          `Restore ${O.title}? Guard will first protect any uncommitted changes and then add a restore commit on the same main line without deleting history.`
+          `确认回到 ${D.title} 吗？Guard 会先保护当前未提交内容，再在同一主线上追加一个 restore commit，不会删除历史。`,
+          `Restore ${D.title}? Guard will first protect any uncommitted changes and then add a restore commit on the same main line without deleting history.`
         ),
         confirmLabel: t.label("确认恢复", "Restore now"),
         cancelLabel: t.label("取消", "Cancel"),
         tone: "danger"
       })) {
-        l.value = O.commitSha;
+        c.value = D.commitSha;
         try {
-          const v = await rv(O.commitSha);
+          const b = await qb(D.commitSha);
           n.pushToast({
-            tone: v.success ? "success" : "error",
-            message: v.message
-          }), await $();
-        } catch (v) {
+            tone: b.success ? "success" : "error",
+            message: b.message
+          }), await O();
+        } catch (b) {
           n.pushToast({
             tone: "error",
-            message: v instanceof Error ? v.message : String(v)
+            message: b instanceof Error ? b.message : String(b)
           });
         } finally {
-          l.value = "";
+          c.value = "";
         }
       }
     }
-    async function A(O) {
-      a.value = O, r.value = "";
+    async function I(D) {
+      u.value = D, r.value = "";
       try {
-        const S = O === "init" ? await iv() : O === "private" ? await lv() : O === "checkpoint" ? await av() : O === "push" ? await cv() : O === "sync" ? await uv() : await dv("smart");
-        r.value = S.message, n.pushToast({
-          tone: S.success ? "success" : "error",
-          message: S.message
-        }), await $();
-      } catch (S) {
-        const v = S instanceof Error ? S.message : String(S);
-        r.value = v, n.pushToast({
+        const T = D === "init" ? await zb() : D === "private" ? await Jb() : D === "checkpoint" ? await Qb() : D === "push" ? await Yb() : D === "sync" ? await Xb() : await Zb("smart");
+        r.value = T.message, n.pushToast({
+          tone: T.success ? "success" : "error",
+          message: T.message
+        }), await O();
+      } catch (T) {
+        const b = T instanceof Error ? T.message : String(T);
+        r.value = b, n.pushToast({
           tone: "error",
-          message: v
+          message: b
         });
       } finally {
-        a.value = "";
+        u.value = "";
       }
     }
-    function I(O) {
-      s.value = O;
+    function L(D) {
+      s.value = D;
     }
-    async function te(O) {
-      var S;
-      typeof navigator > "u" || !((S = navigator.clipboard) != null && S.writeText) || (await navigator.clipboard.writeText(O), n.pushToast({
+    async function te(D) {
+      var T;
+      typeof navigator > "u" || !((T = navigator.clipboard) != null && T.writeText) || (await navigator.clipboard.writeText(D), n.pushToast({
         tone: "success",
         message: t.label("恢复点哈希已复制。", "Recovery point hash copied.")
       }));
     }
-    return (O, S) => (D(), V("div", fv, [
-      c("header", pv, [
-        c("div", null, [
-          c("p", hv, g(d(t).label("备份与恢复 / Second slice", "Backup & Recovery / Second slice")), 1),
-          c("h2", gv, g(d(t).label("备份与恢复", "Backup & Recovery")), 1),
-          c("p", mv, g(d(t).label("默认先讲“保存现在、回到某个状态、然后继续往前走”，把 Git 细节下沉到高级视图。", "Start with save now, go back to a protected state, then keep moving forward, while pushing raw Git details into the advanced view.")), 1)
+    return (D, T) => (E(), w("div", ey, [
+      i("header", ty, [
+        i("div", null, [
+          i("p", ny, d(l(t).label("备份与恢复 / Second slice", "Backup & Recovery / Second slice")), 1),
+          i("h2", sy, d(l(t).label("备份与恢复", "Backup & Recovery")), 1),
+          i("p", oy, d(l(t).label("默认先讲“保存现在、回到某个状态、然后继续往前走”，把 Git 细节下沉到高级视图。", "Start with save now, go back to a protected state, then keep moving forward, while pushing raw Git details into the advanced view.")), 1)
         ]),
-        c("button", {
+        i("button", {
           class: "page-header__action",
           type: "button",
-          onClick: $
-        }, g(d(f).refreshing ? d(t).label("刷新中…", "Refreshing…") : d(t).label("刷新", "Refresh")), 1)
+          onClick: O
+        }, d(l(p).refreshing ? l(t).label("刷新中…", "Refreshing…") : l(t).label("刷新", "Refresh")), 1)
       ]),
-      Z(lc, {
-        items: p.value,
+      X(Gr, {
+        items: h.value,
         "active-id": s.value,
-        onChange: I
+        onChange: L
       }, null, 8, ["items", "active-id"]),
-      d(f).loading ? (D(), V("div", _v, g(d(t).label("正在读取保护状态…", "Loading protection status…")), 1)) : d(f).error ? (D(), V("div", vv, g(d(f).error), 1)) : d(f).data ? (D(), V(X, { key: 2 }, [
-        s.value === "center" ? (D(), V(X, { key: 0 }, [
-          Z(_e, {
-            title: d(t).label("当前保护状态", "Current protection state"),
+      l(p).loading ? (E(), w("div", ry, d(l(t).label("正在读取保护状态…", "Loading protection status…")), 1)) : l(p).error ? (E(), w("div", iy, d(l(p).error), 1)) : l(p).data ? (E(), w(Y, { key: 2 }, [
+        s.value === "center" ? (E(), w(Y, { key: 0 }, [
+          X(ce, {
+            title: l(t).label("当前保护状态", "Current protection state"),
             eyebrow: "Overview"
           }, {
-            default: he(() => {
-              var v;
+            default: ie(() => {
+              var b;
               return [
-                c("div", bv, [
-                  c("p", yv, g(d(t).label("先看这里就能知道现在是否已经受保护、是否已经上云，以及下一步最建议做什么。", "Start here to see whether protection is already in place, whether it has reached the cloud, and what the next recommended action is.")), 1),
-                  c("span", {
-                    class: $e(["pill", u.value])
-                  }, g(m()), 3)
+                i("div", ly, [
+                  i("p", ay, d(l(t).label("先看这里就能知道现在是否已经受保护、是否已经上云，以及下一步最建议做什么。", "Start here to see whether protection is already in place, whether it has reached the cloud, and what the next recommended action is.")), 1),
+                  i("span", {
+                    class: ge(["pill", f.value])
+                  }, d(_()), 3)
                 ]),
-                c("div", Ev, [
-                  c("article", wv, [
-                    c("p", Nv, g(d(t).label("当前主线", "Current branch")), 1),
-                    c("strong", null, g(d(f).data.overview.currentBranch || "-"), 1),
-                    c("span", null, g(d(t).label("恢复后仍会继续写在这条主线上", "Future saves continue on the same main line after a restore")), 1)
+                i("div", cy, [
+                  i("article", uy, [
+                    i("p", dy, d(l(t).label("当前主线", "Current branch")), 1),
+                    i("strong", null, d(l(p).data.overview.currentBranch || "-"), 1),
+                    i("span", null, d(l(t).label("恢复后仍会继续写在这条主线上", "Future saves continue on the same main line after a restore")), 1)
                   ]),
-                  c("article", Ov, [
-                    c("p", Sv, g(d(t).label("最近保存", "Last saved")), 1),
-                    c("strong", null, g(d(xs)(d(f).data.overview.lastSavedAt)), 1),
-                    c("span", null, g(((v = d(f).data.overview.latestPoint) == null ? void 0 : v.title) || d(t).label("还没有恢复点", "No recovery point yet")), 1)
+                  i("article", fy, [
+                    i("p", py, d(l(t).label("最近保存", "Last saved")), 1),
+                    i("strong", null, d(l(Yt)(l(p).data.overview.lastSavedAt)), 1),
+                    i("span", null, d(((b = l(p).data.overview.latestPoint) == null ? void 0 : b.title) || l(t).label("还没有恢复点", "No recovery point yet")), 1)
                   ]),
-                  c("article", kv, [
-                    c("p", $v, g(d(t).label("最近上云", "Last pushed")), 1),
-                    c("strong", null, g(d(xs)(d(f).data.overview.lastPushedAt)), 1),
-                    c("span", null, g(d(f).data.overview.remoteReady ? d(t).label("云端保护已就绪", "Cloud protection is ready") : d(t).label("当前还没完成云端接线", "Cloud protection is not ready yet")), 1)
+                  i("article", hy, [
+                    i("p", _y, d(l(t).label("最近上云", "Last pushed")), 1),
+                    i("strong", null, d(l(Yt)(l(p).data.overview.lastPushedAt)), 1),
+                    i("span", null, d(l(p).data.overview.remoteReady ? l(t).label("云端保护已就绪", "Cloud protection is ready") : l(t).label("当前还没完成云端接线", "Cloud protection is not ready yet")), 1)
                   ]),
-                  c("article", Cv, [
-                    c("p", Dv, g(d(t).label("下一步建议", "Recommended next step")), 1),
-                    c("strong", null, g(b(d(f).data.overview.nextAction)), 1),
-                    c("span", null, g(d(f).data.overview.unsyncedChanges ? d(t).label("当前存在未同步变化", "There are unsynced changes right now") : d(t).label("当前没有额外待处理变化", "No extra pending changes right now")), 1)
+                  i("article", my, [
+                    i("p", gy, d(l(t).label("下一步建议", "Recommended next step")), 1),
+                    i("strong", null, d(g(l(p).data.overview.nextAction)), 1),
+                    i("span", null, d(l(p).data.overview.unsyncedChanges ? l(t).label("当前存在未同步变化", "There are unsynced changes right now") : l(t).label("当前没有额外待处理变化", "No extra pending changes right now")), 1)
                   ])
                 ])
               ];
             }),
             _: 1
           }, 8, ["title"]),
-          Z(_e, {
-            title: d(t).label("下一步建议", "Recommended next actions"),
+          X(ce, {
+            title: l(t).label("下一步建议", "Recommended next actions"),
             eyebrow: "Guide"
           }, {
-            default: he(() => [
-              c("div", xv, [
-                c("article", Tv, [
-                  c("div", null, [
-                    c("h3", null, g(d(t).label("先保住现在", "Protect the current state")), 1),
-                    c("p", null, g(d(t).label("当你刚完成一轮配置、修复或工作区整理时，就立刻保存一个恢复点。", "Whenever you finish a round of setup, fixes, or workspace cleanup, save a recovery point right away.")), 1)
+            default: ie(() => [
+              i("div", vy, [
+                i("article", by, [
+                  i("div", null, [
+                    i("h3", null, d(l(t).label("先保住现在", "Protect the current state")), 1),
+                    i("p", null, d(l(t).label("当你刚完成一轮配置、修复或工作区整理时，就立刻保存一个恢复点。", "Whenever you finish a round of setup, fixes, or workspace cleanup, save a recovery point right away.")), 1)
                   ]),
-                  c("span", Pv, g(b(d(f).data.overview.nextAction)), 1)
+                  i("span", yy, d(g(l(p).data.overview.nextAction)), 1)
                 ]),
-                c("article", Vv, [
-                  c("div", null, [
-                    c("h3", null, g(d(t).label("回退不会删历史", "Restoring does not delete history")), 1),
-                    c("p", null, g(d(t).label("Guard 会在当前主线上追加一个 restore commit，后面的版本会继续接在它后面。", "Guard adds a restore commit on the current main line, and future versions continue after that point.")), 1)
+                i("article", Ey, [
+                  i("div", null, [
+                    i("h3", null, d(l(t).label("回退不会删历史", "Restoring does not delete history")), 1),
+                    i("p", null, d(l(t).label("Guard 会在当前主线上追加一个 restore commit，后面的版本会继续接在它后面。", "Guard adds a restore commit on the current main line, and future versions continue after that point.")), 1)
                   ]),
-                  c("span", Av, g(d(t).label("同一主线继续", "Continue on the same main line")), 1)
+                  i("span", wy, d(l(t).label("同一主线继续", "Continue on the same main line")), 1)
                 ]),
-                (D(!0), V(X, null, ke(d(f).data.overview.warnings, (v) => (D(), V("article", {
-                  key: v,
+                (E(!0), w(Y, null, ye(l(p).data.overview.warnings, (b) => (E(), w("article", {
+                  key: b,
                   class: "risk-row"
                 }, [
-                  c("strong", null, g(d(t).label("注意事项", "Warning")), 1),
-                  c("span", null, g(v), 1)
+                  i("strong", null, d(l(t).label("注意事项", "Warning")), 1),
+                  i("span", null, d(b), 1)
                 ]))), 128))
               ])
             ]),
             _: 1
           }, 8, ["title"]),
-          Z(_e, {
-            title: d(t).label("立即保存", "Save now"),
+          X(ce, {
+            title: l(t).label("立即保存", "Save now"),
             eyebrow: "Checkpoint"
           }, {
-            default: he(() => [
-              c("div", Rv, [
-                c("label", Iv, [
-                  c("span", null, g(d(t).label("恢复点说明（可选）", "Recovery point label (optional)")), 1),
-                  c("small", null, g(d(t).label("不写也可以，Guard 会自动生成一个带时间的恢复点标题。", "This is optional. Guard can generate a timestamped title automatically.")), 1),
-                  St(c("input", {
-                    "onUpdate:modelValue": S[0] || (S[0] = (v) => o.value = v),
+            default: ie(() => [
+              i("div", Ny, [
+                i("label", $y, [
+                  i("span", null, d(l(t).label("恢复点说明（可选）", "Recovery point label (optional)")), 1),
+                  i("small", null, d(l(t).label("不写也可以，Guard 会自动生成一个带时间的恢复点标题。", "This is optional. Guard can generate a timestamped title automatically.")), 1),
+                  Xe(i("input", {
+                    "onUpdate:modelValue": T[0] || (T[0] = (b) => o.value = b),
                     class: "settings-input",
                     type: "text"
                   }, null, 512), [
-                    [mn, o.value]
+                    [yt, o.value]
                   ])
                 ])
               ]),
-              c("div", Mv, [
-                c("button", {
+              i("div", Oy, [
+                i("button", {
                   class: "inline-link inline-link--primary",
                   type: "button",
-                  disabled: i.value,
-                  onClick: K
-                }, g(i.value ? d(t).label("保存中…", "Saving…") : d(t).label("保存当前状态", "Save current state")), 9, Lv)
+                  disabled: a.value,
+                  onClick: W
+                }, d(a.value ? l(t).label("保存中…", "Saving…") : l(t).label("保存当前状态", "Save current state")), 9, Sy)
               ])
             ]),
             _: 1
           }, 8, ["title"]),
-          Z(_e, {
-            title: d(t).label("恢复点时间线", "Recovery point timeline"),
+          X(ce, {
+            title: l(t).label("恢复点时间线", "Recovery point timeline"),
             eyebrow: "Timeline"
           }, {
-            default: he(() => [
-              d(f).data.points.length ? (D(), V("div", jv, [
-                (D(!0), V(X, null, ke(d(f).data.points, (v) => (D(), V("article", {
-                  key: v.id,
+            default: ie(() => [
+              l(p).data.points.length ? (E(), w("div", ky, [
+                (E(!0), w(Y, null, ye(l(p).data.points, (b) => (E(), w("article", {
+                  key: b.id,
                   class: "provider-card"
                 }, [
-                  c("header", Fv, [
-                    c("div", null, [
-                      c("strong", null, g(v.title), 1),
-                      c("p", null, g(d(xs)(v.createdAt)) + " · " + g(d(nl)(v.commitSha)), 1)
+                  i("header", Cy, [
+                    i("div", null, [
+                      i("strong", null, d(b.title), 1),
+                      i("p", null, d(l(Yt)(b.createdAt)) + " · " + d(l(ul)(b.commitSha)), 1)
                     ]),
-                    c("div", Uv, [
-                      c("span", Hv, g(T(v)), 1),
-                      c("span", {
-                        class: $e(["pill", v.pushed ? "pill--success" : "pill--warning"])
-                      }, g(v.pushed ? d(t).label("已上云", "Synced") : d(t).label("仅本机", "Local only")), 3)
+                    i("div", xy, [
+                      i("span", Dy, d(k(b)), 1),
+                      i("span", {
+                        class: ge(["pill", b.pushed ? "pill--success" : "pill--warning"])
+                      }, d(b.pushed ? l(t).label("已上云", "Synced") : l(t).label("仅本机", "Local only")), 3)
                     ])
                   ]),
-                  c("p", null, g(v.summary), 1),
-                  v.sourceCommitSha ? (D(), V("p", Bv, g(d(t).label("来源节点：", "Source commit: ")) + g(d(nl)(v.sourceCommitSha)), 1)) : xe("", !0),
-                  c("div", Gv, [
-                    c("button", {
+                  i("p", null, d(b.summary), 1),
+                  b.sourceCommitSha ? (E(), w("p", Ty, d(l(t).label("来源节点：", "Source commit: ")) + d(l(ul)(b.sourceCommitSha)), 1)) : Ce("", !0),
+                  i("div", Py, [
+                    i("button", {
                       class: "inline-link",
                       type: "button",
-                      onClick: (E) => te(v.commitSha)
-                    }, g(d(t).label("复制节点", "Copy point")), 9, Wv),
-                    c("button", {
+                      onClick: (S) => te(b.commitSha)
+                    }, d(l(t).label("复制节点", "Copy point")), 9, Ry),
+                    i("button", {
                       class: "inline-link inline-link--primary",
                       type: "button",
-                      disabled: !v.restorable || l.value === v.commitSha,
-                      onClick: (E) => F(v)
-                    }, g(l.value === v.commitSha ? d(t).label("恢复中…", "Restoring…") : d(t).label("回到这个状态", "Restore this state")), 9, Kv)
+                      disabled: !b.restorable || c.value === b.commitSha,
+                      onClick: (S) => V(b)
+                    }, d(c.value === b.commitSha ? l(t).label("恢复中…", "Restoring…") : l(t).label("回到这个状态", "Restore this state")), 9, Ay)
                   ])
                 ]))), 128))
-              ])) : (D(), V("div", zv, g(d(t).label("当前还没有恢复点。建议先完成一次手动保存。", "No recovery points exist yet. Create a manual save first.")), 1))
+              ])) : (E(), w("div", Vy, d(l(t).label("当前还没有恢复点。建议先完成一次手动保存。", "No recovery points exist yet. Create a manual save first.")), 1))
             ]),
             _: 1
           }, 8, ["title"])
-        ], 64)) : (D(), V(X, { key: 1 }, [
-          Z(_e, {
-            title: d(t).label("高级 Git 入口", "Advanced Git entry"),
+        ], 64)) : (E(), w(Y, { key: 1 }, [
+          X(ce, {
+            title: l(t).label("高级 Git 入口", "Advanced Git entry"),
             eyebrow: "Advanced"
           }, {
-            default: he(() => [
-              c("p", qv, g(d(t).label("这里先接入最常用的高级动作和状态读取；更复杂的远端绑定、OAuth 和专家级操作，当前阶段仍保留在正式控制台。", "This view already brings in the most common advanced actions and status reads. More complex remote binding, OAuth, and expert-level operations still stay in the production console for now.")), 1),
-              c("div", Jv, [
-                c("a", Yv, g(d(t).label("打开正式控制台中的高级 Git", "Open advanced Git in the production console")), 1)
+            default: ie(() => [
+              i("p", Iy, d(l(t).label("这里先接入最常用的高级动作和状态读取；更复杂的远端绑定、OAuth 和专家级操作，当前阶段仍保留在正式控制台。", "This view already brings in the most common advanced actions and status reads. More complex remote binding, OAuth, and expert-level operations still stay in the production console for now.")), 1),
+              i("div", My, [
+                i("a", Fy, d(l(t).label("打开正式控制台中的高级 Git", "Open advanced Git in the production console")), 1)
               ])
             ]),
             _: 1
           }, 8, ["title"]),
-          Z(_e, {
-            title: d(t).label("当前仓库状态", "Current repository status"),
+          X(ce, {
+            title: l(t).label("当前仓库状态", "Current repository status"),
             eyebrow: "Status"
           }, {
-            default: he(() => [
-              c("div", Qv, [
-                c("article", Xv, [
-                  c("p", Zv, g(d(t).label("仓库初始化", "Repository")), 1),
-                  c("strong", null, g(d(f).data.gitStatus.repoInitialized ? d(t).label("已初始化", "Initialized") : d(t).label("未初始化", "Not initialized")), 1),
-                  c("span", null, g(d(f).data.gitStatus.repoPath), 1)
+            default: ie(() => [
+              i("div", Ly, [
+                i("article", jy, [
+                  i("p", Uy, d(l(t).label("仓库初始化", "Repository")), 1),
+                  i("strong", null, d(l(p).data.gitStatus.repoInitialized ? l(t).label("已初始化", "Initialized") : l(t).label("未初始化", "Not initialized")), 1),
+                  i("span", null, d(l(p).data.gitStatus.repoPath), 1)
                 ]),
-                c("article", eb, [
-                  c("p", tb, g(d(t).label("远端仓库", "Remote")), 1),
-                  c("strong", null, g(d(f).data.gitStatus.remoteName || "-"), 1),
-                  c("span", null, g(d(f).data.gitStatus.remoteUrl || d(t).label("还没绑定远端", "No remote connected yet")), 1)
+                i("article", Hy, [
+                  i("p", Gy, d(l(t).label("远端仓库", "Remote")), 1),
+                  i("strong", null, d(l(p).data.gitStatus.remoteName || "-"), 1),
+                  i("span", null, d(l(p).data.gitStatus.remoteUrl || l(t).label("还没绑定远端", "No remote connected yet")), 1)
                 ]),
-                c("article", nb, [
-                  c("p", sb, g(d(t).label("认证方式", "Auth mode")), 1),
-                  c("strong", null, g(d(f).data.gitStatus.authMode || "-"), 1),
-                  c("span", null, g(d(f).data.gitStatus.authConfigured ? d(t).label("当前已配置认证", "Authentication is configured") : d(t).label("当前还没配置认证", "Authentication is not configured yet")), 1)
+                i("article", By, [
+                  i("p", Ky, d(l(t).label("认证方式", "Auth mode")), 1),
+                  i("strong", null, d(l(p).data.gitStatus.authMode || "-"), 1),
+                  i("span", null, d(l(p).data.gitStatus.authConfigured ? l(t).label("当前已配置认证", "Authentication is configured") : l(t).label("当前还没配置认证", "Authentication is not configured yet")), 1)
                 ]),
-                c("article", ob, [
-                  c("p", rb, g(d(t).label("私有检查", "Private check")), 1),
-                  c("strong", null, g(d(f).data.gitStatus.repoPrivate === !0 ? d(t).label("已通过", "Passed") : d(f).data.gitStatus.repoPrivate === !1 ? d(t).label("未通过", "Failed") : d(t).label("未检查", "Pending")), 1),
-                  c("span", null, g(d(f).data.gitStatus.state.lastSyncAt ? `${d(t).label("最近同步", "Last sync")} ${d(xs)(d(f).data.gitStatus.state.lastSyncAt)}` : d(t).label("还没有成功同步记录", "No successful sync record yet")), 1)
+                i("article", Wy, [
+                  i("p", qy, d(l(t).label("私有检查", "Private check")), 1),
+                  i("strong", null, d(l(p).data.gitStatus.repoPrivate === !0 ? l(t).label("已通过", "Passed") : l(p).data.gitStatus.repoPrivate === !1 ? l(t).label("未通过", "Failed") : l(t).label("未检查", "Pending")), 1),
+                  i("span", null, d(l(p).data.gitStatus.state.lastSyncAt ? `${l(t).label("最近同步", "Last sync")} ${l(Yt)(l(p).data.gitStatus.state.lastSyncAt)}` : l(t).label("还没有成功同步记录", "No successful sync record yet")), 1)
                 ])
               ]),
-              c("div", ib, [
-                c("button", {
+              i("div", zy, [
+                i("button", {
                   class: "inline-link inline-link--primary",
                   type: "button",
-                  disabled: a.value === "init",
-                  onClick: S[1] || (S[1] = (v) => A("init"))
-                }, g(a.value === "init" ? d(t).label("初始化中…", "Initializing…") : d(t).label("初始化保护仓库", "Initialize protection repo")), 9, lb),
-                c("button", {
+                  disabled: u.value === "init",
+                  onClick: T[1] || (T[1] = (b) => I("init"))
+                }, d(u.value === "init" ? l(t).label("初始化中…", "Initializing…") : l(t).label("初始化保护仓库", "Initialize protection repo")), 9, Jy),
+                i("button", {
                   class: "inline-link",
                   type: "button",
-                  disabled: a.value === "private",
-                  onClick: S[2] || (S[2] = (v) => A("private"))
-                }, g(a.value === "private" ? d(t).label("检查中…", "Checking…") : d(t).label("检查私有仓库", "Check private remote")), 9, ab),
-                c("button", {
+                  disabled: u.value === "private",
+                  onClick: T[2] || (T[2] = (b) => I("private"))
+                }, d(u.value === "private" ? l(t).label("检查中…", "Checking…") : l(t).label("检查私有仓库", "Check private remote")), 9, Qy),
+                i("button", {
                   class: "inline-link",
                   type: "button",
-                  disabled: a.value === "checkpoint",
-                  onClick: S[3] || (S[3] = (v) => A("checkpoint"))
-                }, g(a.value === "checkpoint" ? d(t).label("提交中…", "Committing…") : d(t).label("创建本地 checkpoint", "Create local checkpoint")), 9, cb),
-                c("button", {
+                  disabled: u.value === "checkpoint",
+                  onClick: T[3] || (T[3] = (b) => I("checkpoint"))
+                }, d(u.value === "checkpoint" ? l(t).label("提交中…", "Committing…") : l(t).label("创建本地 checkpoint", "Create local checkpoint")), 9, Yy),
+                i("button", {
                   class: "inline-link",
                   type: "button",
-                  disabled: a.value === "push",
-                  onClick: S[4] || (S[4] = (v) => A("push"))
-                }, g(a.value === "push" ? d(t).label("推送中…", "Pushing…") : d(t).label("推送到云端", "Push to cloud")), 9, ub),
-                c("button", {
+                  disabled: u.value === "push",
+                  onClick: T[4] || (T[4] = (b) => I("push"))
+                }, d(u.value === "push" ? l(t).label("推送中…", "Pushing…") : l(t).label("推送到云端", "Push to cloud")), 9, Xy),
+                i("button", {
                   class: "inline-link",
                   type: "button",
-                  disabled: a.value === "sync",
-                  onClick: S[5] || (S[5] = (v) => A("sync"))
-                }, g(a.value === "sync" ? d(t).label("同步中…", "Syncing…") : d(t).label("提交并同步", "Commit and sync")), 9, db)
+                  disabled: u.value === "sync",
+                  onClick: T[5] || (T[5] = (b) => I("sync"))
+                }, d(u.value === "sync" ? l(t).label("同步中…", "Syncing…") : l(t).label("提交并同步", "Commit and sync")), 9, Zy)
               ]),
-              r.value ? (D(), V("p", fb, g(r.value), 1)) : xe("", !0)
+              r.value ? (E(), w("p", eE, d(r.value), 1)) : Ce("", !0)
             ]),
             _: 1
           }, 8, ["title"]),
-          Z(_e, {
-            title: d(t).label("保护范围摘要", "Protection scope summary"),
+          X(ce, {
+            title: l(t).label("保护范围摘要", "Protection scope summary"),
             eyebrow: "Scope"
           }, {
-            default: he(() => [
-              c("div", pb, [
-                c("article", hb, [
-                  c("div", null, [
-                    c("h3", null, g(d(t).label("当前工作树变化", "Current worktree changes")), 1),
-                    c("p", null, g(d(t).label("这些文件会进入根保护线；嵌套仓库会被单独标记，不会被误提交到根线。", "These files enter the root protection line, while nested repositories are marked separately so they are not committed into the root line by mistake.")), 1)
+            default: ie(() => [
+              i("div", tE, [
+                i("article", nE, [
+                  i("div", null, [
+                    i("h3", null, d(l(t).label("当前工作树变化", "Current worktree changes")), 1),
+                    i("p", null, d(l(t).label("这些文件会进入根保护线；嵌套仓库会被单独标记，不会被误提交到根线。", "These files enter the root protection line, while nested repositories are marked separately so they are not committed into the root line by mistake.")), 1)
                   ]),
-                  c("strong", null, g(d(f).data.gitStatus.changedFiles.length), 1)
+                  i("strong", null, d(l(p).data.gitStatus.changedFiles.length), 1)
                 ]),
-                c("article", gb, [
-                  c("div", null, [
-                    c("h3", null, g(d(t).label("可直接纳入保护", "Stageable in root line")), 1),
-                    c("p", null, g(d(t).label("这些改动可以直接由 Guard 提交为恢复点。", "These changes can be committed directly by Guard as recovery points.")), 1)
+                i("article", sE, [
+                  i("div", null, [
+                    i("h3", null, d(l(t).label("可直接纳入保护", "Stageable in root line")), 1),
+                    i("p", null, d(l(t).label("这些改动可以直接由 Guard 提交为恢复点。", "These changes can be committed directly by Guard as recovery points.")), 1)
                   ]),
-                  c("strong", null, g(d(f).data.gitStatus.stageableChangedFiles.length), 1)
+                  i("strong", null, d(l(p).data.gitStatus.stageableChangedFiles.length), 1)
                 ]),
-                c("article", mb, [
-                  c("div", null, [
-                    c("h3", null, g(d(t).label("嵌套仓库", "Nested repositories")), 1),
-                    c("p", null, g(d(t).label("这些目录更适合单独维护，Guard 不会在根保护线里直接接管。", "These directories are better maintained separately. Guard does not take them over inside the root protection line.")), 1)
+                i("article", oE, [
+                  i("div", null, [
+                    i("h3", null, d(l(t).label("嵌套仓库", "Nested repositories")), 1),
+                    i("p", null, d(l(t).label("这些目录更适合单独维护，Guard 不会在根保护线里直接接管。", "These directories are better maintained separately. Guard does not take them over inside the root protection line.")), 1)
                   ]),
-                  c("strong", null, g(d(f).data.gitStatus.skippedEmbeddedRepos.length), 1)
+                  i("strong", null, d(l(p).data.gitStatus.skippedEmbeddedRepos.length), 1)
                 ])
               ]),
-              c("pre", _b, g(JSON.stringify({
-                changedFiles: d(f).data.gitStatus.changedFiles,
-                stageableChangedFiles: d(f).data.gitStatus.stageableChangedFiles,
-                skippedEmbeddedRepos: d(f).data.gitStatus.skippedEmbeddedRepos
+              i("pre", rE, d(JSON.stringify({
+                changedFiles: l(p).data.gitStatus.changedFiles,
+                stageableChangedFiles: l(p).data.gitStatus.stageableChangedFiles,
+                skippedEmbeddedRepos: l(p).data.gitStatus.skippedEmbeddedRepos
               }, null, 2)), 1)
             ]),
             _: 1
           }, 8, ["title"]),
-          Z(_e, {
-            title: d(t).label(".gitignore 建议", ".gitignore suggestions"),
+          X(ce, {
+            title: l(t).label(".gitignore 建议", ".gitignore suggestions"),
             eyebrow: "Ignore rules"
           }, {
-            default: he(() => [
-              c("p", vb, g(d(t).label("当检测到新的嵌套仓库时，可以先看建议块，再一键追加推荐规则。", "When Guard detects new nested repositories, review the suggestion block first and then append the recommended rules with one action.")), 1),
-              c("div", bb, [
-                c("article", yb, [
-                  c("p", Eb, g(d(t).label("嵌套仓库", "Embedded repos")), 1),
-                  c("strong", null, g(d(f).data.gitIgnorePreview.embeddedRepos.length), 1),
-                  c("span", null, g(d(t).label("需要单独维护的子仓库", "Child repositories that should be maintained separately")), 1)
+            default: ie(() => [
+              i("p", iE, d(l(t).label("当检测到新的嵌套仓库时，可以先看建议块，再一键追加推荐规则。", "When Guard detects new nested repositories, review the suggestion block first and then append the recommended rules with one action.")), 1),
+              i("div", lE, [
+                i("article", aE, [
+                  i("p", cE, d(l(t).label("嵌套仓库", "Embedded repos")), 1),
+                  i("strong", null, d(l(p).data.gitIgnorePreview.embeddedRepos.length), 1),
+                  i("span", null, d(l(t).label("需要单独维护的子仓库", "Child repositories that should be maintained separately")), 1)
                 ]),
-                c("article", wb, [
-                  c("p", Nb, g(d(t).label("待追加规则", "Missing rules")), 1),
-                  c("strong", null, g(d(f).data.gitIgnorePreview.missingEntries.length), 1),
-                  c("span", null, g(d(f).data.gitIgnorePreview.gitignorePath), 1)
+                i("article", uE, [
+                  i("p", dE, d(l(t).label("待追加规则", "Missing rules")), 1),
+                  i("strong", null, d(l(p).data.gitIgnorePreview.missingEntries.length), 1),
+                  i("span", null, d(l(p).data.gitIgnorePreview.gitignorePath), 1)
                 ])
               ]),
-              c("pre", Ob, g(d(f).data.gitIgnorePreview.appendBlock || d(t).label("当前没有需要追加的规则。", "There are no extra rules to append right now.")), 1),
-              c("div", Sb, [
-                c("button", {
+              i("pre", fE, d(l(p).data.gitIgnorePreview.appendBlock || l(t).label("当前没有需要追加的规则。", "There are no extra rules to append right now.")), 1),
+              i("div", pE, [
+                i("button", {
                   class: "inline-link",
                   type: "button",
-                  disabled: a.value === "gitignore",
-                  onClick: S[6] || (S[6] = (v) => A("gitignore"))
-                }, g(a.value === "gitignore" ? d(t).label("写入中…", "Applying…") : d(t).label("追加推荐规则", "Append recommended rules")), 9, kb)
+                  disabled: u.value === "gitignore",
+                  onClick: T[6] || (T[6] = (b) => I("gitignore"))
+                }, d(u.value === "gitignore" ? l(t).label("写入中…", "Applying…") : l(t).label("追加推荐规则", "Append recommended rules")), 9, hE)
               ])
             ]),
             _: 1
           }, 8, ["title"])
         ], 64))
-      ], 64)) : xe("", !0)
+      ], 64)) : Ce("", !0)
     ]));
   }
 });
-function Cb() {
-  return Te("/api/audit");
+function mE() {
+  return xe("/api/agents");
 }
-function Db() {
-  return Te("/api/profiles");
-}
-function xb(e) {
-  return st("/api/profiles/apply", { profile: e });
-}
-function Tb(e) {
-  return Te(`/api/harden/steps?platform=${encodeURIComponent(e)}`);
-}
-const Pb = { class: "page-stack" }, Vb = { class: "page-header" }, Ab = { class: "page-header__eyebrow" }, Rb = { class: "page-header__title" }, Ib = { class: "page-header__description" }, Mb = {
+const gE = { class: "page-stack" }, vE = { class: "page-header" }, bE = { class: "page-header__eyebrow" }, yE = { class: "page-header__title" }, EE = { class: "page-header__description" }, wE = {
   key: 0,
   class: "page-empty"
-}, Lb = {
+}, NE = {
   key: 1,
   class: "page-empty page-empty--error"
-}, jb = { class: "muted-copy" }, Fb = { class: "stat-grid" }, Ub = { class: "stat-card" }, Hb = { class: "stat-card__label" }, Bb = { class: "stat-card" }, Gb = { class: "stat-card__label" }, Wb = { class: "stat-card" }, Kb = { class: "stat-card__label" }, zb = { class: "provider-stack" }, qb = { class: "provider-card__header" }, Jb = { class: "pill pill--muted" }, Yb = { class: "mini-list" }, Qb = { class: "provider-card__header" }, Xb = {
+}, $E = { class: "stat-grid" }, OE = { class: "stat-card" }, SE = { class: "stat-card__label" }, kE = { class: "stat-card" }, CE = { class: "stat-card__label" }, xE = { class: "stat-card" }, DE = { class: "stat-card__label" }, TE = { class: "stat-card" }, PE = { class: "stat-card__label" }, RE = {
+  key: 0,
+  class: "provider-stack"
+}, AE = { class: "provider-card__header" }, VE = { class: "pill-row" }, IE = {
+  key: 0,
+  class: "pill pill--success"
+}, ME = {
+  key: 1,
+  class: "pill pill--muted"
+}, FE = { class: "mini-list" }, LE = { class: "mini-list__item mini-list__item--stack" }, jE = { class: "mini-list__item mini-list__item--stack" }, UE = { class: "pill-row" }, HE = { class: "page-actions" }, GE = ["onClick"], BE = {
+  key: 1,
+  class: "page-empty"
+}, KE = /* @__PURE__ */ Ve({
+  __name: "RolesPage",
+  setup(e) {
+    const t = ft(), n = hc(), s = Br(), o = wt(() => mE()), r = ne(() => {
+      var f;
+      return ((f = o.data) == null ? void 0 : f.agents) || [];
+    }), a = ne(() => r.value.filter((f) => f.isDefault).length), c = ne(() => r.value.filter((f) => f.workspaceExists).length), u = ne(() => r.value.filter((f) => p(f)).length);
+    function p(f) {
+      return f.docStatus.soul && f.docStatus.user && f.docStatus.agents && f.docStatus.memory;
+    }
+    function h(f) {
+      s.setMode("all"), s.setCurrentPath(f.resolvedWorkspace), s.setSelectedFilePath(""), s.setSelectedMemoryFilePath(""), n.push("/files");
+    }
+    return (f, _) => (E(), w("div", gE, [
+      i("header", vE, [
+        i("div", null, [
+          i("p", bE, d(l(t).label("角色 / Third slice", "Roles / Third slice")), 1),
+          i("h2", yE, d(l(t).label("角色目录", "Role catalog")), 1),
+          i("p", EE, d(l(t).label("先把 Agent 目录、默认角色和工作区文档健康度迁进新壳层里，方便后续与文件视图和会话视图打通。", "Move the agent catalog, default role state, and workspace doc health into the new shell so it can connect naturally with Files and Sessions next.")), 1)
+        ]),
+        i("button", {
+          class: "page-header__action",
+          type: "button",
+          onClick: _[0] || (_[0] = (g) => l(o).execute({ silent: !0 }))
+        }, d(l(o).refreshing ? l(t).label("刷新中…", "Refreshing…") : l(t).label("Refresh", "Refresh")), 1)
+      ]),
+      l(o).loading ? (E(), w("div", wE, d(l(t).label("正在读取角色目录…", "Loading the role catalog…")), 1)) : l(o).error ? (E(), w("div", NE, d(l(o).error), 1)) : (E(), w(Y, { key: 2 }, [
+        X(ce, {
+          title: l(t).label("团队概览", "Team overview"),
+          eyebrow: "Summary"
+        }, {
+          default: ie(() => [
+            i("div", $E, [
+              i("article", OE, [
+                i("p", SE, d(l(t).label("角色总数", "Roles")), 1),
+                i("strong", null, d(l(me)(r.value.length)), 1),
+                i("span", null, d(l(t).label("当前已接入到 Guard 的角色目录", "Role entries currently discovered by Guard")), 1)
+              ]),
+              i("article", kE, [
+                i("p", CE, d(l(t).label("默认角色", "Default role")), 1),
+                i("strong", null, d(l(me)(a.value)), 1),
+                i("span", null, d(a.value > 0 ? l(t).label("至少有一个默认角色", "At least one default role is configured") : l(t).label("还没有默认角色", "No default role is configured yet")), 1)
+              ]),
+              i("article", xE, [
+                i("p", DE, d(l(t).label("工作区可用", "Workspaces ready")), 1),
+                i("strong", null, d(l(me)(c.value)), 1),
+                i("span", null, d(l(t).label("对应的工作区目录已经存在", "The mapped workspace directory already exists")), 1)
+              ]),
+              i("article", TE, [
+                i("p", PE, d(l(t).label("关键文档齐全", "Core docs ready")), 1),
+                i("strong", null, d(l(me)(u.value)), 1),
+                _[1] || (_[1] = i("span", null, "SOUL / USER / AGENTS / MEMORY", -1))
+              ])
+            ])
+          ]),
+          _: 1
+        }, 8, ["title"]),
+        X(ce, {
+          title: l(t).label("角色成员", "Role entries"),
+          eyebrow: "Catalog"
+        }, {
+          default: ie(() => [
+            r.value.length ? (E(), w("div", RE, [
+              (E(!0), w(Y, null, ye(r.value, (g) => (E(), w("article", {
+                key: g.id,
+                class: "provider-card"
+              }, [
+                i("header", AE, [
+                  i("div", null, [
+                    i("strong", null, d(g.name), 1),
+                    i("p", null, d(g.resolvedWorkspace || g.workspace), 1)
+                  ]),
+                  i("div", VE, [
+                    g.isDefault ? (E(), w("span", IE, d(l(t).label("默认", "Default")), 1)) : (E(), w("span", ME, d(g.id), 1)),
+                    i("span", {
+                      class: ge(["pill", g.workspaceExists ? "pill--success" : "pill--warning"])
+                    }, d(g.workspaceExists ? l(t).label("工作区就绪", "Workspace ready") : l(t).label("工作区缺失", "Workspace missing")), 3)
+                  ])
+                ]),
+                i("div", FE, [
+                  i("div", LE, [
+                    i("strong", null, d(l(t).label("模型路由", "Model route")), 1),
+                    i("p", null, d(g.modelId || l(t).label("沿用默认模型", "Uses the default model route")), 1)
+                  ]),
+                  i("div", jE, [
+                    i("strong", null, d(l(t).label("关键文档", "Core docs")), 1),
+                    i("div", UE, [
+                      i("span", {
+                        class: ge(["pill", g.docStatus.soul ? "pill--success" : "pill--warning"])
+                      }, "SOUL", 2),
+                      i("span", {
+                        class: ge(["pill", g.docStatus.user ? "pill--success" : "pill--warning"])
+                      }, "USER", 2),
+                      i("span", {
+                        class: ge(["pill", g.docStatus.agents ? "pill--success" : "pill--warning"])
+                      }, "AGENTS", 2),
+                      i("span", {
+                        class: ge(["pill", g.docStatus.memory ? "pill--success" : "pill--warning"])
+                      }, "MEMORY", 2)
+                    ])
+                  ])
+                ]),
+                i("div", HE, [
+                  i("button", {
+                    class: "inline-link inline-link--primary",
+                    type: "button",
+                    onClick: (k) => h(g)
+                  }, d(l(t).label("打开对应工作区", "Open workspace")), 9, GE)
+                ])
+              ]))), 128))
+            ])) : (E(), w("div", BE, d(l(t).label("还没有发现可用角色。请先检查 OpenClaw 配置和安装状态。", "No role entries were discovered yet. Check the OpenClaw configuration and installation state first.")), 1))
+          ]),
+          _: 1
+        }, 8, ["title"])
+      ], 64))
+    ]));
+  }
+});
+function WE(e, t = 100) {
+  const n = new URLSearchParams({
+    q: e,
+    limit: String(t)
+  });
+  return xe(`/api/search?${n.toString()}`);
+}
+const qE = { class: "page-stack" }, zE = { class: "page-header" }, JE = { class: "page-header__eyebrow" }, QE = { class: "page-header__title" }, YE = { class: "page-header__description" }, XE = {
+  class: "inline-link inline-link--primary",
+  type: "submit"
+}, ZE = {
+  key: 0,
+  class: "page-empty page-empty--error"
+}, ew = { class: "stat-grid" }, tw = { class: "stat-card" }, nw = { class: "stat-card__label" }, sw = { class: "stat-card" }, ow = { class: "stat-card__label" }, rw = { class: "stat-card" }, iw = { class: "stat-card__label" }, lw = { class: "stat-card" }, aw = { class: "stat-card__label" }, cw = {
+  key: 0,
+  class: "page-empty"
+}, uw = {
+  key: 1,
+  class: "provider-stack"
+}, dw = { class: "provider-card__header" }, fw = { class: "pill-row" }, pw = { class: "page-actions" }, hw = ["onClick"], _w = {
+  key: 2,
+  class: "page-empty"
+}, mw = /* @__PURE__ */ Ve({
+  __name: "SearchPage",
+  setup(e) {
+    const t = ft(), n = hc(), s = hn(), o = Br(), r = /* @__PURE__ */ Z(o.searchQuery), a = /* @__PURE__ */ Z(!1), c = /* @__PURE__ */ Z(null), u = /* @__PURE__ */ Z(!1), p = /* @__PURE__ */ Z([]), h = ne(() => new Set(p.value.map((g) => g.path)).size);
+    qe(r, (g) => {
+      o.setSearchQuery(g);
+    });
+    async function f() {
+      const g = r.value.trim();
+      if (o.setSearchQuery(g), u.value = !0, c.value = null, !g) {
+        p.value = [];
+        return;
+      }
+      a.value = !0;
+      try {
+        const k = await WE(g, 100);
+        p.value = k.results || [];
+      } catch (k) {
+        c.value = k instanceof Error ? k.message : String(k);
+      } finally {
+        a.value = !1;
+      }
+    }
+    function _(g) {
+      o.requestReveal(g.path), s.pushToast({
+        tone: "info",
+        message: t.label("已切到文件页并定位结果。", "Switched to Files and queued the selected result."),
+        durationMs: 2200
+      }), n.push("/files");
+    }
+    return $s(() => {
+      o.searchQuery.trim() && f();
+    }), (g, k) => (E(), w("div", qE, [
+      i("header", zE, [
+        i("div", null, [
+          i("p", JE, d(l(t).label("搜索 / Third slice", "Search / Third slice")), 1),
+          i("h2", QE, d(l(t).label("工作区搜索", "Workspace search")), 1),
+          i("p", YE, d(l(t).label("先让搜索直接覆盖 Guard 管理的工作区与核心记忆，并且可以一跳回到文件页继续编辑。", "Start with search across Guard-managed workspaces and core memory, then jump straight back into Files to continue editing.")), 1)
+        ]),
+        i("button", {
+          class: "page-header__action",
+          type: "button",
+          onClick: f
+        }, d(a.value ? l(t).label("搜索中…", "Searching…") : l(t).label("Search", "Search")), 1)
+      ]),
+      X(ce, {
+        title: l(t).label("搜索条件", "Search query"),
+        eyebrow: "Query"
+      }, {
+        default: ie(() => [
+          i("form", {
+            class: "search-form",
+            onSubmit: Vr(f, ["prevent"])
+          }, [
+            Xe(i("input", {
+              "onUpdate:modelValue": k[0] || (k[0] = (O) => r.value = O),
+              class: "settings-input",
+              type: "text",
+              placeholder: "SOUL.md / qwen / fallback / cron"
+            }, null, 512), [
+              [yt, r.value]
+            ]),
+            i("button", XE, d(a.value ? l(t).label("搜索中…", "Searching…") : l(t).label("开始搜索", "Run search")), 1)
+          ], 32)
+        ]),
+        _: 1
+      }, 8, ["title"]),
+      c.value ? (E(), w("div", ZE, d(c.value), 1)) : Ce("", !0),
+      X(ce, {
+        title: l(t).label("结果概览", "Result overview"),
+        eyebrow: "Summary"
+      }, {
+        default: ie(() => [
+          i("div", ew, [
+            i("article", tw, [
+              i("p", nw, d(l(t).label("命中条数", "Matches")), 1),
+              i("strong", null, d(l(me)(p.value.length)), 1),
+              i("span", null, d(l(t).label("当前查询返回的匹配行数", "Matched lines returned for the current query")), 1)
+            ]),
+            i("article", sw, [
+              i("p", ow, d(l(t).label("涉及文件", "Files")), 1),
+              i("strong", null, d(l(me)(h.value)), 1),
+              i("span", null, d(l(t).label("至少命中一次的文件数量", "Files that matched at least once")), 1)
+            ]),
+            i("article", rw, [
+              i("p", iw, d(l(t).label("当前查询", "Current query")), 1),
+              i("strong", null, d(r.value.trim() || "-"), 1),
+              i("span", null, d(r.value.trim() ? l(t).label("结果来自当前搜索词", "Results are based on the current query") : l(t).label("还没有输入搜索词", "No search query yet")), 1)
+            ]),
+            i("article", lw, [
+              i("p", aw, d(l(t).label("打开方式", "Open flow")), 1),
+              i("strong", null, d(l(t).label("一跳到文件页", "Jump into Files")), 1),
+              i("span", null, d(l(t).label("搜索结果会按文件或核心记忆模式自动定位", "Results automatically open in file or core-memory mode")), 1)
+            ])
+          ])
+        ]),
+        _: 1
+      }, 8, ["title"]),
+      X(ce, {
+        title: l(t).label("搜索结果", "Results"),
+        eyebrow: "Results"
+      }, {
+        default: ie(() => [
+          a.value ? (E(), w("div", cw, d(l(t).label("正在查找匹配结果…", "Searching for matching results…")), 1)) : p.value.length ? (E(), w("div", uw, [
+            (E(!0), w(Y, null, ye(p.value, (O) => (E(), w("article", {
+              key: `${O.path}:${O.line}:${O.preview}`,
+              class: "provider-card"
+            }, [
+              i("header", dw, [
+                i("div", null, [
+                  i("strong", null, d(O.relativePath || O.path), 1),
+                  i("p", null, d(`L${O.line}`), 1)
+                ]),
+                i("div", fw, [
+                  i("span", {
+                    class: ge(["pill", l(fr)(O.path) ? "pill--success" : "pill--info"])
+                  }, d(l(fr)(O.path) ? l(t).label("核心记忆", "Core memory") : l(t).label("文件", "File")), 3)
+                ])
+              ]),
+              i("p", null, d(O.preview), 1),
+              i("div", pw, [
+                i("button", {
+                  class: "inline-link inline-link--primary",
+                  type: "button",
+                  onClick: (W) => _(O)
+                }, d(l(t).label("在文件页打开", "Open in Files")), 9, hw)
+              ])
+            ]))), 128))
+          ])) : (E(), w("div", _w, d(u.value ? l(t).label("当前搜索词没有命中任何文件。", "The current query did not match any files.") : l(t).label("输入关键词后开始搜索。", "Enter a query to start searching.")), 1))
+        ]),
+        _: 1
+      }, 8, ["title"])
+    ]));
+  }
+});
+function gw() {
+  return xe("/api/audit");
+}
+function vw() {
+  return xe("/api/profiles");
+}
+function bw(e) {
+  return Ze("/api/profiles/apply", { profile: e });
+}
+function yw(e) {
+  return xe(`/api/harden/steps?platform=${encodeURIComponent(e)}`);
+}
+const Ew = { class: "page-stack" }, ww = { class: "page-header" }, Nw = { class: "page-header__eyebrow" }, $w = { class: "page-header__title" }, Ow = { class: "page-header__description" }, Sw = {
+  key: 0,
+  class: "page-empty"
+}, kw = {
+  key: 1,
+  class: "page-empty page-empty--error"
+}, Cw = { class: "muted-copy" }, xw = { class: "stat-grid" }, Dw = { class: "stat-card" }, Tw = { class: "stat-card__label" }, Pw = { class: "stat-card" }, Rw = { class: "stat-card__label" }, Aw = { class: "stat-card" }, Vw = { class: "stat-card__label" }, Iw = { class: "provider-stack" }, Mw = { class: "provider-card__header" }, Fw = { class: "pill pill--muted" }, Lw = { class: "mini-list" }, jw = { class: "provider-card__header" }, Uw = {
   key: 0,
   class: "muted-copy"
-}, Zb = {
+}, Hw = {
   key: 0,
   class: "page-empty"
-}, ey = {
+}, Gw = {
   key: 1,
   class: "page-empty page-empty--error"
-}, ty = { class: "muted-copy" }, ny = { class: "provider-stack" }, sy = { class: "provider-card__header" }, oy = { class: "muted-copy" }, ry = { class: "pill pill--info" }, iy = { class: "settings-grid settings-grid--wide" }, ly = { class: "settings-field" }, ay = { class: "mini-list" }, cy = { class: "settings-field" }, uy = { class: "code-panel" }, dy = { class: "settings-field" }, fy = { class: "code-panel" }, py = { class: "page-actions" }, hy = ["disabled", "onClick"], gy = {
+}, Bw = { class: "muted-copy" }, Kw = { class: "provider-stack" }, Ww = { class: "provider-card__header" }, qw = { class: "muted-copy" }, zw = { class: "pill pill--info" }, Jw = { class: "settings-grid settings-grid--wide" }, Qw = { class: "settings-field" }, Yw = { class: "mini-list" }, Xw = { class: "settings-field" }, Zw = { class: "code-panel" }, e1 = { class: "settings-field" }, t1 = { class: "code-panel" }, n1 = { class: "page-actions" }, s1 = ["disabled", "onClick"], o1 = {
   key: 0,
   class: "page-empty"
-}, my = {
+}, r1 = {
   key: 1,
   class: "page-empty page-empty--error"
-}, _y = { class: "muted-copy" }, vy = { class: "pill-row" }, by = ["href"], yy = { class: "provider-stack" }, Ey = { class: "provider-card__header" }, wy = { class: "muted-copy" }, Ny = { class: "code-panel" }, Oy = /* @__PURE__ */ Be({
+}, i1 = { class: "muted-copy" }, l1 = { class: "pill-row" }, a1 = ["href"], c1 = { class: "provider-stack" }, u1 = { class: "provider-card__header" }, d1 = { class: "muted-copy" }, f1 = { class: "code-panel" }, p1 = /* @__PURE__ */ Ve({
   __name: "SecurityPage",
   setup(e) {
     function t() {
       if (typeof navigator > "u") return "linux";
-      const F = navigator.platform.toLowerCase();
-      return F.includes("win") ? "windows" : F.includes("mac") ? "macos" : "linux";
+      const V = navigator.platform.toLowerCase();
+      return V.includes("win") ? "windows" : V.includes("mac") ? "macos" : "linux";
     }
-    const n = Wt(), s = zn(), o = /* @__PURE__ */ me("audit"), r = /* @__PURE__ */ me(t()), i = /* @__PURE__ */ me(""), l = Ht(() => Cb(), null, { immediate: !1 }), a = Ht(() => Db(), null, { immediate: !1 }), f = Ht(() => Tb(r.value), null, { immediate: !1 }), p = ue(() => [
+    const n = ft(), s = hn(), o = /* @__PURE__ */ Z("audit"), r = /* @__PURE__ */ Z(t()), a = /* @__PURE__ */ Z(""), c = wt(() => gw(), null, { immediate: !1 }), u = wt(() => vw(), null, { immediate: !1 }), p = wt(() => yw(r.value), null, { immediate: !1 }), h = ne(() => [
       { id: "audit", label: n.label("安全检查", "Security checks") },
       { id: "profiles", label: n.label("权限模式", "Permission modes") },
       { id: "hardening", label: n.label("主机加固", "Host hardening") }
-    ]), u = ue(() => {
-      var A, I;
-      const F = /* @__PURE__ */ new Map();
-      for (const te of ((A = l.data) == null ? void 0 : A.results) || [])
-        F.has(te.category) || F.set(te.category, []), (I = F.get(te.category)) == null || I.push(te);
-      return Array.from(F.entries());
+    ]), f = ne(() => {
+      var I, L;
+      const V = /* @__PURE__ */ new Map();
+      for (const te of ((I = c.data) == null ? void 0 : I.results) || [])
+        V.has(te.category) || V.set(te.category, []), (L = V.get(te.category)) == null || L.push(te);
+      return Array.from(V.entries());
     });
     qe(
       o,
-      (F) => {
-        F === "audit" && !l.data && !l.loading && l.execute(), F === "profiles" && !a.data && !a.loading && a.execute(), F === "hardening" && !f.data && !f.loading && f.execute();
+      (V) => {
+        V === "audit" && !c.data && !c.loading && c.execute(), V === "profiles" && !u.data && !u.loading && u.execute(), V === "hardening" && !p.data && !p.loading && p.execute();
       },
       { immediate: !0 }
     ), qe(r, () => {
-      o.value === "hardening" && f.execute({ silent: !!f.data });
+      o.value === "hardening" && p.execute({ silent: !!p.data });
     });
-    function m(F) {
-      return F === "pass" ? "pill--success" : F === "warn" ? "pill--warning" : "pill--danger";
+    function _(V) {
+      return V === "pass" ? "pill--success" : V === "warn" ? "pill--warning" : "pill--danger";
     }
-    function b(F) {
-      return F === "pass" ? n.label("通过", "Pass") : F === "warn" ? n.label("警告", "Warning") : n.label("失败", "Fail");
+    function g(V) {
+      return V === "pass" ? n.label("通过", "Pass") : V === "warn" ? n.label("警告", "Warning") : n.label("失败", "Fail");
     }
-    async function T() {
+    async function k() {
       if (o.value === "audit") {
-        await l.execute({ silent: !!l.data });
+        await c.execute({ silent: !!c.data });
         return;
       }
       if (o.value === "profiles") {
-        await a.execute({ silent: !!a.data });
+        await u.execute({ silent: !!u.data });
         return;
       }
-      await f.execute({ silent: !!f.data });
+      await p.execute({ silent: !!p.data });
     }
-    async function $(F) {
-      i.value = F;
+    async function O(V) {
+      a.value = V;
       try {
-        const A = await xb(F);
+        const I = await bw(V);
         s.pushToast({
-          tone: A.success ? "success" : "error",
-          message: A.message
+          tone: I.success ? "success" : "error",
+          message: I.message
         });
-      } catch (A) {
+      } catch (I) {
         s.pushToast({
           tone: "error",
-          message: A instanceof Error ? A.message : String(A)
+          message: I instanceof Error ? I.message : String(I)
         });
       } finally {
-        i.value = "";
+        a.value = "";
       }
     }
-    function K(F) {
-      o.value = F;
+    function W(V) {
+      o.value = V;
     }
-    return (F, A) => (D(), V("div", Pb, [
-      c("header", Vb, [
-        c("div", null, [
-          c("p", Ab, g(d(n).label("安全 / Second slice", "Security / Second slice")), 1),
-          c("h2", Rb, g(d(n).label("安全基线", "Security baseline")), 1),
-          c("p", Ib, g(d(n).label("把长页面拆成页内分栏，只在当前视图读取必要数据，让安全页面更像决策面板而不是说明书。", "Split the long screen into internal tabs and load only the current view so the security page feels like a decision panel instead of a manual.")), 1)
+    return (V, I) => (E(), w("div", Ew, [
+      i("header", ww, [
+        i("div", null, [
+          i("p", Nw, d(l(n).label("安全 / Second slice", "Security / Second slice")), 1),
+          i("h2", $w, d(l(n).label("安全基线", "Security baseline")), 1),
+          i("p", Ow, d(l(n).label("把长页面拆成页内分栏，只在当前视图读取必要数据，让安全页面更像决策面板而不是说明书。", "Split the long screen into internal tabs and load only the current view so the security page feels like a decision panel instead of a manual.")), 1)
         ]),
-        c("button", {
+        i("button", {
           class: "page-header__action",
           type: "button",
-          onClick: T
-        }, g(o.value === "audit" && d(l).refreshing || o.value === "profiles" && d(a).refreshing || o.value === "hardening" && d(f).refreshing ? d(n).label("刷新中…", "Refreshing…") : d(n).label("刷新当前视图", "Refresh current view")), 1)
+          onClick: k
+        }, d(o.value === "audit" && l(c).refreshing || o.value === "profiles" && l(u).refreshing || o.value === "hardening" && l(p).refreshing ? l(n).label("刷新中…", "Refreshing…") : l(n).label("刷新当前视图", "Refresh current view")), 1)
       ]),
-      Z(lc, {
-        items: p.value,
+      X(Gr, {
+        items: h.value,
         "active-id": o.value,
-        onChange: K
+        onChange: W
       }, null, 8, ["items", "active-id"]),
-      o.value === "audit" ? (D(), V(X, { key: 0 }, [
-        d(l).loading ? (D(), V("div", Mb, g(d(n).label("正在读取安全检查结果…", "Loading security checks…")), 1)) : d(l).error ? (D(), V("div", Lb, g(d(l).error), 1)) : d(l).data ? (D(), V(X, { key: 2 }, [
-          Z(_e, {
-            title: d(n).label("安全检查（Beta）", "Security checks (Beta)"),
+      o.value === "audit" ? (E(), w(Y, { key: 0 }, [
+        l(c).loading ? (E(), w("div", Sw, d(l(n).label("正在读取安全检查结果…", "Loading security checks…")), 1)) : l(c).error ? (E(), w("div", kw, d(l(c).error), 1)) : l(c).data ? (E(), w(Y, { key: 2 }, [
+          X(ce, {
+            title: l(n).label("安全检查（Beta）", "Security checks (Beta)"),
             eyebrow: "Audit"
           }, {
-            default: he(() => [
-              c("p", jb, g(d(n).label("这一部分更像建议型检查，而不是正式合规证明。优先处理失败项，其次处理警告项。", "This area behaves like advisory checks rather than a formal proof of compliance. Handle failures first, then warnings.")), 1),
-              c("div", Fb, [
-                c("article", Ub, [
-                  c("p", Hb, g(d(n).label("通过项", "Pass")), 1),
-                  c("strong", null, g(d(l).data.summary.pass), 1),
-                  c("span", null, g(d(n).label("当前无需处理", "No action needed right now")), 1)
+            default: ie(() => [
+              i("p", Cw, d(l(n).label("这一部分更像建议型检查，而不是正式合规证明。优先处理失败项，其次处理警告项。", "This area behaves like advisory checks rather than a formal proof of compliance. Handle failures first, then warnings.")), 1),
+              i("div", xw, [
+                i("article", Dw, [
+                  i("p", Tw, d(l(n).label("通过项", "Pass")), 1),
+                  i("strong", null, d(l(c).data.summary.pass), 1),
+                  i("span", null, d(l(n).label("当前无需处理", "No action needed right now")), 1)
                 ]),
-                c("article", Bb, [
-                  c("p", Gb, g(d(n).label("警告项", "Warning")), 1),
-                  c("strong", null, g(d(l).data.summary.warn), 1),
-                  c("span", null, g(d(n).label("建议尽快检查", "Recommended to review soon")), 1)
+                i("article", Pw, [
+                  i("p", Rw, d(l(n).label("警告项", "Warning")), 1),
+                  i("strong", null, d(l(c).data.summary.warn), 1),
+                  i("span", null, d(l(n).label("建议尽快检查", "Recommended to review soon")), 1)
                 ]),
-                c("article", Wb, [
-                  c("p", Kb, g(d(n).label("失败项", "Fail")), 1),
-                  c("strong", null, g(d(l).data.summary.fail), 1),
-                  c("span", null, g(d(n).label("需要优先处理", "Highest priority")), 1)
+                i("article", Aw, [
+                  i("p", Vw, d(l(n).label("失败项", "Fail")), 1),
+                  i("strong", null, d(l(c).data.summary.fail), 1),
+                  i("span", null, d(l(n).label("需要优先处理", "Highest priority")), 1)
                 ])
               ])
             ]),
             _: 1
           }, 8, ["title"]),
-          Z(_e, {
-            title: d(n).label("检查详情", "Detailed findings"),
+          X(ce, {
+            title: l(n).label("检查详情", "Detailed findings"),
             eyebrow: "Details"
           }, {
-            default: he(() => [
-              c("div", zb, [
-                (D(!0), V(X, null, ke(u.value, ([I, te]) => (D(), V("article", {
-                  key: I,
+            default: ie(() => [
+              i("div", Iw, [
+                (E(!0), w(Y, null, ye(f.value, ([L, te]) => (E(), w("article", {
+                  key: L,
                   class: "provider-card"
                 }, [
-                  c("header", qb, [
-                    c("strong", null, g(I), 1),
-                    c("span", Jb, g(te.length), 1)
+                  i("header", Mw, [
+                    i("strong", null, d(L), 1),
+                    i("span", Fw, d(te.length), 1)
                   ]),
-                  c("div", Yb, [
-                    (D(!0), V(X, null, ke(te, (O) => (D(), V("div", {
-                      key: `${I}-${O.item}`,
+                  i("div", Lw, [
+                    (E(!0), w(Y, null, ye(te, (D) => (E(), w("div", {
+                      key: `${L}-${D.item}`,
                       class: "mini-list__item mini-list__item--stack"
                     }, [
-                      c("div", Qb, [
-                        c("strong", null, g(O.item), 1),
-                        c("span", {
-                          class: $e(["pill", m(O.status)])
-                        }, g(b(O.status)), 3)
+                      i("div", jw, [
+                        i("strong", null, d(D.item), 1),
+                        i("span", {
+                          class: ge(["pill", _(D.status)])
+                        }, d(g(D.status)), 3)
                       ]),
-                      c("p", null, g(O.message), 1),
-                      O.fix ? (D(), V("p", Xb, g(d(n).label("建议处理：", "Suggested fix: ")) + g(O.fix), 1)) : xe("", !0)
+                      i("p", null, d(D.message), 1),
+                      D.fix ? (E(), w("p", Uw, d(l(n).label("建议处理：", "Suggested fix: ")) + d(D.fix), 1)) : Ce("", !0)
                     ]))), 128))
                   ])
                 ]))), 128))
@@ -10196,128 +11258,446 @@ const Pb = { class: "page-stack" }, Vb = { class: "page-header" }, Ab = { class:
             ]),
             _: 1
           }, 8, ["title"])
-        ], 64)) : xe("", !0)
-      ], 64)) : o.value === "profiles" ? (D(), V(X, { key: 1 }, [
-        d(a).loading ? (D(), V("div", Zb, g(d(n).label("正在读取权限模式…", "Loading permission modes…")), 1)) : d(a).error ? (D(), V("div", ey, g(d(a).error), 1)) : d(a).data ? (D(), V(X, { key: 2 }, [
-          Z(_e, {
-            title: d(n).label("权限模式", "Permission modes"),
+        ], 64)) : Ce("", !0)
+      ], 64)) : o.value === "profiles" ? (E(), w(Y, { key: 1 }, [
+        l(u).loading ? (E(), w("div", Hw, d(l(n).label("正在读取权限模式…", "Loading permission modes…")), 1)) : l(u).error ? (E(), w("div", Gw, d(l(u).error), 1)) : l(u).data ? (E(), w(Y, { key: 2 }, [
+          X(ce, {
+            title: l(n).label("权限模式", "Permission modes"),
             eyebrow: "Profiles"
           }, {
-            default: he(() => [
-              c("p", ty, g(d(n).label("这些模式当前只会更新 OpenClaw 的工具权限配置，不会自动完成系统账户、ACL、Docker 或整机加固。", "These modes currently update only the OpenClaw tool-permission config. They do not automatically complete system users, ACLs, Docker, or full host hardening.")), 1)
+            default: ie(() => [
+              i("p", Bw, d(l(n).label("这些模式当前只会更新 OpenClaw 的工具权限配置，不会自动完成系统账户、ACL、Docker 或整机加固。", "These modes currently update only the OpenClaw tool-permission config. They do not automatically complete system users, ACLs, Docker, or full host hardening.")), 1)
             ]),
             _: 1
           }, 8, ["title"]),
-          c("div", ny, [
-            (D(!0), V(X, null, ke(d(a).data, (I) => (D(), Fn(_e, {
-              key: I.key,
-              title: I.name,
+          i("div", Kw, [
+            (E(!0), w(Y, null, ye(l(u).data, (L) => (E(), un(ce, {
+              key: L.key,
+              title: L.name,
               eyebrow: "Profile"
             }, {
-              default: he(() => {
-                var te, O;
+              default: ie(() => {
+                var te, D;
                 return [
-                  c("div", sy, [
-                    c("p", oy, g(I.description), 1),
-                    c("span", ry, g(I.riskLevel || d(n).label("未标注风险等级", "Risk level not declared")), 1)
+                  i("div", Ww, [
+                    i("p", qw, d(L.description), 1),
+                    i("span", zw, d(L.riskLevel || l(n).label("未标注风险等级", "Risk level not declared")), 1)
                   ]),
-                  c("div", iy, [
-                    c("div", ly, [
-                      c("span", null, g(d(n).label("建议使用场景", "Recommended use cases")), 1),
-                      c("div", ay, [
-                        (D(!0), V(X, null, ke(I.recommendations || [], (S) => (D(), V("div", {
-                          key: S,
+                  i("div", Jw, [
+                    i("div", Qw, [
+                      i("span", null, d(l(n).label("建议使用场景", "Recommended use cases")), 1),
+                      i("div", Yw, [
+                        (E(!0), w(Y, null, ye(L.recommendations || [], (T) => (E(), w("div", {
+                          key: T,
                           class: "mini-list__item mini-list__item--stack"
                         }, [
-                          c("p", null, g(S), 1)
+                          i("p", null, d(T), 1)
                         ]))), 128))
                       ])
                     ]),
-                    c("div", cy, [
-                      c("span", null, g(d(n).label("允许规则", "Allow rules")), 1),
-                      c("pre", uy, g((((te = I.tools) == null ? void 0 : te.allow) || []).join(`
+                    i("div", Xw, [
+                      i("span", null, d(l(n).label("允许规则", "Allow rules")), 1),
+                      i("pre", Zw, d((((te = L.tools) == null ? void 0 : te.allow) || []).join(`
 `) || "(none)"), 1)
                     ]),
-                    c("div", dy, [
-                      c("span", null, g(d(n).label("拒绝规则", "Deny rules")), 1),
-                      c("pre", fy, g((((O = I.tools) == null ? void 0 : O.deny) || []).join(`
+                    i("div", e1, [
+                      i("span", null, d(l(n).label("拒绝规则", "Deny rules")), 1),
+                      i("pre", t1, d((((D = L.tools) == null ? void 0 : D.deny) || []).join(`
 `) || "(none)"), 1)
                     ])
                   ]),
-                  c("div", py, [
-                    c("button", {
+                  i("div", n1, [
+                    i("button", {
                       class: "inline-link inline-link--primary",
                       type: "button",
-                      disabled: i.value === I.key,
-                      onClick: (S) => $(I.key)
-                    }, g(i.value === I.key ? d(n).label("应用中…", "Applying…") : d(n).label("应用权限模式", "Apply permission mode")), 9, hy)
+                      disabled: a.value === L.key,
+                      onClick: (T) => O(L.key)
+                    }, d(a.value === L.key ? l(n).label("应用中…", "Applying…") : l(n).label("应用权限模式", "Apply permission mode")), 9, s1)
                   ])
                 ];
               }),
               _: 2
             }, 1032, ["title"]))), 128))
           ])
-        ], 64)) : xe("", !0)
-      ], 64)) : (D(), V(X, { key: 2 }, [
-        d(f).loading ? (D(), V("div", gy, g(d(n).label("正在读取主机加固建议…", "Loading hardening guidance…")), 1)) : d(f).error ? (D(), V("div", my, g(d(f).error), 1)) : d(f).data ? (D(), V(X, { key: 2 }, [
-          Z(_e, {
-            title: d(n).label("主机加固指南（Beta）", "Host hardening guide (Beta)"),
+        ], 64)) : Ce("", !0)
+      ], 64)) : (E(), w(Y, { key: 2 }, [
+        l(p).loading ? (E(), w("div", o1, d(l(n).label("正在读取主机加固建议…", "Loading hardening guidance…")), 1)) : l(p).error ? (E(), w("div", r1, d(l(p).error), 1)) : l(p).data ? (E(), w(Y, { key: 2 }, [
+          X(ce, {
+            title: l(n).label("主机加固指南（Beta）", "Host hardening guide (Beta)"),
             eyebrow: "Hardening"
           }, {
-            default: he(() => [
-              c("p", _y, g(d(n).label("基础建议在所有平台上都一样：尽量使用非管理员账户运行，并把工作区边界收紧。Windows 上的独立低权限账户更适合长期后台运行或共享机器场景，不是所有人的默认强制项。", "The baseline is similar on every platform: prefer non-admin execution and keep the workspace boundary tight. On Windows, a dedicated low-privilege account is better treated as an advanced option for long-running or shared-machine setups, not a blanket default requirement.")), 1),
-              c("div", vy, [
-                c("button", {
-                  class: $e(["pill-button", { "pill-button--active": r.value === "windows" }]),
+            default: ie(() => [
+              i("p", i1, d(l(n).label("基础建议在所有平台上都一样：尽量使用非管理员账户运行，并把工作区边界收紧。Windows 上的独立低权限账户更适合长期后台运行或共享机器场景，不是所有人的默认强制项。", "The baseline is similar on every platform: prefer non-admin execution and keep the workspace boundary tight. On Windows, a dedicated low-privilege account is better treated as an advanced option for long-running or shared-machine setups, not a blanket default requirement.")), 1),
+              i("div", l1, [
+                i("button", {
+                  class: ge(["pill-button", { "pill-button--active": r.value === "windows" }]),
                   type: "button",
-                  onClick: A[0] || (A[0] = (I) => r.value = "windows")
+                  onClick: I[0] || (I[0] = (L) => r.value = "windows")
                 }, "Windows", 2),
-                c("button", {
-                  class: $e(["pill-button", { "pill-button--active": r.value === "macos" }]),
+                i("button", {
+                  class: ge(["pill-button", { "pill-button--active": r.value === "macos" }]),
                   type: "button",
-                  onClick: A[1] || (A[1] = (I) => r.value = "macos")
+                  onClick: I[1] || (I[1] = (L) => r.value = "macos")
                 }, "macOS", 2),
-                c("button", {
-                  class: $e(["pill-button", { "pill-button--active": r.value === "linux" }]),
+                i("button", {
+                  class: ge(["pill-button", { "pill-button--active": r.value === "linux" }]),
                   type: "button",
-                  onClick: A[2] || (A[2] = (I) => r.value = "linux")
+                  onClick: I[2] || (I[2] = (L) => r.value = "linux")
                 }, "Linux", 2),
-                c("a", {
+                i("a", {
                   class: "inline-link",
                   href: `/api/harden/script?platform=${r.value}`
-                }, g(d(n).label("下载脚本", "Download script")), 9, by)
+                }, d(l(n).label("下载脚本", "Download script")), 9, a1)
               ])
             ]),
             _: 1
           }, 8, ["title"]),
-          c("div", yy, [
-            (D(!0), V(X, null, ke(d(f).data.steps, (I) => (D(), Fn(_e, {
-              key: I.id,
-              title: I.title,
+          i("div", c1, [
+            (E(!0), w(Y, null, ye(l(p).data.steps, (L) => (E(), un(ce, {
+              key: L.id,
+              title: L.title,
               eyebrow: "Step"
             }, {
-              default: he(() => [
-                c("div", Ey, [
-                  c("p", wy, g(I.description), 1),
-                  c("span", {
-                    class: $e(["pill", I.optional ? "pill--muted" : "pill--warning"])
-                  }, g(I.optional ? d(n).label("可选", "Optional") : d(n).label("建议", "Recommended")), 3)
+              default: ie(() => [
+                i("div", u1, [
+                  i("p", d1, d(L.description), 1),
+                  i("span", {
+                    class: ge(["pill", L.optional ? "pill--muted" : "pill--warning"])
+                  }, d(L.optional ? l(n).label("可选", "Optional") : l(n).label("建议", "Recommended")), 3)
                 ]),
-                c("pre", Ny, g((I.commands || []).join(`
-`) || d(n).label("当前没有附带命令。", "No commands are attached to this step.")), 1)
+                i("pre", f1, d((L.commands || []).join(`
+`) || l(n).label("当前没有附带命令。", "No commands are attached to this step.")), 1)
               ]),
               _: 2
             }, 1032, ["title"]))), 128))
           ])
-        ], 64)) : xe("", !0)
+        ], 64)) : Ce("", !0)
       ], 64))
     ]));
   }
 });
-function fn(e, t, n, s, o, r) {
+function h1() {
+  return xe("/api/sessions");
+}
+const _1 = { class: "page-stack" }, m1 = { class: "page-header" }, g1 = { class: "page-header__eyebrow" }, v1 = { class: "page-header__title" }, b1 = { class: "page-header__description" }, y1 = {
+  key: 0,
+  class: "page-empty"
+}, E1 = {
+  key: 1,
+  class: "page-empty page-empty--error"
+}, w1 = { class: "stat-grid" }, N1 = { class: "stat-card" }, $1 = { class: "stat-card__label" }, O1 = { class: "stat-card" }, S1 = { class: "stat-card__label" }, k1 = { class: "stat-card" }, C1 = { class: "stat-card__label" }, x1 = { class: "stat-card" }, D1 = { class: "stat-card__label" }, T1 = { class: "stat-card" }, P1 = { class: "stat-card__label" }, R1 = { class: "stat-card" }, A1 = { class: "stat-card__label" }, V1 = { class: "stat-grid" }, I1 = { class: "stat-card" }, M1 = { class: "stat-card" }, F1 = { class: "stat-card__label" }, L1 = { class: "stat-card" }, j1 = { class: "stat-card__label" }, U1 = { class: "stat-card" }, H1 = { class: "stat-card__label" }, G1 = { class: "stat-card" }, B1 = { class: "stat-card__label" }, K1 = { class: "stat-card" }, W1 = { class: "stat-card__label" }, q1 = {
+  key: 0,
+  class: "provider-stack"
+}, z1 = { class: "provider-card__header" }, J1 = { class: "pill-row" }, Q1 = { class: "pill pill--info" }, Y1 = { class: "mini-list" }, X1 = { class: "mini-list__item mini-list__item--stack" }, Z1 = { class: "mini-list__item mini-list__item--stack" }, eN = { class: "mini-list__item mini-list__item--stack" }, tN = { class: "mini-list__item mini-list__item--stack" }, nN = {
+  key: 1,
+  class: "page-empty"
+}, sN = { class: "page-two-column" }, oN = {
+  key: 0,
+  class: "provider-stack"
+}, rN = { class: "provider-card__header" }, iN = { class: "pill pill--info" }, lN = { class: "mini-list" }, aN = {
+  key: 1,
+  class: "page-empty"
+}, cN = {
+  key: 0,
+  class: "provider-stack"
+}, uN = { class: "provider-card__header" }, dN = { class: "pill pill--muted" }, fN = {
+  key: 1,
+  class: "page-empty"
+}, pN = { class: "list-stack" }, hN = { class: "stat-grid" }, _N = { class: "stat-card" }, mN = { class: "stat-card__label" }, gN = { class: "stat-card" }, vN = { class: "stat-card__label" }, bN = { class: "stat-card" }, yN = { class: "stat-card__label" }, EN = { class: "stat-card" }, wN = { class: "stat-card__label" }, NN = /* @__PURE__ */ Ve({
+  __name: "SessionsPage",
+  setup(e) {
+    const t = ft(), n = wt(() => h1()), s = ne(() => {
+      var f;
+      return (f = n.data) == null ? void 0 : f.snapshot;
+    }), o = ne(() => {
+      var f;
+      return ((f = s.value) == null ? void 0 : f.sessions) || [];
+    }), r = ne(() => {
+      var f, _;
+      return ((_ = (f = s.value) == null ? void 0 : f.sessionsMeta) == null ? void 0 : _.byAgent) || [];
+    }), a = ne(() => o.value.filter((f) => !["ended", "finished", "closed"].includes(f.status))), c = ne(() => {
+      var _;
+      const f = (_ = n.data) == null ? void 0 : _.costSummary;
+      return f ? Number.isFinite(f.totalEstimatedCost) && (!!f.pricingUnit || f.totalEstimatedCost > 0) : !1;
+    });
+    function u() {
+      var _;
+      const f = (_ = n.data) == null ? void 0 : _.costSummary;
+      return !f || !c.value ? t.label("无法估算", "Unavailable") : cl(f.totalEstimatedCost, f.pricingUnit || "USD");
+    }
+    function p() {
+      return c.value ? t.label("仅供本地观察，不代表官方账单", "For local observation only, not an official bill") : t.label("缺少可靠单价或用量数据，当前不显示金额", "Pricing or usage data is incomplete, so no amount is shown");
+    }
+    function h(f) {
+      return ["ended", "finished", "closed"].includes(f.status) ? "pill--muted" : ["error", "failed", "aborted"].includes(f.status) ? "pill--danger" : "pill--success";
+    }
+    return (f, _) => (E(), w("div", _1, [
+      i("header", m1, [
+        i("div", null, [
+          i("p", g1, d(l(t).label("会话 / Third slice", "Sessions / Third slice")), 1),
+          i("h2", v1, d(l(t).label("会话观察台", "Session observer")), 1),
+          i("p", b1, d(l(t).label("把运行时快照、按角色会话分布和用量估算迁进新壳层里，同时继续复用现有的共享缓存与后台刷新语义。", "Move runtime snapshots, per-role session distribution, and usage estimates into the new shell while keeping the current shared cache and background refresh semantics.")), 1)
+        ]),
+        i("button", {
+          class: "page-header__action",
+          type: "button",
+          onClick: _[0] || (_[0] = (g) => l(n).execute({ silent: !0 }))
+        }, d(l(n).refreshing ? l(t).label("刷新中…", "Refreshing…") : l(t).label("Refresh", "Refresh")), 1)
+      ]),
+      l(n).loading ? (E(), w("div", y1, d(l(t).label("正在读取会话快照…", "Loading the session snapshot…")), 1)) : l(n).error ? (E(), w("div", E1, d(l(n).error), 1)) : l(n).data && s.value ? (E(), w(Y, { key: 2 }, [
+        X(ce, {
+          title: l(t).label("会话总览", "Session overview"),
+          eyebrow: "Summary"
+        }, {
+          default: ie(() => {
+            var g, k, O, W;
+            return [
+              i("div", w1, [
+                i("article", N1, [
+                  i("p", $1, d(l(t).label("会话总数", "Sessions")), 1),
+                  i("strong", null, d(l(me)(((g = s.value.summary) == null ? void 0 : g.sessionCount) ?? o.value.length)), 1),
+                  i("span", null, d(((k = s.value.summary) == null ? void 0 : k.defaultModel) || l(t).label("默认模型未知", "Default model is unknown")), 1)
+                ]),
+                i("article", O1, [
+                  i("p", S1, d(l(t).label("活跃会话", "Active now")), 1),
+                  i("strong", null, d(l(me)(a.value.length)), 1),
+                  i("span", null, d(l(t).label("当前仍在运行或待执行的会话", "Sessions that are still running or waiting now")), 1)
+                ]),
+                i("article", k1, [
+                  i("p", C1, d(l(t).label("累计 Tokens", "Total tokens")), 1),
+                  i("strong", null, d(l(me)(l(n).data.costSummary.totalTokens)), 1),
+                  i("span", null, d(l(t).label("基于共享运行时快照统计", "Counted from the shared runtime snapshot")), 1)
+                ]),
+                i("article", x1, [
+                  i("p", D1, d(l(t).label("用量估算", "Usage estimate")), 1),
+                  i("strong", null, d(u()), 1),
+                  i("span", null, d(p()), 1)
+                ]),
+                i("article", T1, [
+                  i("p", P1, d(l(t).label("会话索引路径", "Session paths")), 1),
+                  i("strong", null, d(l(me)(((O = s.value.sessionsMeta) == null ? void 0 : O.paths.length) || 0)), 1),
+                  i("span", null, d(l(t).label("被 Guard 识别到的会话目录", "Session directories detected by Guard")), 1)
+                ]),
+                i("article", R1, [
+                  i("p", A1, d(l(t).label("待处理系统事件", "Queued events")), 1),
+                  i("strong", null, d(l(me)(((W = s.value.summary) == null ? void 0 : W.queuedSystemEvents) || 0)), 1),
+                  i("span", null, d(l(t).label("等待处理的系统级事件", "System events that are still waiting")), 1)
+                ])
+              ])
+            ];
+          }),
+          _: 1
+        }, 8, ["title"]),
+        X(ce, {
+          title: l(t).label("运行环境", "Runtime context"),
+          eyebrow: "Runtime"
+        }, {
+          default: ie(() => {
+            var g, k, O, W, V, I, L, te, D, T, b, S, x, M, A, Q, he, Re, Se, fe, ue, se;
+            return [
+              i("div", V1, [
+                i("article", I1, [
+                  _[1] || (_[1] = i("p", { class: "stat-card__label" }, "OS", -1)),
+                  i("strong", null, d(((g = s.value.os) == null ? void 0 : g.label) || "-"), 1),
+                  i("span", null, d([(k = s.value.os) == null ? void 0 : k.platform, (O = s.value.os) == null ? void 0 : O.arch, (W = s.value.os) == null ? void 0 : W.release].filter(Boolean).join(" / ") || l(t).label("系统信息暂缺", "OS details are missing")), 1)
+                ]),
+                i("article", M1, [
+                  i("p", F1, d(l(t).label("记忆检索", "Memory search")), 1),
+                  i("strong", null, d(((V = s.value.memory) == null ? void 0 : V.provider) || ((I = s.value.memory) == null ? void 0 : I.backend) || "-"), 1),
+                  i("span", null, d([(L = s.value.memory) == null ? void 0 : L.searchMode, ((te = s.value.memory) == null ? void 0 : te.dbPath) || ((D = s.value.memory) == null ? void 0 : D.workspaceDir)].filter(Boolean).join(" / ") || l(t).label("记忆运行态信息暂缺", "Memory runtime details are missing")), 1)
+                ]),
+                i("article", L1, [
+                  i("p", j1, d(l(t).label("Gateway 服务", "Gateway service")), 1),
+                  i("strong", null, d(((T = s.value.gatewayService) == null ? void 0 : T.label) || "-"), 1),
+                  i("span", null, d([(b = s.value.gatewayService) == null ? void 0 : b.loadedText, (S = s.value.gatewayService) == null ? void 0 : S.runtimeShort].filter(Boolean).join(" / ") || l(t).label("Gateway 服务信息暂缺", "Gateway service details are missing")), 1)
+                ]),
+                i("article", U1, [
+                  i("p", H1, d(l(t).label("Node 服务", "Node service")), 1),
+                  i("strong", null, d(((x = s.value.nodeService) == null ? void 0 : x.label) || "-"), 1),
+                  i("span", null, d([(M = s.value.nodeService) == null ? void 0 : M.loadedText, (A = s.value.nodeService) == null ? void 0 : A.runtimeShort].filter(Boolean).join(" / ") || l(t).label("Node 服务信息暂缺", "Node service details are missing")), 1)
+                ]),
+                i("article", G1, [
+                  i("p", B1, d(l(t).label("更新轨道", "Update track")), 1),
+                  i("strong", null, d(((Q = s.value.update) == null ? void 0 : Q.channel) || ((he = s.value.update) == null ? void 0 : he.installKind) || "-"), 1),
+                  i("span", null, d([(Re = s.value.update) == null ? void 0 : Re.packageManager, (Se = s.value.update) == null ? void 0 : Se.latestVersion].filter(Boolean).join(" / ") || l(t).label("更新信息暂缺", "Update details are missing")), 1)
+                ]),
+                i("article", K1, [
+                  i("p", W1, d(l(t).label("安全审计", "Security audit")), 1),
+                  i("strong", null, d(l(me)(((fe = s.value.securityAudit) == null ? void 0 : fe.findingsCount) || 0)), 1),
+                  i("span", null, d(`${l(me)(((ue = s.value.securityAudit) == null ? void 0 : ue.critical) || 0)} critical / ${l(me)(((se = s.value.securityAudit) == null ? void 0 : se.warn) || 0)} warn`), 1)
+                ])
+              ])
+            ];
+          }),
+          _: 1
+        }, 8, ["title"]),
+        X(ce, {
+          title: l(t).label("当前会话", "Current sessions"),
+          eyebrow: "Sessions"
+        }, {
+          default: ie(() => [
+            o.value.length ? (E(), w("div", q1, [
+              (E(!0), w(Y, null, ye(o.value, (g) => (E(), w("article", {
+                key: g.id,
+                class: "provider-card"
+              }, [
+                i("header", z1, [
+                  i("div", null, [
+                    i("strong", null, d(g.id), 1),
+                    i("p", null, d(`${g.agentId} / ${g.modelId}`), 1)
+                  ]),
+                  i("div", J1, [
+                    i("span", {
+                      class: ge(["pill", h(g)])
+                    }, d(g.status || "-"), 3),
+                    i("span", Q1, d(g.channel || "-"), 1)
+                  ])
+                ]),
+                i("div", Y1, [
+                  i("div", X1, [
+                    i("strong", null, d(l(t).label("时间轴", "Timeline")), 1),
+                    i("p", null, d(l(t).label("开始：", "Started: ")) + d(l(Yt)(g.startedAt)), 1),
+                    i("p", null, d(l(t).label("更新：", "Updated: ")) + d(l(Yt)(g.updatedAt)), 1)
+                  ]),
+                  i("div", Z1, [
+                    i("strong", null, d(l(t).label("Token 使用", "Token usage")), 1),
+                    i("p", null, d(`${l(me)(g.usage.totalTokens)} tokens`), 1),
+                    i("p", null, d(`${l(t).label("输入", "Input")} ${l(me)(g.usage.inputTokens)} / ${l(t).label("输出", "Output")} ${l(me)(g.usage.outputTokens)}`), 1)
+                  ]),
+                  i("div", eN, [
+                    i("strong", null, d(l(t).label("上下文窗口", "Context window")), 1),
+                    i("p", null, d(g.contextTokens != null ? l(me)(g.contextTokens) : "-"), 1),
+                    i("p", null, d(l(t).label("剩余：", "Remaining: ")) + d(g.remainingTokens != null ? l(me)(g.remainingTokens) : "-"), 1)
+                  ]),
+                  i("div", tN, [
+                    i("strong", null, d(l(t).label("用量估算", "Usage estimate")), 1),
+                    i("p", null, d(l(cl)(g.estimatedCost, l(n).data.costSummary.pricingUnit || "USD")), 1),
+                    i("p", null, d(l(t).label("上下文占比：", "Context used: ")) + d(l(__)(g.percentUsed)), 1)
+                  ])
+                ])
+              ]))), 128))
+            ])) : (E(), w("div", nN, d(l(t).label("当前还没有会话记录。", "There are no session records right now.")), 1))
+          ]),
+          _: 1
+        }, 8, ["title"]),
+        i("div", sN, [
+          X(ce, {
+            title: l(t).label("按角色分布", "By role"),
+            eyebrow: "Roles"
+          }, {
+            default: ie(() => [
+              r.value.length ? (E(), w("div", oN, [
+                (E(!0), w(Y, null, ye(r.value, (g) => (E(), w("article", {
+                  key: g.agentId,
+                  class: "provider-card"
+                }, [
+                  i("header", rN, [
+                    i("div", null, [
+                      i("strong", null, d(g.agentId), 1),
+                      i("p", null, d(g.path || l(t).label("没有返回路径信息", "No path information returned")), 1)
+                    ]),
+                    i("span", iN, d(l(me)(g.count)), 1)
+                  ]),
+                  i("div", lN, [
+                    (E(!0), w(Y, null, ye(g.recent.slice(0, 3), (k) => (E(), w("div", {
+                      key: k.id,
+                      class: "mini-list__item"
+                    }, [
+                      i("div", null, [
+                        i("strong", null, d(k.modelId), 1),
+                        i("p", null, d(k.channel), 1)
+                      ]),
+                      i("span", {
+                        class: ge(["pill", h(k)])
+                      }, d(k.status), 3)
+                    ]))), 128))
+                  ])
+                ]))), 128))
+              ])) : (E(), w("div", aN, d(l(t).label("当前没有按角色聚合的会话数据。", "No per-role session summary is available right now.")), 1))
+            ]),
+            _: 1
+          }, 8, ["title"]),
+          X(ce, {
+            title: l(t).label("最近活动", "Recent activity"),
+            eyebrow: "Timeline"
+          }, {
+            default: ie(() => [
+              l(n).data.recentActivity.length ? (E(), w("div", cN, [
+                (E(!0), w(Y, null, ye(l(n).data.recentActivity.slice(0, 10), (g) => (E(), w("article", {
+                  key: g.id,
+                  class: "provider-card"
+                }, [
+                  i("header", uN, [
+                    i("div", null, [
+                      i("strong", null, d(g.title), 1),
+                      i("p", null, d(l(Yt)(g.createdAt)), 1)
+                    ]),
+                    i("span", dN, d(g.type), 1)
+                  ]),
+                  i("p", null, d(g.description), 1)
+                ]))), 128))
+              ])) : (E(), w("div", fN, d(l(t).label("当前还没有最近活动记录。", "There is no recent activity yet.")), 1))
+            ]),
+            _: 1
+          }, 8, ["title"])
+        ]),
+        s.value.warnings.length ? (E(), un(ce, {
+          key: 0,
+          title: l(t).label("运行提醒", "Runtime warnings"),
+          eyebrow: "Warning"
+        }, {
+          default: ie(() => [
+            i("div", pN, [
+              (E(!0), w(Y, null, ye(s.value.warnings, (g) => (E(), w("article", {
+                key: g,
+                class: "risk-row"
+              }, [
+                i("strong", null, d(l(t).label("注意事项", "Warning")), 1),
+                i("span", null, d(g), 1)
+              ]))), 128))
+            ])
+          ]),
+          _: 1
+        }, 8, ["title"])) : Ce("", !0),
+        s.value.memory ? (E(), un(ce, {
+          key: 1,
+          title: l(t).label("记忆运行态补充", "Memory runtime details"),
+          eyebrow: "Memory"
+        }, {
+          default: ie(() => [
+            i("div", hN, [
+              i("article", _N, [
+                i("p", mN, d(l(t).label("记忆文件", "Memory files")), 1),
+                i("strong", null, d(l(me)(s.value.memory.files)), 1),
+                i("span", null, d(l(t).label("当前已接入的记忆文件数量", "Managed memory files detected now")), 1)
+              ]),
+              i("article", gN, [
+                i("p", vN, d(l(t).label("记忆分块", "Chunks")), 1),
+                i("strong", null, d(l(me)(s.value.memory.chunks)), 1),
+                i("span", null, d(l(t).label("用于搜索的记忆分块数", "Memory chunks available for search")), 1)
+              ]),
+              i("article", bN, [
+                i("p", yN, d(l(t).label("索引状态", "Index state")), 1),
+                i("strong", null, d(s.value.memory.dirty === !0 ? l(t).label("待刷新", "Dirty") : s.value.memory.dirty === !1 ? l(t).label("已同步", "Clean") : "-"), 1),
+                i("span", null, d(s.value.memory.dbPath || s.value.memory.workspaceDir || l(t).label("没有返回索引路径", "No index path returned")), 1)
+              ]),
+              i("article", EN, [
+                i("p", wN, d(l(t).label("索引目录", "Index location")), 1),
+                i("strong", null, d(s.value.memory.dbPath ? l(t).label("已返回路径", "Path returned") : l(t).label("暂无路径", "No path")), 1),
+                i("span", null, d(s.value.memory.dbPath || s.value.memory.workspaceDir || l(t).label("没有返回目录信息", "No directory information returned")), 1)
+              ])
+            ])
+          ]),
+          _: 1
+        }, 8, ["title"])) : Ce("", !0)
+      ], 64)) : Ce("", !0)
+    ]));
+  }
+});
+function Lo(e, t, n, s, o, r) {
   return {
     path: e,
-    component: Z_,
+    component: Bb,
     props: {
       titleZh: t,
       titleEn: n,
@@ -10327,23 +11707,44 @@ function fn(e, t, n, s, o, r) {
     }
   };
 }
-const Sy = Ah({
-  history: ch(),
+const $N = Gh({
+  history: vh(),
   routes: [
-    { path: "/", name: "overview", component: Vg },
-    { path: "/operations", name: "operations", component: W_ },
-    { path: "/openclaw", name: "openclaw", component: R_ },
-    { path: "/channels", name: "channels", component: Nm },
-    { path: "/models", name: "models", component: S_ },
-    { path: "/security", name: "security", component: Oy },
-    { path: "/recovery", name: "recovery", component: $b },
-    fn("/roles", "角色", "Roles", "浏览角色配置与工作区角色视图。", "Browse role definitions and workspace role views.", "#agents"),
-    fn("/files", "文件", "Files", "管理记忆、文件与当前工作区内容。", "Manage memory files, documents, and workspace content.", "#files"),
-    fn("/search", "搜索", "Search", "统一搜索工作区中的关键信息与记忆。", "Search across workspace documents and memory files.", "#search"),
-    fn("/sessions", "会话", "Sessions", "查看会话状态与用量估算。", "Inspect session health and usage estimates.", "#sessions"),
-    fn("/logs", "日志", "Logs", "查看运行日志与排障信息。", "Inspect runtime logs and troubleshooting output.", "#logs"),
-    fn("/notifications", "通知", "Notifications", "查看提醒与时间线事件。", "Review alerts and timeline activity.", "#notifications"),
-    fn("/cron", "Cron", "Cron", "管理自动化任务与定时执行计划。", "Manage automation tasks and scheduled execution.", "#cron"),
+    { path: "/", name: "overview", component: Am },
+    { path: "/operations", name: "operations", component: Ib },
+    { path: "/openclaw", name: "openclaw", component: Sb },
+    { path: "/channels", name: "channels", component: fm },
+    { path: "/models", name: "models", component: mb },
+    { path: "/security", name: "security", component: p1 },
+    { path: "/recovery", name: "recovery", component: _E },
+    { path: "/roles", name: "roles", component: KE },
+    { path: "/files", name: "files", component: hv },
+    { path: "/search", name: "search", component: mw },
+    { path: "/sessions", name: "sessions", component: NN },
+    Lo(
+      "/logs",
+      "日志",
+      "Logs",
+      "继续保留原有日志与排障能力，下一批会把分页、筛选和详情读取迁进新壳层。",
+      "Keep the current logging and troubleshooting flow for now. Pagination, filtering, and detail reads move into the new shell in a later slice.",
+      "#logs"
+    ),
+    Lo(
+      "/notifications",
+      "通知",
+      "Notifications",
+      "提醒和时间线会在后续切片里继续迁移，目前仍可通过正式控制台完成完整查看。",
+      "Alerts and timeline views move over in a later slice. The production console still provides the full experience for now.",
+      "#notifications"
+    ),
+    Lo(
+      "/cron",
+      "Cron",
+      "Cron",
+      "自动化任务编辑器还保留在正式控制台里，等工作区与排查视图稳定后再迁移。",
+      "The automation editor remains in the production console for now and moves later once the workspace and troubleshooting views are stable.",
+      "#cron"
+    ),
     { path: "/ai", redirect: "/models" },
     { path: "/git-sync", redirect: "/recovery" },
     { path: "/memory", redirect: "/files" },
@@ -10351,4 +11752,4 @@ const Sy = Ah({
     { path: "/costs", redirect: "/sessions" }
   ]
 });
-gf(rg).use(Wf()).use(Sy).mount("#guard-next-app");
+$f(h_).use(ep()).use($N).mount("#guard-next-app");

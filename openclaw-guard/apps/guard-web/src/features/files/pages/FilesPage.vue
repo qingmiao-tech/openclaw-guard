@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { onBeforeRouteLeave } from 'vue-router';
 import PageCard from '@/features/common/PageCard.vue';
 import PageTabs from '@/features/common/PageTabs.vue';
 import {
@@ -121,6 +122,10 @@ const memoryGroups = computed(() => {
     .sort((left, right) => left.label.localeCompare(right.label));
 });
 
+const fileDirty = computed(() => hasDirtyEditor('file'));
+const memoryDirty = computed(() => hasDirtyEditor('memory'));
+const hasAnyDirtyEditor = computed(() => fileDirty.value || memoryDirty.value);
+
 function normalizeEditorText(value: string) {
   return value.replace(/\r\n/g, '\n');
 }
@@ -155,6 +160,20 @@ function hasDirtyEditor(kind: EditorKind) {
     return currentFile.value !== null && normalizeEditorText(currentFileDraft.value) !== currentFileOriginal.value;
   }
   return currentMemoryFile.value !== null && normalizeEditorText(currentMemoryDraft.value) !== currentMemoryOriginal.value;
+}
+
+async function confirmLeaveFilesPage() {
+  if (!hasAnyDirtyEditor.value) return true;
+  return feedback.confirm({
+    title: ui.label('离开文件页', 'Leave Files'),
+    message: ui.label(
+      '当前仍有未保存的文件或记忆改动。现在离开会丢失这些修改。',
+      'There are still unsaved file or memory edits. Leaving now will discard those changes.',
+    ),
+    confirmLabel: ui.label('放弃并离开', 'Discard and leave'),
+    cancelLabel: ui.label('留在当前页', 'Stay here'),
+    tone: 'danger',
+  });
 }
 
 async function confirmEditorSwitch(kind: EditorKind) {
@@ -435,9 +454,65 @@ async function bootstrap() {
   modeLoading.value = false;
 }
 
+async function softRefreshCurrentView() {
+  if (workspace.mode === 'memory') {
+    await loadMemoryCatalogData(true);
+    if (currentMemoryFile.value?.path && !memoryDirty.value) {
+      await openMemoryFile(currentMemoryFile.value.path, false);
+      return;
+    }
+    if (currentMemoryFile.value?.path && memoryDirty.value) {
+      feedback.pushToast({
+        tone: 'info',
+        message: ui.label(
+          '已刷新记忆目录，但为避免覆盖未保存改动，当前编辑器内容保持不变。',
+          'The memory catalog was refreshed, but the current editor content was kept to avoid overwriting unsaved changes.',
+        ),
+        durationMs: 2600,
+      });
+    }
+    return;
+  }
+
+  await loadDirectory(currentPath.value || undefined, true);
+  if (currentFile.value?.path && !fileDirty.value) {
+    await openRegularFile(currentFile.value.path, false);
+    return;
+  }
+  if (currentFile.value?.path && fileDirty.value) {
+    feedback.pushToast({
+      tone: 'info',
+      message: ui.label(
+        '已刷新目录列表，但为避免覆盖未保存改动，当前编辑器内容保持不变。',
+        'The directory list was refreshed, but the current editor content was kept to avoid overwriting unsaved changes.',
+      ),
+      durationMs: 2600,
+    });
+  }
+}
+
 onMounted(() => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', handleBeforeUnload);
+  }
   void bootstrap();
 });
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('beforeunload', handleBeforeUnload);
+  }
+});
+
+onBeforeRouteLeave(async () => {
+  return confirmLeaveFilesPage();
+});
+
+function handleBeforeUnload(event: BeforeUnloadEvent) {
+  if (!hasAnyDirtyEditor.value) return;
+  event.preventDefault();
+  event.returnValue = '';
+}
 </script>
 
 <template>
@@ -450,7 +525,7 @@ onMounted(() => {
           {{ ui.label('保留“全部文件”和“核心记忆”双视图，让搜索、角色工作区和实际编辑动作都能在新壳层里接得上。', 'Keep both the All Files and Core Memory views so search results, role workspaces, and real editing actions can all land cleanly in the new shell.') }}
         </p>
       </div>
-      <button class="page-header__action" type="button" @click="bootstrap">
+      <button class="page-header__action" type="button" @click="softRefreshCurrentView">
         {{ modeLoading || directoryLoading || memoryCatalogLoading ? ui.label('刷新中…', 'Refreshing…') : ui.label('Refresh', 'Refresh') }}
       </button>
     </header>
@@ -579,7 +654,12 @@ onMounted(() => {
           <template v-else-if="currentFile">
             <div class="mini-list">
               <div class="mini-list__item mini-list__item--stack">
-                <strong>{{ currentFile.relativePath || currentFile.path }}</strong>
+                <div class="provider-card__header">
+                  <strong>{{ currentFile.relativePath || currentFile.path }}</strong>
+                  <span class="pill" :class="fileDirty ? 'pill--warning' : 'pill--success'">
+                    {{ fileDirty ? ui.label('未保存', 'Unsaved') : ui.label('已保存', 'Saved') }}
+                  </span>
+                </div>
                 <p>{{ currentFile.path }}</p>
                 <p v-if="currentFile.truncated">{{ ui.label('文件内容过长，当前只预览了前一部分。', 'This file is large, so only the first portion is loaded for preview and editing.') }}</p>
               </div>
@@ -712,7 +792,12 @@ onMounted(() => {
           <template v-else-if="currentMemoryFile">
             <div class="mini-list">
               <div class="mini-list__item mini-list__item--stack">
-                <strong>{{ currentMemoryFile.relativePath || currentMemoryFile.path }}</strong>
+                <div class="provider-card__header">
+                  <strong>{{ currentMemoryFile.relativePath || currentMemoryFile.path }}</strong>
+                  <span class="pill" :class="memoryDirty ? 'pill--warning' : 'pill--success'">
+                    {{ memoryDirty ? ui.label('未保存', 'Unsaved') : ui.label('已保存', 'Saved') }}
+                  </span>
+                </div>
                 <p>{{ currentMemoryFile.path }}</p>
                 <p>{{ ui.label('修改后记得保存，这些内容会直接影响对应角色的行为、人格和长期记忆。', 'Save after editing. These files directly affect role behavior, persona, and long-term memory.') }}</p>
               </div>

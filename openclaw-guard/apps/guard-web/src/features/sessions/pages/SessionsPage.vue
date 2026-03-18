@@ -8,7 +8,11 @@ import {
   formatPercent,
 } from '@/features/common/display';
 import PageCard from '@/features/common/PageCard.vue';
-import { loadSessionsSnapshot, type SessionRecord } from '@/services/api/sessions';
+import {
+  loadSessionsSnapshot,
+  type RuntimeServiceSummary,
+  type SessionRecord,
+} from '@/services/api/sessions';
 import { useUiStore } from '@/stores/ui';
 
 type SessionsSnapshot = Awaited<ReturnType<typeof loadSessionsSnapshot>>;
@@ -48,6 +52,60 @@ function sessionTone(session: SessionRecord) {
   if (['ended', 'finished', 'closed'].includes(session.status)) return 'pill--muted';
   if (['error', 'failed', 'aborted'].includes(session.status)) return 'pill--danger';
   return 'pill--success';
+}
+
+function serviceRuntimeLabel(service?: RuntimeServiceSummary | null) {
+  if (!service) {
+    return ui.label('服务信息暂缺', 'Service details are missing');
+  }
+  if (ui.developerMode) {
+    return [service.loadedText, service.runtimeShort].filter(Boolean).join(' / ')
+      || ui.label('服务信息暂缺', 'Service details are missing');
+  }
+  if (service.installed === false) {
+    return ui.label('当前没有检测到对应运行态。', 'The runtime is not currently detected.');
+  }
+  return ui.label('已检测到服务，详细运行串已收纳到开发者模式。', 'The service was detected. Detailed runtime strings stay behind developer mode.');
+}
+
+function memoryRuntimeLabel() {
+  const memory = snapshot.value?.memory;
+  if (!memory) {
+    return ui.label('记忆运行态信息暂缺', 'Memory runtime details are missing');
+  }
+  if (ui.developerMode) {
+    return [memory.searchMode, memory.dbPath || memory.workspaceDir].filter(Boolean).join(' / ')
+      || ui.label('记忆运行态信息暂缺', 'Memory runtime details are missing');
+  }
+  if (memory.searchMode) {
+    return ui.label(`检索模式：${memory.searchMode}`, `Search mode: ${memory.searchMode}`);
+  }
+  return ui.label('索引已连接，路径信息已收纳到开发者模式。', 'The index is connected. Path details stay behind developer mode.');
+}
+
+function updateRuntimeLabel() {
+  const update = snapshot.value?.update;
+  if (!update) {
+    return ui.label('更新信息暂缺', 'Update details are missing');
+  }
+  if (ui.developerMode) {
+    return [update.packageManager, update.latestVersion].filter(Boolean).join(' / ')
+      || ui.label('更新信息暂缺', 'Update details are missing');
+  }
+  if (update.latestVersion) {
+    return ui.label(`推荐版本：${update.latestVersion}`, `Recommended version: ${update.latestVersion}`);
+  }
+  return ui.label('更新细节已收纳到开发者模式。', 'Detailed updater information stays behind developer mode.');
+}
+
+function byAgentPathLabel(path: string | null) {
+  if (ui.developerMode) {
+    return path || ui.label('没有返回路径信息', 'No path information returned');
+  }
+  if (!path) {
+    return ui.label('没有返回路径信息', 'No path information returned');
+  }
+  return ui.label('工作区路径已收纳到开发者模式。', 'Workspace path stays behind developer mode.');
 }
 
 watch(() => resource.data, (value) => {
@@ -129,22 +187,22 @@ onMounted(() => {
           <article class="stat-card">
             <p class="stat-card__label">{{ ui.label('记忆检索', 'Memory search') }}</p>
             <strong>{{ snapshot.memory?.provider || snapshot.memory?.backend || '-' }}</strong>
-            <span>{{ [snapshot.memory?.searchMode, snapshot.memory?.dbPath || snapshot.memory?.workspaceDir].filter(Boolean).join(' / ') || ui.label('记忆运行态信息暂缺', 'Memory runtime details are missing') }}</span>
+            <span>{{ memoryRuntimeLabel() }}</span>
           </article>
           <article class="stat-card">
             <p class="stat-card__label">{{ ui.label('Gateway 服务', 'Gateway service') }}</p>
             <strong>{{ snapshot.gatewayService?.label || '-' }}</strong>
-            <span>{{ [snapshot.gatewayService?.loadedText, snapshot.gatewayService?.runtimeShort].filter(Boolean).join(' / ') || ui.label('Gateway 服务信息暂缺', 'Gateway service details are missing') }}</span>
+            <span>{{ serviceRuntimeLabel(snapshot.gatewayService) }}</span>
           </article>
           <article class="stat-card">
             <p class="stat-card__label">{{ ui.label('Node 服务', 'Node service') }}</p>
             <strong>{{ snapshot.nodeService?.label || '-' }}</strong>
-            <span>{{ [snapshot.nodeService?.loadedText, snapshot.nodeService?.runtimeShort].filter(Boolean).join(' / ') || ui.label('Node 服务信息暂缺', 'Node service details are missing') }}</span>
+            <span>{{ serviceRuntimeLabel(snapshot.nodeService) }}</span>
           </article>
           <article class="stat-card">
             <p class="stat-card__label">{{ ui.label('更新轨道', 'Update track') }}</p>
             <strong>{{ snapshot.update?.channel || snapshot.update?.installKind || '-' }}</strong>
-            <span>{{ [snapshot.update?.packageManager, snapshot.update?.latestVersion].filter(Boolean).join(' / ') || ui.label('更新信息暂缺', 'Update details are missing') }}</span>
+            <span>{{ updateRuntimeLabel() }}</span>
           </article>
           <article class="stat-card">
             <p class="stat-card__label">{{ ui.label('安全审计', 'Security audit') }}</p>
@@ -153,6 +211,10 @@ onMounted(() => {
           </article>
         </div>
       </PageCard>
+
+      <p v-if="!ui.developerMode" class="muted-copy">
+        {{ ui.label('路径、运行时短串和记忆索引位置已收纳到开发者模式。需要进一步排障时，请先到 Settings 打开开发者模式。', 'Paths, runtime strings, and memory index locations now stay behind developer mode. Enable developer mode from Settings when you need deeper troubleshooting.') }}
+      </p>
 
       <PageCard :title="ui.label('当前会话', 'Current sessions')" eyebrow="Sessions">
         <div v-if="sessions.length" class="provider-stack">
@@ -204,7 +266,7 @@ onMounted(() => {
               <header class="provider-card__header">
                 <div>
                   <strong>{{ group.agentId }}</strong>
-                  <p>{{ group.path || ui.label('没有返回路径信息', 'No path information returned') }}</p>
+                  <p>{{ byAgentPathLabel(group.path) }}</p>
                 </div>
                 <span class="pill pill--info">{{ formatNumber(group.count) }}</span>
               </header>
@@ -252,7 +314,7 @@ onMounted(() => {
         </div>
       </PageCard>
 
-      <PageCard v-if="snapshot.memory" :title="ui.label('记忆运行态补充', 'Memory runtime details')" eyebrow="Memory">
+      <PageCard v-if="ui.developerMode && snapshot.memory" :title="ui.label('记忆运行态补充', 'Memory runtime details')" eyebrow="Memory">
         <div class="stat-grid">
           <article class="stat-card">
             <p class="stat-card__label">{{ ui.label('记忆文件', 'Memory files') }}</p>

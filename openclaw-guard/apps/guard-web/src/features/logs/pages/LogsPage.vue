@@ -15,9 +15,15 @@ const selectedLines = ref(logsCache?.requestedLines || 200);
 const resource = useAsyncResource(() => loadServiceLogs(selectedLines.value), logsCache, { immediate: false });
 
 const lineOptions = [100, 200, 500];
+const LOG_HIGHLIGHT_PATTERN = /(error|warn|fail|exception|timeout|denied|refused|panic|fatal|traceback|错误|失败|异常|拒绝|超时)/i;
 
 const logLines = computed(() => resource.data?.logs || []);
 const hasLogError = computed(() => /^(获取日志失败|Failed to fetch logs)/.test(logLines.value[0] || ''));
+const logHighlights = computed(() => {
+  const matched = logLines.value.filter((line) => LOG_HIGHLIGHT_PATTERN.test(line));
+  if (matched.length) return matched.slice(-8);
+  return logLines.value.slice(-6);
+});
 
 watch(() => resource.data, (value) => {
   if (value) logsCache = value;
@@ -108,7 +114,7 @@ async function copyLogs() {
             >
               {{ ui.label(`最近 ${lines} 行`, `${lines} lines`) }}
             </button>
-            <button class="inline-link" type="button" @click="copyLogs">
+            <button v-if="ui.developerMode" class="inline-link" type="button" @click="copyLogs">
               {{ ui.label('复制日志', 'Copy logs') }}
             </button>
           </div>
@@ -117,7 +123,23 @@ async function copyLogs() {
         <div v-if="hasLogError" class="status-banner status-banner--warning">
           {{ logLines[0] }}
         </div>
-        <pre class="code-panel log-output">{{ logLines.join('\n') || ui.label('当前没有可显示的日志内容。', 'No log content is available right now.') }}</pre>
+        <template v-if="ui.developerMode">
+          <pre class="code-panel log-output">{{ logLines.join('\n') || ui.label('当前没有可显示的日志内容。', 'No log content is available right now.') }}</pre>
+        </template>
+        <template v-else>
+          <div v-if="logHighlights.length" class="list-stack">
+            <article v-for="(line, index) in logHighlights" :key="`${index}:${line}`" class="risk-row">
+              <strong>{{ LOG_HIGHLIGHT_PATTERN.test(line) ? ui.label('关键片段', 'Key line') : ui.label('最近输出', 'Recent line') }}</strong>
+              <span>{{ line }}</span>
+            </article>
+          </div>
+          <div v-else class="page-empty">
+            {{ ui.label('当前没有可显示的日志摘要。', 'No log summary is available right now.') }}
+          </div>
+          <p class="muted-copy">
+            {{ ui.label('完整原始日志和复制动作已收纳到开发者模式。需要逐行排障时，请先到 Settings 打开开发者模式。', 'Full raw logs and copy actions now stay behind developer mode. Enable developer mode from Settings when you need line-by-line troubleshooting.') }}
+          </p>
+        </template>
       </PageCard>
     </template>
   </div>

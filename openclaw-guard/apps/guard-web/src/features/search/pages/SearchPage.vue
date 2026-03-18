@@ -8,6 +8,14 @@ import { useFeedbackStore } from '@/stores/feedback';
 import { useUiStore } from '@/stores/ui';
 import { isMemoryManagedPath, useWorkspaceStore } from '@/stores/workspace';
 
+type SearchSnapshot = {
+  query: string;
+  results: SearchHit[];
+};
+
+let searchCache: SearchSnapshot | null = null;
+let latestSearchRequestId = 0;
+
 const ui = useUiStore();
 const router = useRouter();
 const feedback = useFeedbackStore();
@@ -18,6 +26,7 @@ const loading = ref(false);
 const error = ref<string | null>(null);
 const searched = ref(false);
 const results = ref<SearchHit[]>([]);
+const lastCompletedQuery = ref('');
 
 const distinctFileCount = computed(() => new Set(results.value.map((item) => item.path)).size);
 
@@ -27,6 +36,7 @@ watch(query, (value) => {
 
 async function runSearch() {
   const trimmed = query.value.trim();
+  const requestId = ++latestSearchRequestId;
   workspace.setSearchQuery(trimmed);
   searched.value = true;
   error.value = null;
@@ -39,11 +49,24 @@ async function runSearch() {
   loading.value = true;
   try {
     const data = await searchManagedFiles(trimmed, 100);
+    if (requestId !== latestSearchRequestId) {
+      return;
+    }
     results.value = data.results || [];
+    lastCompletedQuery.value = trimmed;
+    searchCache = {
+      query: trimmed,
+      results: [...results.value],
+    };
   } catch (searchError) {
+    if (requestId !== latestSearchRequestId) {
+      return;
+    }
     error.value = searchError instanceof Error ? searchError.message : String(searchError);
   } finally {
-    loading.value = false;
+    if (requestId === latestSearchRequestId) {
+      loading.value = false;
+    }
   }
 }
 
@@ -59,6 +82,14 @@ function openResult(item: SearchHit) {
 
 onMounted(() => {
   if (workspace.searchQuery.trim()) {
+    const trimmed = workspace.searchQuery.trim();
+    if (searchCache?.query === trimmed) {
+      searched.value = true;
+      results.value = [...searchCache.results];
+      lastCompletedQuery.value = trimmed;
+      void runSearch();
+      return;
+    }
     void runSearch();
   }
 });
@@ -93,8 +124,11 @@ onMounted(() => {
       </form>
     </PageCard>
 
-    <div v-if="error" class="page-empty page-empty--error">
+    <div v-if="error && !results.length" class="page-empty page-empty--error">
       {{ error }}
+    </div>
+    <div v-else-if="error" class="status-banner status-banner--warning">
+      {{ ui.label('已保留上一版搜索结果，但后台刷新失败：', 'The last search results are still on screen, but the background refresh failed: ') }}{{ error }}
     </div>
 
     <PageCard :title="ui.label('结果概览', 'Result overview')" eyebrow="Summary">
@@ -112,7 +146,13 @@ onMounted(() => {
         <article class="stat-card">
           <p class="stat-card__label">{{ ui.label('当前查询', 'Current query') }}</p>
           <strong>{{ query.trim() || '-' }}</strong>
-          <span>{{ query.trim() ? ui.label('结果来自当前搜索词', 'Results are based on the current query') : ui.label('还没有输入搜索词', 'No search query yet') }}</span>
+          <span>
+            {{
+              lastCompletedQuery
+                ? ui.label(`当前展示的是“${lastCompletedQuery}”的结果`, `Currently showing results for "${lastCompletedQuery}"`)
+                : (query.trim() ? ui.label('结果来自当前搜索词', 'Results are based on the current query') : ui.label('还没有输入搜索词', 'No search query yet'))
+            }}
+          </span>
         </article>
         <article class="stat-card">
           <p class="stat-card__label">{{ ui.label('打开方式', 'Open flow') }}</p>
@@ -123,10 +163,14 @@ onMounted(() => {
     </PageCard>
 
     <PageCard :title="ui.label('搜索结果', 'Results')" eyebrow="Results">
-      <div v-if="loading" class="page-empty">
+      <div v-if="loading && !results.length" class="page-empty">
         {{ ui.label('正在查找匹配结果…', 'Searching for matching results…') }}
       </div>
-      <div v-else-if="results.length" class="provider-stack">
+      <template v-else-if="results.length">
+        <div v-if="loading" class="status-banner status-banner--info">
+          {{ ui.label('正在后台刷新搜索结果…', 'Refreshing search results in the background…') }}
+        </div>
+        <div class="provider-stack">
         <article v-for="item in results" :key="`${item.path}:${item.line}:${item.preview}`" class="provider-card">
           <header class="provider-card__header">
             <div>
@@ -146,7 +190,8 @@ onMounted(() => {
             </button>
           </div>
         </article>
-      </div>
+        </div>
+      </template>
       <div v-else class="page-empty">
         {{
           searched

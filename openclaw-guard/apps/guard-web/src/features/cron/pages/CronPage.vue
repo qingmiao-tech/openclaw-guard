@@ -196,6 +196,26 @@ function schedulerStateLabel(enabled: boolean | null) {
   return ui.label('未知', 'Unknown');
 }
 
+function schedulerDetailLabel() {
+  const status = resource.data?.status;
+  if (!status) {
+    return ui.label('调度器信息暂缺', 'Scheduler details are missing');
+  }
+  if (status.schedulerNextWakeAt) {
+    return formatDateTime(status.schedulerNextWakeAt);
+  }
+  if (ui.developerMode && status.storePath) {
+    return status.storePath;
+  }
+  if (status.enabled === true) {
+    return ui.label('调度器已启用，但下一次唤醒时间暂未返回。', 'The scheduler is enabled, but the next wake time has not been reported yet.');
+  }
+  if (status.enabled === false) {
+    return ui.label('调度器当前已停用。', 'The scheduler is currently disabled.');
+  }
+  return ui.label('调度器路径已收纳到开发者模式。', 'The scheduler path stays behind developer mode.');
+}
+
 function cronJobStatusLabel(job: CronJobRecord) {
   const key = String(job.status || '').trim().toLowerCase();
   if (!key) return job.enabled ? ui.label('已启用', 'Enabled') : ui.label('已停用', 'Disabled');
@@ -390,7 +410,7 @@ async function handleJobAction(action: 'run' | 'enable' | 'disable' | 'remove', 
           <article class="stat-card">
             <p class="stat-card__label">{{ ui.label('调度器状态', 'Scheduler') }}</p>
             <strong>{{ schedulerStateLabel(resource.data.status.enabled) }}</strong>
-            <span>{{ resource.data.status.schedulerNextWakeAt ? formatDateTime(resource.data.status.schedulerNextWakeAt) : (resource.data.status.storePath || ui.label('暂未返回调度器路径', 'No scheduler path reported yet')) }}</span>
+            <span>{{ schedulerDetailLabel() }}</span>
           </article>
           <article class="stat-card">
             <p class="stat-card__label">{{ ui.label('运行态任务数', 'Runtime job count') }}</p>

@@ -37,6 +37,23 @@ function openWorkspace(agent: AgentSummary) {
   void router.push('/files');
 }
 
+function workspaceHeadline(agent: AgentSummary) {
+  if (ui.developerMode) {
+    return agent.resolvedWorkspace || agent.workspace || agent.id;
+  }
+  return agent.workspace || agent.id;
+}
+
+function workspaceHint(agent: AgentSummary) {
+  if (ui.developerMode) {
+    return ui.label('当前显示的是实际工作区路径。', 'Showing the resolved workspace path.');
+  }
+  if (!agent.workspaceExists) {
+    return ui.label('Guard 还没有在当前机器上找到这个工作区目录。', 'Guard has not found this workspace directory on the current machine yet.');
+  }
+  return ui.label('实际工作区路径已收纳到开发者模式，可直接点击“打开工作区”继续查看。', 'The exact workspace path stays behind developer mode. Use Open workspace to continue.');
+}
+
 watch(() => resource.data, (value) => {
   if (value) rolesCache = value;
 });
@@ -98,31 +115,36 @@ onMounted(() => {
 
       <PageCard :title="ui.label('角色成员', 'Role entries')" eyebrow="Catalog">
         <div v-if="agents.length" class="provider-stack">
-          <article v-for="agent in agents" :key="agent.id" class="provider-card">
-            <header class="provider-card__header">
-              <div>
-                <strong>{{ agent.name }}</strong>
-                <p>{{ agent.resolvedWorkspace || agent.workspace }}</p>
-              </div>
-              <div class="pill-row">
-                <span v-if="agent.isDefault" class="pill pill--success">{{ ui.label('默认', 'Default') }}</span>
-                <span v-else class="pill pill--muted">{{ agent.id }}</span>
-                <span class="pill" :class="agent.workspaceExists ? 'pill--success' : 'pill--warning'">
+            <article v-for="agent in agents" :key="agent.id" class="provider-card">
+              <header class="provider-card__header">
+                <div>
+                  <strong>{{ agent.name }}</strong>
+                  <p>{{ workspaceHeadline(agent) }}</p>
+                </div>
+                <div class="pill-row">
+                  <span v-if="agent.isDefault" class="pill pill--success">{{ ui.label('默认', 'Default') }}</span>
+                  <span v-else class="pill pill--muted">{{ agent.id }}</span>
+                  <span class="pill" :class="agent.workspaceExists ? 'pill--success' : 'pill--warning'">
                   {{ agent.workspaceExists ? ui.label('工作区就绪', 'Workspace ready') : ui.label('工作区缺失', 'Workspace missing') }}
                 </span>
               </div>
             </header>
 
-            <div class="mini-list">
-              <div class="mini-list__item mini-list__item--stack">
-                <strong>{{ ui.label('模型路由', 'Model route') }}</strong>
-                <p>{{ agent.modelId || ui.label('沿用默认模型', 'Uses the default model route') }}</p>
-              </div>
-              <div class="mini-list__item mini-list__item--stack">
-                <strong>{{ ui.label('关键文档', 'Core docs') }}</strong>
-                <div class="pill-row">
-                  <span class="pill" :class="agent.docStatus.soul ? 'pill--success' : 'pill--warning'">SOUL</span>
-                  <span class="pill" :class="agent.docStatus.user ? 'pill--success' : 'pill--warning'">USER</span>
+              <div class="mini-list">
+                <div class="mini-list__item mini-list__item--stack">
+                  <strong>{{ ui.label('模型路由', 'Model route') }}</strong>
+                  <p>{{ agent.modelId || ui.label('沿用默认模型', 'Uses the default model route') }}</p>
+                </div>
+                <div class="mini-list__item mini-list__item--stack">
+                  <strong>{{ ui.label('工作区映射', 'Workspace mapping') }}</strong>
+                  <p>{{ workspaceHeadline(agent) }}</p>
+                  <p>{{ workspaceHint(agent) }}</p>
+                </div>
+                <div class="mini-list__item mini-list__item--stack">
+                  <strong>{{ ui.label('关键文档', 'Core docs') }}</strong>
+                  <div class="pill-row">
+                    <span class="pill" :class="agent.docStatus.soul ? 'pill--success' : 'pill--warning'">SOUL</span>
+                    <span class="pill" :class="agent.docStatus.user ? 'pill--success' : 'pill--warning'">USER</span>
                   <span class="pill" :class="agent.docStatus.agents ? 'pill--success' : 'pill--warning'">AGENTS</span>
                   <span class="pill" :class="agent.docStatus.memory ? 'pill--success' : 'pill--warning'">MEMORY</span>
                 </div>

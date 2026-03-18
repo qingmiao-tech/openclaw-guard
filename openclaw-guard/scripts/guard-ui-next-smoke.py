@@ -11,7 +11,7 @@ from playwright.sync_api import sync_playwright
 
 DEFAULT_URL = 'http://127.0.0.1:18088/next'
 DEFAULT_TIMEOUT_MS = 15000
-TARGET_ROUTES = ['#/', '#/operations', '#/openclaw', '#/channels', '#/models', '#/recovery', '#/logs', '#/settings']
+TARGET_ROUTES = ['#/', '#/operations', '#/openclaw', '#/channels', '#/models', '#/security', '#/recovery', '#/logs', '#/settings']
 
 
 @dataclass

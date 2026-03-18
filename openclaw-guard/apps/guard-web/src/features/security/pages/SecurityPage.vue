@@ -1,13 +1,21 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useAsyncResource } from '@/composables/useAsyncResource';
-import { useUiStore } from '@/stores/ui';
-import { useFeedbackStore } from '@/stores/feedback';
 import PageCard from '@/features/common/PageCard.vue';
 import PageTabs from '@/features/common/PageTabs.vue';
-import { applySecurityProfile, loadHardeningSteps, loadSecurityAudit, loadSecurityProfiles } from '@/services/api/security';
+import {
+  applySecurityProfile,
+  loadHardeningSteps,
+  loadSecurityAudit,
+  loadSecurityProfiles,
+} from '@/services/api/security';
+import { useFeedbackStore } from '@/stores/feedback';
+import { useUiStore } from '@/stores/ui';
 
 type SecurityTab = 'audit' | 'profiles' | 'hardening';
+type AuditSnapshot = Awaited<ReturnType<typeof loadSecurityAudit>>;
+type ProfilesSnapshot = Awaited<ReturnType<typeof loadSecurityProfiles>>;
+type HardeningSnapshot = Awaited<ReturnType<typeof loadHardeningSteps>>;
 
 function detectClientPlatform(): 'windows' | 'macos' | 'linux' {
   if (typeof navigator === 'undefined') return 'linux';
@@ -23,9 +31,17 @@ const activeTab = ref<SecurityTab>('audit');
 const hardeningPlatform = ref<'windows' | 'macos' | 'linux'>(detectClientPlatform());
 const applyingProfile = ref('');
 
-const auditResource = useAsyncResource(() => loadSecurityAudit(), null, { immediate: false });
-const profilesResource = useAsyncResource(() => loadSecurityProfiles(), null, { immediate: false });
-const hardeningResource = useAsyncResource(() => loadHardeningSteps(hardeningPlatform.value), null, { immediate: false });
+let auditCache: AuditSnapshot | null = null;
+let profilesCache: ProfilesSnapshot | null = null;
+const hardeningCache = new Map<string, HardeningSnapshot | null>();
+
+const auditResource = useAsyncResource(() => loadSecurityAudit(), auditCache, { immediate: false });
+const profilesResource = useAsyncResource(() => loadSecurityProfiles(), profilesCache, { immediate: false });
+const hardeningResource = useAsyncResource(
+  () => loadHardeningSteps(hardeningPlatform.value),
+  hardeningCache.get(hardeningPlatform.value) || null,
+  { immediate: false },
+);
 
 const tabItems = computed(() => [
   { id: 'audit', label: ui.label('安全检查', 'Security checks') },
@@ -42,6 +58,18 @@ const groupedAuditResults = computed(() => {
     groups.get(result.category)?.push(result);
   }
   return Array.from(groups.entries());
+});
+
+watch(() => auditResource.data, (value) => {
+  if (value) auditCache = value;
+});
+
+watch(() => profilesResource.data, (value) => {
+  if (value) profilesCache = value;
+});
+
+watch(() => hardeningResource.data, (value) => {
+  if (value) hardeningCache.set(hardeningPlatform.value, value);
 });
 
 watch(
@@ -61,6 +89,7 @@ watch(
 );
 
 watch(hardeningPlatform, () => {
+  hardeningResource.data = hardeningCache.get(hardeningPlatform.value) || null;
   if (activeTab.value === 'hardening') {
     void hardeningResource.execute({ silent: !!hardeningResource.data });
   }
@@ -120,7 +149,7 @@ function handleTabChange(value: string) {
         <p class="page-header__eyebrow">{{ ui.label('安全 / Second slice', 'Security / Second slice') }}</p>
         <h2 class="page-header__title">{{ ui.label('安全基线', 'Security baseline') }}</h2>
         <p class="page-header__description">
-          {{ ui.label('把长页面拆成页内分栏，只在当前视图读取必要数据，让安全页面更像决策面板而不是说明书。', 'Split the long screen into internal tabs and load only the current view so the security page feels like a decision panel instead of a manual.') }}
+          {{ ui.label('把长页面拆成页内分栏，只在当前视图读取必要数据，让安全页更像决策面板，而不是说明书。', 'Split the long page into internal tabs and load only the current view so the security page feels like a decision panel instead of a manual.') }}
         </p>
       </div>
       <button class="page-header__action" type="button" @click="refreshCurrentTab">
@@ -137,16 +166,20 @@ function handleTabChange(value: string) {
     <PageTabs :items="tabItems" :active-id="activeTab" @change="handleTabChange" />
 
     <template v-if="activeTab === 'audit'">
-      <div v-if="auditResource.loading" class="page-empty">
+      <div v-if="auditResource.loading && !auditResource.data" class="page-empty">
         {{ ui.label('正在读取安全检查结果…', 'Loading security checks…') }}
       </div>
-      <div v-else-if="auditResource.error" class="page-empty page-empty--error">
+      <div v-else-if="auditResource.error && !auditResource.data" class="page-empty page-empty--error">
         {{ auditResource.error }}
       </div>
       <template v-else-if="auditResource.data">
+        <div v-if="auditResource.error" class="status-banner status-banner--warning">
+          {{ ui.label('已保留上一版安全检查快照，但后台刷新失败：', 'The last security-check snapshot is still on screen, but the background refresh failed: ') }}{{ auditResource.error }}
+        </div>
+
         <PageCard :title="ui.label('安全检查（Beta）', 'Security checks (Beta)')" eyebrow="Audit">
           <p class="muted-copy">
-            {{ ui.label('这一部分更像建议型检查，而不是正式合规证明。优先处理失败项，其次处理警告项。', 'This area behaves like advisory checks rather than a formal proof of compliance. Handle failures first, then warnings.') }}
+            {{ ui.label('这里更像建议型检查，而不是正式合规证明。优先处理失败项，其次处理警告项。', 'This area behaves like advisory checks rather than a formal proof of compliance. Handle failures first, then warnings.') }}
           </p>
           <div class="stat-grid">
             <article class="stat-card">
@@ -191,13 +224,17 @@ function handleTabChange(value: string) {
     </template>
 
     <template v-else-if="activeTab === 'profiles'">
-      <div v-if="profilesResource.loading" class="page-empty">
+      <div v-if="profilesResource.loading && !profilesResource.data" class="page-empty">
         {{ ui.label('正在读取权限模式…', 'Loading permission modes…') }}
       </div>
-      <div v-else-if="profilesResource.error" class="page-empty page-empty--error">
+      <div v-else-if="profilesResource.error && !profilesResource.data" class="page-empty page-empty--error">
         {{ profilesResource.error }}
       </div>
       <template v-else-if="profilesResource.data">
+        <div v-if="profilesResource.error" class="status-banner status-banner--warning">
+          {{ ui.label('已保留上一版权限模式快照，但后台刷新失败：', 'The last permission-mode snapshot is still on screen, but the background refresh failed: ') }}{{ profilesResource.error }}
+        </div>
+
         <PageCard :title="ui.label('权限模式', 'Permission modes')" eyebrow="Profiles">
           <p class="muted-copy">
             {{ ui.label('这些模式当前只会更新 OpenClaw 的工具权限配置，不会自动完成系统账户、ACL、Docker 或整机加固。', 'These modes currently update only the OpenClaw tool-permission config. They do not automatically complete system users, ACLs, Docker, or full host hardening.') }}
@@ -227,11 +264,21 @@ function handleTabChange(value: string) {
               </div>
               <div class="settings-field">
                 <span>{{ ui.label('允许规则', 'Allow rules') }}</span>
-                <pre class="code-panel">{{ (profile.tools?.allow || []).join('\n') || '(none)' }}</pre>
+                <template v-if="ui.developerMode">
+                  <pre class="code-panel">{{ (profile.tools?.allow || []).join('\n') || '(none)' }}</pre>
+                </template>
+                <p v-else class="muted-copy">
+                  {{ ui.label(`当前包含 ${(profile.tools?.allow || []).length} 条允许规则。需要查看原始规则列表时，请先到 Settings 打开开发者模式。`, `${(profile.tools?.allow || []).length} allow rules are included. Enable developer mode from Settings when you need the raw rule list.`) }}
+                </p>
               </div>
               <div class="settings-field">
                 <span>{{ ui.label('拒绝规则', 'Deny rules') }}</span>
-                <pre class="code-panel">{{ (profile.tools?.deny || []).join('\n') || '(none)' }}</pre>
+                <template v-if="ui.developerMode">
+                  <pre class="code-panel">{{ (profile.tools?.deny || []).join('\n') || '(none)' }}</pre>
+                </template>
+                <p v-else class="muted-copy">
+                  {{ ui.label(`当前包含 ${(profile.tools?.deny || []).length} 条拒绝规则。需要查看原始规则列表时，请先到 Settings 打开开发者模式。`, `${(profile.tools?.deny || []).length} deny rules are included. Enable developer mode from Settings when you need the raw rule list.`) }}
+                </p>
               </div>
             </div>
 
@@ -246,16 +293,20 @@ function handleTabChange(value: string) {
     </template>
 
     <template v-else>
-      <div v-if="hardeningResource.loading" class="page-empty">
+      <div v-if="hardeningResource.loading && !hardeningResource.data" class="page-empty">
         {{ ui.label('正在读取主机加固建议…', 'Loading hardening guidance…') }}
       </div>
-      <div v-else-if="hardeningResource.error" class="page-empty page-empty--error">
+      <div v-else-if="hardeningResource.error && !hardeningResource.data" class="page-empty page-empty--error">
         {{ hardeningResource.error }}
       </div>
       <template v-else-if="hardeningResource.data">
+        <div v-if="hardeningResource.error" class="status-banner status-banner--warning">
+          {{ ui.label('已保留上一版主机加固快照，但后台刷新失败：', 'The last hardening snapshot is still on screen, but the background refresh failed: ') }}{{ hardeningResource.error }}
+        </div>
+
         <PageCard :title="ui.label('主机加固指南（Beta）', 'Host hardening guide (Beta)')" eyebrow="Hardening">
           <p class="muted-copy">
-            {{ ui.label('基础建议在所有平台上都一样：尽量使用非管理员账户运行，并把工作区边界收紧。Windows 上的独立低权限账户更适合长期后台运行或共享机器场景，不是所有人的默认强制项。', 'The baseline is similar on every platform: prefer non-admin execution and keep the workspace boundary tight. On Windows, a dedicated low-privilege account is better treated as an advanced option for long-running or shared-machine setups, not a blanket default requirement.') }}
+            {{ ui.label('基础建议在所有平台上都类似：尽量使用非管理员账户运行，并把工作区边界收紧。Windows 上的独立低权限账户更适合长期后台运行或共享机器场景，不是所有人的默认强制项。', 'The baseline is similar on every platform: prefer non-admin execution and keep the workspace boundary tight. On Windows, a dedicated low-privilege account is better treated as an advanced option for long-running or shared-machine setups, not a blanket default requirement.') }}
           </p>
           <div class="pill-row">
             <button class="pill-button" :class="{ 'pill-button--active': hardeningPlatform === 'windows' }" type="button" @click="hardeningPlatform = 'windows'">Windows</button>
@@ -280,7 +331,14 @@ function handleTabChange(value: string) {
                 {{ step.optional ? ui.label('可选', 'Optional') : ui.label('建议', 'Recommended') }}
               </span>
             </div>
-            <pre class="code-panel">{{ (step.commands || []).join('\n') || ui.label('当前没有附带命令。', 'No commands are attached to this step.') }}</pre>
+            <template v-if="ui.developerMode">
+              <pre class="code-panel">{{ (step.commands || []).join('\n') || ui.label('当前没有附带命令。', 'No commands are attached to this step.') }}</pre>
+            </template>
+            <p v-else class="muted-copy">
+              {{ step.commands?.length
+                ? ui.label(`这个步骤附带 ${step.commands.length} 条命令，默认已收纳到开发者模式中。`, `This step includes ${step.commands.length} commands, which now stay behind developer mode by default.`)
+                : ui.label('这个步骤当前没有附带命令。', 'No commands are attached to this step right now.') }}
+            </p>
           </PageCard>
         </div>
       </template>

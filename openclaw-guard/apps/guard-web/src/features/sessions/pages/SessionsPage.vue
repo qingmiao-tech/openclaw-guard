@@ -314,7 +314,12 @@ onMounted(() => {
         </div>
       </PageCard>
 
-      <PageCard v-if="ui.developerMode && snapshot.memory" :title="ui.label('记忆运行态补充', 'Memory runtime details')" eyebrow="Memory">
+      <PageCard
+        v-if="ui.developerMode && snapshot.memory"
+        data-testid="sessions-memory-runtime-details"
+        :title="ui.label('记忆运行态补充', 'Memory runtime details')"
+        eyebrow="Memory"
+      >
         <div class="stat-grid">
           <article class="stat-card">
             <p class="stat-card__label">{{ ui.label('记忆文件', 'Memory files') }}</p>

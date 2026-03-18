@@ -61,6 +61,7 @@ class GuardNextSmoke:
         self._login_if_needed()
         self._verify_shell()
         self._visit_routes()
+        self._verify_files_draft_protection()
         self._verify_developer_mode_toggle()
         self._open_theme_menu()
         self._open_language_menu()
@@ -124,11 +125,99 @@ class GuardNextSmoke:
             except (PlaywrightTimeoutError, PlaywrightError) as exc:
                 self.failures.append(SmokeFailure(f'Route {route_hash} failed: {exc}'))
 
+    def _verify_files_draft_protection(self) -> None:
+        base = self.args.url.split('#', 1)[0]
+        files_url = f'{base}#/files'
+        settings_hash = '#/settings'
+        try:
+            self.page.goto(files_url, wait_until='domcontentloaded', timeout=self.args.timeout)
+            self.page.wait_for_selector('.page-stack', timeout=self.args.timeout)
+            editor_kind = self._open_first_editable_entry()
+            if not editor_kind:
+                print('[guard-next-smoke] SKIP files draft protection: no editable file or memory entry was available')
+                return
+
+            textarea_selector = '[data-testid="file-editor-textarea"]' if editor_kind == 'file' else '[data-testid="memory-editor-textarea"]'
+            state_selector = '[data-testid="file-editor-state"]' if editor_kind == 'file' else '[data-testid="memory-editor-state"]'
+            textarea = self.page.locator(textarea_selector).first
+
+            original_value = textarea.input_value()
+            marker = '\n# guard-next-smoke-unsaved-draft'
+            draft_value = original_value + (marker if marker not in original_value else '\n# guard-next-smoke-unsaved-draft-2')
+
+            textarea.fill(draft_value)
+            self.page.wait_for_timeout(200)
+            self.page.click('[data-testid="files-soft-refresh"]')
+            self.page.wait_for_timeout(500)
+
+            if textarea.input_value() != draft_value:
+                self.failures.append(SmokeFailure('Files soft refresh should preserve the current unsaved editor draft.'))
+
+            state_text = (self.page.locator(state_selector).first.text_content() or '').strip()
+            if 'Unsaved' not in state_text and '未保存' not in state_text:
+                self.failures.append(SmokeFailure('Files editor should remain in the unsaved state after a soft refresh.'))
+
+            self.page.evaluate("(nextHash) => { window.location.hash = nextHash; }", settings_hash)
+            self.page.wait_for_selector('.confirm-dialog', timeout=self.args.timeout)
+            self.page.click('.confirm-dialog__footer .inline-link:first-child')
+            self.page.wait_for_function(
+                "() => window.location.hash === '#/files'",
+                timeout=self.args.timeout,
+            )
+
+            self.page.evaluate("(nextHash) => { window.location.hash = nextHash; }", settings_hash)
+            self.page.wait_for_selector('.confirm-dialog', timeout=self.args.timeout)
+            self.page.click('.confirm-dialog__footer .inline-link:last-child')
+            self.page.wait_for_function(
+                "() => window.location.hash === '#/settings'",
+                timeout=self.args.timeout,
+            )
+            self.page.wait_for_selector('.page-stack', timeout=self.args.timeout)
+        except (PlaywrightTimeoutError, PlaywrightError) as exc:
+            self.failures.append(SmokeFailure(f'Files draft protection flow failed: {exc}'))
+
+    def _open_first_editable_entry(self) -> str | None:
+        root_entries = self.page.locator('.catalog-list__item')
+        if root_entries.count():
+            root_entries.first.click()
+            self.page.wait_for_timeout(300)
+
+        for _ in range(3):
+            file_entries = self.page.locator('[data-entry-kind="file"]')
+            if file_entries.count():
+                file_entries.first.click()
+                self.page.wait_for_selector('[data-testid="file-editor-textarea"]', timeout=self.args.timeout)
+                return 'file'
+
+            directory_entries = self.page.locator('[data-entry-kind="directory"]')
+            if not directory_entries.count():
+                break
+            directory_entries.first.click()
+            self.page.wait_for_timeout(300)
+
+        memory_tab = self.page.locator('.page-tabs__button[data-tab-id="memory"]').first
+        if memory_tab.count():
+            memory_tab.click()
+            self.page.wait_for_function(
+                "() => document.querySelector('.page-tabs__button[data-tab-id=\"memory\"]')?.getAttribute('aria-selected') === 'true'",
+                timeout=self.args.timeout,
+            )
+            self.page.wait_for_timeout(300)
+
+        memory_entries = self.page.locator('[data-entry-kind="memory"]')
+        if memory_entries.count():
+            memory_entries.first.click()
+            self.page.wait_for_selector('[data-testid="memory-editor-textarea"]', timeout=self.args.timeout)
+            return 'memory'
+
+        return None
+
     def _verify_developer_mode_toggle(self) -> None:
         base = self.args.url.split('#', 1)[0]
         settings_url = f'{base}#/settings'
         openclaw_url = f'{base}#/openclaw'
         logs_url = f'{base}#/logs'
+        sessions_url = f'{base}#/sessions'
         toggle = self.page.locator('.settings-toggle input[type="checkbox"]').first
         try:
             self.page.goto(settings_url, wait_until='domcontentloaded', timeout=self.args.timeout)
@@ -150,10 +239,16 @@ class GuardNextSmoke:
             self.page.goto(logs_url, wait_until='domcontentloaded', timeout=self.args.timeout)
             self.page.wait_for_selector('.page-stack', timeout=self.args.timeout)
             self.page.wait_for_timeout(300)
-            if self.page.locator('.log-output').count():
+            if self.page.locator('[data-testid="logs-raw-output"]').count():
                 self.failures.append(SmokeFailure('Developer mode off should hide raw log output on the Logs page.'))
-            if self.page.locator('.page-actions .inline-link').count():
+            if self.page.locator('[data-testid="logs-copy-action"]').count():
                 self.failures.append(SmokeFailure('Developer mode off should hide raw log copy actions on the Logs page.'))
+
+            self.page.goto(sessions_url, wait_until='domcontentloaded', timeout=self.args.timeout)
+            self.page.wait_for_selector('.page-stack', timeout=self.args.timeout)
+            self.page.wait_for_timeout(300)
+            if self.page.locator('[data-testid="sessions-memory-runtime-details"]').count():
+                self.failures.append(SmokeFailure('Developer mode off should hide session memory runtime details.'))
 
             self.page.goto(settings_url, wait_until='domcontentloaded', timeout=self.args.timeout)
             self.page.wait_for_selector('.settings-toggle input[type="checkbox"]', timeout=self.args.timeout)
@@ -173,11 +268,18 @@ class GuardNextSmoke:
             self.page.goto(logs_url, wait_until='domcontentloaded', timeout=self.args.timeout)
             self.page.wait_for_selector('.page-stack', timeout=self.args.timeout)
             self.page.wait_for_function(
-                "() => document.querySelectorAll('.log-output').length >= 1",
+                "() => document.querySelectorAll('[data-testid=\"logs-raw-output\"]').length >= 1",
                 timeout=self.args.timeout,
             )
-            if not self.page.locator('.page-actions .inline-link').count():
+            if not self.page.locator('[data-testid="logs-copy-action"]').count():
                 self.failures.append(SmokeFailure('Developer mode on should reveal raw log copy actions on the Logs page.'))
+
+            self.page.goto(sessions_url, wait_until='domcontentloaded', timeout=self.args.timeout)
+            self.page.wait_for_selector('.page-stack', timeout=self.args.timeout)
+            self.page.wait_for_function(
+                "() => document.querySelectorAll('[data-testid=\"sessions-memory-runtime-details\"]').length >= 1",
+                timeout=self.args.timeout,
+            )
 
             self.page.goto(settings_url, wait_until='domcontentloaded', timeout=self.args.timeout)
             self.page.wait_for_selector('.settings-toggle input[type="checkbox"]', timeout=self.args.timeout)

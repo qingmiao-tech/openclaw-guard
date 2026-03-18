@@ -525,7 +525,7 @@ function handleBeforeUnload(event: BeforeUnloadEvent) {
           {{ ui.label('保留“全部文件”和“核心记忆”双视图，让搜索、角色工作区和实际编辑动作都能在新壳层里接得上。', 'Keep both the All Files and Core Memory views so search results, role workspaces, and real editing actions can all land cleanly in the new shell.') }}
         </p>
       </div>
-      <button class="page-header__action" type="button" @click="softRefreshCurrentView">
+      <button data-testid="files-soft-refresh" class="page-header__action" type="button" @click="softRefreshCurrentView">
         {{ modeLoading || directoryLoading || memoryCatalogLoading ? ui.label('刷新中…', 'Refreshing…') : ui.label('Refresh', 'Refresh') }}
       </button>
     </header>
@@ -624,6 +624,7 @@ function handleBeforeUnload(event: BeforeUnloadEvent) {
                 :key="entry.path"
                 class="entry-button"
                 :class="{ 'entry-button--active': currentFile?.path === entry.path }"
+                :data-entry-kind="entry.isDirectory ? 'directory' : 'file'"
                 type="button"
                 @click="openEntry(entry)"
               >
@@ -656,7 +657,7 @@ function handleBeforeUnload(event: BeforeUnloadEvent) {
               <div class="mini-list__item mini-list__item--stack">
                 <div class="provider-card__header">
                   <strong>{{ currentFile.relativePath || currentFile.path }}</strong>
-                  <span class="pill" :class="fileDirty ? 'pill--warning' : 'pill--success'">
+                  <span data-testid="file-editor-state" class="pill" :class="fileDirty ? 'pill--warning' : 'pill--success'">
                     {{ fileDirty ? ui.label('未保存', 'Unsaved') : ui.label('已保存', 'Saved') }}
                   </span>
                 </div>
@@ -674,7 +675,12 @@ function handleBeforeUnload(event: BeforeUnloadEvent) {
               </button>
             </div>
 
-            <textarea v-model="currentFileDraft" class="settings-textarea settings-textarea--editor" rows="22" />
+            <textarea
+              v-model="currentFileDraft"
+              data-testid="file-editor-textarea"
+              class="settings-textarea settings-textarea--editor"
+              rows="22"
+            />
           </template>
           <div v-else class="page-empty">
             {{ ui.label('先从左侧选择一个文件，再在这里查看或编辑。', 'Select a file from the left side first, then view or edit it here.') }}
@@ -761,6 +767,7 @@ function handleBeforeUnload(event: BeforeUnloadEvent) {
                   :key="file.path"
                   class="entry-button"
                   :class="{ 'entry-button--active': currentMemoryFile?.path === file.path }"
+                  data-entry-kind="memory"
                   type="button"
                   @click="openMemoryFile(file.path)"
                 >
@@ -794,7 +801,7 @@ function handleBeforeUnload(event: BeforeUnloadEvent) {
               <div class="mini-list__item mini-list__item--stack">
                 <div class="provider-card__header">
                   <strong>{{ currentMemoryFile.relativePath || currentMemoryFile.path }}</strong>
-                  <span class="pill" :class="memoryDirty ? 'pill--warning' : 'pill--success'">
+                  <span data-testid="memory-editor-state" class="pill" :class="memoryDirty ? 'pill--warning' : 'pill--success'">
                     {{ memoryDirty ? ui.label('未保存', 'Unsaved') : ui.label('已保存', 'Saved') }}
                   </span>
                 </div>
@@ -815,7 +822,12 @@ function handleBeforeUnload(event: BeforeUnloadEvent) {
               </button>
             </div>
 
-            <textarea v-model="currentMemoryDraft" class="settings-textarea settings-textarea--editor" rows="22" />
+            <textarea
+              v-model="currentMemoryDraft"
+              data-testid="memory-editor-textarea"
+              class="settings-textarea settings-textarea--editor"
+              rows="22"
+            />
           </template>
           <div v-else class="page-empty">
             {{ ui.label('先从左侧选择一个记忆文件，再在这里查看或编辑。', 'Select a memory file from the left side first, then view or edit it here.') }}

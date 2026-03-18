@@ -114,7 +114,7 @@ async function copyLogs() {
             >
               {{ ui.label(`最近 ${lines} 行`, `${lines} lines`) }}
             </button>
-            <button v-if="ui.developerMode" class="inline-link" type="button" @click="copyLogs">
+            <button v-if="ui.developerMode" data-testid="logs-copy-action" class="inline-link" type="button" @click="copyLogs">
               {{ ui.label('复制日志', 'Copy logs') }}
             </button>
           </div>
@@ -124,7 +124,7 @@ async function copyLogs() {
           {{ logLines[0] }}
         </div>
         <template v-if="ui.developerMode">
-          <pre class="code-panel log-output">{{ logLines.join('\n') || ui.label('当前没有可显示的日志内容。', 'No log content is available right now.') }}</pre>
+          <pre data-testid="logs-raw-output" class="code-panel log-output">{{ logLines.join('\n') || ui.label('当前没有可显示的日志内容。', 'No log content is available right now.') }}</pre>
         </template>
         <template v-else>
           <div v-if="logHighlights.length" class="list-stack">

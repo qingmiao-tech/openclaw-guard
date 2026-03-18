@@ -22,6 +22,7 @@ const emit = defineEmits<{
       :key="item.id"
       class="page-tabs__button"
       :class="{ 'page-tabs__button--active': item.id === activeId }"
+      :data-tab-id="item.id"
       type="button"
       role="tab"
       :aria-selected="item.id === activeId"

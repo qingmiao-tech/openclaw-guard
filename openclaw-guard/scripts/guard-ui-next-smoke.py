@@ -128,6 +128,7 @@ class GuardNextSmoke:
         base = self.args.url.split('#', 1)[0]
         settings_url = f'{base}#/settings'
         openclaw_url = f'{base}#/openclaw'
+        logs_url = f'{base}#/logs'
         toggle = self.page.locator('.settings-toggle input[type="checkbox"]').first
         try:
             self.page.goto(settings_url, wait_until='domcontentloaded', timeout=self.args.timeout)
@@ -146,6 +147,14 @@ class GuardNextSmoke:
             if self.page.locator('.code-panel').count():
                 self.failures.append(SmokeFailure('Developer mode off should hide raw panels on the OpenClaw page.'))
 
+            self.page.goto(logs_url, wait_until='domcontentloaded', timeout=self.args.timeout)
+            self.page.wait_for_selector('.page-stack', timeout=self.args.timeout)
+            self.page.wait_for_timeout(300)
+            if self.page.locator('.log-output').count():
+                self.failures.append(SmokeFailure('Developer mode off should hide raw log output on the Logs page.'))
+            if self.page.locator('.page-actions .inline-link').count():
+                self.failures.append(SmokeFailure('Developer mode off should hide raw log copy actions on the Logs page.'))
+
             self.page.goto(settings_url, wait_until='domcontentloaded', timeout=self.args.timeout)
             self.page.wait_for_selector('.settings-toggle input[type="checkbox"]', timeout=self.args.timeout)
             toggle.set_checked(True)
@@ -160,6 +169,15 @@ class GuardNextSmoke:
                 "() => document.querySelectorAll('.code-panel').length >= 1",
                 timeout=self.args.timeout,
             )
+
+            self.page.goto(logs_url, wait_until='domcontentloaded', timeout=self.args.timeout)
+            self.page.wait_for_selector('.page-stack', timeout=self.args.timeout)
+            self.page.wait_for_function(
+                "() => document.querySelectorAll('.log-output').length >= 1",
+                timeout=self.args.timeout,
+            )
+            if not self.page.locator('.page-actions .inline-link').count():
+                self.failures.append(SmokeFailure('Developer mode on should reveal raw log copy actions on the Logs page.'))
 
             self.page.goto(settings_url, wait_until='domcontentloaded', timeout=self.args.timeout)
             self.page.wait_for_selector('.settings-toggle input[type="checkbox"]', timeout=self.args.timeout)

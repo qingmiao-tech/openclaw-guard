@@ -11,7 +11,7 @@ from playwright.sync_api import sync_playwright
 
 DEFAULT_URL = 'http://127.0.0.1:18088/next'
 DEFAULT_TIMEOUT_MS = 15000
-TARGET_ROUTES = ['#/', '#/operations', '#/openclaw', '#/recovery', '#/logs']
+TARGET_ROUTES = ['#/', '#/operations', '#/openclaw', '#/channels', '#/models', '#/recovery', '#/logs', '#/settings']
 
 
 @dataclass
@@ -45,6 +45,7 @@ class GuardNextSmoke:
         self._login_if_needed()
         self._verify_shell()
         self._visit_routes()
+        self._verify_developer_mode_toggle()
         self._open_theme_menu()
         self._open_language_menu()
         self._logout()
@@ -106,6 +107,54 @@ class GuardNextSmoke:
                 self.page.wait_for_selector('.page-stack', timeout=self.args.timeout)
             except (PlaywrightTimeoutError, PlaywrightError) as exc:
                 self.failures.append(SmokeFailure(f'Route {route_hash} failed: {exc}'))
+
+    def _verify_developer_mode_toggle(self) -> None:
+        base = self.args.url.split('#', 1)[0]
+        settings_url = f'{base}#/settings'
+        openclaw_url = f'{base}#/openclaw'
+        toggle = self.page.locator('.settings-toggle input[type="checkbox"]').first
+        try:
+            self.page.goto(settings_url, wait_until='domcontentloaded', timeout=self.args.timeout)
+            self.page.wait_for_selector('.settings-toggle input[type="checkbox"]', timeout=self.args.timeout)
+            initial_checked = toggle.is_checked()
+
+            toggle.set_checked(False)
+            self.page.wait_for_function(
+                "() => document.documentElement.dataset.developerMode === 'off'",
+                timeout=self.args.timeout,
+            )
+
+            self.page.goto(openclaw_url, wait_until='domcontentloaded', timeout=self.args.timeout)
+            self.page.wait_for_selector('.page-stack', timeout=self.args.timeout)
+            self.page.wait_for_timeout(300)
+            if self.page.locator('.code-panel').count():
+                self.failures.append(SmokeFailure('Developer mode off should hide raw panels on the OpenClaw page.'))
+
+            self.page.goto(settings_url, wait_until='domcontentloaded', timeout=self.args.timeout)
+            self.page.wait_for_selector('.settings-toggle input[type="checkbox"]', timeout=self.args.timeout)
+            toggle.set_checked(True)
+            self.page.wait_for_function(
+                "() => document.documentElement.dataset.developerMode === 'on'",
+                timeout=self.args.timeout,
+            )
+
+            self.page.goto(openclaw_url, wait_until='domcontentloaded', timeout=self.args.timeout)
+            self.page.wait_for_selector('.page-stack', timeout=self.args.timeout)
+            self.page.wait_for_function(
+                "() => document.querySelectorAll('.code-panel').length >= 1",
+                timeout=self.args.timeout,
+            )
+
+            self.page.goto(settings_url, wait_until='domcontentloaded', timeout=self.args.timeout)
+            self.page.wait_for_selector('.settings-toggle input[type="checkbox"]', timeout=self.args.timeout)
+            toggle.set_checked(initial_checked)
+            self.page.wait_for_function(
+                "(expected) => document.documentElement.dataset.developerMode === expected",
+                arg='on' if initial_checked else 'off',
+                timeout=self.args.timeout,
+            )
+        except (PlaywrightTimeoutError, PlaywrightError) as exc:
+            self.failures.append(SmokeFailure(f'Developer mode toggle flow failed: {exc}'))
 
     def _open_theme_menu(self) -> None:
         try:

@@ -63,15 +63,15 @@ const lastAction = ref<LastActionState>(null);
 const resource = useAsyncResource(() => loadCronOverview(), cronOverviewCache, { immediate: false });
 const draft = reactive(createDefaultDraft());
 
-watch(resource.data, (value) => {
+watch(() => resource.data, (value) => {
   if (value) cronOverviewCache = value;
 });
 
 onMounted(() => {
-  void resource.execute({ silent: !!resource.data.value });
+  void resource.execute({ silent: !!resource.data });
 });
 
-const jobs = computed(() => resource.data.value?.jobs || []);
+const jobs = computed(() => resource.data?.jobs || []);
 const enabledJobs = computed(() => jobs.value.filter((job) => job.enabled));
 const disabledJobs = computed(() => jobs.value.filter((job) => !job.enabled));
 const filteredJobs = computed(() => {
@@ -252,7 +252,7 @@ function buildPayload(): CronJobInput {
 }
 
 async function refreshPage() {
-  await resource.execute({ silent: !!resource.data.value });
+  await resource.execute({ silent: !!resource.data });
 }
 
 function markLastAction(result: CronActionResult, tone: 'success' | 'error') {
@@ -414,7 +414,10 @@ async function handleJobAction(action: 'run' | 'enable' | 'disable' | 'remove', 
           <strong>{{ lastAction.message }}</strong>
           <span>{{ formatDateTime(lastAction.at) }}</span>
         </div>
-        <pre v-if="lastAction.detail" class="code-panel">{{ lastAction.detail }}</pre>
+        <pre v-if="ui.developerMode && lastAction.detail" class="code-panel">{{ lastAction.detail }}</pre>
+        <p v-else-if="lastAction.detail" class="muted-copy">
+          {{ ui.label('最近一次任务动作的原始 detail 已收纳到开发者模式里。需要查看底层返回内容时，请先到 Settings 打开开发者模式。', 'The raw detail from the latest task action now stays behind developer mode. Enable it from Settings if you need the underlying payload.') }}
+        </p>
       </PageCard>
 
       <PageCard v-if="resource.data.warnings.length || resource.data.hasMore" :title="ui.label('当前提醒', 'Current warnings')" eyebrow="Warnings">

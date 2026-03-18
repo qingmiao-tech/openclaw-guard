@@ -16,22 +16,22 @@ const resource = useAsyncResource(() => loadServiceLogs(selectedLines.value), lo
 
 const lineOptions = [100, 200, 500];
 
-const logLines = computed(() => resource.data.value?.logs || []);
+const logLines = computed(() => resource.data?.logs || []);
 const hasLogError = computed(() => /^(获取日志失败|Failed to fetch logs)/.test(logLines.value[0] || ''));
 
-watch(resource.data, (value) => {
+watch(() => resource.data, (value) => {
   if (value) logsCache = value;
 });
 
 onMounted(() => {
-  void resource.execute({ silent: !!resource.data.value });
+  void resource.execute({ silent: !!resource.data });
 });
 
 async function refreshLogs(forceLines?: number) {
   if (typeof forceLines === 'number') {
     selectedLines.value = forceLines;
   }
-  await resource.execute({ silent: !!resource.data.value });
+  await resource.execute({ silent: !!resource.data });
 }
 
 async function copyLogs() {

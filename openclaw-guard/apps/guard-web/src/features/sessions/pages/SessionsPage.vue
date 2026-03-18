@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { useAsyncResource } from '@/composables/useAsyncResource';
 import {
   formatCost,
@@ -11,8 +11,12 @@ import PageCard from '@/features/common/PageCard.vue';
 import { loadSessionsSnapshot, type SessionRecord } from '@/services/api/sessions';
 import { useUiStore } from '@/stores/ui';
 
+type SessionsSnapshot = Awaited<ReturnType<typeof loadSessionsSnapshot>>;
+
+let sessionsCache: SessionsSnapshot | null = null;
+
 const ui = useUiStore();
-const resource = useAsyncResource(() => loadSessionsSnapshot());
+const resource = useAsyncResource(() => loadSessionsSnapshot(), sessionsCache, { immediate: false });
 
 const snapshot = computed(() => resource.data?.snapshot);
 const sessions = computed(() => snapshot.value?.sessions || []);
@@ -45,6 +49,14 @@ function sessionTone(session: SessionRecord) {
   if (['error', 'failed', 'aborted'].includes(session.status)) return 'pill--danger';
   return 'pill--success';
 }
+
+watch(() => resource.data, (value) => {
+  if (value) sessionsCache = value;
+});
+
+onMounted(() => {
+  void resource.execute({ silent: !!resource.data });
+});
 </script>
 
 <template>
@@ -62,13 +74,16 @@ function sessionTone(session: SessionRecord) {
       </button>
     </header>
 
-    <div v-if="resource.loading" class="page-empty">
+    <div v-if="resource.loading && !resource.data" class="page-empty">
       {{ ui.label('正在读取会话快照…', 'Loading the session snapshot…') }}
     </div>
-    <div v-else-if="resource.error" class="page-empty page-empty--error">
+    <div v-else-if="resource.error && !resource.data" class="page-empty page-empty--error">
       {{ resource.error }}
     </div>
     <template v-else-if="resource.data && snapshot">
+      <div v-if="resource.error" class="status-banner status-banner--warning">
+        {{ ui.label('已保留上一版会话快照，但后台刷新失败：', 'The last session snapshot is still on screen, but the background refresh failed: ') }}{{ resource.error }}
+      </div>
       <PageCard :title="ui.label('会话总览', 'Session overview')" eyebrow="Summary">
         <div class="stat-grid">
           <article class="stat-card">

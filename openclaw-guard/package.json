@@ -59,6 +59,8 @@
     "web:bg:status": "node scripts/web-background.mjs status --port 18088",
     "ui:smoke": "python scripts/guard-ui-smoke.py",
     "ui:smoke:interactions": "python scripts/guard-ui-interactions.py",
+    "ui:smoke:next": "python scripts/guard-ui-next-smoke.py",
+    "ui:smoke:next:with-web": "node scripts/run-ui-next-smoke.mjs",
     "ui:smoke:with-web": "node scripts/run-ui-smoke.mjs",
     "web:bg:restart": "node scripts/restart-web.mjs",
     "web:bg:down": "node scripts/stop-web.mjs",

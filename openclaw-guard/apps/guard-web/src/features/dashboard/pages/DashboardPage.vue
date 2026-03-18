@@ -1,17 +1,29 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useAsyncResource } from '@/composables/useAsyncResource';
 import PageCard from '@/features/common/PageCard.vue';
 import { loadDashboardSnapshot } from '@/services/api/dashboard';
 import { useUiStore } from '@/stores/ui';
 
+type DashboardSnapshot = Awaited<ReturnType<typeof loadDashboardSnapshot>>;
+
+let dashboardCache: DashboardSnapshot | null = null;
+
 const ui = useUiStore();
-const resource = useAsyncResource(() => loadDashboardSnapshot());
+const resource = useAsyncResource(() => loadDashboardSnapshot(), dashboardCache, { immediate: false });
 
 const riskItems = computed(() => {
   const source = resource.data?.overview?.risks;
   return Array.isArray(source) ? source : [];
+});
+
+watch(() => resource.data, (value) => {
+  if (value) dashboardCache = value;
+});
+
+onMounted(() => {
+  void resource.execute({ silent: !!resource.data });
 });
 </script>
 
@@ -30,15 +42,18 @@ const riskItems = computed(() => {
       </button>
     </header>
 
-    <div v-if="resource.loading" class="page-empty">
+    <div v-if="resource.loading && !resource.data" class="page-empty">
       {{ ui.label('正在加载首页快照…', 'Loading the home snapshot…') }}
     </div>
 
-    <div v-else-if="resource.error" class="page-empty page-empty--error">
+    <div v-else-if="resource.error && !resource.data" class="page-empty page-empty--error">
       {{ resource.error }}
     </div>
 
     <template v-else-if="resource.data">
+      <div v-if="resource.error" class="status-banner status-banner--warning">
+        {{ ui.label('已保留上一版首页快照，但后台刷新失败：', 'The last home snapshot is still on screen, but the background refresh failed: ') }}{{ resource.error }}
+      </div>
       <PageCard :title="ui.label('当前可用性', 'Current availability')" eyebrow="Status">
         <div class="stat-grid">
           <article class="stat-card">

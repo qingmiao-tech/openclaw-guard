@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useAsyncResource } from '@/composables/useAsyncResource';
 import { humanizeFieldName, isSensitiveField, parseBooleanLike, parseOptionalNumber } from '@/features/common/display';
 import PageCard from '@/features/common/PageCard.vue';
@@ -29,9 +29,13 @@ const CHANNEL_SELECT_OPTIONS: Record<string, string[]> = {
   renderMode: ['auto', 'rich', 'compact'],
 };
 
+type ChannelsSnapshot = Awaited<ReturnType<typeof loadChannelsSnapshot>>;
+
+let channelsCache: ChannelsSnapshot | null = null;
+
 const ui = useUiStore();
 const feedback = useFeedbackStore();
-const resource = useAsyncResource(() => loadChannelsSnapshot());
+const resource = useAsyncResource(() => loadChannelsSnapshot(), channelsCache, { immediate: false });
 const selectedId = ref('');
 const saving = ref(false);
 const clearing = ref(false);
@@ -147,6 +151,7 @@ function hydrateDraft() {
 watch(
   () => resource.data,
   (snapshot) => {
+    if (snapshot) channelsCache = snapshot;
     const definitions = snapshot?.definitions || [];
     if (!definitions.length) return;
     if (!selectedId.value || !definitionMap.value.has(selectedId.value)) {
@@ -160,6 +165,10 @@ watch(
 
 watch(selectedId, () => {
   hydrateDraft();
+});
+
+onMounted(() => {
+  void resource.execute({ silent: !!resource.data });
 });
 
 function statusMessage() {
@@ -281,13 +290,16 @@ function getTextValue(key: string) {
       </button>
     </header>
 
-    <div v-if="resource.loading" class="page-empty">
+    <div v-if="resource.loading && !resource.data" class="page-empty">
       {{ ui.label('正在读取渠道配置…', 'Loading channel configuration…') }}
     </div>
-    <div v-else-if="resource.error" class="page-empty page-empty--error">
+    <div v-else-if="resource.error && !resource.data" class="page-empty page-empty--error">
       {{ resource.error }}
     </div>
     <template v-else-if="resource.data && selectedChannel">
+      <div v-if="resource.error" class="status-banner status-banner--warning">
+        {{ ui.label('已保留上一版渠道快照，但后台刷新失败：', 'The last channel snapshot is still on screen, but the background refresh failed: ') }}{{ resource.error }}
+      </div>
       <PageCard :title="ui.label('当前概览', 'Current overview')" eyebrow="Summary">
         <div class="stat-grid">
           <article class="stat-card">
@@ -420,11 +432,14 @@ function getTextValue(key: string) {
               </article>
             </div>
 
-            <pre class="code-panel">{{ JSON.stringify({
+            <pre v-if="ui.developerMode" class="code-panel">{{ JSON.stringify({
               enabled: boolDraft.enabled,
               fields: Object.fromEntries(Object.keys(textDraft).filter((key) => !key.startsWith('env:')).map((key) => [key, isSensitiveField(key) && getTextValue(key) ? '******' : getTextValue(key)])),
               envFields: Object.fromEntries(Object.keys(textDraft).filter((key) => key.startsWith('env:')).map((key) => [key, getTextValue(key) ? '******' : ''])),
             }, null, 2) }}</pre>
+            <p v-else class="muted-copy">
+              {{ ui.label('当前草稿的原始配置预览已收纳到开发者模式里。需要排查字段写入结果时，请先到 Settings 打开开发者模式。', 'The raw draft preview now stays behind developer mode. Enable it from Settings when you need to inspect the exact payload.') }}
+            </p>
           </PageCard>
         </div>
       </div>

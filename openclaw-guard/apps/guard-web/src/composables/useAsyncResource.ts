@@ -1,4 +1,4 @@
-import { onMounted, ref } from 'vue';
+import { onMounted, proxyRefs, ref } from 'vue';
 
 type ExecuteOptions = {
   silent?: boolean;
@@ -43,11 +43,11 @@ export function useAsyncResource<T>(
     }
   });
 
-  return {
+  return proxyRefs({
     data,
     loading,
     refreshing,
     error,
     execute,
-  };
+  });
 }

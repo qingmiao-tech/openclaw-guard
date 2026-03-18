@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useAsyncResource } from '@/composables/useAsyncResource';
 import { formatDateTime, shortSha } from '@/features/common/display';
 import PageCard from '@/features/common/PageCard.vue';
@@ -22,6 +22,10 @@ import { useUiStore } from '@/stores/ui';
 type RecoveryView = 'center' | 'advanced';
 type AdvancedAction = 'init' | 'private' | 'checkpoint' | 'push' | 'sync' | 'gitignore';
 
+type RecoverySnapshot = Awaited<ReturnType<typeof loadRecoverySnapshot>>;
+
+let recoveryCache: RecoverySnapshot | null = null;
+
 const ui = useUiStore();
 const feedback = useFeedbackStore();
 const view = ref<RecoveryView>('center');
@@ -30,7 +34,7 @@ const advancedMessage = ref('');
 const savingPoint = ref(false);
 const restoringCommit = ref('');
 const runningAction = ref<AdvancedAction | ''>('');
-const resource = useAsyncResource(() => loadRecoverySnapshot());
+const resource = useAsyncResource(() => loadRecoverySnapshot(), recoveryCache, { immediate: false });
 
 const recoveryTabs = computed(() => [
   { id: 'center', label: ui.label('恢复中心', 'Recovery center') },
@@ -176,6 +180,13 @@ async function copyPoint(commitSha: string) {
     message: ui.label('恢复点哈希已复制。', 'Recovery point hash copied.'),
   });
 }
+watch(() => resource.data, (value) => {
+  if (value) recoveryCache = value;
+});
+
+onMounted(() => {
+  void resource.execute({ silent: !!resource.data });
+});
 </script>
 
 <template>
@@ -195,13 +206,16 @@ async function copyPoint(commitSha: string) {
 
     <PageTabs :items="recoveryTabs" :active-id="view" @change="handleRecoveryTabChange" />
 
-    <div v-if="resource.loading" class="page-empty">
+    <div v-if="resource.loading && !resource.data" class="page-empty">
       {{ ui.label('正在读取保护状态…', 'Loading protection status…') }}
     </div>
-    <div v-else-if="resource.error" class="page-empty page-empty--error">
+    <div v-else-if="resource.error && !resource.data" class="page-empty page-empty--error">
       {{ resource.error }}
     </div>
     <template v-else-if="resource.data">
+      <div v-if="resource.error" class="status-banner status-banner--warning">
+        {{ ui.label('已保留上一版备份与恢复快照，但后台刷新失败：', 'The last backup and recovery snapshot is still on screen, but the background refresh failed: ') }}{{ resource.error }}
+      </div>
       <template v-if="view === 'center'">
         <PageCard :title="ui.label('当前保护状态', 'Current protection state')" eyebrow="Overview">
           <div class="provider-card__header">
@@ -391,11 +405,14 @@ async function copyPoint(commitSha: string) {
             </article>
           </div>
 
-          <pre class="code-panel">{{ JSON.stringify({
+          <pre v-if="ui.developerMode" class="code-panel">{{ JSON.stringify({
             changedFiles: resource.data.gitStatus.changedFiles,
             stageableChangedFiles: resource.data.gitStatus.stageableChangedFiles,
             skippedEmbeddedRepos: resource.data.gitStatus.skippedEmbeddedRepos,
           }, null, 2) }}</pre>
+          <p v-else class="muted-copy">
+            {{ ui.label('原始保护范围列表已收纳到开发者模式中。若要逐条检查 changed files 或 skipped repos，请先到 Settings 打开开发者模式。', 'The raw protection-scope payload now stays behind developer mode. Enable it from Settings when you need to inspect changed files or skipped repositories one by one.') }}
+          </p>
         </PageCard>
 
         <PageCard :title="ui.label('.gitignore 建议', '.gitignore suggestions')" eyebrow="Ignore rules">
@@ -414,7 +431,10 @@ async function copyPoint(commitSha: string) {
               <span>{{ resource.data.gitIgnorePreview.gitignorePath }}</span>
             </article>
           </div>
-          <pre class="code-panel">{{ resource.data.gitIgnorePreview.appendBlock || ui.label('当前没有需要追加的规则。', 'There are no extra rules to append right now.') }}</pre>
+          <pre v-if="ui.developerMode" class="code-panel">{{ resource.data.gitIgnorePreview.appendBlock || ui.label('当前没有需要追加的规则。', 'There are no extra rules to append right now.') }}</pre>
+          <p v-else class="muted-copy">
+            {{ ui.label('推荐规则的原始追加块已收纳到开发者模式中。若你需要逐行检查 appendBlock，请先到 Settings 打开开发者模式。', 'The raw append block for recommended rules now stays behind developer mode. Enable it from Settings if you need to inspect the exact appendBlock line by line.') }}
+          </p>
           <div class="page-actions">
             <button class="inline-link" type="button" :disabled="runningAction === 'gitignore'" @click="runAdvancedAction('gitignore')">
               {{ runningAction === 'gitignore' ? ui.label('写入中…', 'Applying…') : ui.label('追加推荐规则', 'Append recommended rules') }}

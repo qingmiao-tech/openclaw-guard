@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAsyncResource } from '@/composables/useAsyncResource';
 import { formatNumber } from '@/features/common/display';
@@ -8,10 +8,14 @@ import { loadRolesSnapshot, type AgentSummary } from '@/services/api/roles';
 import { useUiStore } from '@/stores/ui';
 import { useWorkspaceStore } from '@/stores/workspace';
 
+type RolesSnapshot = Awaited<ReturnType<typeof loadRolesSnapshot>>;
+
+let rolesCache: RolesSnapshot | null = null;
+
 const ui = useUiStore();
 const router = useRouter();
 const workspace = useWorkspaceStore();
-const resource = useAsyncResource(() => loadRolesSnapshot());
+const resource = useAsyncResource(() => loadRolesSnapshot(), rolesCache, { immediate: false });
 
 const agents = computed(() => resource.data?.agents || []);
 const defaultCount = computed(() => agents.value.filter((agent) => agent.isDefault).length);
@@ -32,6 +36,14 @@ function openWorkspace(agent: AgentSummary) {
   workspace.setSelectedMemoryFilePath('');
   void router.push('/files');
 }
+
+watch(() => resource.data, (value) => {
+  if (value) rolesCache = value;
+});
+
+onMounted(() => {
+  void resource.execute({ silent: !!resource.data });
+});
 </script>
 
 <template>
@@ -49,13 +61,16 @@ function openWorkspace(agent: AgentSummary) {
       </button>
     </header>
 
-    <div v-if="resource.loading" class="page-empty">
+    <div v-if="resource.loading && !resource.data" class="page-empty">
       {{ ui.label('正在读取角色目录…', 'Loading the role catalog…') }}
     </div>
-    <div v-else-if="resource.error" class="page-empty page-empty--error">
+    <div v-else-if="resource.error && !resource.data" class="page-empty page-empty--error">
       {{ resource.error }}
     </div>
     <template v-else>
+      <div v-if="resource.error" class="status-banner status-banner--warning">
+        {{ ui.label('宸蹭繚鐣欎笂涓€鐗堣鑹茬洰褰曪紝浣嗗悗鍙板埛鏂板け璐ワ細', 'The last role catalog is still on screen, but the background refresh failed: ') }}{{ resource.error }}
+      </div>
       <PageCard :title="ui.label('团队概览', 'Team overview')" eyebrow="Summary">
         <div class="stat-grid">
           <article class="stat-card">

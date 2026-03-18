@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue';
-import { RouterLink, RouterView, useRoute } from 'vue-router';
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import { useFeedbackStore } from '@/stores/feedback';
 import { useUiStore, type ThemePreference } from '@/stores/ui';
 
 type NavItem = {
@@ -16,8 +18,16 @@ type NavGroup = {
   items: NavItem[];
 };
 
+type HiddenRouteLabel = {
+  zh: string;
+  en: string;
+};
+
 const ui = useUiStore();
+const auth = useAuthStore();
+const feedback = useFeedbackStore();
 const route = useRoute();
+const router = useRouter();
 const logoUrl = '/ui/logo.png';
 
 const navGroups: NavGroup[] = [
@@ -65,6 +75,10 @@ const navGroups: NavGroup[] = [
   },
 ];
 
+const hiddenRouteLabels: Record<string, HiddenRouteLabel> = {
+  '/settings': { zh: '设置', en: 'Settings' },
+};
+
 const themeMenu: Array<{ value: ThemePreference; icon: string; zh: string; en: string }> = [
   { value: 'auto', icon: '⌘', zh: '跟随系统', en: 'Auto' },
   { value: 'light', icon: '☀', zh: '浅色', en: 'Light' },
@@ -79,7 +93,14 @@ const themeIcon = computed(() => {
 
 const activeLabel = computed(() => {
   const item = navGroups.flatMap((group) => group.items).find((entry) => entry.to === route.path);
-  return item ? ui.label(item.zh, item.en) : ui.label('首页', 'Home');
+  if (item) {
+    return ui.label(item.zh, item.en);
+  }
+  const hiddenRoute = hiddenRouteLabels[route.path];
+  if (hiddenRoute) {
+    return ui.label(hiddenRoute.zh, hiddenRoute.en);
+  }
+  return ui.label('首页', 'Home');
 });
 
 onMounted(() => {
@@ -88,6 +109,29 @@ onMounted(() => {
 
 watch(() => ui.themePreference, () => ui.applyDocumentState());
 watch(() => ui.language, () => ui.applyDocumentState());
+watch(() => ui.developerMode, () => ui.applyDocumentState());
+
+function openSettings() {
+  void router.push('/settings');
+}
+
+async function handleLogout() {
+  const confirmed = await feedback.confirm({
+    title: ui.label('退出当前登录？', 'Sign out of the current session?'),
+    message: ui.label('退出后需要重新输入本机访问密码。', 'You will need the local access password to sign in again.'),
+    confirmLabel: ui.label('退出登录', 'Sign out'),
+    cancelLabel: ui.label('取消', 'Cancel'),
+  });
+  if (!confirmed) {
+    return;
+  }
+  await auth.logout();
+  feedback.pushToast({
+    tone: 'success',
+    title: ui.label('已退出登录', 'Signed out'),
+    message: ui.label('你已经退出新的模块化控制台。', 'You have signed out of the modular console.'),
+  });
+}
 </script>
 
 <template>
@@ -136,8 +180,28 @@ watch(() => ui.language, () => ui.applyDocumentState());
           </div>
         </div>
 
-        <a class="toolbar-link" href="/" target="_blank" rel="noreferrer">
-          {{ ui.label('打开当前正式控制台', 'Open current production console') }}
+        <div v-if="auth.authEnabled && auth.authenticated" class="toolbar-menu">
+          <button class="toolbar-icon" type="button" :title="ui.label('账号', 'Account')">
+            ⚙
+          </button>
+          <div class="toolbar-popover">
+            <button class="toolbar-popover__item" type="button" @click="openSettings">
+              <span>⟡</span>
+              <span>{{ ui.label('设置', 'Settings') }}</span>
+            </button>
+            <button class="toolbar-popover__item" type="button" @click="auth.openChangePassword()">
+              <span>🔑</span>
+              <span>{{ ui.label('修改密码', 'Change password') }}</span>
+            </button>
+            <button class="toolbar-popover__item toolbar-popover__item--danger" type="button" @click="handleLogout">
+              <span>↩</span>
+              <span>{{ ui.label('退出登录', 'Sign out') }}</span>
+            </button>
+          </div>
+        </div>
+
+        <a class="toolbar-link" href="/legacy" target="_blank" rel="noreferrer">
+          {{ ui.label('打开旧版控制台', 'Open legacy console') }}
         </a>
       </div>
     </header>

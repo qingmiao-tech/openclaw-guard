@@ -1,115 +1,181 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import http from 'node:http';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-describe('startServer - 进程级错误处理', () => {
-  let processOnSpy: any;
+type UncaughtHandler = (err: Error) => void;
+type RejectionHandler = (reason: unknown) => void;
 
-  beforeEach(() => {
-    processOnSpy = vi.spyOn(process, 'on');
-  });
+async function ensureServerBootstrapped() {
+  const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  const { startServer } = await import('../server.js');
+  const server = startServer(0);
+  server?.close();
+  logSpy.mockRestore();
+}
 
-  afterEach(() => {
-    processOnSpy.mockRestore();
-  });
+function findGuardHandler<TArgs extends unknown[]>(
+  eventName: 'uncaughtException' | 'unhandledRejection',
+  expectedPrefix: string,
+  invokeArgs: TArgs,
+) {
+  const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const candidates = process.listeners(eventName) as Array<(...args: TArgs) => void>;
 
-  it('注册 uncaughtException 处理器', async () => {
-    // Dynamically import to trigger startServer registration
-    const { startServer } = await import('../server.js');
+  for (const candidate of candidates) {
+    try {
+      errorSpy.mockClear();
+      candidate(...invokeArgs);
+      if (errorSpy.mock.calls.some((call) => call[0] === expectedPrefix)) {
+        errorSpy.mockRestore();
+        return candidate;
+      }
+    } catch {
+      // ignore and try next
+    }
+  }
 
-    // Create a server but don't actually listen — we just need the handlers registered
-    const server = startServer(0);
-    server?.close();
+  errorSpy.mockRestore();
+  return null;
+}
 
-    const uncaughtCalls = processOnSpy.mock.calls.filter(
-      ([event]: any[]) => event === 'uncaughtException'
-    );
-    expect(uncaughtCalls.length).toBeGreaterThanOrEqual(1);
-    expect(typeof uncaughtCalls[0][1]).toBe('function');
-  });
+async function startEphemeralServer() {
+  const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  const { startServer } = await import('../server.js');
+  const server = startServer(0);
+  await new Promise<void>((resolve) => server.on('listening', () => resolve()));
+  logSpy.mockRestore();
+  return server;
+}
 
-  it('注册 unhandledRejection 处理器', async () => {
-    const { startServer } = await import('../server.js');
+function getPort(server: http.Server) {
+  const address = server.address();
+  if (!address || typeof address === 'string') {
+    throw new Error('Server is not listening');
+  }
+  return address.port;
+}
 
-    const server = startServer(0);
-    server?.close();
+async function closeServer(server: http.Server) {
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+}
 
-    const rejectionCalls = processOnSpy.mock.calls.filter(
-      ([event]: any[]) => event === 'unhandledRejection'
-    );
-    expect(rejectionCalls.length).toBeGreaterThanOrEqual(1);
-    expect(typeof rejectionCalls[0][1]).toBe('function');
-  });
+describe('startServer - process-level handlers', () => {
+  it('registers an uncaughtException handler that logs stack', async () => {
+    await ensureServerBootstrapped();
 
-  it('uncaughtException 处理器记录错误堆栈到控制台', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { startServer } = await import('../server.js');
-
-    const server = startServer(0);
-    server?.close();
-
-    // Find the registered handler
-    const uncaughtCall = processOnSpy.mock.calls.find(
-      ([event]: any[]) => event === 'uncaughtException'
-    );
-    const handler = uncaughtCall![1] as (err: Error) => void;
-
-    // Invoke the handler with a test error
-    const testError = new Error('test uncaught error');
-    handler(testError);
-
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
+    const probeError = new Error('probe');
+    const handler = findGuardHandler<[Error]>(
+      'uncaughtException',
       '[Guard] Uncaught exception:',
-      testError.stack
-    );
+      [probeError],
+    ) as UncaughtHandler | null;
 
+    expect(handler).not.toBeNull();
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    handler!(probeError);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('[Guard] Uncaught exception:', probeError.stack);
     consoleErrorSpy.mockRestore();
   });
 
-  it('unhandledRejection 处理器记录 rejection 详情到控制台', async () => {
+  it('registers an uncaughtException handler that falls back to message', async () => {
+    await ensureServerBootstrapped();
+
+    const probeError = new Error('no stack error');
+    probeError.stack = undefined;
+    const handler = findGuardHandler<[Error]>(
+      'uncaughtException',
+      '[Guard] Uncaught exception:',
+      [probeError],
+    ) as UncaughtHandler | null;
+
+    expect(handler).not.toBeNull();
+
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { startServer } = await import('../server.js');
+    handler!(probeError);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('[Guard] Uncaught exception:', 'no stack error');
+    consoleErrorSpy.mockRestore();
+  });
 
-    const server = startServer(0);
-    server?.close();
+  it('registers an unhandledRejection handler that logs reason', async () => {
+    await ensureServerBootstrapped();
 
-    // Find the registered handler
-    const rejectionCall = processOnSpy.mock.calls.find(
-      ([event]: any[]) => event === 'unhandledRejection'
-    );
-    const handler = rejectionCall![1] as (reason: unknown) => void;
-
-    // Invoke the handler with a test reason
-    handler('promise rejection reason');
-
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
+    const reason = 'promise rejection reason';
+    const handler = findGuardHandler<[unknown]>(
+      'unhandledRejection',
       '[Guard] Unhandled Promise rejection:',
-      'promise rejection reason'
-    );
+      [reason],
+    ) as RejectionHandler | null;
 
-    consoleErrorSpy.mockRestore();
-  });
+    expect(handler).not.toBeNull();
 
-  it('uncaughtException 处理器在无 stack 时使用 message', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { startServer } = await import('../server.js');
-
-    const server = startServer(0);
-    server?.close();
-
-    const uncaughtCall = processOnSpy.mock.calls.find(
-      ([event]: any[]) => event === 'uncaughtException'
-    );
-    const handler = uncaughtCall![1] as (err: Error) => void;
-
-    // Create an error without stack
-    const testError = new Error('no stack error');
-    testError.stack = undefined;
-    handler(testError);
-
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      '[Guard] Uncaught exception:',
-      'no stack error'
-    );
-
+    handler!(reason);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('[Guard] Unhandled Promise rejection:', reason);
     consoleErrorSpy.mockRestore();
   });
 });
+
+describe('startServer - UI selector routing', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('serves legacy workbench by default on /', async () => {
+    const server = await startEphemeralServer();
+    const port = getPort(server);
+
+    const response = await fetch(`http://localhost:${port}/`);
+    const html = await response.text();
+
+    expect(html).toContain('/ui/guard-ui.js');
+    await closeServer(server);
+  });
+
+  it('serves next workbench on / when overridden by query', async () => {
+    const server = await startEphemeralServer();
+    const port = getPort(server);
+
+    const response = await fetch(`http://localhost:${port}/?ui=next`);
+    const html = await response.text();
+
+    expect(html).toContain('/ui/guard-ui.next.js');
+    await closeServer(server);
+  });
+
+  it('serves next workbench on / when GUARD_UI=next', async () => {
+    vi.stubEnv('GUARD_UI', 'next');
+    const server = await startEphemeralServer();
+    const port = getPort(server);
+
+    const response = await fetch(`http://localhost:${port}/`);
+    const html = await response.text();
+
+    expect(html).toContain('/ui/guard-ui.next.js');
+    await closeServer(server);
+  });
+
+  it('keeps /legacy on legacy even when GUARD_UI=next', async () => {
+    vi.stubEnv('GUARD_UI', 'next');
+    const server = await startEphemeralServer();
+    const port = getPort(server);
+
+    const response = await fetch(`http://localhost:${port}/legacy`);
+    const html = await response.text();
+
+    expect(html).toContain('/ui/guard-ui.js');
+    await closeServer(server);
+  });
+
+  it('keeps /next on next even when GUARD_UI=legacy', async () => {
+    vi.stubEnv('GUARD_UI', 'legacy');
+    const server = await startEphemeralServer();
+    const port = getPort(server);
+
+    const response = await fetch(`http://localhost:${port}/next`);
+    const html = await response.text();
+
+    expect(html).toContain('/ui/guard-ui.next.js');
+    await closeServer(server);
+  });
+});
+

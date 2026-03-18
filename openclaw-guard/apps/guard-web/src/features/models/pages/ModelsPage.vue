@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useAsyncResource } from '@/composables/useAsyncResource';
 import { parseOptionalNumber } from '@/features/common/display';
 import PageCard from '@/features/common/PageCard.vue';
@@ -23,9 +23,13 @@ type PickerOption = {
 
 const API_TYPE_OPTIONS = ['openai-completions', 'anthropic-messages', 'openai-responses'];
 
+type ModelsSnapshot = Awaited<ReturnType<typeof loadModelsSnapshot>>;
+
+let modelsCache: ModelsSnapshot | null = null;
+
 const ui = useUiStore();
 const feedback = useFeedbackStore();
-const resource = useAsyncResource(() => loadModelsSnapshot());
+const resource = useAsyncResource(() => loadModelsSnapshot(), modelsCache, { immediate: false });
 const selectedKey = ref('__new__');
 const routingSaving = ref(false);
 const providerSaving = ref(false);
@@ -172,6 +176,7 @@ function configureDraftFromSelection(selectionKey: string) {
 watch(
   () => resource.data,
   (snapshot) => {
+    if (snapshot) modelsCache = snapshot;
     if (!snapshot) return;
     primaryDraft.value = snapshot.config.primaryModel || '';
     fallbackDraft.value = [...(snapshot.config.fallbackModels || [])];
@@ -188,6 +193,10 @@ watch(
 
 watch(selectedKey, (value) => {
   configureDraftFromSelection(value);
+});
+
+onMounted(() => {
+  void resource.execute({ silent: !!resource.data });
 });
 
 async function handleRoutingSave() {
@@ -316,13 +325,16 @@ function presetHint(preset: ProviderPreset | undefined, customProvider: CustomPr
       </button>
     </header>
 
-    <div v-if="resource.loading" class="page-empty">
+    <div v-if="resource.loading && !resource.data" class="page-empty">
       {{ ui.label('正在读取模型配置…', 'Loading model configuration…') }}
     </div>
-    <div v-else-if="resource.error" class="page-empty page-empty--error">
+    <div v-else-if="resource.error && !resource.data" class="page-empty page-empty--error">
       {{ resource.error }}
     </div>
     <template v-else-if="resource.data">
+      <div v-if="resource.error" class="status-banner status-banner--warning">
+        {{ ui.label('已保留上一版模型快照，但后台刷新失败：', 'The last model snapshot is still on screen, but the background refresh failed: ') }}{{ resource.error }}
+      </div>
       <PageCard :title="ui.label('当前路由概览', 'Current routing overview')" eyebrow="Routing">
         <div class="stat-grid">
           <article class="stat-card">

@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-describe('auth initial password recovery', () => {
+describe('auth password reveal', () => {
   let tempRoot: string;
 
   beforeEach(() => {
@@ -18,7 +18,7 @@ describe('auth initial password recovery', () => {
     fs.rmSync(tempRoot, { recursive: true, force: true });
   });
 
-  it('stores the generated initial password for local reveal commands', async () => {
+  it('stores the generated password for local reveal commands', async () => {
     const auth = await import('../auth.js');
 
     const initialized = auth.initAuth();
@@ -35,15 +35,21 @@ describe('auth initial password recovery', () => {
     expect(status.revealCommand).toBe('openclaw-guard auth show-password');
   });
 
-  it('clears the initial password record after the password is changed', async () => {
+  it('updates the reveal record after the password is changed', async () => {
     const auth = await import('../auth.js');
 
     const initialized = auth.initAuth();
     const result = auth.changePassword(initialized.password || '', 'my-new-password');
 
     expect(result.success).toBe(true);
-    expect(auth.getInitialPasswordRecord()).toBeNull();
+    expect(auth.getInitialPasswordRecord()).toEqual({
+      password: 'my-new-password',
+      createdAt: expect.any(String),
+      authCreatedAt: expect.any(String),
+      kind: 'changed',
+    });
     expect(auth.validatePassword('my-new-password')).toBe(true);
-    expect(auth.getAuthStatus().initialPasswordAvailable).toBe(false);
+    expect(auth.getAuthStatus().initialPasswordAvailable).toBe(true);
+    expect(auth.getAuthStatus().revealPasswordKind).toBe('changed');
   });
 });

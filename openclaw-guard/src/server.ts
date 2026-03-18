@@ -103,6 +103,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const WEB_DIR = path.resolve(__dirname, '..', 'web');
 
+let processHandlersRegistered = false;
+
 function resolveStaticAsset(...segments: string[]) {
   const candidates = [
     path.resolve(WEB_DIR, ...segments.slice(1)),
@@ -230,16 +232,28 @@ function parseCronJobInput(body: Record<string, unknown>, jobId?: string): CronJ
 export function startServer(port: number) {
   const maxRetries = 10;
 
-  process.on('uncaughtException', (err) => {
-    console.error('[Guard] Uncaught exception:', err.stack || err.message);
-  });
+  if (!processHandlersRegistered) {
+    processHandlersRegistered = true;
+    process.on('uncaughtException', (err) => {
+      console.error('[Guard] Uncaught exception:', err.stack || err.message);
+    });
 
-  process.on('unhandledRejection', (reason) => {
-    console.error('[Guard] Unhandled Promise rejection:', reason);
-  });
+    process.on('unhandledRejection', (reason) => {
+      console.error('[Guard] Unhandled Promise rejection:', reason);
+    });
+  }
 
   let currentPort = port;
 
+  function resolveUiMode(url: URL): 'legacy' | 'next' {
+    const override = (url.searchParams.get('ui') || '').toLowerCase();
+    if (override === 'legacy' || override === 'next') {
+      return override;
+    }
+
+    const env = (process.env.GUARD_UI || '').toLowerCase();
+    return env === 'next' ? 'next' : 'legacy';
+  }
 
   function createHttpServer() {
     return http.createServer(async (req, res) => {
@@ -270,7 +284,8 @@ export function startServer(port: number) {
         }
 
         if (pathname === '/' || pathname === '/index.html' || pathname === '/workbench') {
-          htmlResponse(res, getWorkbenchPage());
+          const mode = resolveUiMode(url);
+          htmlResponse(res, mode === 'next' ? getNextWorkbenchPage() : getWorkbenchPage());
           return;
         }
         if (pathname === '/next') {
@@ -282,7 +297,7 @@ export function startServer(port: number) {
           return;
         }
         if (pathname === '/legacy') {
-          htmlResponse(res, getCompatibilityPage());
+          htmlResponse(res, getWorkbenchPage());
           return;
         }
 

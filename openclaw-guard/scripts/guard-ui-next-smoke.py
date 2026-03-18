@@ -153,8 +153,8 @@ class GuardNextSmoke:
             if textarea.input_value() != draft_value:
                 self.failures.append(SmokeFailure('Files soft refresh should preserve the current unsaved editor draft.'))
 
-            state_text = (self.page.locator(state_selector).first.text_content() or '').strip()
-            if 'Unsaved' not in state_text and '未保存' not in state_text:
+            state_class = self.page.locator(state_selector).first.get_attribute('class') or ''
+            if 'pill--warning' not in state_class:
                 self.failures.append(SmokeFailure('Files editor should remain in the unsaved state after a soft refresh.'))
 
             self.page.evaluate("(nextHash) => { window.location.hash = nextHash; }", settings_hash)
@@ -177,10 +177,27 @@ class GuardNextSmoke:
             self.failures.append(SmokeFailure(f'Files draft protection flow failed: {exc}'))
 
     def _open_first_editable_entry(self) -> str | None:
+        all_tab = self.page.locator('.page-tabs__button[data-tab-id="all"]').first
+        if all_tab.count():
+            all_tab.click()
+            self.page.wait_for_function(
+                "() => document.querySelector('.page-tabs__button[data-tab-id=\"all\"]')?.getAttribute('aria-selected') === 'true'",
+                timeout=self.args.timeout,
+            )
+            self.page.wait_for_timeout(300)
+
+        if self.args.fixture_root_id:
+            fixture_root = self.page.locator(f'.catalog-list__item[data-root-id*="{self.args.fixture_root_id}"]')
+            if fixture_root.count():
+                fixture_root.first.click()
+                self.page.wait_for_timeout(300)
+
         root_entries = self.page.locator('.catalog-list__item')
         if root_entries.count():
-            root_entries.first.click()
-            self.page.wait_for_timeout(300)
+            active_roots = self.page.locator('.catalog-list__item.catalog-list__item--active')
+            if not active_roots.count():
+                root_entries.first.click()
+                self.page.wait_for_timeout(300)
 
         for _ in range(3):
             file_entries = self.page.locator('[data-entry-kind="file"]')
@@ -362,6 +379,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--password', default='', help='Login password if Guard auth is enabled')
     parser.add_argument('--timeout', type=int, default=DEFAULT_TIMEOUT_MS, help='Timeout in milliseconds for each wait')
     parser.add_argument('--headed', action='store_true', help='Run browser in headed mode for debugging')
+    parser.add_argument('--fixture-root-id', default='', help='Optional managed-root id fragment for a smoke fixture workspace')
     return parser.parse_args()
 
 

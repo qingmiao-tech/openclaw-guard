@@ -7798,7 +7798,7 @@ const Ml = /* @__PURE__ */ wn("workspace", () => {
 }, Vg = {
   key: 1,
   class: "page-empty page-empty--error"
-}, Gg = { class: "stat-grid" }, Bg = { class: "stat-card" }, Hg = { class: "stat-card__label" }, Wg = { class: "stat-card" }, jg = { class: "stat-card__label" }, Kg = { class: "stat-card" }, zg = { class: "stat-card__label" }, qg = { class: "stat-card" }, Jg = { class: "stat-card__label" }, Qg = { class: "page-two-column" }, Yg = { class: "list-stack" }, Zg = { class: "catalog-list" }, Xg = ["onClick"], e_ = { class: "catalog-list__title" }, t_ = { class: "pill-row" }, s_ = { class: "pill pill--info" }, n_ = { class: "mini-list" }, l_ = { class: "mini-list__item mini-list__item--stack" }, a_ = { class: "page-actions" }, i_ = ["disabled"], o_ = { class: "create-row" }, r_ = { value: "file" }, c_ = { value: "directory" }, u_ = ["placeholder", "onKeydown"], d_ = ["disabled"], f_ = {
+}, Gg = { class: "stat-grid" }, Bg = { class: "stat-card" }, Hg = { class: "stat-card__label" }, Wg = { class: "stat-card" }, jg = { class: "stat-card__label" }, Kg = { class: "stat-card" }, zg = { class: "stat-card__label" }, qg = { class: "stat-card" }, Jg = { class: "stat-card__label" }, Qg = { class: "page-two-column" }, Yg = { class: "list-stack" }, Zg = { class: "catalog-list" }, Xg = ["data-root-id", "onClick"], e_ = { class: "catalog-list__title" }, t_ = { class: "pill-row" }, s_ = { class: "pill pill--info" }, n_ = { class: "mini-list" }, l_ = { class: "mini-list__item mini-list__item--stack" }, a_ = { class: "page-actions" }, i_ = ["disabled"], o_ = { class: "create-row" }, r_ = { value: "file" }, c_ = { value: "directory" }, u_ = ["placeholder", "onKeydown"], d_ = ["disabled"], f_ = {
   key: 0,
   class: "directory-list"
 }, p_ = ["data-entry-kind", "onClick"], h_ = { class: "entry-button__title" }, g_ = { class: "pill-row" }, __ = { class: "pill pill--muted" }, m_ = {
@@ -8195,6 +8195,7 @@ const Ml = /* @__PURE__ */ wn("workspace", () => {
                   (_(!0), v(Y, null, ye(y.value, (O) => (_(), v("button", {
                     key: O.id,
                     class: pe(["catalog-list__item", { "catalog-list__item--active": A.value === O.path || A.value.startsWith(`${O.path}\\`) || A.value.startsWith(`${O.path}/`) }]),
+                    "data-root-id": O.id,
                     type: "button",
                     onClick: (fe) => te(O.path)
                   }, [

@@ -573,6 +573,7 @@ function handleBeforeUnload(event: BeforeUnloadEvent) {
                 :key="root.id"
                 class="catalog-list__item"
                 :class="{ 'catalog-list__item--active': currentPath === root.path || currentPath.startsWith(`${root.path}\\`) || currentPath.startsWith(`${root.path}/`) }"
+                :data-root-id="root.id"
                 type="button"
                 @click="openRoot(root.path)"
               >

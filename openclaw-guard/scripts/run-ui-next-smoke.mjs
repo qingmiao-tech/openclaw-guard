@@ -1,4 +1,6 @@
 import { execFileSync, spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -12,6 +14,7 @@ function parseArgs(argv) {
   const args = {
     port: 18088,
     password: '',
+    fixtureRootId: '',
     keepRunning: false,
     help: false,
     extra: [],
@@ -57,6 +60,54 @@ function runCommand(command, args, options = {}) {
   if (result.status !== 0) {
     const rendered = [finalCommand, ...finalArgs].join(' ');
     throw new Error(`Command failed: ${rendered}`);
+  }
+}
+
+function resolveOpenClawDir() {
+  const stateOverride = process.env.OPENCLAW_STATE_DIR?.trim() || process.env.CLAWDBOT_STATE_DIR?.trim();
+  if (stateOverride) {
+    return path.resolve(stateOverride.startsWith('~') ? stateOverride.replace('~', os.homedir()) : stateOverride);
+  }
+
+  const home = os.homedir();
+  const newDir = path.join(home, '.openclaw');
+  const legacyDirs = [
+    path.join(home, '.clawdbot'),
+    path.join(home, '.moldbot'),
+    path.join(home, '.moltbot'),
+  ];
+
+  if (fs.existsSync(newDir)) return newDir;
+  for (const dir of legacyDirs) {
+    if (fs.existsSync(dir)) return dir;
+  }
+  return newDir;
+}
+
+function createSmokeWorkspaceFixture() {
+  const openClawDir = resolveOpenClawDir();
+  fs.mkdirSync(openClawDir, { recursive: true });
+
+  const name = `workspace-guard-next-smoke-${Date.now()}`;
+  const fixturePath = path.join(openClawDir, name);
+  fs.mkdirSync(path.join(fixturePath, 'memory'), { recursive: true });
+  fs.writeFileSync(path.join(fixturePath, 'SOUL.md'), '# smoke workspace\n', 'utf-8');
+  fs.writeFileSync(path.join(fixturePath, 'AGENTS.md'), '# smoke agent\n', 'utf-8');
+  fs.writeFileSync(path.join(fixturePath, 'notes.md'), 'guard next smoke seed\n', 'utf-8');
+  fs.writeFileSync(path.join(fixturePath, 'memory', 'timeline.md'), 'guard next smoke memory\n', 'utf-8');
+
+  return {
+    fixturePath,
+    rootIdFragment: name,
+  };
+}
+
+function cleanupSmokeWorkspaceFixture(fixture) {
+  if (!fixture?.fixturePath) return;
+  try {
+    fs.rmSync(fixture.fixturePath, { recursive: true, force: true });
+  } catch {
+    // Ignore cleanup failures so the original smoke result stays visible.
   }
 }
 
@@ -109,6 +160,9 @@ function buildSmokeArgs(options, url) {
   if (options.password) {
     args.push('--password', options.password);
   }
+  if (options.fixtureRootId) {
+    args.push('--fixture-root-id', options.fixtureRootId);
+  }
   return args;
 }
 
@@ -125,10 +179,13 @@ function main() {
   const url = `http://127.0.0.1:${options.port}/next`;
   const statusBefore = readStatus(options.port);
   const shouldStart = !statusBefore?.running;
+  let smokeFixture = null;
 
   runCommand(npmBin, ['run', 'build']);
 
   if (shouldStart) {
+    smokeFixture = createSmokeWorkspaceFixture();
+    options.fixtureRootId = smokeFixture.rootIdFragment;
     console.log(`[guard-next-smoke] Starting temporary Guard Web on port ${options.port}`);
     startBackground(options.port);
   } else {
@@ -146,6 +203,9 @@ function main() {
     if (shouldStart && !options.keepRunning) {
       console.log('[guard-next-smoke] Stopping temporary Guard Web');
       stopBackground(options.port);
+    }
+    if (shouldStart) {
+      cleanupSmokeWorkspaceFixture(smokeFixture);
     }
   }
 }

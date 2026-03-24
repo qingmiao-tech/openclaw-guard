@@ -52,6 +52,25 @@ describe('agents config mutations', () => {
     expect(snapshot.agents[0].isConfigured).toBe(true);
     expect(snapshot.agents[0].isDefault).toBe(true);
     expect(snapshot.agents[0].workspaceExists).toBe(true);
+    expect(snapshot.agents[0].workspaceName).toBeNull();
+  });
+
+  it('derives a workspace path from the workspace name when one is provided', () => {
+    const result = saveAgentConfig({
+      id: 'agent-name-only',
+      name: 'Named Workspace Agent',
+      workspaceName: 'ops-lab',
+      ensureWorkspace: true,
+    });
+
+    expect(result.success).toBe(true);
+
+    const expectedWorkspace = path.join(tempRoot, 'workspace-default-ops-lab');
+    expect(fs.existsSync(expectedWorkspace)).toBe(true);
+
+    const snapshot = getAgentsSnapshot();
+    expect(snapshot.agents[0].workspace).toBe(expectedWorkspace);
+    expect(snapshot.agents[0].workspaceName).toBe('ops-lab');
   });
 
   it('bootstraps core workspace docs for a new agent without overwriting missing paths', () => {

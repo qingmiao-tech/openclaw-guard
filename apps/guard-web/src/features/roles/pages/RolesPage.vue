@@ -21,10 +21,12 @@ const {
   workspaceReadyCount,
   docReadyCount,
   isCreateMode,
+  workspacePreview,
   editorModeLabel,
   beginCreateAgent,
   editAgent,
   resetDraft,
+  setWorkspaceMode,
   refresh,
   handleSaveAgent,
   handleDeleteAgent,
@@ -53,7 +55,17 @@ function workspaceHint(agent: AgentSummary) {
   if (!agent.workspaceExists) {
     return ui.label('Guard 还没有在当前机器上找到这个工作区目录。', 'Guard has not found this workspace directory on the current machine yet.');
   }
-  return ui.label('实际工作区路径已收拢到开发者模式里，可直接点“打开工作区”继续查看。', 'The exact workspace path stays behind developer mode. Use Open workspace to continue.');
+  return ui.label('实际路径保留在开发者模式里，直接点“打开工作区”继续查看即可。', 'The exact path stays behind developer mode. Use Open workspace to continue.');
+}
+
+function workspaceNameLabel(agent: AgentSummary) {
+  if (agent.workspaceName === null) {
+    return ui.label('自定义路径', 'Custom path');
+  }
+  if (!agent.workspaceName) {
+    return ui.label('默认工作区', 'Default workspace');
+  }
+  return agent.workspaceName;
 }
 </script>
 
@@ -66,8 +78,8 @@ function workspaceHint(agent: AgentSummary) {
         <p class="page-header__description">
           {{
             ui.label(
-              '现在除了只读查看以外，也可以直接在这里新增 Agent、调整默认角色，并维护工作区和模型路由配置。',
-              'This page now supports adding agents, switching the default role, and maintaining workspace and model routing config directly from the console.',
+              '在这里直接创建 Agent、切换默认角色，并维护工作区和模型路由配置。',
+              'Create agents, switch the default role, and maintain workspace and model routing config from one place.',
             )
           }}
         </p>
@@ -77,7 +89,7 @@ function workspaceHint(agent: AgentSummary) {
           {{ ui.label('新增 Agent', 'Add agent') }}
         </button>
         <button class="page-header__action" type="button" @click="refresh">
-          {{ resource.refreshing ? ui.label('刷新中…', 'Refreshing…') : ui.label('Refresh', 'Refresh') }}
+          {{ resource.refreshing ? ui.label('刷新中…', 'Refreshing…') : ui.label('刷新', 'Refresh') }}
         </button>
       </div>
     </header>
@@ -98,7 +110,7 @@ function workspaceHint(agent: AgentSummary) {
           <article class="stat-card">
             <p class="stat-card__label">{{ ui.label('角色总数', 'Roles') }}</p>
             <strong>{{ formatNumber(agents.length) }}</strong>
-            <span>{{ ui.label('当前已接入到 Guard 的角色条目', 'Role entries currently discovered by Guard') }}</span>
+            <span>{{ ui.label('当前已接入 Guard 的角色条目', 'Role entries currently discovered by Guard') }}</span>
           </article>
           <article class="stat-card">
             <p class="stat-card__label">{{ ui.label('默认角色', 'Default role') }}</p>
@@ -164,7 +176,42 @@ function workspaceHint(agent: AgentSummary) {
               spellcheck="false"
             />
           </label>
-          <label class="settings-field settings-field--full">
+          <div class="settings-field settings-field--full">
+            <span>{{ ui.label('工作区来源', 'Workspace source') }}</span>
+            <div class="pill-row">
+              <button
+                class="pill-button"
+                :class="{ 'pill-button--active': draft.workspaceMode === 'named' }"
+                data-testid="roles-agent-workspace-mode-name"
+                type="button"
+                @click="setWorkspaceMode('named')"
+              >
+                {{ ui.label('按名称生成', 'Generate from name') }}
+              </button>
+              <button
+                class="pill-button"
+                :class="{ 'pill-button--active': draft.workspaceMode === 'custom' }"
+                data-testid="roles-agent-workspace-mode-custom"
+                type="button"
+                @click="setWorkspaceMode('custom')"
+              >
+                {{ ui.label('自定义路径', 'Custom path') }}
+              </button>
+            </div>
+          </div>
+          <label v-if="draft.workspaceMode === 'named'" class="settings-field settings-field--full">
+            <span>{{ ui.label('工作区名称', 'Workspace name') }}</span>
+            <input
+              v-model="draft.workspaceName"
+              data-testid="roles-agent-workspace-name"
+              class="settings-input"
+              type="text"
+              :placeholder="ui.label('例如：ops-lab；留空则沿用默认工作区', 'Example: ops-lab; leave blank to keep the default workspace')"
+              spellcheck="false"
+            />
+            <small>{{ ui.label('生成后的路径：', 'Generated path: ') }}{{ workspacePreview }}</small>
+          </label>
+          <label v-else class="settings-field settings-field--full">
             <span>{{ ui.label('工作区路径', 'Workspace path') }}</span>
             <input
               v-model="draft.workspace"
@@ -173,6 +220,14 @@ function workspaceHint(agent: AgentSummary) {
               type="text"
               spellcheck="false"
             />
+            <small>
+              {{
+                ui.label(
+                  '适合已有独立目录或非标准布局；如果只是想给不同 Agent 区分工作区，优先使用“工作区名称”。',
+                  'Use this for an existing directory or a non-standard layout. If you just want separate workspaces for different agents, prefer the workspace-name mode.',
+                )
+              }}
+            </small>
           </label>
           <label class="settings-field settings-field--full">
             <span>{{ ui.label('模型路由（可选）', 'Model route (optional)') }}</span>
@@ -194,7 +249,7 @@ function workspaceHint(agent: AgentSummary) {
               <span>
                 {{
                   ui.label(
-                    '保存后会清掉其它 Agent 的默认标记，并把当前 Agent 作为主角色。',
+                    '保存后会清掉其它 Agent 的默认标记，并把当前 Agent 提升为主角色。',
                     'Saving clears the default flag on other agents and promotes this one as the primary role.',
                   )
                 }}
@@ -237,7 +292,7 @@ function workspaceHint(agent: AgentSummary) {
         <div class="settings-note">
           {{
             ui.label(
-              'Agent 配置会直接写入当前生效的 openclaw.json；如果你在源码工作区或自定义状态目录里运行 Guard，也会写到对应位置。',
+              'Agent 配置会直接写入当前生效的 openclaw.json；如果你正在使用自定义 state-dir 或源码工作区，这里也会落到对应位置。',
               'Agent changes are written into the active openclaw.json for the current Guard runtime, including custom state-dir or workspace-based setups.',
             )
           }}
@@ -263,7 +318,7 @@ function workspaceHint(agent: AgentSummary) {
             {{ ui.label('重置草稿', 'Reset draft') }}
           </button>
           <button class="inline-link" type="button" :disabled="saving || deleting" @click="beginCreateAgent">
-            {{ ui.label('切换到新增', 'Switch to create') }}
+            {{ ui.label('切换到新建', 'Switch to create') }}
           </button>
           <button
             v-if="draft.canDelete"
@@ -305,6 +360,7 @@ function workspaceHint(agent: AgentSummary) {
                 <strong>{{ ui.label('工作区映射', 'Workspace mapping') }}</strong>
                 <p>{{ workspaceHeadline(agent) }}</p>
                 <p>{{ workspaceHint(agent) }}</p>
+                <p>{{ ui.label('工作区名称：', 'Workspace name: ') }}{{ workspaceNameLabel(agent) }}</p>
               </div>
               <div class="mini-list__item mini-list__item--stack">
                 <strong>{{ ui.label('关键文档', 'Core docs') }}</strong>

@@ -735,13 +735,14 @@ export function startServer(port: number) {
         }
         if (pathname === '/api/agents' && req.method === 'POST') {
           const body = await readJsonBody(req);
-          jsonResponse(res, saveAgentConfig({
-            originalId: typeof body.originalId === 'string' ? body.originalId : undefined,
-            id: typeof body.id === 'string' ? body.id : '',
-            name: typeof body.name === 'string' ? body.name : undefined,
-            workspace: typeof body.workspace === 'string' ? body.workspace : undefined,
-            modelId: typeof body.modelId === 'string' ? body.modelId : undefined,
-            isDefault: typeof body.isDefault === 'boolean' ? body.isDefault : undefined,
+            jsonResponse(res, saveAgentConfig({
+              originalId: typeof body.originalId === 'string' ? body.originalId : undefined,
+              id: typeof body.id === 'string' ? body.id : '',
+              name: typeof body.name === 'string' ? body.name : undefined,
+              workspaceName: typeof body.workspaceName === 'string' ? body.workspaceName : undefined,
+              workspace: typeof body.workspace === 'string' ? body.workspace : undefined,
+              modelId: typeof body.modelId === 'string' ? body.modelId : undefined,
+              isDefault: typeof body.isDefault === 'boolean' ? body.isDefault : undefined,
             ensureWorkspace: body.ensureWorkspace === true,
             bootstrapWorkspaceDocs: body.bootstrapWorkspaceDocs === true,
           }));

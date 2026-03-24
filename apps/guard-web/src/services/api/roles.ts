@@ -13,6 +13,7 @@ export type AgentSummary = {
   isDefault: boolean;
   isConfigured: boolean;
   modelId: string | null;
+  workspaceName: string | null;
   workspace: string;
   resolvedWorkspace: string;
   workspaceExists: boolean;
@@ -33,6 +34,7 @@ export type AgentMutationPayload = {
   originalId?: string;
   id: string;
   name?: string;
+  workspaceName?: string;
   workspace?: string;
   modelId?: string;
   isDefault?: boolean;

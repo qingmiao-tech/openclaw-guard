@@ -1,5 +1,6 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useAsyncResource } from '@/composables/useAsyncResource';
+import { buildWorkspacePathFromName, deriveWorkspaceName } from '@/features/roles/workspace-name';
 import {
   deleteAgent,
   loadRolesSnapshot,
@@ -14,6 +15,8 @@ export type AgentDraft = {
   originalId: string;
   id: string;
   name: string;
+  workspaceMode: 'named' | 'custom';
+  workspaceName: string;
   workspace: string;
   modelId: string;
   isDefault: boolean;
@@ -35,6 +38,8 @@ function fillDraftFromAgent(draft: AgentDraft, agent: AgentSummary) {
   draft.originalId = agent.isConfigured ? agent.id : '';
   draft.id = agent.isConfigured ? agent.id : '';
   draft.name = agent.isConfigured ? agent.name : '';
+  draft.workspaceMode = agent.workspaceName !== null ? 'named' : 'custom';
+  draft.workspaceName = agent.workspaceName ?? '';
   draft.workspace = agent.workspace;
   draft.modelId = agent.modelId || '';
   draft.isDefault = agent.isDefault;
@@ -47,6 +52,8 @@ function fillDraftForCreate(draft: AgentDraft, snapshot: RolesSnapshot | null, a
   draft.originalId = '';
   draft.id = '';
   draft.name = '';
+  draft.workspaceMode = 'named';
+  draft.workspaceName = '';
   draft.workspace = snapshot?.defaults.workspace || '~/.openclaw/workspace';
   draft.modelId = snapshot?.defaults.modelId || '';
   draft.isDefault = agentCount === 0;
@@ -67,6 +74,8 @@ export function useRolesPageState() {
     originalId: '',
     id: '',
     name: '',
+    workspaceMode: 'named',
+    workspaceName: '',
     workspace: '~/.openclaw/workspace',
     modelId: '',
     isDefault: true,
@@ -87,6 +96,11 @@ export function useRolesPageState() {
     agents.value.find((agent) => agent.id === selectedAgentId.value && agent.isConfigured) || null,
   );
   const isCreateMode = computed(() => !draft.originalId);
+  const workspacePreview = computed(() =>
+    draft.workspaceMode === 'named'
+      ? buildWorkspacePathFromName(defaults.value.workspace, draft.workspaceName)
+      : (draft.workspace.trim() || defaults.value.workspace),
+  );
   const editorModeLabel = computed(() =>
     draft.originalId
       ? ui.label('编辑现有 Agent', 'Edit existing agent')
@@ -103,8 +117,9 @@ export function useRolesPageState() {
         return;
       }
 
+      const configuredCount = snapshot.agents.filter((agent) => agent.isConfigured).length;
       if (!initialized.value) {
-        fillDraftForCreate(draft, snapshot, snapshot.agents.filter((agent) => agent.isConfigured).length);
+        fillDraftForCreate(draft, snapshot, configuredCount);
         initialized.value = true;
         return;
       }
@@ -115,7 +130,7 @@ export function useRolesPageState() {
       }
 
       if (!draft.originalId) {
-        fillDraftForCreate(draft, snapshot, snapshot.agents.filter((agent) => agent.isConfigured).length);
+        fillDraftForCreate(draft, snapshot, configuredCount);
       }
     },
     { immediate: true },
@@ -151,14 +166,31 @@ export function useRolesPageState() {
     fillDraftForCreate(draft, resource.data, agents.value.filter((agent) => agent.isConfigured).length);
   }
 
+  function setWorkspaceMode(mode: 'named' | 'custom') {
+    if (draft.workspaceMode === mode) {
+      return;
+    }
+
+    if (mode === 'named') {
+      draft.workspaceName = deriveWorkspaceName(defaults.value.workspace, draft.workspace) ?? draft.workspaceName;
+      draft.workspaceMode = 'named';
+      return;
+    }
+
+    draft.workspace = workspacePreview.value;
+    draft.workspaceMode = 'custom';
+  }
+
   async function handleSaveAgent() {
     saving.value = true;
     try {
+      const useWorkspaceName = draft.workspaceMode === 'named';
       const result = await saveAgent({
         originalId: draft.originalId || undefined,
         id: draft.id.trim(),
         name: draft.name.trim() || undefined,
-        workspace: draft.workspace.trim() || undefined,
+        workspaceName: useWorkspaceName ? draft.workspaceName.trim() : undefined,
+        workspace: useWorkspaceName ? undefined : (draft.workspace.trim() || undefined),
         modelId: draft.modelId.trim() || undefined,
         isDefault: draft.isDefault,
         ensureWorkspace: draft.ensureWorkspace,
@@ -171,6 +203,7 @@ export function useRolesPageState() {
       });
 
       if (result.success) {
+        draft.workspace = workspacePreview.value;
         selectedAgentId.value = draft.id.trim();
         await refresh();
       }
@@ -192,7 +225,7 @@ export function useRolesPageState() {
     const confirmed = await feedback.confirm({
       title: ui.label('删除 Agent', 'Delete agent'),
       message: ui.label(
-        `确认删除 ${draft.originalId} 吗？这会从当前 openclaw.json 中移除这条 Agent 配置。`,
+        `确认删除 ${draft.originalId} 吗？这会从当前生效的 openclaw.json 中移除这条 Agent 配置。`,
         `Delete ${draft.originalId}? This removes the agent entry from the active openclaw.json.`,
       ),
       confirmLabel: ui.label('确认删除', 'Delete'),
@@ -236,7 +269,8 @@ export function useRolesPageState() {
         originalId: agent.id,
         id: agent.id,
         name: agent.name,
-        workspace: agent.workspace,
+        workspaceName: agent.workspaceName ?? undefined,
+        workspace: agent.workspaceName !== null ? undefined : agent.workspace,
         modelId: agent.modelId || undefined,
         isDefault: true,
       });
@@ -268,10 +302,12 @@ export function useRolesPageState() {
     workspaceReadyCount,
     docReadyCount,
     isCreateMode,
+    workspacePreview,
     editorModeLabel,
     beginCreateAgent,
     editAgent,
     resetDraft,
+    setWorkspaceMode,
     refresh,
     handleSaveAgent,
     handleDeleteAgent,

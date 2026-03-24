@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getNested, loadConfig, saveConfig } from './config.js';
+import { buildWorkspacePathFromName } from './agent-workspace.js';
 import { resolveUserPath } from './guard-state.js';
 import { getAgentCatalog, type AgentSummary } from './workspace-files.js';
 
@@ -18,6 +19,7 @@ export interface AgentMutationInput {
   originalId?: string;
   id: string;
   name?: string;
+  workspaceName?: string;
   workspace?: string;
   modelId?: string | null;
   isDefault?: boolean;
@@ -37,8 +39,6 @@ type AgentConfigRecord = Record<string, unknown> & {
   model?: string;
   default?: boolean;
 };
-
-const DEFAULT_WORKSPACE = '~/.openclaw/workspace';
 const AGENT_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const WORKSPACE_BOOTSTRAP_FILES = ['SOUL.md', 'USER.md', 'AGENTS.md'] as const;
 
@@ -65,7 +65,7 @@ function getAgentDefaultsConfig(config: Record<string, unknown>): AgentDefaultsS
   return {
     workspace: typeof defaults.workspace === 'string' && defaults.workspace.trim()
       ? defaults.workspace.trim()
-      : DEFAULT_WORKSPACE,
+      : buildWorkspacePathFromName(undefined),
     modelId: normalizeModelNode(getNested(defaults, ['model'])),
   };
 }
@@ -119,7 +119,7 @@ function buildAgentRecord(
   const id = validateAgentId(input.id);
   const workspace = typeof input.workspace === 'string' && input.workspace.trim()
     ? input.workspace.trim()
-    : defaults.workspace;
+    : buildWorkspacePathFromName(defaults.workspace, input.workspaceName);
   const name = typeof input.name === 'string' && input.name.trim()
     ? input.name.trim()
     : id;

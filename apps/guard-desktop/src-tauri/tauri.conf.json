@@ -5,9 +5,9 @@
   "identifier": "tech.qingmiao.openclaw-guard.desktop",
   "build": {
     "beforeDevCommand": "npm --prefix ../../guard-web run dev",
-    "beforeBuildCommand": "npm --prefix ../../guard-web run build",
-    "devUrl": "http://127.0.0.1:4173",
-    "frontendDist": "../../guard-web/dist"
+    "beforeBuildCommand": "npm --prefix ../../.. run build:web && npm --prefix ../../.. run build:desktop-shell",
+    "devUrl": "http://127.0.0.1:4173/desktop.html",
+    "frontendDist": "../web"
   },
   "app": {
     "windows": [

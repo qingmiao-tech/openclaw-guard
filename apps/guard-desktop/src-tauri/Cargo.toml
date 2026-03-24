@@ -12,3 +12,4 @@ guard-core = { path = "../../../crates/guard-core" }
 serde.workspace = true
 serde_json.workspace = true
 tauri.workspace = true
+tauri-plugin-opener.workspace = true

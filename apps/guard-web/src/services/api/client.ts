@@ -1,3 +1,10 @@
+import {
+  clearStoredAuthToken,
+  dispatchUnauthorizedEvent,
+  getStoredAuthToken,
+} from '@/services/auth-session';
+import { resolveApiRequestUrl } from '@/services/runtime';
+
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 
@@ -20,19 +27,38 @@ export async function requestJson<T>(path: string, init: RequestInit = {}): Prom
   const headers = new Headers(init.headers);
   headers.set('Accept', 'application/json');
 
+  let usedAuthToken = false;
+  if (!headers.has('Authorization')) {
+    const token = getStoredAuthToken();
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+      usedAuthToken = true;
+    }
+  }
+
   let body = init.body;
-  if (body && typeof body === 'object' && !(body instanceof FormData) && !(body instanceof URLSearchParams) && !(body instanceof Blob)) {
+  if (
+    body &&
+    typeof body === 'object' &&
+    !(body instanceof FormData) &&
+    !(body instanceof URLSearchParams) &&
+    !(body instanceof Blob)
+  ) {
     headers.set('Content-Type', 'application/json');
     body = JSON.stringify(body as JsonValue);
   }
 
-  const response = await fetch(path, {
+  const response = await fetch(resolveApiRequestUrl(path), {
     ...init,
     headers,
     body,
   });
 
   if (!response.ok) {
+    if (response.status === 401 && usedAuthToken) {
+      clearStoredAuthToken();
+      dispatchUnauthorizedEvent();
+    }
     throw new Error(await readErrorMessage(response));
   }
 

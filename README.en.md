@@ -62,8 +62,8 @@ Current install methods, `npm / npx` update paths, and release notes are documen
 
 ### 2. Open the workbench
 
-- Main entry: `http://127.0.0.1:18088/workbench`
-- The root route also lands in the Guard workbench: `http://127.0.0.1:18088/`
+- Main entry: `http://127.0.0.1:18088/`
+- Compatibility alias: `http://127.0.0.1:18088/workbench`
 
 ### 3. Check the initial password before the first login
 

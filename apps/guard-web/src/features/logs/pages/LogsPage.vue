@@ -15,23 +15,29 @@ const selectedLines = ref(logsCache?.requestedLines || 200);
 const resource = useAsyncResource(() => loadServiceLogs(selectedLines.value), logsCache, { immediate: false });
 
 const lineOptions = [100, 200, 500];
+const LOG_HIGHLIGHT_PATTERN = /(error|warn|fail|exception|timeout|denied|refused|panic|fatal|traceback|错误|失败|异常|拒绝|超时)/i;
 
-const logLines = computed(() => resource.data.value?.logs || []);
+const logLines = computed(() => resource.data?.logs || []);
 const hasLogError = computed(() => /^(获取日志失败|Failed to fetch logs)/.test(logLines.value[0] || ''));
+const logHighlights = computed(() => {
+  const matched = logLines.value.filter((line) => LOG_HIGHLIGHT_PATTERN.test(line));
+  if (matched.length) return matched.slice(-8);
+  return logLines.value.slice(-6);
+});
 
-watch(resource.data, (value) => {
+watch(() => resource.data, (value) => {
   if (value) logsCache = value;
 });
 
 onMounted(() => {
-  void resource.execute({ silent: !!resource.data.value });
+  void resource.execute({ silent: !!resource.data });
 });
 
 async function refreshLogs(forceLines?: number) {
   if (typeof forceLines === 'number') {
     selectedLines.value = forceLines;
   }
-  await resource.execute({ silent: !!resource.data.value });
+  await resource.execute({ silent: !!resource.data });
 }
 
 async function copyLogs() {
@@ -48,10 +54,10 @@ async function copyLogs() {
   <div class="page-stack">
     <header class="page-header">
       <div>
-        <p class="page-header__eyebrow">{{ ui.label('日志 / Fourth slice', 'Logs / Fourth slice') }}</p>
+        <p class="page-header__eyebrow">{{ ui.label('日志 / 追踪', 'Logs / Tracing') }}</p>
         <h2 class="page-header__title">{{ ui.label('日志与排障', 'Logs & troubleshooting') }}</h2>
         <p class="page-header__description">
-          {{ ui.label('先把最常用的 Gateway 日志排障入口迁进新壳层里，支持切换日志行数、静默刷新和快速复制，避免排障时还要跳回旧控制台。', 'Bring the most-used Gateway log workflow into the new shell first, with line-count switching, silent refresh, and quick copy so troubleshooting no longer depends on the old console.') }}
+          {{ ui.label('集中查看 Gateway 最近日志，支持切换日志行数、静默刷新和快速复制，让排障更直接。', 'Review the latest Gateway logs here with line switching, silent refresh, and quick copy for faster troubleshooting.') }}
         </p>
       </div>
       <button class="page-header__action" type="button" @click="refreshLogs()">
@@ -71,7 +77,7 @@ async function copyLogs() {
           <article class="stat-card">
             <p class="stat-card__label">{{ ui.label('日志来源', 'Source') }}</p>
             <strong>Gateway</strong>
-            <span>{{ ui.label('当前先迁移最常用的 Gateway 日志入口', 'The first migrated source is the Gateway log stream') }}</span>
+            <span>{{ ui.label('当前展示 Gateway 日志流', 'Currently showing the Gateway log stream') }}</span>
           </article>
           <article class="stat-card">
             <p class="stat-card__label">{{ ui.label('请求行数', 'Requested lines') }}</p>
@@ -108,7 +114,7 @@ async function copyLogs() {
             >
               {{ ui.label(`最近 ${lines} 行`, `${lines} lines`) }}
             </button>
-            <button class="inline-link" type="button" @click="copyLogs">
+            <button v-if="ui.developerMode" data-testid="logs-copy-action" class="inline-link" type="button" @click="copyLogs">
               {{ ui.label('复制日志', 'Copy logs') }}
             </button>
           </div>
@@ -117,7 +123,23 @@ async function copyLogs() {
         <div v-if="hasLogError" class="status-banner status-banner--warning">
           {{ logLines[0] }}
         </div>
-        <pre class="code-panel log-output">{{ logLines.join('\n') || ui.label('当前没有可显示的日志内容。', 'No log content is available right now.') }}</pre>
+        <template v-if="ui.developerMode">
+          <pre data-testid="logs-raw-output" class="code-panel log-output">{{ logLines.join('\n') || ui.label('当前没有可显示的日志内容。', 'No log content is available right now.') }}</pre>
+        </template>
+        <template v-else>
+          <div v-if="logHighlights.length" class="list-stack">
+            <article v-for="(line, index) in logHighlights" :key="`${index}:${line}`" class="risk-row">
+              <strong>{{ LOG_HIGHLIGHT_PATTERN.test(line) ? ui.label('关键片段', 'Key line') : ui.label('最近输出', 'Recent line') }}</strong>
+              <span>{{ line }}</span>
+            </article>
+          </div>
+          <div v-else class="page-empty">
+            {{ ui.label('当前没有可显示的日志摘要。', 'No log summary is available right now.') }}
+          </div>
+          <p class="muted-copy">
+            {{ ui.label('完整原始日志和复制动作已收纳到开发者模式。需要逐行排障时，请先到 Settings 打开开发者模式。', 'Full raw logs and copy actions now stay behind developer mode. Enable developer mode from Settings when you need line-by-line troubleshooting.') }}
+          </p>
+        </template>
       </PageCard>
     </template>
   </div>

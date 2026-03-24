@@ -13,6 +13,7 @@ import RolesPage from '@/features/roles/pages/RolesPage.vue';
 import SearchPage from '@/features/search/pages/SearchPage.vue';
 import SecurityPage from '@/features/security/pages/SecurityPage.vue';
 import SessionsPage from '@/features/sessions/pages/SessionsPage.vue';
+import SettingsPage from '@/features/settings/pages/SettingsPage.vue';
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -31,6 +32,7 @@ export const router = createRouter({
     { path: '/logs', name: 'logs', component: LogsPage },
     { path: '/notifications', name: 'notifications', component: NotificationsPage },
     { path: '/cron', name: 'cron', component: CronPage },
+    { path: '/settings', name: 'settings', component: SettingsPage },
     { path: '/ai', redirect: '/models' },
     { path: '/git-sync', redirect: '/recovery' },
     { path: '/memory', redirect: '/files' },

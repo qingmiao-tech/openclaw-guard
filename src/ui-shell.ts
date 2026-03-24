@@ -39,17 +39,18 @@ export function getCompatibilityPage(): string {
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>旧链接已迁移到原生工作台</h1>
-      <p>OpenClaw Guard 现在只保留一套原生工作台界面。这个页面存在的目的，是让旧书签和旧路由继续可达，而不是继续维护旧版面板。</p>
+      <h1>旧链接已迁移到默认工作台</h1>
+      <p>OpenClaw Guard 现在默认使用同一套 next 工作台界面。这个页面只保留给旧书签和旧路由做迁移提示，不再作为常规使用入口。</p>
       <ul>
-        <li>主入口：<code>/</code></li>
-        <li>工作台别名：<code>/workbench</code></li>
-        <li>保留旧路由：<code>/compat</code>、<code>/legacy</code></li>
+        <li>默认入口：<code>/</code></li>
+        <li>兼容别名：<code>/workbench</code></li>
+        <li>开发直达：<code>/next</code></li>
+        <li>回退入口：<code>/legacy</code></li>
       </ul>
-      <p>如果你是从旧链接跳转过来的，直接进入 <code>/</code> 即可；不需要再区分“兼容页”或“旧版页”。</p>
+      <p>如果你是从旧链接跳转过来的，直接进入 <code>/</code> 即可；日常不需要再区分“兼容页”和“旧版页”。</p>
       <div class="actions">
-        <a class="primary" href="/">进入原生工作台</a>
-        <a href="/workbench">打开工作台别名</a>
+        <a class="primary" href="/">打开默认入口</a>
+        <a href="/workbench">打开兼容别名</a>
       </div>
     </div>
   </div>

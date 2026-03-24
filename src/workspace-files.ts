@@ -15,6 +15,7 @@ export interface AgentSummary {
   id: string;
   name: string;
   isDefault: boolean;
+  isConfigured: boolean;
   modelId: string | null;
   workspace: string;
   resolvedWorkspace: string;
@@ -179,6 +180,7 @@ export function getAgentCatalog(): AgentSummary[] {
         id: String(item.id || ''),
         name: String(item.name || item.id || 'Unnamed Agent'),
         isDefault,
+        isConfigured: true,
         modelId: typeof item.model === 'string' ? item.model : defaultModel,
         workspace: String(item.workspace || defaultWorkspace),
         resolvedWorkspace,
@@ -193,6 +195,7 @@ export function getAgentCatalog(): AgentSummary[] {
       id: 'default',
       name: 'Default Agent',
       isDefault: true,
+      isConfigured: false,
       modelId: defaultModel,
       workspace: defaultWorkspace,
       resolvedWorkspace,

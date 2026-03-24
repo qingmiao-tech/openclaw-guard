@@ -6,6 +6,7 @@ export type LanguagePreference = 'zh' | 'en';
 
 const STORAGE_THEME = 'openclaw-guard.theme';
 const STORAGE_LANG = 'openclaw-guard.lang';
+const STORAGE_DEVELOPER_MODE = 'openclaw-guard.developer-mode';
 
 function getSystemTheme(): Exclude<ThemePreference, 'auto'> {
   if (typeof window === 'undefined') {
@@ -17,8 +18,11 @@ function getSystemTheme(): Exclude<ThemePreference, 'auto'> {
 export const useUiStore = defineStore('ui', () => {
   const themePreference = ref<ThemePreference>('auto');
   const language = ref<LanguagePreference>('zh');
+  const developerMode = ref(false);
   const hydrated = ref(false);
-  const resolvedTheme = computed(() => themePreference.value === 'auto' ? getSystemTheme() : themePreference.value);
+  const resolvedTheme = computed(() => (
+    themePreference.value === 'auto' ? getSystemTheme() : themePreference.value
+  ));
 
   function applyDocumentState() {
     if (typeof document === 'undefined') {
@@ -26,6 +30,7 @@ export const useUiStore = defineStore('ui', () => {
     }
     document.documentElement.dataset.theme = resolvedTheme.value;
     document.documentElement.lang = language.value === 'zh' ? 'zh-CN' : 'en';
+    document.documentElement.dataset.developerMode = developerMode.value ? 'on' : 'off';
   }
 
   function hydrate() {
@@ -33,14 +38,19 @@ export const useUiStore = defineStore('ui', () => {
       applyDocumentState();
       return;
     }
+
     const storedTheme = window.localStorage.getItem(STORAGE_THEME);
     const storedLanguage = window.localStorage.getItem(STORAGE_LANG);
+    const storedDeveloperMode = window.localStorage.getItem(STORAGE_DEVELOPER_MODE);
+
     if (storedTheme === 'auto' || storedTheme === 'light' || storedTheme === 'dark') {
       themePreference.value = storedTheme;
     }
     if (storedLanguage === 'zh' || storedLanguage === 'en') {
       language.value = storedLanguage;
     }
+    developerMode.value = storedDeveloperMode === '1';
+
     hydrated.value = true;
     applyDocumentState();
   }
@@ -61,6 +71,14 @@ export const useUiStore = defineStore('ui', () => {
     applyDocumentState();
   }
 
+  function setDeveloperMode(value: boolean) {
+    developerMode.value = value;
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(STORAGE_DEVELOPER_MODE, value ? '1' : '0');
+    }
+    applyDocumentState();
+  }
+
   function label(zh: string, en: string) {
     return language.value === 'zh' ? zh : en;
   }
@@ -68,10 +86,12 @@ export const useUiStore = defineStore('ui', () => {
   return {
     themePreference,
     language,
+    developerMode,
     resolvedTheme,
     hydrate,
     setThemePreference,
     setLanguage,
+    setDeveloperMode,
     applyDocumentState,
     label,
   };

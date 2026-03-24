@@ -1,5 +1,7 @@
 import { fetchJson, postJson } from './client';
 
+export type GitProvider = 'github' | 'gitee';
+
 export type RecoveryPointKind = 'manual' | 'auto' | 'restore';
 
 export type RecoveryPoint = {
@@ -74,9 +76,13 @@ export type GitSyncStatus = {
   pushReasons: string[];
   reasons: string[];
   state: {
+    provider?: string | null;
+    username?: string | null;
+    lastCheckedAt?: string | null;
     lastSyncAt: string | null;
     lastCommitAt: string | null;
     authMode: string;
+    lastError?: string | null;
     oauth?: {
       phase?: string;
       message?: string | null;
@@ -142,6 +148,33 @@ export function restoreRecoveryPoint(commitSha: string) {
 
 export function initializeProtection() {
   return postJson<GitActionResult>('/api/git-sync/init', {});
+}
+
+export function connectProtectionRemote(input: {
+  provider?: GitProvider;
+  remoteUrl: string;
+  remoteName?: string;
+}) {
+  return postJson<GitActionResult>('/api/git-sync/connect', input);
+}
+
+export function saveProtectionTokenAuth(input: {
+  provider?: GitProvider;
+  token: string;
+  username?: string;
+}) {
+  return postJson<GitActionResult>('/api/git-sync/auth/token', input);
+}
+
+export function startProtectionOAuth(input: {
+  provider: GitProvider;
+  clientId: string;
+  clientSecret: string;
+  scope?: string;
+  redirectPort?: number;
+  openBrowser?: boolean;
+}) {
+  return postJson<GitActionResult>('/api/git-sync/auth/oauth', input);
 }
 
 export function checkPrivateRemote() {

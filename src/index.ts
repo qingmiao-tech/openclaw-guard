@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { getAuthStatus, getInitialPasswordRecord } from './auth.js';
+import { getAuthStatus, getPasswordRevealRecord } from './auth.js';
 import { runFullAudit, type AuditResult } from './audit.js';
 import { applyProfile, getProfile, PROFILES } from './profiles.js';
 import { generateHardenScript, getAllHardenSteps } from './harden.js';
@@ -215,37 +215,37 @@ authCmd.command('status').description('查看访问密码是否已初始化').op
     printJson(status);
     return;
   }
-  console.log(chalk.bold('\nGuard Auth 状态\n'));
-  console.log(`鉴权启用: ${status.enabled ? '是' : '否'}`);
-  console.log(`已初始化密码: ${status.configured ? '是' : '否'}`);
-  console.log(`初始化密码可回看: ${status.initialPasswordAvailable ? '是' : '否'}`);
-  console.log(`本机查看命令: ${status.revealCommand}`);
+  console.log(chalk.bold('\nGuard Auth Status\n'));
+  console.log(`Auth enabled: ${status.enabled ? 'yes' : 'no'}`);
+  console.log(`Password configured: ${status.configured ? 'yes' : 'no'}`);
+  console.log(`Reveal available: ${status.initialPasswordAvailable ? 'yes' : 'no'}`);
+  console.log(`Reveal command: ${status.revealCommand}`);
   if (status.initialPasswordCreatedAt) {
-    console.log(`初始化时间: ${status.initialPasswordCreatedAt}`);
+    console.log(`Recorded at: ${status.initialPasswordCreatedAt}`);
   }
 });
-authCmd.command('show-password').description('显示当前仍可回看的初始化密码').option('--json', '输出 JSON').action((opts: { json?: boolean }) => {
+authCmd.command('show-password').description('显示当前仍可回看的本机登录密码').option('--json', '输出 JSON').action((opts: { json?: boolean }) => {
   const status = getAuthStatus();
-  const record = getInitialPasswordRecord();
+  const record = getPasswordRevealRecord();
   const result = !status.enabled
     ? {
         success: false,
         available: false,
-        message: '当前已关闭鉴权（GUARD_NO_AUTH=1），无需访问密码。',
+        message: 'Authentication is disabled (GUARD_NO_AUTH=1), so no local password is required.',
         revealCommand: status.revealCommand,
       }
     : !status.configured
       ? {
           success: false,
           available: false,
-          message: '当前还没有初始化访问密码。请先启动 Guard Web 或运行 init-machine。',
+          message: 'Guard has not initialized a local password yet. Start Guard Web or run init-machine first.',
           revealCommand: status.revealCommand,
         }
       : !record
         ? {
             success: false,
             available: false,
-            message: '当前环境没有可回看的初始化密码记录。通常表示密码已经被修改，或该环境早于此功能创建。',
+            message: 'This environment has no recoverable password record. Older Guard versions removed the reveal record after password changes.',
             revealCommand: status.revealCommand,
           }
         : {
@@ -253,7 +253,10 @@ authCmd.command('show-password').description('显示当前仍可回看的初始�
             available: true,
             password: record.password,
             createdAt: record.createdAt,
-            message: '这是当前仍可回看的初始化密码。建议登录后尽快改成你自己的密码。',
+            kind: record.kind || 'initial',
+            message: record.kind === 'changed'
+              ? 'This is the current password recorded after the latest password change.'
+              : 'This is the current password recorded when Guard initialized authentication.',
             revealCommand: status.revealCommand,
           };
 
@@ -269,10 +272,10 @@ authCmd.command('show-password').description('显示当前仍可回看的初始�
     return;
   }
 
-  console.log(chalk.bold('\nGuard 初始访问密码\n'));
-  console.log(`密码: ${result.password}`);
-  console.log(`生成时间: ${result.createdAt}`);
-  console.log(`说明: ${result.message}\n`);
+  console.log(chalk.bold('\nGuard Local Password\n'));
+  console.log(`Password: ${result.password}`);
+  console.log(`Recorded at: ${result.createdAt}`);
+  console.log(`Description: ${result.message}\n`);
 });
 
 const openclawCmd = program.command('openclaw').description('OpenClaw 生命周期管理');
@@ -749,7 +752,7 @@ program.command('init-machine')
     }
     console.log(formatMachineInitResult(result));
     if (result.auth.initializedNow) {
-      const record = getInitialPasswordRecord();
+      const record = getPasswordRevealRecord();
       if (record) {
         console.log('');
         console.log(chalk.yellow('[Guard] 首次启动访问密码'));
@@ -824,7 +827,7 @@ webBackgroundCmd.command('start')
     const afterAuthStatus = getAuthStatus();
     const initializedNow = !beforeAuthStatus.configured && afterAuthStatus.initialPasswordAvailable;
     if (result.success && initializedNow) {
-      const record = getInitialPasswordRecord();
+      const record = getPasswordRevealRecord();
       if (record) {
         console.log('');
         console.log(chalk.yellow('[Guard] 首次启动访问密码'));

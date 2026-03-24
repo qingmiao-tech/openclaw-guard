@@ -1,17 +1,29 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { useAsyncResource } from '@/composables/useAsyncResource';
 import PageCard from '@/features/common/PageCard.vue';
 import { loadDashboardSnapshot } from '@/services/api/dashboard';
 import { useUiStore } from '@/stores/ui';
 
+type DashboardSnapshot = Awaited<ReturnType<typeof loadDashboardSnapshot>>;
+
+let dashboardCache: DashboardSnapshot | null = null;
+
 const ui = useUiStore();
-const resource = useAsyncResource(() => loadDashboardSnapshot());
+const resource = useAsyncResource(() => loadDashboardSnapshot(), dashboardCache, { immediate: false });
 
 const riskItems = computed(() => {
   const source = resource.data?.overview?.risks;
   return Array.isArray(source) ? source : [];
+});
+
+watch(() => resource.data, (value) => {
+  if (value) dashboardCache = value;
+});
+
+onMounted(() => {
+  void resource.execute({ silent: !!resource.data });
 });
 </script>
 
@@ -19,10 +31,10 @@ const riskItems = computed(() => {
   <div class="page-stack">
     <header class="page-header">
       <div>
-        <p class="page-header__eyebrow">{{ ui.label('首页 / First slice', 'Home / First slice') }}</p>
+        <p class="page-header__eyebrow">{{ ui.label('首页 / 总览', 'Home / Overview') }}</p>
         <h2 class="page-header__title">{{ ui.label('带路首页', 'Guided Home') }}</h2>
         <p class="page-header__description">
-          {{ ui.label('先回答现在能不能用、下一步该做什么，以及哪里可能有风险。', 'Answer what works now, what to do next, and where risk still exists.') }}
+          {{ ui.label('从这里完成最常用的四条主路径：确认运行、配置模型、连接渠道、开启备份与恢复。', 'Use this page to walk the four main paths: confirm runtime health, configure models, connect channels, and turn on backup and recovery.') }}
         </p>
       </div>
       <button class="page-header__action" type="button" @click="resource.execute({ silent: true })">
@@ -30,15 +42,18 @@ const riskItems = computed(() => {
       </button>
     </header>
 
-    <div v-if="resource.loading" class="page-empty">
+    <div v-if="resource.loading && !resource.data" class="page-empty">
       {{ ui.label('正在加载首页快照…', 'Loading the home snapshot…') }}
     </div>
 
-    <div v-else-if="resource.error" class="page-empty page-empty--error">
+    <div v-else-if="resource.error && !resource.data" class="page-empty page-empty--error">
       {{ resource.error }}
     </div>
 
     <template v-else-if="resource.data">
+      <div v-if="resource.error" class="status-banner status-banner--warning">
+        {{ ui.label('已保留上一版首页快照，但后台刷新失败：', 'The last home snapshot is still on screen, but the background refresh failed: ') }}{{ resource.error }}
+      </div>
       <PageCard :title="ui.label('当前可用性', 'Current availability')" eyebrow="Status">
         <div class="stat-grid">
           <article class="stat-card">
@@ -63,17 +78,31 @@ const riskItems = computed(() => {
         <div class="list-stack">
           <article class="action-row">
             <div>
-              <h3>{{ ui.label('继续迁移首页 / 运维 / OpenClaw', 'Keep migrating Home / Operations / OpenClaw') }}</h3>
-              <p>{{ ui.label('这一版 Vue 壳层已经接上真实 API，下一批继续迁移渠道、模型、安全、备份与恢复。', 'This Vue shell already talks to real APIs; next we migrate Channels, Models, Security, and Recovery.') }}</p>
+              <h3>{{ ui.label('先确认运行状态', 'Review runtime health first') }}</h3>
+              <p>{{ ui.label('先确认 Guard Web、OpenClaw 和后台服务都在线，再继续模型、渠道或恢复配置会更稳妥。', 'Check Guard Web, OpenClaw, and background services first so the rest of your setup starts from a healthy base.') }}</p>
             </div>
             <RouterLink class="inline-link" to="/operations">{{ ui.label('查看运维页', 'Open operations') }}</RouterLink>
           </article>
           <article class="action-row">
             <div>
-              <h3>{{ ui.label('保持旧控制台可用', 'Keep the legacy console available') }}</h3>
-              <p>{{ ui.label('新壳层目前是开发线入口，不替换正式运行时。需要完整能力时仍可打开当前正式控制台。', 'The new shell is a dev-line entry for now and does not replace the production runtime yet.') }}</p>
+              <h3>{{ ui.label('先接好模型', 'Connect your models') }}</h3>
+              <p>{{ ui.label('先把主模型和回退模型配置好，后面的渠道接入和运行排查会更顺。', 'Configure your primary and fallback models first so channel setup and troubleshooting stay predictable.') }}</p>
             </div>
-            <a class="inline-link" href="/" target="_blank" rel="noreferrer">{{ ui.label('打开正式控制台', 'Open production console') }}</a>
+            <RouterLink class="inline-link" to="/models">{{ ui.label('打开模型页', 'Open models') }}</RouterLink>
+          </article>
+          <article class="action-row">
+            <div>
+              <h3>{{ ui.label('再连接渠道', 'Connect your channels') }}</h3>
+              <p>{{ ui.label('完成渠道接线后，Guard 才能真正把模型能力接到实际使用场景里。', 'Once channels are configured, Guard can bring model capability into the real usage flow.') }}</p>
+            </div>
+            <RouterLink class="inline-link" to="/channels">{{ ui.label('打开渠道页', 'Open channels') }}</RouterLink>
+          </article>
+          <article class="action-row">
+            <div>
+              <h3>{{ ui.label('最后补齐备份保护', 'Finish backup protection') }}</h3>
+              <p>{{ ui.label('优先创建首个恢复点并接好云端保护，这样后续试错时更容易保住现场，也方便快速回到之前的状态。', 'Create the first recovery point and connect cloud protection so later experiments stay recoverable and easier to rewind.') }}</p>
+            </div>
+            <RouterLink class="inline-link" to="/recovery">{{ ui.label('打开备份与恢复', 'Open backup & recovery') }}</RouterLink>
           </article>
         </div>
       </PageCard>
@@ -86,7 +115,7 @@ const riskItems = computed(() => {
           </article>
         </div>
         <p v-else class="muted-copy">
-          {{ ui.label('当前 API 未返回结构化风险列表，因此这里先显示为安全占位。后续页面迁移时会继续精炼。', 'The current API did not return structured risks, so this section stays intentionally lightweight for the first scaffold.') }}
+          {{ ui.label('当前还没有结构化风险提示。若要做更细的运行或安全检查，可以继续查看运维页和安全页。', 'No structured risk items are available right now. For a deeper health or safety review, continue to Operations and Security.') }}
         </p>
       </PageCard>
     </template>

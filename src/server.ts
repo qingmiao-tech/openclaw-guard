@@ -88,9 +88,9 @@ import { getNextWorkbenchPage } from './next-ui-shell.js';
 import { getCompatibilityPage } from './web-ui.js';
 import { getWorkbenchPage } from './workbench-ui.js';
 import { buildSupportDiagnosticsBundle } from './support.js';
+import { deleteAgentConfig, getAgentsSnapshot, saveAgentConfig } from './agents.js';
 import {
     createManagedEntry,
-    getAgentCatalog,
     getManagedRoots,
     listManagedFiles,
     listMemoryFiles,
@@ -102,6 +102,8 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const WEB_DIR = path.resolve(__dirname, '..', 'web');
+
+let processHandlersRegistered = false;
 
 function resolveStaticAsset(...segments: string[]) {
   const candidates = [
@@ -230,16 +232,28 @@ function parseCronJobInput(body: Record<string, unknown>, jobId?: string): CronJ
 export function startServer(port: number) {
   const maxRetries = 10;
 
-  process.on('uncaughtException', (err) => {
-    console.error('[Guard] Uncaught exception:', err.stack || err.message);
-  });
+  if (!processHandlersRegistered) {
+    processHandlersRegistered = true;
+    process.on('uncaughtException', (err) => {
+      console.error('[Guard] Uncaught exception:', err.stack || err.message);
+    });
 
-  process.on('unhandledRejection', (reason) => {
-    console.error('[Guard] Unhandled Promise rejection:', reason);
-  });
+    process.on('unhandledRejection', (reason) => {
+      console.error('[Guard] Unhandled Promise rejection:', reason);
+    });
+  }
 
   let currentPort = port;
 
+  function resolveUiMode(url: URL): 'legacy' | 'next' {
+    const override = (url.searchParams.get('ui') || '').toLowerCase();
+    if (override === 'legacy' || override === 'next') {
+      return override;
+    }
+
+    const env = (process.env.GUARD_UI || '').toLowerCase();
+    return env === 'legacy' ? 'legacy' : 'next';
+  }
 
   function createHttpServer() {
     return http.createServer(async (req, res) => {
@@ -270,7 +284,8 @@ export function startServer(port: number) {
         }
 
         if (pathname === '/' || pathname === '/index.html' || pathname === '/workbench') {
-          htmlResponse(res, getWorkbenchPage());
+          const mode = resolveUiMode(url);
+          htmlResponse(res, mode === 'next' ? getNextWorkbenchPage() : getWorkbenchPage());
           return;
         }
         if (pathname === '/next') {
@@ -282,7 +297,7 @@ export function startServer(port: number) {
           return;
         }
         if (pathname === '/legacy') {
-          htmlResponse(res, getCompatibilityPage());
+          htmlResponse(res, getWorkbenchPage());
           return;
         }
 
@@ -715,7 +730,26 @@ export function startServer(port: number) {
           return;
         }
         if (pathname === '/api/agents' && req.method === 'GET') {
-          jsonResponse(res, { agents: getAgentCatalog() });
+          jsonResponse(res, getAgentsSnapshot());
+          return;
+        }
+        if (pathname === '/api/agents' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          jsonResponse(res, saveAgentConfig({
+            originalId: typeof body.originalId === 'string' ? body.originalId : undefined,
+            id: typeof body.id === 'string' ? body.id : '',
+            name: typeof body.name === 'string' ? body.name : undefined,
+            workspace: typeof body.workspace === 'string' ? body.workspace : undefined,
+            modelId: typeof body.modelId === 'string' ? body.modelId : undefined,
+            isDefault: typeof body.isDefault === 'boolean' ? body.isDefault : undefined,
+            ensureWorkspace: body.ensureWorkspace === true,
+            bootstrapWorkspaceDocs: body.bootstrapWorkspaceDocs === true,
+          }));
+          return;
+        }
+        if (pathname.startsWith('/api/agents/') && req.method === 'DELETE') {
+          const agentId = decodeURIComponent(pathname.split('/')[3] || '');
+          jsonResponse(res, deleteAgentConfig(agentId));
           return;
         }
         if (pathname === '/api/sessions' && req.method === 'GET') {
@@ -990,6 +1024,7 @@ export function startServer(port: number) {
       console.log('\n[Guard] OpenClaw Guard web UI started.');
       console.log(`   URL: http://localhost:${currentPort}`);
       console.log(`   Alias: http://localhost:${currentPort}/workbench`);
+      console.log(`   Developer rollback: http://localhost:${currentPort}/legacy`);
       if (!isAuthEnabled()) {
         console.log('   Auth: DISABLED (GUARD_NO_AUTH=1)');
       }

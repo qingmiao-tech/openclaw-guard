@@ -1,0 +1,221 @@
+import { execFileSync, spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '..');
+const nodeBin = process.execPath;
+const npmBin = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+
+function parseArgs(argv) {
+  const args = {
+    port: 18088,
+    password: '',
+    fixtureRootId: '',
+    keepRunning: false,
+    help: false,
+    extra: [],
+  };
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const current = argv[i];
+    if (current === '--port' && argv[i + 1]) {
+      args.port = Number(argv[++i]) || 18088;
+      continue;
+    }
+    if (current === '--password' && argv[i + 1]) {
+      args.password = argv[++i];
+      continue;
+    }
+    if (current === '--keep-running') {
+      args.keepRunning = true;
+      continue;
+    }
+    if (current === '--help' || current === '-h') {
+      args.help = true;
+      continue;
+    }
+    args.extra.push(current);
+  }
+
+  return args;
+}
+
+function runCommand(command, args, options = {}) {
+  const isWindowsCmd = process.platform === 'win32' && /\.cmd$/i.test(command);
+  const finalCommand = isWindowsCmd ? 'cmd.exe' : command;
+  const finalArgs = isWindowsCmd ? ['/d', '/s', '/c', command, ...args] : args;
+  const result = spawnSync(finalCommand, finalArgs, {
+    cwd: rootDir,
+    stdio: 'inherit',
+    env: options.env || process.env,
+    shell: false,
+  });
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    const rendered = [finalCommand, ...finalArgs].join(' ');
+    throw new Error(`Command failed: ${rendered}`);
+  }
+}
+
+function resolveOpenClawDir() {
+  const stateOverride = process.env.OPENCLAW_STATE_DIR?.trim() || process.env.CLAWDBOT_STATE_DIR?.trim();
+  if (stateOverride) {
+    return path.resolve(stateOverride.startsWith('~') ? stateOverride.replace('~', os.homedir()) : stateOverride);
+  }
+
+  const home = os.homedir();
+  const newDir = path.join(home, '.openclaw');
+  const legacyDirs = [
+    path.join(home, '.clawdbot'),
+    path.join(home, '.moldbot'),
+    path.join(home, '.moltbot'),
+  ];
+
+  if (fs.existsSync(newDir)) return newDir;
+  for (const dir of legacyDirs) {
+    if (fs.existsSync(dir)) return dir;
+  }
+  return newDir;
+}
+
+function createSmokeWorkspaceFixture() {
+  const openClawDir = resolveOpenClawDir();
+  fs.mkdirSync(openClawDir, { recursive: true });
+
+  const name = `workspace-guard-next-smoke-${Date.now()}`;
+  const fixturePath = path.join(openClawDir, name);
+  fs.mkdirSync(path.join(fixturePath, 'memory'), { recursive: true });
+  fs.writeFileSync(path.join(fixturePath, 'SOUL.md'), '# smoke workspace\n', 'utf-8');
+  fs.writeFileSync(path.join(fixturePath, 'AGENTS.md'), '# smoke agent\n', 'utf-8');
+  fs.writeFileSync(path.join(fixturePath, 'notes.md'), 'guard next smoke seed\n', 'utf-8');
+  fs.writeFileSync(path.join(fixturePath, 'memory', 'timeline.md'), 'guard next smoke memory\n', 'utf-8');
+
+  return {
+    fixturePath,
+    rootIdFragment: name,
+  };
+}
+
+function cleanupSmokeWorkspaceFixture(fixture) {
+  if (!fixture?.fixturePath) return;
+  try {
+    fs.rmSync(fixture.fixturePath, { recursive: true, force: true });
+  } catch {
+    // Ignore cleanup failures so the original smoke result stays visible.
+  }
+}
+
+function printHelp() {
+  console.log(`OpenClaw Guard next-ui smoke runner
+
+Usage:
+  npm run ui:smoke:next:with-web -- --password <pwd> [--port 18088] [--keep-running] [--headed]
+
+Notes:
+  1. Builds Guard before smoke.
+  2. Reuses current Guard Web if already running on target port.
+  3. If not running, starts Guard Web on the target port.
+  4. Verifies /, /workbench, and /next before running the default next-ui smoke flow.
+  5. Stops temporary Guard Web after run unless --keep-running is set.
+`);
+}
+
+function readStatus(port) {
+  try {
+    const output = execFileSync(nodeBin, ['scripts/web-background.mjs', 'status', '--port', String(port)], {
+      cwd: rootDir,
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: process.env,
+    });
+    const trimmed = output.trim();
+    const jsonStart = trimmed.indexOf('{');
+    if (jsonStart === -1) return null;
+    return JSON.parse(trimmed.slice(jsonStart));
+  } catch {
+    return null;
+  }
+}
+
+function startBackground(port) {
+  runCommand(nodeBin, ['scripts/web-background.mjs', 'start', '--port', String(port)]);
+}
+
+function stopBackground(port) {
+  try {
+    runCommand(nodeBin, ['scripts/web-background.mjs', 'stop', '--port', String(port)]);
+  } catch {
+    // Keep original smoke failure if stop command itself fails.
+  }
+}
+
+function buildSmokeArgs(options, url) {
+  const args = [path.join('scripts', 'guard-ui-next-smoke.py'), '--url', url, ...options.extra];
+  if (options.password) {
+    args.push('--password', options.password);
+  }
+  if (options.fixtureRootId) {
+    args.push('--fixture-root-id', options.fixtureRootId);
+  }
+  return args;
+}
+
+function main() {
+  const options = parseArgs(process.argv.slice(2));
+  if (options.help) {
+    printHelp();
+    return;
+  }
+  if (!options.password) {
+    throw new Error('Missing required --password for the next-ui smoke login flow.');
+  }
+
+  const url = `http://127.0.0.1:${options.port}/`;
+  const statusBefore = readStatus(options.port);
+  const shouldStart = !statusBefore?.running;
+  let smokeFixture = null;
+
+  runCommand(npmBin, ['run', 'build']);
+
+  if (!options.fixtureRootId) {
+    smokeFixture = createSmokeWorkspaceFixture();
+    options.fixtureRootId = smokeFixture.rootIdFragment;
+  }
+
+  if (shouldStart) {
+    console.log(`[guard-next-smoke] Starting temporary Guard Web on port ${options.port}`);
+    startBackground(options.port);
+  } else {
+    console.log(`[guard-next-smoke] Reusing existing Guard Web on port ${statusBefore.port || options.port}`);
+  }
+
+  try {
+    runCommand('python', buildSmokeArgs(options, url), {
+      env: {
+        ...process.env,
+        PYTHONUTF8: '1',
+      },
+    });
+  } finally {
+    if (shouldStart && !options.keepRunning) {
+      console.log('[guard-next-smoke] Stopping temporary Guard Web');
+      stopBackground(options.port);
+    }
+    if (smokeFixture) {
+      cleanupSmokeWorkspaceFixture(smokeFixture);
+    }
+  }
+}
+
+try {
+  main();
+} catch (error) {
+  console.error(`[guard-next-smoke] ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(1);
+}

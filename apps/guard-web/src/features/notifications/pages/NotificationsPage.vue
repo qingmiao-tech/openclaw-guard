@@ -48,8 +48,8 @@ const reminderTabs = computed(() => [
   { id: 'timeline', label: ui.label('时间线', 'Timeline') },
 ]);
 
-const items = computed(() => resource.data.value?.summary.items || []);
-const events = computed(() => resource.data.value?.events || []);
+const items = computed(() => resource.data?.summary.items || []);
+const events = computed(() => resource.data?.events || []);
 const warningCount = computed(() => items.value.filter((item) => item.severity === 'warning' || item.severity === 'error').length);
 const successCount = computed(() => items.value.filter((item) => item.severity === 'success').length);
 const sourceOptions = computed(() => Array.from(new Set(items.value.map((item) => item.source).filter(Boolean))).sort());
@@ -94,7 +94,7 @@ const reminderGroups = computed<ReminderGroup[]>(() => {
   return Array.from(groups.values());
 });
 
-watch(resource.data, (value) => {
+watch(() => resource.data, (value) => {
   if (value) notificationsCache = value;
 });
 
@@ -107,7 +107,7 @@ watch(totalPages, (value) => {
 });
 
 onMounted(() => {
-  void resource.execute({ silent: !!resource.data.value });
+  void resource.execute({ silent: !!resource.data });
 });
 
 function formatDayLabel(value?: string | null) {
@@ -175,9 +175,9 @@ function eventContext(event: ActivityEvent) {
 }
 
 function applySummary(summary: NotificationSummary) {
-  if (!resource.data.value) return;
+  if (!resource.data) return;
   const next: NotificationsSnapshot = {
-    ...resource.data.value,
+    ...resource.data,
     summary: {
       items: Array.isArray(summary.items) ? summary.items : [],
       total: summary.total || 0,
@@ -185,12 +185,12 @@ function applySummary(summary: NotificationSummary) {
       read: summary.read || 0,
     },
   };
-  resource.data.value = next;
+  resource.data = next;
   notificationsCache = next;
 }
 
 async function refreshPage() {
-  await resource.execute({ silent: !!resource.data.value });
+  await resource.execute({ silent: !!resource.data });
 }
 
 async function handleToggleRead(item: GuardNotification) {
@@ -264,7 +264,7 @@ async function copyNotification(item: GuardNotification) {
   <div class="page-stack">
     <header class="page-header">
       <div>
-        <p class="page-header__eyebrow">{{ ui.label('通知 / Fourth slice', 'Notifications / Fourth slice') }}</p>
+        <p class="page-header__eyebrow">{{ ui.label('通知 / 提醒', 'Notifications / Alerts') }}</p>
         <h2 class="page-header__title">{{ ui.label('提醒与时间线', 'Reminders & timeline') }}</h2>
         <p class="page-header__description">
           {{ ui.label('把原来分散的提醒和活动时间线收回同一页里，默认先给普通用户看到可处理的提醒，切换到时间线再回看系统最近发生了什么。', 'Bring reminders and the activity feed back into one page, so users first see what needs action and then switch to the timeline to review what the system has been doing.') }}
@@ -373,6 +373,9 @@ async function copyNotification(item: GuardNotification) {
               {{ bulkAction === 'clear-all' ? ui.label('处理中…', 'Working…') : ui.label('清空全部提醒', 'Clear all reminders') }}
             </button>
           </div>
+          <p v-if="!ui.developerMode" class="muted-copy">
+            {{ ui.label('原始提醒详情复制已收纳到开发者模式里。若要导出 JSON 详情排障，请先到 Settings 打开开发者模式。', 'Raw reminder-detail copy now stays behind developer mode. Enable it from Settings if you need the JSON payload for troubleshooting.') }}
+          </p>
         </PageCard>
 
         <PageCard :title="ui.label('提醒列表', 'Reminder list')" eyebrow="Reminders">
@@ -417,7 +420,7 @@ async function copyNotification(item: GuardNotification) {
                             : ui.label('标记为已读', 'Mark as read')
                       }}
                     </button>
-                    <button class="inline-link" type="button" :disabled="copyingId === item.id" @click="copyNotification(item)">
+                    <button v-if="ui.developerMode" class="inline-link" type="button" :disabled="copyingId === item.id" @click="copyNotification(item)">
                       {{ copyingId === item.id ? ui.label('复制中…', 'Copying…') : ui.label('复制详情', 'Copy details') }}
                     </button>
                   </div>

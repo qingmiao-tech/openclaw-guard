@@ -62,8 +62,15 @@ npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download
 
 ### 2. 打开工作台
 
-- 主入口：`http://127.0.0.1:18088/workbench`
-- 根路径也会直接进入 Guard 工作台：`http://127.0.0.1:18088/`
+- 主入口：`http://127.0.0.1:18088/`
+- 兼容别名：`http://127.0.0.1:18088/workbench`
+- 开发直达入口：`http://127.0.0.1:18088/next`
+
+### 桌面预览（薄壳）
+- 先在本机启动 Guard，再运行桌面预览：`npm run desktop:dev`
+- 桌面默认连接地址是 `http://127.0.0.1:18088`
+- 连接目标会保存在本地存储键 `openclaw-guard.desktop.api-base-url`
+- 如果本地 Guard 没有启动，桌面会显示连接页，而不是白屏或空壳
 
 ### 3. 第一次登录先看初始化密码
 

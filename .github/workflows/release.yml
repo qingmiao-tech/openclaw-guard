@@ -1,6 +1,9 @@
 name: Release
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       version:
@@ -36,11 +39,11 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: npm
 
-      - name: Validate branch
+      - name: Validate release ref
         shell: bash
         run: |
-          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
-            echo "Releases must be created from main. Current ref: ${GITHUB_REF}" >&2
+          if [[ "${GITHUB_REF}" != "refs/heads/main" && ! "${GITHUB_REF}" =~ ^refs/tags/v.+$ ]]; then
+            echo "Releases must be created from main or a version tag. Current ref: ${GITHUB_REF}" >&2
             exit 1
           fi
 
@@ -85,6 +88,16 @@ jobs:
           echo "tag_name=${TAG_NAME}" >> "${GITHUB_OUTPUT}"
           echo "tag_exists=${TAG_EXISTS}" >> "${GITHUB_OUTPUT}"
 
+      - name: Resolve npm dist-tag
+        id: dist_tag
+        shell: bash
+        run: |
+          INPUT_TAG="${{ github.event.inputs.npm_tag }}"
+          if [ -z "${INPUT_TAG}" ]; then
+            INPUT_TAG="latest"
+          fi
+          echo "npm_tag=${INPUT_TAG}" >> "${GITHUB_OUTPUT}"
+
       - name: Build
         run: npm run build
 
@@ -104,7 +117,7 @@ jobs:
       - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish "${{ steps.pack.outputs.tarball }}" --access public --provenance --tag "${{ github.event.inputs.npm_tag }}"
+        run: npm publish "${{ steps.pack.outputs.tarball }}" --access public --provenance --tag "${{ steps.dist_tag.outputs.npm_tag }}"
 
       - name: Create and push git tag
         if: ${{ steps.version.outputs.tag_exists != 'true' }}

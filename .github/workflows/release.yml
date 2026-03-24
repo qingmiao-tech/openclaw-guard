@@ -111,7 +111,7 @@ jobs:
         id: pack
         shell: bash
         run: |
-          TARBALL="$(npm pack --json | node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync(0, 'utf8')); process.stdout.write(data[0].filename);")"
+          TARBALL="$(npm pack --ignore-scripts --json | node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync(0, 'utf8')); process.stdout.write(data[0].filename);")"
           echo "tarball=${TARBALL}" >> "${GITHUB_OUTPUT}"
 
       - name: Publish to npm

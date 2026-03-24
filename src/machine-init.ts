@@ -267,7 +267,7 @@ function buildNotes(result: MachineInitResult): string[] {
     notes.push('当前还没有可复用的 OpenClaw CLI。');
   }
   if (result.webReport.running) {
-    notes.push(`Guard Web 地址: ${result.webReport.workbenchUrl}`);
+    notes.push(`Guard Web \u5730\u5740: ${result.webReport.primaryUrl}`);
   } else if (result.startWeb) {
     notes.push(`Guard Web 尚未运行，请检查日志文件: ${result.webReport.logPaths.stdout}`);
   }
@@ -569,7 +569,7 @@ export function formatMachineInitResult(result: MachineInitResult): string {
 
   lines.push(`[INFO] OpenClaw source: ${result.openclaw.detectedSource}`);
   lines.push(`[INFO] OpenClaw binary: ${result.openclaw.binPath || '-'}`);
-  lines.push(`[INFO] Guard Web URL: ${result.webReport.workbenchUrl}`);
+  lines.push(`[INFO] Guard Web URL: ${result.webReport.primaryUrl}`);
   lines.push(`[INFO] Auth enabled: ${result.auth.enabled ? 'yes' : 'no'}`);
   if (result.auth.enabled) {
     lines.push(`[INFO] Auth configured: ${result.auth.configured ? 'yes' : 'no'}`);

@@ -17,14 +17,14 @@
 当前公开版最推荐的方式：
 
 ```bash
-npm install -g @qingmiao-tech/openclaw-guard@0.9.4
+npm install -g @qingmiao-tech/openclaw-guard@0.10.0
 openclaw-guard init-machine --install-openclaw --start-web --port 18088
 ```
 
 如果你更喜欢不落全局安装，也可以直接用 `npx`：
 
 ```bash
-npx -y @qingmiao-tech/openclaw-guard@0.9.4 init-machine --install-openclaw --start-web --port 18088
+npx -y @qingmiao-tech/openclaw-guard@0.10.0 init-machine --install-openclaw --start-web --port 18088
 ```
 
 这个命令会按顺序做几件事：
@@ -46,7 +46,7 @@ openclaw-guard init-machine --install-openclaw --start-web --port 18088 --dry-ru
 如果你更想固定到 GitHub Release 资产，也可以安装：
 
 ```bash
-npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.4/qingmiao-tech-openclaw-guard-0.9.4.tgz
+npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.10.0/qingmiao-tech-openclaw-guard-0.10.0.tgz
 ```
 :::
 
@@ -55,7 +55,14 @@ npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download
 启动成功后，打开：
 
 - `http://127.0.0.1:18088/`
-- `http://127.0.0.1:18088/workbench`
+- `http://127.0.0.1:18088/workbench`（兼容别名）
+- `http://127.0.0.1:18088/next`（开发 / 回归直达入口）
+
+## 桌面预览（薄壳）
+- 先确认本地 Guard 已经启动，再在源码工作区执行 `npm run desktop:dev`
+- 桌面默认会连接 `http://127.0.0.1:18088`
+- 自定义地址会持久化到本地存储键 `openclaw-guard.desktop.api-base-url`
+- 如果 Guard 离线，桌面应该显示连接页，而不是白屏或空壳
 
 ## 第一次登录前，先确认初始化密码
 
@@ -95,7 +102,11 @@ openclaw-guard auth status
 
 至少启用并配置一个官方渠道，让真实消息能进入工作流。
 
-### 4. 开启备份与恢复
+### 4. 配置角色与工作区
+
+如果你准备让多个 Agent 长期协作，推荐先去“角色”页创建 Agent，并优先使用“工作区名称”模式生成独立工作区，而不是一上来就手填完整路径。
+
+### 5. 开启备份与恢复
 
 先保存一个恢复点。这样后面就算折腾坏了，也能快速回去。
 

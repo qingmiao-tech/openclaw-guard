@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { deriveWorkspaceName, normalizeWorkspaceBasePath } from './agent-workspace.js';
 import { loadConfig, getNested } from './config.js';
 import { resolveUserPath, statSafe } from './guard-state.js';
 import { getOpenClawDir } from './platform.js';
@@ -15,7 +16,9 @@ export interface AgentSummary {
   id: string;
   name: string;
   isDefault: boolean;
+  isConfigured: boolean;
   modelId: string | null;
+  workspaceName: string | null;
   workspace: string;
   resolvedWorkspace: string;
   workspaceExists: boolean;
@@ -97,7 +100,7 @@ function buildDocStatus(workspacePath: string): AgentWorkspaceDocStatus {
 function getConfiguredWorkspacePaths(): string[] {
   const config = loadConfig();
   const defaults = toObject(getNested(config, ['agents', 'defaults'])) || {};
-  const defaultWorkspace = typeof defaults.workspace === 'string' ? defaults.workspace : '~/.openclaw/workspace';
+  const defaultWorkspace = normalizeWorkspaceBasePath(typeof defaults.workspace === 'string' ? defaults.workspace : undefined);
   const list = Array.isArray(getNested(config, ['agents', 'list']))
     ? getNested(config, ['agents', 'list']) as unknown[]
     : [];
@@ -163,7 +166,7 @@ export function getDetectedWorkspaceCandidates(): DetectedWorkspaceCandidate[] {
 export function getAgentCatalog(): AgentSummary[] {
   const config = loadConfig();
   const defaults = toObject(getNested(config, ['agents', 'defaults'])) || {};
-  const defaultWorkspace = typeof defaults.workspace === 'string' ? defaults.workspace : '~/.openclaw/workspace';
+  const defaultWorkspace = normalizeWorkspaceBasePath(typeof defaults.workspace === 'string' ? defaults.workspace : undefined);
   const defaultModel = normalizeModelNode(getNested(defaults, ['model']));
   const list = Array.isArray(getNested(config, ['agents', 'list']))
     ? getNested(config, ['agents', 'list']) as unknown[]
@@ -179,8 +182,10 @@ export function getAgentCatalog(): AgentSummary[] {
         id: String(item.id || ''),
         name: String(item.name || item.id || 'Unnamed Agent'),
         isDefault,
+        isConfigured: true,
         modelId: typeof item.model === 'string' ? item.model : defaultModel,
         workspace: String(item.workspace || defaultWorkspace),
+        workspaceName: deriveWorkspaceName(defaultWorkspace, String(item.workspace || defaultWorkspace)),
         resolvedWorkspace,
         workspaceExists: fs.existsSync(resolvedWorkspace),
         docStatus: buildDocStatus(resolvedWorkspace),
@@ -193,7 +198,9 @@ export function getAgentCatalog(): AgentSummary[] {
       id: 'default',
       name: 'Default Agent',
       isDefault: true,
+      isConfigured: false,
       modelId: defaultModel,
+      workspaceName: deriveWorkspaceName(defaultWorkspace, defaultWorkspace),
       workspace: defaultWorkspace,
       resolvedWorkspace,
       workspaceExists: fs.existsSync(resolvedWorkspace),
@@ -225,7 +232,7 @@ export function getManagedRoots(): ManagedRoot[] {
   const agents = getAgentCatalog();
   const config = loadConfig();
   const defaults = toObject(getNested(config, ['agents', 'defaults'])) || {};
-  const defaultWorkspace = typeof defaults.workspace === 'string' ? defaults.workspace : '~/.openclaw/workspace';
+  const defaultWorkspace = normalizeWorkspaceBasePath(typeof defaults.workspace === 'string' ? defaults.workspace : undefined);
   const resolvedDefault = resolveUserPath(defaultWorkspace);
 
   const roots: ManagedRoot[] = [{

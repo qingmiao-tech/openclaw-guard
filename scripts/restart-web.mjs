@@ -184,8 +184,8 @@ function main() {
   runCommand(nodeBin, ['scripts/web-background.mjs', 'status', ...portArgs]);
   console.log('');
   console.log('[INFO] Common URLs:');
-  console.log(`  http://127.0.0.1:${options.port}/`);
-  console.log(`  http://127.0.0.1:${options.port}/workbench`);
+  console.log(`  default: http://127.0.0.1:${options.port}/`);
+  console.log(`  alias:   http://127.0.0.1:${options.port}/workbench`);
 }
 
 try {

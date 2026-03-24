@@ -42,28 +42,35 @@ OpenClaw Guard 是围绕 OpenClaw 构建的运维与安全控制台。它不追�
 ### 1. 安装并启动 Guard
 
 ```bash
-npm install -g @qingmiao-tech/openclaw-guard@0.9.4
+npm install -g @qingmiao-tech/openclaw-guard@0.10.0
 openclaw-guard init-machine --install-openclaw --start-web --port 18088
 ```
 
 如果你更喜欢不落全局安装，也可以直接用 `npx`：
 
 ```bash
-npx -y @qingmiao-tech/openclaw-guard@0.9.4 init-machine --install-openclaw --start-web --port 18088
+npx -y @qingmiao-tech/openclaw-guard@0.10.0 init-machine --install-openclaw --start-web --port 18088
 ```
 
 如果你更希望固定到某个 GitHub Release 资产，也可以直接安装：
 
 ```bash
-npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.4/qingmiao-tech-openclaw-guard-0.9.4.tgz
+npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.10.0/qingmiao-tech-openclaw-guard-0.10.0.tgz
 ```
 
 当前公开安装方式、`npm / npx` 更新方式和版本线说明，见 [版本与发布](./docs/releases.md)。
 
 ### 2. 打开工作台
 
-- 主入口：`http://127.0.0.1:18088/workbench`
-- 根路径也会直接进入 Guard 工作台：`http://127.0.0.1:18088/`
+- 主入口：`http://127.0.0.1:18088/`
+- 兼容别名：`http://127.0.0.1:18088/workbench`
+- 开发直达入口：`http://127.0.0.1:18088/next`
+
+### 桌面预览（薄壳）
+- 先在本机启动 Guard，再运行桌面预览：`npm run desktop:dev`
+- 桌面默认连接地址是 `http://127.0.0.1:18088`
+- 连接目标会保存在本地存储键 `openclaw-guard.desktop.api-base-url`
+- 如果本地 Guard 没有启动，桌面会显示连接页，而不是白屏或空壳
 
 ### 3. 第一次登录先看初始化密码
 
@@ -96,7 +103,7 @@ openclaw-guard auth show-password
 - OpenClaw 生命周期管理：安装、修复、更新、回退、卸载和状态诊断。
 - 备份与恢复：默认用“保存现在 / 回到某个恢复点 / 恢复后继续往前走”的产品语言呈现。
 - 安全中心：聚合安全检查、权限模式和主机加固建议。
-- 工作区工具：统一管理角色、文件、搜索和核心记忆资产。
+- 工作区工具：统一管理角色、文件、搜索和核心记忆资产，并支持按工作区名称快速创建 Agent。
 - 脱敏诊断包：适合贴到 GitHub Issue 或远程协助场景的支持信息导出。
 
 ## 支持平台矩阵

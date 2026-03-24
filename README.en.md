@@ -42,20 +42,20 @@ If you do not want to think about Git, Cron, OAuth, or plugin architecture on da
 ### 1. Install and start Guard
 
 ```bash
-npm install -g @qingmiao-tech/openclaw-guard@0.9.4
+npm install -g @qingmiao-tech/openclaw-guard@0.10.0
 openclaw-guard init-machine --install-openclaw --start-web --port 18088
 ```
 
 If you prefer not to keep a global install, you can run it directly with `npx`:
 
 ```bash
-npx -y @qingmiao-tech/openclaw-guard@0.9.4 init-machine --install-openclaw --start-web --port 18088
+npx -y @qingmiao-tech/openclaw-guard@0.10.0 init-machine --install-openclaw --start-web --port 18088
 ```
 
 If you prefer to pin a specific GitHub Release asset, you can also install:
 
 ```bash
-npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.9.4/qingmiao-tech-openclaw-guard-0.9.4.tgz
+npm install -g https://github.com/qingmiao-tech/openclaw-guard/releases/download/v0.10.0/qingmiao-tech-openclaw-guard-0.10.0.tgz
 ```
 
 Current install methods, `npm / npx` update paths, and release notes are documented in [Version & Releases](./docs/releases.md).
@@ -64,6 +64,14 @@ Current install methods, `npm / npx` update paths, and release notes are documen
 
 - Main entry: `http://127.0.0.1:18088/`
 - Compatibility alias: `http://127.0.0.1:18088/workbench`
+- Direct development entry: `http://127.0.0.1:18088/next`
+
+### Desktop preview (thin shell)
+
+- Start local Guard first, then run `npm run desktop:dev`
+- The desktop shell connects to `http://127.0.0.1:18088` by default
+- The chosen target is persisted in `openclaw-guard.desktop.api-base-url`
+- If Guard is offline, the desktop shell shows a connection page instead of a blank window
 
 ### 3. Check the initial password before the first login
 
@@ -96,7 +104,7 @@ The home page is designed to answer three questions first:
 - OpenClaw lifecycle management: install, repair, update, rollback, uninstall, and diagnostics.
 - Backup & Recovery: presented first as "save now", "go back to a point", and "continue forward after restore".
 - Security center: security checks, permission modes, and host-hardening guidance in one place.
-- Workspace tools: roles, files, search, and core memory assets under a calmer structure.
+- Workspace tools: roles, files, search, and core memory assets under a calmer structure, including fast agent workspace naming.
 - Redacted diagnostics export: safe to attach in GitHub issues or remote support sessions.
 
 ## Platform Matrix

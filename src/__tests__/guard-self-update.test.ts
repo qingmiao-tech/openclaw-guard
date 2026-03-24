@@ -60,12 +60,12 @@ describe('guard-self-update', () => {
       }
       if (command === 'npm' && args[0] === 'view' && args[1] === mocks.packageName && args[2] === 'version'
         || commandLine.startsWith(`npm view ${mocks.packageName} version`)) {
-        return { status: 0, stdout: '0.9.4', stderr: '', error: null };
+        return { status: 0, stdout: '0.10.0', stderr: '', error: null };
       }
       if (command === 'npm' && args[0] === 'install' && args[1] === '-g' || commandLine.startsWith(`npm install -g ${mocks.packageName}@`)) {
         fs.writeFileSync(path.join(packageRoot, 'package.json'), JSON.stringify({
           name: mocks.packageName,
-          version: '0.9.4',
+          version: '0.10.0',
         }, null, 2), 'utf-8');
         return { status: 0, stdout: 'installed', stderr: '', error: null };
       }
@@ -84,12 +84,12 @@ describe('guard-self-update', () => {
     const status = guardSelfUpdate.getGuardSelfStatus({ bypassCache: true });
 
     expect(status.currentVersion).toBe('0.9.3');
-    expect(status.latestVersion).toBe('0.9.4');
+    expect(status.latestVersion).toBe('0.10.0');
     expect(status.installSource).toBe('npm-global');
     expect(status.updateSupported).toBe(true);
     expect(status.updateAvailable).toBe(true);
     expect(status.nextAction).toBe('update-now');
-    expect(status.updateCommand).toContain('@0.9.4');
+    expect(status.updateCommand).toContain('@0.10.0');
   });
 
   it('updates Guard in place and restarts the background workbench', async () => {
@@ -115,7 +115,7 @@ describe('guard-self-update', () => {
       .mockReturnValueOnce({
         packageName: mocks.packageName,
         currentVersion: '0.9.3',
-        latestVersion: '0.9.4',
+        latestVersion: '0.10.0',
         updateAvailable: true,
         installSource: 'npm-global',
         updateSupported: true,
@@ -125,15 +125,15 @@ describe('guard-self-update', () => {
         nodeVersion: process.version,
         npmVersion: '10.9.3',
         globalNodeModules,
-        updateCommand: `npm install -g ${mocks.packageName}@0.9.4`,
+        updateCommand: `npm install -g ${mocks.packageName}@0.10.0`,
         releaseUrl: 'https://github.com/qingmiao-tech/openclaw-guard/releases',
         docsUrl: 'https://qingmiao-tech.github.io/openclaw-guard/',
         action: { phase: 'idle' },
       })
       .mockReturnValueOnce({
         packageName: mocks.packageName,
-        currentVersion: '0.9.4',
-        latestVersion: '0.9.4',
+        currentVersion: '0.10.0',
+        latestVersion: '0.10.0',
         updateAvailable: false,
         installSource: 'npm-global',
         updateSupported: true,
@@ -167,6 +167,6 @@ describe('guard-self-update', () => {
     expect(startBackground).toHaveBeenCalledWith({ port: 18088 });
     expect(result.phase).toBe('completed');
     expect(result.newPid).toBe(8765);
-    expect(result.message).toContain('v0.9.4');
+    expect(result.message).toContain('v0.10.0');
   });
 });
